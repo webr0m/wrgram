@@ -1,0 +1,26 @@
+{
+  "name": "wrgram",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "WRGram: cliente de Telegram con complementos basados en permisos.",
+  "packageManager": "pnpm@12.18.0",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "dev": "pnpm --filter @wrgram/web dev",
+    "dev:api": "pnpm --filter @wrgram/api dev",
+    "build": "pnpm --filter @wrgram/web build && node scripts/check-public-build.mjs",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "pnpm typecheck && pnpm test && pnpm build",
+    "deploy:check": "pnpm build && wrangler deploy --dry-run --outdir .wrangler/dry-run && node scripts/check-public-build.mjs apps/web/dist .wrangler/dry-run",
+    "deploy": "pnpm check && pnpm deploy:check && wrangler deploy"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "typescript": "5.9.3",
+    "vitest": "5.1.0",
+    "wrangler": "4.158.0"
+  }
+}

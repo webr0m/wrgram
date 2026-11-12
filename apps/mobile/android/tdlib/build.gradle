@@ -1,0 +1,18 @@
+plugins { id 'com.android.library' }
+android {
+    namespace 'org.drinkless.tdlib'
+    compileSdk 36
+    defaultConfig { minSdk 26; consumerProguardFiles 'consumer-rules.pro' }
+    sourceSets { main { java.srcDirs = ['vendor/java']; jniLibs.srcDirs = ['vendor/jni-stripped'] } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+dependencies { implementation 'androidx.annotation:annotation:1.9.1' }
+tasks.named('preBuild') {
+    doFirst {
+        if (!file('vendor/java/org/drinkless/tdlib/TdApi.java').exists()) throw new GradleException('Ejecuta node scripts/prepare-tdlib.mjs desde la raíz antes de compilar.')
+        // AGP solo despoja si hay un NDK instalado; sin esta comprobación un vendor/jni
+        // antiguo volvería a empacarse con sus 30 MB de DWARF y símbolos estáticos.
+        def sinDespojar = ['arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'].findAll { !file("vendor/jni-stripped/${it}/libtdjni.so").exists() }
+        if (sinDespojar) throw new GradleException("Faltan las bibliotecas despojadas de ${sinDespojar.join(', ')}. Ejecuta node scripts/prepare-tdlib.mjs.")
+    }
+}

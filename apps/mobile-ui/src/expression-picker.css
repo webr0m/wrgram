@@ -1,0 +1,134 @@
+.expression-picker {
+  z-index: 10;
+  width: min(440px, calc(100% - 34px));
+  height: 420px;
+  max-height: 59dvh;
+  border-radius: 19px;
+  box-shadow: 0 12px 42px #0005;
+  container-type: inline-size;
+}
+.expression-picker header { flex-shrink: 0; gap: 6px; padding: 6px 9px; }
+.expression-picker header > div { min-width: 0; gap: 3px; }
+.expression-picker header button:not(.icon-button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 7px clamp(7px, 2vw, 14px);
+}
+.expression-picker header button > svg { flex-shrink: 0; }
+.expression-picker .picker-search { flex-shrink: 0; min-height: 38px; }
+.expression-picker .picker-search > button { display: grid; place-items: center; flex: 0 0 28px; min-height: 26px; }
+.expression-picker .expression-packs {
+  display: flex;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  gap: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  margin: 0;
+  padding: 5px 11px 7px;
+}
+.expression-packs > button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  height: 40px;
+  font-size: 23px;
+  line-height: 1;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: var(--input);
+  color: var(--muted);
+}
+.expression-packs > button[aria-pressed=true], .expression-sections > button[aria-pressed=true] {
+  background: var(--soft);
+  color: var(--accent);
+  border-color: var(--gold-line);
+}
+.expression-picker .emoji-grid, .expression-picker .catalog-grid {
+  min-height: 0;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.expression-picker .emoji-grid { grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); }
+.expression-picker .emoji-grid > button { min-height: 38px; }
+.expression-picker .emoji-grid > button { min-width:0; height:40px; padding:2px; overflow:hidden; }
+.expression-picker .catalog-grid > button, .expression-collection > button {
+  display: grid;
+  place-items: center;
+  position: relative;
+  height: auto;
+  min-width: 0;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: var(--input);
+  overflow: hidden;
+}
+.expression-picker .catalog-grid { grid-auto-rows: 80px; grid-auto-rows: calc((100cqw - 45px) / 4); }
+.expression-picker .catalog-grid.gif { grid-auto-rows: calc((100cqw - 38px) / 4); }
+.expression-picker .catalog-grid > button { width: 100%; height: 100%; aspect-ratio: auto; }
+.expression-picker .catalog-grid.sticker > button { padding: 5px; }
+.expression-picker .catalog-grid > button:disabled { opacity: .55; }
+.expression-picker .media-view, .expression-picker .media-passive {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
+.expression-picker .media-view img, .expression-picker .media-view video,
+.expression-picker .tgs-sticker-animation, .expression-picker .tgs-sticker-animation svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.expression-picker .gif .media-view :is(img, video) { object-fit: cover; }
+.expression-premium {
+  display: grid;
+  place-items: center;
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 20px;
+  height: 20px;
+  color: var(--accent);
+  border-radius: 7px;
+  background: var(--elevated);
+}
+.expression-sections { display: flex; gap: 5px; padding: 4px 11px; flex-shrink: 0; }
+.expression-sections > button {
+  padding: 5px 10px;
+  min-height: 30px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-size: 12px;
+}
+.expression-pack-title { display: flex; align-items: center; gap: 6px; padding: 0 11px; flex-shrink: 0; }
+.expression-pack-title strong { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.expression-pack-title .text-button { padding: 7px 3px; }
+.expression-error { color: var(--danger); padding: 0 12px; font-size: 12px; }
+.expression-collection {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  align-content: start;
+  gap: 6px;
+  padding: 7px 11px;
+}
+.expression-collection > button { padding: 7px; font-size: 26px; }
+.expression-collection > .expression-more { grid-column: 1 / -1; aspect-ratio: auto; min-height: 34px; font-size: 12px; }
+.expression-collection > .expression-error { grid-column: 1 / -1; }
+.expression-picker .picker-empty { min-height: 0; overflow: auto; padding: 12px; }
+@media (max-width: 760px) {
+  .expression-picker { width: auto; left: 7px; right: 7px; max-height: 53dvh; }
+}
+@media (max-width: 350px) {
+  .expression-picker header button:not(.icon-button) { gap: 4px; padding-inline: 6px; }
+}

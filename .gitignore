@@ -1,0 +1,36 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.idea/
+.pnpm-store/
+.wrangler/
+.dev.vars
+.dev.vars.*
+.private/
+apps/api/.tdlib/
+**/.gradle/
+**/build/
+**/local.properties
+*.jks
+*.keystore
+artifacts/
+apps/mobile/android/app/src/main/assets/ui/
+
+# SDK y herramientas instaladas en este equipo
+.tools/
+
+# Capturas y volcados de depuración (pueden contener conversaciones reales)
+.tmp/
+.tmp-*
+/Screenshot_*.png
+
+# Binarios compilados y salida de build de escritorio
+*.aab
+*.apk
+apps/desktop/**/bin/
+apps/desktop/**/obj/

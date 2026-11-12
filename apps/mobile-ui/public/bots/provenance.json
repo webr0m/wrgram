@@ -1,0 +1,50 @@
+[
+  {
+    "id": "groupbutler",
+    "username": "GroupButlerEsp_bot",
+    "source": "https://t.me/GroupButlerEsp_bot",
+    "date": "2026-11-06",
+    "bytes": 27906,
+    "sha256": "bbbb46c87e081bdddc48a261e3034e14a7aec805723d11bdbbfc401f71a70292"
+  },
+  {
+    "id": "antiu",
+    "username": "antiubot",
+    "source": "https://t.me/antiubot",
+    "date": "2026-11-06",
+    "bytes": 30386,
+    "sha256": "53dd1a873748df51c5630ca1c43217a91ffe5dcc29df2a33e0cbb7ef88b7cb54"
+  },
+  {
+    "id": "compressor",
+    "username": "anycompressorbot",
+    "source": "https://t.me/anycompressorbot",
+    "date": "2026-11-06",
+    "bytes": 17467,
+    "sha256": "e4d043a25a6a382d11b8fcb3dbe56ef964c5c4a734e6a098e50e2008a0356030"
+  },
+  {
+    "id": "shorten",
+    "username": "WRShorten_bot",
+    "source": "https://t.me/WRShorten_bot",
+    "date": "2026-11-06",
+    "bytes": 14747,
+    "sha256": "6f18dfb9d8c7dacce2b809bcc2661f71af58be6a709d39560a65eb9153b0eff9"
+  },
+  {
+    "id": "downloads",
+    "username": "mutidlprobot",
+    "source": "https://t.me/mutidlprobot",
+    "date": "2026-11-06",
+    "bytes": 20836,
+    "sha256": "64b8bbbddde3ede2e87555c975acc3542a490cdf38801efab472a1930b0df7c7"
+  },
+  {
+    "id": "snake",
+    "username": "Wrsnakebot",
+    "source": "https://t.me/Wrsnakebot",
+    "date": "2026-11-06",
+    "bytes": 11195,
+    "sha256": "8f5f1a4c7e272fea70e875bed3f821395ca77c8a69f2b759e27f6a7292589601"
+  }
+]

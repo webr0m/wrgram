@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="background" x1="16" y1="4" x2="110" y2="127" gradientUnits="userSpaceOnUse"><stop stop-color="#2A2B30"/><stop offset=".5" stop-color="#121315"/><stop offset="1" stop-color="#070809"/></linearGradient>
+    <linearGradient id="gold" x1="27" y1="28" x2="101" y2="102" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE7A0"/><stop offset=".45" stop-color="#F1C45B"/><stop offset="1" stop-color="#B78128"/></linearGradient>
+    <linearGradient id="edge" x1="8" y1="6" x2="117" y2="125" gradientUnits="userSpaceOnUse"><stop stop-color="#EBD39A" stop-opacity=".52"/><stop offset=".5" stop-color="#6F6040" stop-opacity=".18"/><stop offset="1" stop-color="#E1B75A" stop-opacity=".38"/></linearGradient>
+  </defs>
+  <rect x="2" y="2" width="124" height="124" rx="34" fill="url(#background)" stroke="url(#edge)" stroke-width="2"/>
+  <path d="M24 38h17l11 35 12-25h12l10 24 10-34h17L94 94H80L69 69 57 94H43L24 38Z" fill="url(#gold)"/>
+  <path d="m74 33 4-10 4 10 10 4-10 4-4 10-4-10-10-4 10-4Z" fill="#FFE9AF"/>
+  <path d="M24 38h17l11 35-4 10-15-40H26l-2-5Z" fill="#FFF1BF" fill-opacity=".35"/>
+</svg>

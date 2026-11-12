@@ -1,0 +1,71 @@
+.gift-panel{display:grid;gap:0;padding-bottom:6px}
+.gift-head{display:flex;align-items:center;gap:13px;padding:16px 18px;border-bottom:1px solid var(--line);background:var(--premium)}
+.gift-head>div{flex:1;min-width:0;display:grid;gap:3px}
+.gift-head strong{font-size:calc(17px * var(--ui-scale,1));font-weight:650;color:var(--text)}
+.gift-head small{font-size:calc(10px * var(--ui-scale,1));color:var(--muted);line-height:1.45;overflow-wrap:anywhere}
+.gift-head-icon{width:42px;height:42px;flex:none;display:grid;place-items:center;border-radius:50%;border:1px solid var(--gold-line);background:var(--surface);color:var(--accent)}
+.gift-panel>.settings-subnav{padding:12px 18px 0;margin-bottom:0}
+.gift-tab{display:grid;gap:0;padding-top:10px}
+.gift-tab .settings-note{margin:0}
+.gift-tab .settings-actions{padding:10px 18px 4px;margin:0}
+.gift-foot{padding:6px 18px 0}
+.gift-filter{margin:0 18px 4px}
+.gift-thumb{width:46px;height:46px;flex:none;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.gift-thumb .media-passive,.gift-thumb img,.gift-thumb video{width:44px;height:44px;object-fit:contain}
+.gift-thumb-fallback{font-size:calc(14px * var(--ui-scale,1));font-weight:650;color:var(--accent);text-transform:uppercase}
+.gift-catalog,.gift-list{list-style:none;margin:0;padding:2px 18px;display:grid;gap:0}
+.gift-catalog>li,.gift-list>li{border-bottom:1px solid var(--line)}
+.gift-catalog>li:last-child,.gift-list>li:last-child{border-bottom:0}
+.gift-catalog>li>button{width:100%;display:flex;align-items:center;gap:11px;padding:11px 0;background:none;border:0;color:var(--text);text-align:left;cursor:pointer}
+.gift-catalog-body{flex:1;min-width:0;display:grid;gap:2px}
+.gift-catalog-body strong{font-size:calc(12px * var(--ui-scale,1));font-weight:600;overflow-wrap:anywhere}
+.gift-catalog-body small{font-size:calc(10px * var(--ui-scale,1));color:var(--muted);line-height:1.5;overflow-wrap:anywhere}
+.gift-catalog>li>button>svg{flex:none;color:var(--faint);transition:transform .16s ease}
+.gift-catalog>li>button>svg.is-open{transform:rotate(180deg)}
+.gift-catalog>li.is-open{background:var(--soft)}
+.gift-send-form{display:grid;gap:7px;padding:2px 0 13px 57px}
+.gift-send-form .settings-actions{padding:2px 0 4px;margin:0}
+.gift-send-form .consent-check{font-size:calc(11px * var(--ui-scale,1));line-height:1.5}
+.gift-row>header{display:flex;align-items:center;gap:11px;padding:11px 0}
+.gift-row-body{flex:1;min-width:0;display:grid;gap:2px}
+.gift-row-body strong{font-size:calc(12px * var(--ui-scale,1));font-weight:600;overflow-wrap:anywhere}
+.gift-row-body small{font-size:calc(10px * var(--ui-scale,1));color:var(--muted);line-height:1.5;overflow-wrap:anywhere}
+.gift-row-side{display:flex;align-items:center;gap:7px;flex:none}
+.gift-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border:1px solid var(--line);border-radius:999px;font-size:calc(9px * var(--ui-scale,1));color:var(--muted);background:var(--input);white-space:nowrap}
+.gift-list>li.is-pinned .gift-badge,.gift-list>li.is-unique .gift-badge{color:var(--accent);border-color:var(--gold-line);background:var(--soft)}
+.gift-pin{display:inline-flex;align-items:center;gap:6px;margin:0 0 11px;padding:6px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--muted);font-size:calc(10px * var(--ui-scale,1));cursor:pointer}
+.gift-detail{display:grid;gap:9px;padding:0 0 13px 57px}
+.gift-actions{display:flex;flex-wrap:wrap;gap:8px}
+.gift-actions button{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--text);font-size:calc(10px * var(--ui-scale,1));cursor:pointer}
+.gift-actions button.primary{border-color:var(--gold-line);background:var(--soft);color:var(--accent);font-weight:600}
+.gift-actions button:disabled{opacity:.5;cursor:default}
+.gift-unique{display:grid;gap:4px;padding:11px 13px;border:1px solid var(--gold-line);border-radius:12px;background:var(--surface)}
+.gift-unique>header{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.gift-unique>header strong{flex:1;min-width:0;font-size:calc(13px * var(--ui-scale,1));font-weight:650;overflow-wrap:anywhere}
+.gift-unique small{font-size:calc(10px * var(--ui-scale,1));color:var(--muted);line-height:1.5;overflow-wrap:anywhere}
+.gift-attributes{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:6px}
+.gift-attributes li{display:flex;align-items:flex-start;gap:8px}
+.gift-attributes svg{flex:none;margin-top:2px;color:var(--accent)}
+.gift-attributes span{display:grid;gap:1px;min-width:0}
+.gift-attributes strong{font-size:calc(11px * var(--ui-scale,1));font-weight:600}
+.gift-attributes small{font-size:calc(9px * var(--ui-scale,1));color:var(--muted);overflow-wrap:anywhere}
+.gift-colors{display:flex;align-items:center;gap:5px}
+.gift-colors i{width:16px;height:16px;border:1px solid var(--line);border-radius:50%}
+.gift-colors small{font-size:calc(9px * var(--ui-scale,1));color:var(--faint)}
+.gift-preview{display:grid;gap:8px;padding:11px 0 0}
+.gift-variants{display:flex;flex-wrap:wrap;gap:10px}
+.gift-variants>span{display:grid;gap:3px;justify-items:center;max-width:104px}
+.gift-variants small{font-size:calc(9px * var(--ui-scale,1));color:var(--muted);line-height:1.45;text-align:center;overflow-wrap:anywhere}
+.gift-ladder{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.gift-ladder li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:calc(11px * var(--ui-scale,1))}
+.gift-ladder li:last-child{border-bottom:0}
+.gift-ladder strong{flex:none;color:var(--accent);font-weight:600;white-space:nowrap}
+@media(max-width:700px){
+  .gift-head{padding:14px}
+  .gift-panel>.settings-subnav{padding:10px 14px 0}
+  .gift-catalog,.gift-list{padding-left:14px;padding-right:14px}
+  .gift-filter{margin:0 14px 4px}
+  .gift-foot{padding:6px 14px 0}
+  .gift-tab .settings-actions{padding:10px 14px 4px}
+  .gift-send-form,.gift-detail{padding-left:0}
+}

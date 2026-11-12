@@ -1,0 +1,9 @@
+.emoji-suite{display:grid;grid-template-rows:auto auto auto minmax(200px,1fr) auto;gap:2px;min-height:280px}
+.emoji-suite .picker-search{margin:0 0 6px}
+.emoji-tones{display:flex;gap:4px;margin:4px 0 2px;overflow-x:auto;scrollbar-width:none}
+.emoji-tones::-webkit-scrollbar{display:none}
+.emoji-tones button{flex:0 0 auto;width:36px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);font-size:calc(17px * var(--ui-scale,1));line-height:1;cursor:pointer;transition:border-color .15s,background .15s}
+.emoji-tones button.selected{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,var(--surface-2))}
+.emoji-suite .emoji-grid{max-height:min(46vh,340px);min-height:200px;padding:5px 2px}
+.emoji-suite-empty{margin:8px 2px;font-size:calc(11px * var(--ui-scale,1));color:var(--danger)}
+.emoji-suite footer{padding:8px 2px 0;font-size:calc(10px * var(--ui-scale,1));color:var(--faint);border-top:1px solid var(--line)}

@@ -1,0 +1,32 @@
+.modal.tabs-manager-modal { width:min(100%,480px); padding-inline:clamp(10px,4vw,24px); overflow-x:hidden; overscroll-behavior:contain; }
+.tabs-manager-modal > header > h2 { min-width:0; overflow-wrap:anywhere; }
+.tabs-manager-modal > header > button { flex:none; }
+.tabs-manager,.tabs-editor { display:grid; grid-template-columns:minmax(0,1fr); min-width:0; gap:12px; }
+.tabs-manager-note { padding:0; }
+.tabs-manager-save { position:sticky; z-index:1; bottom:0; display:grid; gap:5px; padding:9px 0 4px; border-top:1px solid var(--line); background:var(--surface); }
+.tabs-manager-save .primary { justify-self:end; min-height:42px; }
+.tabs-manager-list { display:grid; grid-template-columns:minmax(0,1fr); gap:4px; max-height:24dvh; overflow:auto; }
+.tabs-manager-row { display:grid; grid-template-columns:minmax(0,1fr) 35px 35px; gap:4px; align-items:stretch; }
+.tabs-manager-row button { min-height:40px; display:flex; align-items:center; justify-content:center; border-radius:10px; background:var(--surface); transition:background-color 145ms ease,color 145ms ease; }
+.tabs-manager-row .tabs-select { justify-content:flex-start; gap:8px; text-align:left; padding:6px 10px; }
+.tabs-select-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tabs-select[aria-pressed=true] { color:var(--accent); background:var(--selected); }
+.tabs-editor { border:1px solid var(--line); border-radius:15px; padding:12px; animation:tabs-editor-in 160ms cubic-bezier(.2,.75,.25,1) both; }
+@keyframes tabs-editor-in { from { opacity:.75; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+.tabs-editor > label,.tabs-rules label { display:grid; gap:4px; color:var(--muted); font-size:.9em; min-width:0; }
+.tabs-appearance { display:grid; grid-template-columns:minmax(0,1fr); gap:9px; margin:0; padding:8px; min-inline-size:0; max-inline-size:100%; border:1px solid var(--line); border-radius:10px; }
+.tabs-appearance legend { padding:0 5px; color:var(--muted); font-size:.9em; }
+.tabs-appearance-options { display:flex; flex-wrap:wrap; gap:6px; }
+.tabs-appearance-options button,.tabs-manager .settings-actions button { min-height:40px; min-width:0; max-width:100%; overflow-wrap:anywhere; }
+.tabs-appearance-options button:is([aria-pressed=true],[aria-expanded=true]) { color:var(--accent); background:var(--selected); border-color:var(--gold-line); }
+.tabs-appearance .emoji-catalog { padding:0; min-width:0; }
+.tabs-label-preview { display:flex; align-items:center; gap:8px; margin:0; color:var(--muted); }
+.inbox-tab-emoji { display:inline-grid; place-items:center; flex:none; width:23px; height:23px; font-size:20px; line-height:1; }
+.chat-tabs .inbox-tab-emoji { border:0; background:transparent; padding:0; }
+.tabs-icon-picker { display:flex; flex-wrap:wrap; gap:6px; }
+.tabs-icon-picker button { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:9px; border:1px solid var(--line); background:var(--surface); color:var(--muted); }
+.tabs-icon-picker button[aria-pressed=true] { color:var(--accent); background:var(--selected); border-color:var(--gold-line); }
+.tabs-preset-picker button { width:44px; height:44px; font-size:21px; }
+.tabs-editor input:not([type=checkbox]),.tabs-editor select { width:100%; min-width:0; max-width:100%; padding:7px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--text); }
+.tabs-rules { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+.tabs-editor .tabs-check { display:flex; gap:6px; align-items:center; min-height:32px; }

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="age_gate_save_error">No se pudo guardar la comprobación local. No se ha concedido acceso. Vuelve a abrir la app para revisar su estado.</string>
+    <string name="age_gate_invalid_input">Selecciona tu país e introduce una fecha de nacimiento real y completa.</string>
+
+    <string name="assistant_consent">Acepto enviar mi instrucción propia a Groq a través del servidor de WRGram. No escribiré datos sensibles.</string>
+    <string name="assistant_suggestion_prompt">Ayúdame a organizar una idea en un objetivo y tres primeros pasos.</string>
+    <string name="assistant_status_model">%1$s · %2$s</string>
+    <string name="assistant_status_busy">%1$s · Procesando…</string>
+
+    <plurals name="search_count">
+        <item quantity="one">%1$d coincidencia entre %2$d mensajes cargados</item>
+        <item quantity="other">%1$d coincidencias entre %2$d mensajes cargados</item>
+    </plurals>
+    <string name="connection_plain">%1$s</string>
+    <string name="connection_loading">%1$s · Cargando lista…</string>
+
+    <string name="mini_app_back">Atrás</string>
+    <string name="mini_app_close">Cerrar · %1$s</string>
+    <string name="mini_app_settings">Ajustes de la Mini App</string>
+
+    <string name="story_share_note">La Mini App descargó este contenido y se publicará en tu cuenta durante 24 horas. Nada se envía a servidores de WRGram.</string>
+    <string name="story_privacy_contacts">Mis contactos (predeterminado)</string>
+    <string name="story_privacy_everyone">Todos en Telegram</string>
+    <string name="story_privacy_close_friends">Mejores amigos</string>
+
+    <string name="app_lock_mark">WRGram</string>
+    <string name="app_lock_title">WRGram está bloqueado</string>
+    <string name="app_lock_subtitle">Usa tu huella o rostro, o el PIN, patrón o contraseña del dispositivo para continuar. WRGram no guarda esos datos.</string>
+    <string name="app_lock_subtitle_credentials">Usa el PIN, patrón o contraseña del dispositivo para continuar. WRGram no guarda esos datos.</string>
+    <string name="app_lock_prompt">Huella, rostro, PIN, patrón o contraseña</string>
+    <string name="app_lock_keyguard">Usa tu PIN, patrón o contraseña del dispositivo.</string>
+    <string name="app_lock_unlock">Desbloquear</string>
+    <string name="app_lock_credentials">Usar PIN, patrón o contraseña</string>
+    <string name="app_lock_failed">No se reconoció la biometría. Inténtalo de nuevo.</string>
+    <string name="app_lock_cancelled">Desbloqueo cancelado. Toca Desbloquear para volver a intentarlo.</string>
+    <string name="app_lock_removed">El bloqueo de WRGram se desactivó porque el dispositivo ya no tiene PIN, patrón ni contraseña.</string>
+    <string name="interface_recovery_message">La interfaz de WRGram se cerró. Vuelve a abrirla para continuar.</string>
+    <string name="interface_recovery_retry">Volver a abrir WRGram</string>
+    <string name="call_title">Llamada de Telegram</string>
+    <string name="call_start">Llamar</string>
+    <string name="call_accept">Responder</string>
+    <string name="call_decline">Rechazar</string>
+    <string name="call_end">Colgar</string>
+    <string name="call_close">Cerrar</string>
+    <string name="call_mute">Silenciar micrófono</string>
+    <string name="call_unmute">Activar micrófono</string>
+    <string name="call_speaker">Activar altavoz</string>
+    <string name="call_earpiece">Desactivar altavoz</string>
+    <string name="call_microphone_denied">Permite el acceso al micrófono para usar las llamadas.</string>
+    <string name="telegraph_close">Cerrar</string>
+    <string name="telegraph_loading">Cargando telegra.ph…</string>
+    <string name="telegraph_reload">Recargar</string>
+    <string name="telegraph_article">Artículo de Telegraph</string>
+    <string name="telegraph_domain" translatable="false">telegra.ph</string>
+    <string name="telegraph_error">No se pudo abrir</string>
+    <string name="telegraph_unavailable">Artículo no disponible</string>
+</resources>

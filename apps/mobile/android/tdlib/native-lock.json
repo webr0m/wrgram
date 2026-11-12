@@ -1,0 +1,76 @@
+{
+  "repository": "TGX-Android/tdlib",
+  "commit": "84d3ba922912382000d50e2771a1d9b7e4d14066",
+  "tdlibCommit": "4c6377aa7386c39217878a9a56d581922ad37ca4",
+  "opensslCommit": "45e844fa2a14ec92d146bd8f5778ac130b6625fb",
+  "opensslVersion": "3.5.9",
+  "ndk": "30.0.16248370",
+  "androidApi": 21,
+  "java": {
+    "Client.java": "644fcba4fa6dda9ceb90f52df18b74f02ce0c454b41225c4de23016f84bcc25e",
+    "TdApi.java": "7932ba4d61872f6bafe3422e1668e2712026c826c2e2ed1186c8ce57b75f4014"
+  },
+  "runtime": {
+    "url": "https://dl.google.com/android/repository/android-ndk-r30-windows.zip",
+    "archiveSize": 727980788,
+    "archiveSha1": "9bf167a1985fa7d4a036186b78f702eab9179408",
+    "strip": {
+      "name": "llvm-strip.exe",
+      "sha256": "218dbc5dfed2ae740e46c84f039ed7f35973a0ce8832ae2f348a2cfe70af345b"
+    },
+    "files": {
+      "arm64-v8a": { "triple": "aarch64-linux-android", "sha256": "7466ed097631a564ed6bff0b47768caa76bf03270d2047b5a65c03f497b824df" },
+      "armeabi-v7a": { "triple": "arm-linux-androideabi", "sha256": "2ee592c9ba3372da027384deb1070def5ae76f3ea2246bd447360faa73ac22f4" },
+      "x86_64": { "triple": "x86_64-linux-android", "sha256": "7918ebd0b8074c312d0c610205d49760b98c008026e6b817cd92103a3e12241b" },
+      "x86": { "triple": "i686-linux-android", "sha256": "865b82bcda0b5b829614dd7a4c08aba121e53259c807898b6d0b375414187075" }
+    }
+  },
+  "abis": {
+    "arm64-v8a": {
+      "libtdjni.so": "dcc201add379e6eb8a0df1acd57ee1f52e250d2a26140603a650e4f2fab8e63d",
+      "libcryptox.so": "81f96b6f4c8f1706d1ed292968e7ff2f941990736e6dff7d911395830217bb82",
+      "libsslx.so": "32a7fb09d372ce5a25128ce57b9d77658d858f2458ceace306b49210e92ce6de"
+    },
+    "armeabi-v7a": {
+      "libtdjni.so": "8e4ce64e553bbcf66497e1ce8de44e930663b4d26ca8b0d4712ccd5078719ff5",
+      "libcryptox.so": "c14a28d6e572d5c45567a34e624ee097b29fa2e262f48bf754f702302703ff47",
+      "libsslx.so": "8cd1d4419dd188fc2132004209536917ef394528f20cebbf72d081bfd755cb09"
+    },
+    "x86_64": {
+      "libtdjni.so": "0294cf951282408aedc5ac0c92186c3bcd037d3e4154ec7a7788b5a338c86a4f",
+      "libcryptox.so": "ea29b63382f87ece4ea1e6772bdda3e2042215ed308cec7b4f04edaf5baf58c3",
+      "libsslx.so": "8df105851d1daa5a26ad33edd851de90318017b3a036106f1339fad0ce8a30ad"
+    },
+    "x86": {
+      "libtdjni.so": "c05f76d775f946520e257d1965defb6d2fb8605cbc62435134e647b28a31be6b",
+      "libcryptox.so": "a432fccb71af46f32970da53faf83b5742661a22e05eb603209224b45085121a",
+      "libsslx.so": "77e01b5000dd7ef07826b557817e2f8ee7dd1a0dbb30871be5fcd2db7c17b9b0"
+    }
+  },
+  "shipped": {
+    "arm64-v8a": {
+      "libc++_shared.so": "b5d97c38a728afe28d341cda3369f512d35eaf9c680c1b0563cd6a63e395230f",
+      "libcryptox.so": "323e6760000776cd74c0327caccd4dfd19699c9f30d7362aad36ca05df47f3a5",
+      "libsslx.so": "3f00953149c674a8504dbf1f289f764997ca0cf2bfd638d76abf2292b6d7a985",
+      "libtdjni.so": "dcc201add379e6eb8a0df1acd57ee1f52e250d2a26140603a650e4f2fab8e63d"
+    },
+    "armeabi-v7a": {
+      "libc++_shared.so": "38331a1efcb446eb1a0db440a8db8f41fa4fb698d15c061ab8c491426531c2c0",
+      "libcryptox.so": "82968efe8adb7e805f2ed24297bf439f9745504373dd5473d592ae15362c3cfc",
+      "libsslx.so": "741308fa87b0c41fd5cb0d6dee59a5dd2d5d37f919d02215b26c89aa2f54407e",
+      "libtdjni.so": "8e4ce64e553bbcf66497e1ce8de44e930663b4d26ca8b0d4712ccd5078719ff5"
+    },
+    "x86": {
+      "libc++_shared.so": "610038ed52a64e9f050ad7dce363c123cca2237542353afd8930c8d5629b47e7",
+      "libcryptox.so": "c1e9f2f3d2c8f7490eaf1198782ce657ecc41b40bb7070aab29d38e82d323d51",
+      "libsslx.so": "d24abdba3a509e65edb2c0bd77b7fd69b3212d21c98696e72e6c8b4f33a25e06",
+      "libtdjni.so": "c05f76d775f946520e257d1965defb6d2fb8605cbc62435134e647b28a31be6b"
+    },
+    "x86_64": {
+      "libc++_shared.so": "39faf2d59346e65a18980f207794fab2f1faff8a8de3f087b8319a181fa16fbd",
+      "libcryptox.so": "5ccbce3f63299ceee8a82a4bc58ed8bc5a8ab4479829891eef40a6124f621c7d",
+      "libsslx.so": "8e6148676c933d0ac990de07cee8f3f56f2a8aa2baefa0e677e103793d57a491",
+      "libtdjni.so": "0294cf951282408aedc5ac0c92186c3bcd037d3e4154ec7a7788b5a338c86a4f"
+    }
+  }
+}

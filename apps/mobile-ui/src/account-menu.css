@@ -1,0 +1,47 @@
+.account-menu{display:grid;gap:18px;max-height:min(72vh,720px);overflow:auto;padding:2px 2px 8px}
+.account-menu-section{display:grid;gap:2px;border-top:1px solid var(--line);padding-top:12px}
+.account-menu-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 6px 7px;color:var(--faint);font-size:calc(10px * var(--ui-scale,1));font-weight:600;letter-spacing:.12em}
+.account-menu-heading .text-button{font-size:calc(10px * var(--ui-scale,1));letter-spacing:0;text-transform:none}
+.account-menu-row{width:100%;min-height:52px;padding:8px 7px;display:flex;align-items:center;gap:11px;text-align:left;border-radius:11px;color:var(--text)}
+.account-menu-row:hover{background:var(--hover)}
+.account-menu-row>span:nth-child(2){display:grid;gap:2px;flex:1;min-width:0}
+.account-menu-row strong{font-size:calc(12px * var(--ui-scale,1));font-weight:550}
+.account-menu-row small{display:block;font-size:calc(10px * var(--ui-scale,1));line-height:1.4;color:var(--muted);overflow-wrap:anywhere}
+.account-menu-row>svg{color:var(--faint);flex:none}
+.account-menu-icon{width:32px;height:32px;display:grid;place-items:center;flex:none;border-radius:9px;background:var(--soft);color:var(--accent)}
+.account-menu-row.is-danger strong,.account-menu-row.is-danger .account-menu-icon{color:var(--danger)}
+.account-menu-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 7px}
+.account-menu-label{font-size:calc(11px * var(--ui-scale,1));color:var(--muted)}
+.account-theme-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:0 3px 7px}
+.account-theme-grid button{min-width:0;font-size:calc(10px * var(--ui-scale,1))}
+.account-menu-footer{border-top:1px solid var(--line);padding-top:8px}
+/* The settings page uses the same compact account header on mobile. */
+.settings-page-heading .settings-header-avatar{flex:none}
+.settings-page-heading .settings-back{display:inline-flex;align-items:center;gap:6px;margin-right:10px;font-size:calc(11px * var(--ui-scale,1));color:var(--accent)}
+@media(max-width:560px){.account-menu{max-height:min(78vh,760px)}.account-theme-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.wallpaper-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:0 7px 10px}.wallpaper-grid button{display:grid;justify-items:center;gap:5px;padding:7px 4px;border:1px solid var(--line);border-radius:11px;background:var(--hover);font-size:calc(10px * var(--ui-scale,1));color:var(--muted)}.wallpaper-grid button.selected{border-color:var(--gold-line);background:var(--soft);color:var(--accent)}.wallpaper-swatch{width:100%;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--chat)}.wallpaper-swatch.dots{background-image:radial-gradient(color-mix(in srgb,var(--text) 22%,transparent) 1px,transparent 1px);background-size:8px 8px}.wallpaper-swatch.grid{background-image:linear-gradient(color-mix(in srgb,var(--text) 16%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--text) 16%,transparent) 1px,transparent 1px);background-size:10px 10px}.wallpaper-swatch.aurora{background-image:radial-gradient(40px 26px at 20% 20%,var(--soft),transparent 70%),radial-gradient(46px 30px at 90% 90%,color-mix(in srgb,var(--accent) 30%,transparent),transparent 72%)}.account-menu-wallpaper{padding-bottom:2px}
+.account-profile{display:grid;gap:2px;border-top:1px solid var(--line);padding-top:12px}
+.account-profile-note{margin:0;padding:16px 6px}
+.account-profile-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 6px 6px;color:var(--faint);font-size:calc(10px * var(--ui-scale,1));font-weight:600;letter-spacing:.12em}
+.account-profile-head .text-button{display:inline-flex;align-items:center;gap:4px;font-size:calc(10px * var(--ui-scale,1));letter-spacing:0;text-transform:none}
+.account-profile-row{display:flex;align-items:center;gap:10px;padding:7px;border-radius:11px;min-width:0}
+.account-profile-row:hover{background:var(--hover)}
+.account-profile-icon{width:30px;height:30px;display:grid;place-items:center;flex:none;border-radius:9px;background:var(--soft);color:var(--accent)}
+.account-profile-value{display:grid;gap:1px;flex:1;min-width:0}
+.account-profile-value small{font-size:calc(9.5px * var(--ui-scale,1));color:var(--muted)}
+.account-profile-value strong{font-size:calc(12px * var(--ui-scale,1));font-weight:550;overflow-wrap:anywhere}
+.account-profile-value strong.is-empty{color:var(--faint);font-weight:400}
+.account-privacy-select{flex:none;max-width:132px;min-width:0;padding:5px 7px;border:1px solid var(--line);border-radius:8px;background:var(--soft);color:var(--text);font-size:calc(10px * var(--ui-scale,1))}
+.account-privacy-fixed{display:inline-flex;align-items:center;gap:3px;flex:none;color:var(--faint);font-size:calc(9.5px * var(--ui-scale,1))}
+.account-profile-actions{display:inline-flex;align-items:center;gap:6px;flex:none}
+.account-profile-copy{display:inline-grid;place-items:center;flex:none;width:26px;height:26px;border:0;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer}
+.account-profile-copy:hover{background:var(--soft);color:var(--accent)}
+.account-profile-copy:focus-visible{outline:2px solid var(--gold-line);outline-offset:1px}
+.account-profile-value strong.account-profile-bio{display:block;font-weight:450;line-height:1.4;white-space:pre-wrap}
+.account-profile-bio .text-link{color:var(--accent);text-decoration:none}
+.detail-profile{display:grid;gap:2px;margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
+.account-profile-business{display:grid;gap:2px;margin-top:4px;padding-top:4px;border-top:1px dashed var(--line)}
+.account-profile-hours{padding:4px 7px 7px}
+.account-profile-hours summary{cursor:pointer;font-size:calc(10.5px * var(--ui-scale,1));color:var(--accent)}
+.account-hours-row{display:flex;justify-content:space-between;gap:12px;padding:3px 2px;font-size:calc(10.5px * var(--ui-scale,1));color:var(--muted)}
+.account-hours-row strong{color:var(--text);font-weight:500}

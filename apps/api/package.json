@@ -1,0 +1,24 @@
+{
+  "name": "@wrgram/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../../.env src/index.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@fastify/rate-limit": "11.2.2",
+    "@wrgram/ai-providers": "workspace:*",
+    "@wrgram/assistant": "workspace:*",
+    "@wrgram/plugin-sdk": "workspace:*",
+    "@wrgram/telegram": "workspace:*",
+    "fastify": "5.12.8",
+    "prebuilt-tdlib": "0.1008069.0",
+    "tdl": "8.1.0"
+  },
+  "devDependencies": {
+    "@prebuilt-tdlib/types": "0.1008069.0",
+    "tsx": "4.23.15"
+  }
+}

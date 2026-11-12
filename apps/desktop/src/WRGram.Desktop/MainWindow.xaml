@@ -1,0 +1,22 @@
+﻿<Window x:Class="WRGram.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="WRGram Desktop"
+        Width="1180"
+        Height="780"
+        MinWidth="900"
+        MinHeight="620"
+        WindowStartupLocation="CenterScreen"
+        Background="#0f1012">
+    <Grid>
+        <wv2:WebView2 x:Name="Web" />
+        <Border x:Name="Splash" Background="#0f1012">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="520">
+                <TextBlock x:Name="BrandText" Text="WRGram" FontSize="36" FontWeight="SemiBold" Foreground="#e4bd6b" HorizontalAlignment="Center" />
+                <TextBlock x:Name="SubtitleText" Text="Edición de escritorio · beta" FontSize="13" Foreground="#9b9aa0" Margin="0,6,0,26" HorizontalAlignment="Center" />
+                <TextBlock x:Name="SplashText" Text="Iniciando WebView2…" FontSize="14" Foreground="#d6d4cf" TextWrapping="Wrap" TextAlignment="Center" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

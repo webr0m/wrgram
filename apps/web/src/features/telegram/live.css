@@ -1,0 +1,37 @@
+.live-workspace { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+.live-status-bar { display: flex; align-items: center; gap: 17px; padding: 8px 22px; border-bottom: 1px solid var(--border); background: var(--surface-soft); color: var(--muted); font-size: 10px; flex-shrink: 0; }
+.live-status-bar > span:first-child { display: flex; align-items: center; gap: 7px; color: var(--success); }
+.live-status-dot { width: 6px; height: 6px; background: var(--success); border-radius: 50%; }
+.live-offline .live-status-dot { background: var(--muted); }
+.live-status-bar .text-button { font-size: 10px; padding: 5px 0; }
+.live-account-name { margin-right: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.live-messenger { flex: 1; min-height: 0; height: auto; }
+.live-messenger .conversation { min-height: 0; }
+.live-messenger .conversation-header > .icon-button:last-child { margin-left: auto; }
+.live-loading { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 11px; color: var(--muted); padding: 22px 14px; }
+.live-empty-conversation { display: flex; height: 100%; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 28px; }
+.live-empty-conversation h2 { font-size: 24px; letter-spacing: -.6px; margin: 22px 0 17px; }
+.live-empty-conversation p { font-size: 12px; color: var(--muted); line-height: 1.9; }
+.live-empty-conversation .text-button { font-size: 11px; margin-top: 21px; }
+.live-load-more { width: calc(100% - 16px); margin: 14px 8px; }
+.live-history-more { display: flex; margin: 24px auto 22px; }
+.live-message-scroll { padding-top: 24px; overflow-anchor: auto; }
+.live-messenger .messages { max-width: 880px; }
+.live-messenger .message-bubble { min-width: 100px; }
+.live-messenger .date-divider { margin-top: 20px; margin-bottom: 23px; }
+.live-messenger .composer textarea { min-height: 40px; height: auto; }
+.live-error, .live-history-error { background: var(--danger-soft); color: var(--danger); border-bottom: 1px solid var(--border); padding: 12px 20px; font-size: 11px; line-height: 1.9; }
+.live-history-error { margin: 15px auto; border-radius: 9px; max-width: 700px; }
+.live-readonly { font-size: 11px; color: var(--muted); line-height: 1.8; margin-bottom: 11px; }
+.live-jump-bottom { position: absolute; right: 24px; bottom: 120px; z-index: 4; box-shadow: 0 5px 20px var(--shadow); }
+.live-unsupported-message p { font-style: italic; }
+.live-messenger .message-meta { gap: 6px; }
+@media (max-width: 740px) {
+  .live-status-bar { padding: 7px 12px; gap: 9px; flex-wrap: wrap; font-size: 9px; }
+  .live-account-name { display: none; }
+  .live-status-bar .text-button { font-size: 8px; }
+  .live-status-bar .text-button:last-child { margin-left: auto; }
+  .live-empty-conversation h2 { font-size: 20px; }
+  .live-jump-bottom { right: 14px; bottom: 110px; font-size: 9px; }
+  .live-messenger .message-bubble { max-width: 94%; }
+}

@@ -1,0 +1,16 @@
+.link-preview{display:flex;flex-direction:column;gap:8px;border-left:3px solid var(--accent,#e4bd6b);padding:12px;margin:12px 0;overflow-wrap:anywhere}.link-preview>small{opacity:.7}.link-preview>p{margin:0}.sender-name{display:flex;align-items:center;gap:8px}.sender-photo{display:inline-flex;width:28px;height:28px;flex-shrink:0;overflow:hidden;border-radius:50%}.sender-photo .media-view,.sender-photo .media-view img{width:28px!important;height:28px!important;min-height:0;min-width:0;object-fit:cover}.plugin-icon>img{border-radius:12px;object-fit:cover}
+.gift-card{position:relative;display:flex;flex-direction:column;gap:3px;margin:10px 0 6px;padding:12px 14px;border:1px solid var(--gold-line);border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 14%,transparent),transparent 68%),var(--surface);overflow:hidden}
+.gift-card .gift-ribbon{align-self:flex-start;padding:2px 8px;border-radius:999px;background:var(--accent);color:var(--on-accent);font-size:calc(9px * var(--ui-scale,1));font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.gift-card>strong{font-size:calc(14px * var(--ui-scale,1));font-weight:650}
+.gift-card.is-premium>strong{color:var(--accent)}
+.gift-meta{display:flex;flex-wrap:wrap;gap:5px}
+.gift-meta span{padding:1px 7px;border-radius:999px;background:var(--soft);color:var(--muted);font-size:calc(10px * var(--ui-scale,1))}
+.gift-card>p{margin:2px 0 0;color:var(--muted);font-size:calc(12px * var(--ui-scale,1))}
+.speech-block{display:flex;flex-direction:column;gap:5px;margin:4px 0 2px;padding:7px 9px;border-radius:10px;background:var(--soft)}
+.speech-block p{margin:0;font-size:calc(13px * var(--ui-scale,1));line-height:1.4;overflow-wrap:anywhere}
+.speech-pending{flex-direction:row;align-items:center;gap:7px;color:var(--muted);font-size:calc(12px * var(--ui-scale,1))}
+.speech-error{color:var(--danger,var(--muted));font-size:calc(12px * var(--ui-scale,1))}
+.speech-rate{display:flex;align-items:center;gap:6px}
+.speech-rate small{color:var(--muted);font-size:calc(11px * var(--ui-scale,1))}
+.speech-rate button{border:0;background:transparent;font-size:calc(14px * var(--ui-scale,1));padding:2px 4px;cursor:pointer}
+.speech-thanks{color:var(--muted);font-size:calc(11px * var(--ui-scale,1))}

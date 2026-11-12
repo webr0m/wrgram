@@ -1,0 +1,145 @@
+import groovy.json.JsonSlurper
+
+plugins { id 'com.android.application' }
+
+// Application credentials are read locally, never copied to the public web build.
+// They are necessarily extractable from an Android client, unlike user sessions.
+def localEnv = new Properties()
+def envFile = rootProject.file('../../../.env')
+if (envFile.exists()) {
+    envFile.eachLine('UTF-8') { line ->
+        def match = line =~ /^\s*(TELEGRAM_API_ID|TELEGRAM_API_HASH)\s*=\s*(.*?)\s*$/
+        if (match.matches()) {
+            def value = match[0][2].replaceAll(/^['"]|['"]$/, '')
+            localEnv.setProperty(match[0][1], value)
+        }
+    }
+}
+def apiId = System.getenv('TELEGRAM_API_ID') ?: localEnv.getProperty('TELEGRAM_API_ID', '0')
+def apiHash = System.getenv('TELEGRAM_API_HASH') ?: localEnv.getProperty('TELEGRAM_API_HASH', '')
+if (!(apiId ==~ /[1-9][0-9]{0,9}/) || !(apiHash ==~ /[a-fA-F0-9]{32}/)) {
+    throw new GradleException('Configura credenciales de aplicación Telegram válidas en el .env local o en el entorno. No se muestran sus valores.')
+}
+def signingFile = rootProject.file('../../../.private/android-signing/upload.properties')
+def signing = new Properties()
+if (signingFile.exists()) signingFile.withInputStream { signing.load(it) }
+def releaseVersion = new Properties()
+rootProject.file('version.properties').withInputStream { releaseVersion.load(it) }
+// Optional PUBLIC Firebase client configuration. Never read service-account credentials.
+def firebase = new Properties()
+def firebaseFile = rootProject.file('../../../.private/firebase/client.properties')
+if (firebaseFile.exists()) firebaseFile.withInputStream { firebase.load(it) }
+def firebaseKeys = ['applicationId', 'apiKey', 'projectId', 'senderId']
+// Accept the file Firebase Console exports so the owner does not have to transcribe
+// public client values. Only client configuration is read; never service accounts.
+def googleServicesFile = rootProject.file('../../../.private/firebase/google-services.json')
+if (googleServicesFile.exists()) {
+    try {
+        def config = new JsonSlurper().parse(googleServicesFile)
+        def clients = config.client instanceof List ? config.client : []
+        def client = clients.find { it?.client_info?.android_client_info?.package_name == 'cc.webrom.wrgram' } ?: clients[0]
+        if (client != null) {
+            def exported = [
+                applicationId: client.client_info?.mobilesdk_app_id,
+                apiKey: client.api_key?.find { it?.current_key }?.current_key,
+                projectId: config.project_info?.project_id,
+                senderId: config.project_info?.project_number
+            ]
+            firebaseKeys.each { key ->
+                if (!firebase.getProperty(key, '').trim() && exported[key]) firebase.setProperty(key, exported[key].toString().trim())
+            }
+        } else {
+            logger.warn('google-services.json no contiene un cliente Android utilizable.')
+        }
+    } catch (Exception error) {
+        logger.warn("No se pudo leer google-services.json local: ${error.message}")
+    }
+}
+def firebaseMissing = firebaseKeys.findAll { !firebase.getProperty(it, '').trim() }
+
+android {
+    namespace 'cc.webrom.wrgram'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'cc.webrom.wrgram'
+        minSdk 26
+        targetSdk 36
+        versionCode releaseVersion.getProperty('versionCode').toInteger()
+        versionName releaseVersion.getProperty('versionName')
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        buildConfigField 'int', 'TELEGRAM_API_ID', apiId
+        buildConfigField 'String', 'TELEGRAM_API_HASH', '"' + apiHash + '"'
+        buildConfigField 'boolean', 'FCM_CONFIGURED', firebaseMissing.isEmpty() ? 'true' : 'false'
+        buildConfigField 'String', 'FCM_MISSING', '"' + firebaseMissing.join(',') + '"'
+        firebaseKeys.each { key ->
+            def constant = [applicationId:'FCM_APPLICATION_ID',apiKey:'FCM_API_KEY',projectId:'FCM_PROJECT_ID',senderId:'FCM_SENDER_ID'][key]
+            buildConfigField 'String', constant, '"' + firebase.getProperty(key, '').replace('\\', '\\\\').replace('"', '\\"').replace('\r','').replace('\n','') + '"'
+        }
+    }
+    buildFeatures { buildConfig true }
+    signingConfigs {
+        if (!signing.isEmpty()) {
+            upload {
+                storeFile rootProject.file(signing.getProperty('storeFile'))
+                storePassword signing.getProperty('storePassword')
+                keyAlias signing.getProperty('keyAlias')
+                keyPassword signing.getProperty('keyPassword')
+            }
+        }
+    }
+    buildTypes {
+        debug { applicationIdSuffix '.dev'; versionNameSuffix '-dev' }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (!signing.isEmpty()) signingConfig signingConfigs.upload
+        }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    packaging { jniLibs { useLegacyPackaging = false } }
+    lint { abortOnError true; checkReleaseBuilds true }
+}
+
+tasks.configureEach { task ->
+    if (task.name in ['bundleRelease', 'assembleRelease', 'packageReleaseBundle']) {
+        task.doFirst {
+            if (signing.isEmpty()) throw new GradleException('Falta la clave de subida local. Configura la clave de subida existente antes de compilar una actualización.')
+        }
+    }
+}
+
+// Bundle the freshly built React UI, not a manually copied asset snapshot.
+def mobileUiDist = rootProject.file('../../mobile-ui/dist')
+def syncMobileUiAssets = tasks.register('syncMobileUiAssets', Sync) {
+    from mobileUiDist
+    into file('src/main/assets/ui')
+    doFirst {
+        if (!new File(mobileUiDist, 'index.html').isFile()) {
+            throw new GradleException('Falta apps/mobile-ui/dist. Ejecuta primero el build de @wrgram/mobile-ui.')
+        }
+    }
+}
+tasks.named('preBuild').configure { dependsOn syncMobileUiAssets }
+
+dependencies {
+    implementation 'androidx.activity:activity:1.10.1'
+    implementation 'androidx.recyclerview:recyclerview:1.4.0'
+    implementation 'androidx.webkit:webkit:1.12.1'
+    implementation 'androidx.biometric:biometric:1.1.0'
+    implementation 'androidx.fragment:fragment:1.8.9'
+    implementation 'androidx.exifinterface:exifinterface:1.4.2'
+    implementation project(':tdlib')
+    implementation 'io.github.pytgcalls:ntgcalls:3.0.5'
+    implementation 'com.google.firebase:firebase-messaging:24.1.0'
+    implementation 'com.google.android.play:app-update:2.1.0'
+    implementation 'androidx.work:work-runtime:2.10.1'
+    implementation 'androidx.media3:media3-exoplayer:1.11.1'
+    implementation 'androidx.media3:media3-ui:1.11.1'
+    implementation 'com.google.zxing:core:3.5.3'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20240303'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test:core:1.6.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+}

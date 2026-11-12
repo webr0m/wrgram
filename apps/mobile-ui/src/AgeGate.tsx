@@ -1,0 +1,40 @@
+import { Brand } from './Brand';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, CalendarDays, ExternalLink, LoaderCircle, LockKeyhole, MapPin, ShieldCheck } from 'lucide-react';
+import { native, request } from './bridge';
+import { overlayCount, useDialog } from './dialogs';
+import type { State } from './contract';
+import './age-gate.css';
+
+type Run=<T=unknown>(method:string,params?:Record<string,unknown>)=>Promise<T|undefined>;
+type Country={code:string;name:string};
+
+function AgeReview({name,birth,working,back,confirm}:{name:string;birth:string;working:boolean;back():void;confirm():void}){
+  const ref=useRef<HTMLElement>(null);
+  useDialog(ref,()=>{if(!working)back();});
+  return <div className="modal-backdrop age-review-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget&&!working)back();}}>
+    <section ref={ref} tabIndex={-1} className="modal age-review" role="dialog" aria-modal="true" aria-label="Revisa tu declaración"><header><h2>Revisa tus datos</h2></header><p>Residencia: {name}</p><p>Fecha de nacimiento: {birth}</p><p>Confirma que estos datos son correctos. Se aplicarán los requisitos regionales y los términos de Telegram.</p><div className="modal-actions"><button className="secondary" disabled={working} onClick={back}>Corregir</button><button className="primary" disabled={working} onClick={()=>void confirm()}>{working?'Guardando…':'Confirmar datos'}</button></div></section>
+  </div>;
+}
+
+export function AgeGate({state,run}:{state:State;run:Run}){
+  const [countries,setCountries]=useState<Country[]>(state.access.countries||[]),[country,setCountry]=useState(''),[day,setDay]=useState(''),[month,setMonth]=useState(''),[year,setYear]=useState(''),[review,setReview]=useState(false),[working,setWorking]=useState(false),[error,setError]=useState(''),[now,setNow]=useState(Date.now());
+  useEffect(()=>{let active=true;if(native&&!countries.length)void request<Country[]>('access.countries').then(items=>{if(active)setCountries(items);}).catch(reason=>{if(active)setError(reason instanceof Error?reason.message:'No se cargó la lista de países.');});return()=>{active=false;};},[countries.length]);
+  useEffect(()=>{const clear=()=>{setDay('');setMonth('');setYear('');setReview(false);};const back=()=>{if(overlayCount())return;void run('app.background');};window.addEventListener('wrgram:clear-sensitive',clear);window.addEventListener('wrgram:back',back);const visibility=()=>{if(document.visibilityState!=='visible')clear();};document.addEventListener('visibilitychange',visibility);return()=>{window.removeEventListener('wrgram:clear-sensitive',clear);window.removeEventListener('wrgram:back',back);document.removeEventListener('visibilitychange',visibility);};},[]);
+  useEffect(()=>{if(!state.access.blocked)return;const timer=window.setInterval(()=>setNow(Date.now()),1000);return()=>window.clearInterval(timer);},[state.access.blocked]);
+  const remaining=Math.max(0,state.access.expiresAt-now);const hours=Math.floor(remaining/3600000),minutes=Math.floor(remaining%3600000/60000),seconds=Math.floor(remaining%60000/1000);
+  const birth=year&&month&&day?`${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}`:'';
+  function prepare(event:React.FormEvent){event.preventDefault();setError('');const code=country.toUpperCase();if(!countries.some(item=>item.code===code)||!/^\d{4}$/.test(year)||!/^\d{1,2}$/.test(month)||!/^\d{1,2}$/.test(day)){setError('Selecciona residencia e introduce una fecha de nacimiento completa.');return;}const y=Number(year),m=Number(month),d=Number(day),date=new Date(Date.UTC(y,m-1,d));if(date.getUTCFullYear()!==y||date.getUTCMonth()!==m-1||date.getUTCDate()!==d||date>new Date()){setError('Comprueba que la fecha indicada sea una fecha real.');return;}setReview(true);}
+  async function confirm(){if(!native||working)return;setWorking(true);setError('');const payload={country,day,month,year};setDay('');setMonth('');setYear('');setReview(false);try{await request('access.declare',payload);}catch(reason){setError(reason instanceof Error?reason.message:'No se pudo guardar la comprobación. No se concedió acceso.');}finally{setWorking(false);}}
+  return <main className="age-gate-page"><section className="age-gate-card"><Brand className="age-brand"/><span className="age-eyebrow">WRGRAM · ACCESO REGIONAL</span><h1>{state.access.blocked?'Acceso no disponible':'Antes de conectar Telegram'}</h1>{state.access.blocked?<><p>La declaración anterior no cumple la edad mínima de producto para la residencia indicada. La pausa es temporal; esperar no cambia el requisito de edad.</p><div className="age-countdown"><LockKeyhole/><strong>{String(hours).padStart(2,'0')}:{String(minutes).padStart(2,'0')}:{String(seconds).padStart(2,'0')}</strong><span>antes de poder volver a declarar</span></div><p className="age-muted">No se ha conectado Telegram. Una sesión previa se conserva cifrada; puedes revocarla desde Dispositivos en Telegram oficial.</p></>:<><p>Confirma tu país o territorio de residencia habitual y fecha de nacimiento para comprobar la edad mínima local antes de usar la app.</p><form className="age-form" autoComplete="off" onSubmit={prepare}>
+      <label className="age-label"><span><MapPin size={16}/> Residencia habitual</span><select autoComplete="off" name="wrgram-residence" value={country} onChange={event=>setCountry(event.target.value)} disabled={!countries.length||working}><option value="">Selecciona país o territorio</option>{countries.map(item=><option key={item.code} value={item.code}>{item.name}</option>)}</select></label>
+      <label className="age-label"><span><CalendarDays size={16}/> Fecha de nacimiento</span><div className="age-date"><input aria-label="Día de nacimiento" name="wrgram-birth-day" autoComplete="off" inputMode="numeric" type="text" placeholder="Día" value={day} maxLength={2} onChange={event=>setDay(event.target.value.replace(/\D/g,'').slice(0,2))} disabled={working}/><input aria-label="Mes de nacimiento" name="wrgram-birth-month" autoComplete="off" inputMode="numeric" type="text" placeholder="Mes" value={month} maxLength={2} onChange={event=>setMonth(event.target.value.replace(/\D/g,'').slice(0,2))} disabled={working}/><input aria-label="Año de nacimiento" name="wrgram-birth-year" autoComplete="off" inputMode="numeric" type="text" placeholder="Año" value={year} maxLength={4} onChange={event=>setYear(event.target.value.replace(/\D/g,'').slice(0,4))} disabled={working}/></div></label>
+      <div className="age-privacy"><ShieldCheck size={18}/><p>La fecha solo se procesa en memoria; no se guarda ni se envía. Se guarda cifrado el país, resultado, hora de comprobación y revisión de regla. Aprobación: 30 días. No usamos GPS para determinar la residencia.</p></div>
+      {error&&<p className="age-error" role="alert">{error}</p>}<button className="age-primary" disabled={!native||working||!countries.length}>{working?<LoaderCircle className="spin"/>:'Continuar'}{!working&&<ArrowRight size={18}/>}</button>
+    </form></>}
+    <details className="age-rules"><summary>Reglas, privacidad y límites</summary><p>El mínimo de producto es 18 años en la UE, Reino Unido y Australia y 13 años en el resto donde esté permitido. Se aplican también los términos de Telegram y las normas locales. Es una autodeclaración, no verifica identidad ni residencia y no es un filtro de descarga de Google Play.</p><p>Responsable: Rodrigo Olmos, Chile · ridrogo@gmail.com.</p><button type="button" className="age-link" onClick={()=>void run('access.privacy')}><ExternalLink size={14}/>Política de privacidad</button><button type="button" className="age-link" onClick={()=>void run('access.terms')}><ExternalLink size={14}/>Términos de Telegram</button></details>
+    <span className="age-footer">Cliente independiente y no oficial de Telegram.</span><button className="age-exit" onClick={()=>void run('app.background')}>Salir</button>
+  </section>
+  {review&&<AgeReview name={countries.find(item=>item.code===country)?.name||country} birth={birth} working={working} back={()=>setReview(false)} confirm={confirm}/>}
+  </main>;
+}

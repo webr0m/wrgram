@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="age_country" type="id" />
+    <item name="age_day" type="id" />
+    <item name="age_month" type="id" />
+    <item name="age_year" type="id" />
+</resources>

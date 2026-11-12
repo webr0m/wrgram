@@ -1,0 +1,31 @@
+{
+  "name": "@wrgram/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -p tsconfig.json && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@mtcute/web": "0.32.7",
+    "@mtcute/core": "0.32.7",
+    "@wrgram/core": "workspace:*",
+    "@wrgram/assistant": "workspace:*",
+    "@wrgram/telegram": "workspace:*",
+    "@wrgram/plugin-sdk": "workspace:*",
+    "@wrgram/plugin-runtime": "workspace:*",
+    "@wrgram/design-tokens": "workspace:*",
+    "lucide-react": "1.69.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "vite": "8.3.6"
+  }
+}

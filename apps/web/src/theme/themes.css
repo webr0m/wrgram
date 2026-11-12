@@ -1,0 +1,111 @@
+/* Superficies semánticas compartidas por demo, modo real y WR IA. */
+:root[data-theme] body { background: var(--canvas); color: var(--ink); }
+:root[data-theme] ::selection { background: var(--accent-soft); color: var(--ink); }
+:root[data-theme] ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--muted) 35%, var(--surface)); }
+:root[data-theme] .app-shell :is(.topbar, .chat-sidebar, .conversation-header, .inspector, .message-search,
+  .composer, .modal, .plugin-card, .quick-replies, .emoji-picker, .assistant-header, .assistant-side,
+  .assistant-prompts > button, .assistant-composer, .telegram-local-card, .mini-plugin) { background: var(--surface); color: var(--ink); border-color: var(--border); }
+:root[data-theme] .app-shell :is(.conversation, .composer-area, .catalog-main, .telegram-local-view, .assistant-view) { background-color: var(--canvas); }
+:root[data-theme] .app-shell :is(.search-field, .inspector-tabs, .new-chat-button, .notes-empty, .sidebar-discover,
+  .browse-plugins, .privacy-notice, .settings-section .text-input, .text-input, .message-search input,
+  .quick-replies > button, .assistant-provider-bar, .assistant-setup, .assistant-consent,
+  .assistant-notes-empty, .telegram-dialogs li, .about-grid > div, .connection-telegram, .plugin-status) { background-color: var(--surface-soft); border-color: var(--border); }
+:root[data-theme] .app-shell .notes-empty { background-image: none; }
+:root[data-theme] .app-shell .sidebar-title h1 > span { background: var(--accent-soft); color: var(--muted); }
+:root[data-theme] .app-shell :is(h1, h2, h3, h4, strong) { color: var(--ink); }
+:root[data-theme] .app-shell :is(.version-tag, .workspace-name, .demo-badge, .chat-filters button, .chat-filters button span,
+  .chat-section-label, .chat-section-label button, .chat-time, .chat-active .chat-time,
+  .chat-preview, .chat-active .chat-preview, .sidebar-discover small, .sidebar-footer,
+  .conversation-heading p, .conversation-start h3, .conversation-start p, .date-divider,
+  .message-meta, .message-outgoing .message-meta, .inline-discovery p, .composer-footer,
+  .composer-footer > span:last-child, .inspector-heading, .inspector-tabs button,
+  .notes-heading > div > span, .notes-description, .notes-empty p, .notes-empty > small,
+  .note-save-status > span:last-child, .subtle-button, .mini-section-heading > span,
+  .mini-plugin small, .inspector-privacy p, .eyebrow, .catalog-heading > p,
+  .catalog-pills > span, .section-heading h2 > span, .pill, .plugin-status, .plugin-card > p,
+  .plugin-meta, .catalog-bottom p, .modal-description, .permission-list p, .privacy-notice,
+  .local-storage-disclaimer, .milestone p, .settings-section p, .settings-plugin > span,
+  .about-grid p, .external-link, .field-label, .quick-replies > small, .info-label,
+  .list-empty, .list-empty p, .messages-empty, .assistant-header p, .assistant-state,
+  .assistant-welcome > p, .assistant-prompts span, .assistant-setup p, .assistant-compose-footer,
+  .assistant-consent, .assistant-consent-active, .assistant-side-heading > p, .assistant-fact p,
+  .assistant-note-list > p, .assistant-notes-empty, .assistant-provider-name,
+  .telegram-local-intro, .telegram-local-help, .assistant-note-list > h3 > span, .assistant-thinking) { color: var(--muted); }
+:root[data-theme] .app-shell :is(.text-button, .secondary-button, .plugin-card .revoke-button, .external-link,
+  .browse-plugins, .mini-plugin strong, .notes-empty h4, .message-author, .author-coral,
+  .assistant-turn-label, .assistant-setup h3, .assistant-prompts strong, .assistant-provider-name a,
+  .assistant-setup a, .assistant-consent-active button, .telegram-dialogs li) { color: var(--accent); }
+:root[data-theme] .app-shell :is(.chat-active, .chat-filters button.selected, .icon-selected,
+  .version-tag, .pill, .plugin-icon, .discover-icon, .conversation-start-icon, .mini-brand,
+  .milestone-next, .assistant-icon, .assistant-turn-user) { background-color: var(--accent-soft); color: var(--accent); border-color: var(--border); }
+:root[data-theme] .app-shell :is(.primary-button, .send-button, .brand-mark, .unread-count,
+  .notes-empty .primary-button, .assistant-welcome-symbol > span) { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+:root[data-theme] .app-shell :is(.primary-button, .send-button):not(:disabled):hover { background: var(--accent-deep); }
+:root[data-theme] .app-shell .send-button:disabled { opacity: .55; }
+:root[data-theme] .app-shell :is(.icon-button, .composer .icon-button, .conversation-actions .icon-button) { color: var(--subtle); }
+:root[data-theme] .app-shell .icon-button:hover { background: var(--accent-soft); color: var(--accent); }
+:root[data-theme] .app-shell :is(.chat-item:hover, .secondary-button:not(:disabled):hover,
+  .chat-filters button:hover, .browse-plugins:hover, .assistant-prompts > button:hover,
+  .quick-replies > button:hover, .emoji-picker button:hover) { background: var(--accent-soft); }
+:root[data-theme] .app-shell :is(.secondary-button, .connect-button) { background: var(--surface); color: var(--accent); border-color: var(--border); }
+:root[data-theme] .app-shell .nav-rail { background: var(--rail); }
+:root[data-theme] .app-shell .nav-rail .rail-button { color: var(--rail-text); }
+:root[data-theme] .app-shell .nav-rail .rail-active { background: color-mix(in srgb, var(--accent) 22%, var(--rail)); color: var(--rail-text); }
+:root[data-theme] .app-shell .rail-active::before { background: var(--accent); }
+:root[data-theme] .app-shell .profile-button { background: color-mix(in srgb, var(--rail-text) 20%, var(--rail)); color: var(--rail-text); border-color: color-mix(in srgb, var(--rail-text) 35%, var(--rail)); }
+:root[data-theme] .app-shell .profile-button > span { border-color: var(--rail); background: var(--success); }
+:root[data-theme] .app-shell :is(.rail-indicator, .rail-count, .ai-rail-dot) { background: var(--accent); color: var(--on-accent); }
+:root[data-theme] .app-shell .message-bubble { background: var(--bubble); border-color: var(--border); box-shadow: 0 2px 4px var(--shadow); }
+:root[data-theme] .app-shell .message-outgoing .message-bubble { background: var(--bubble-outgoing); }
+:root[data-theme] .app-shell :is(.message-bubble p, .assistant-turn > p, .message-outgoing .message-bubble p,
+  .composer textarea, .search-field input, .text-input, .assistant-composer textarea) { color: var(--ink); }
+:root[data-theme] .app-shell :is(input, textarea)::placeholder { color: var(--muted); }
+:root[data-theme] .app-shell .message-scroll { background-image: radial-gradient(color-mix(in srgb, var(--border) 45%, transparent) .7px, transparent .7px); }
+:root[data-theme] .app-shell :is(.avatar, .sender-avatar) { background: color-mix(in srgb, var(--accent) 13%, var(--surface)); color: var(--accent); }
+:root[data-theme] .app-shell .avatar-studio { background: var(--accent); color: var(--on-accent); }
+:root[data-theme] .app-shell :is(.note-editor, .ai-note-proposal, .assistant-saved-note) { background-color: var(--note-surface); color: var(--note-ink); border-color: var(--border); }
+:root[data-theme] .app-shell :is(.ai-note-proposal p, .ai-note-proposal h3, .assistant-saved-note p, .assistant-saved-note summary) { color: var(--note-ink); }
+:root[data-theme] .app-shell :is(.note-save-status, .telegram-connected, .success) { color: var(--success); }
+:root[data-theme] .app-shell :is(.plugin-status.status-enabled, .milestone-check) { background: var(--success-soft); color: var(--success); border-color: var(--border); }
+:root[data-theme] .app-shell :is(.assistant-error, .danger-button) { background: var(--danger-soft); color: var(--danger) !important; border-color: var(--border); }
+:root[data-theme] .app-shell .note-save-status.save-error { color: var(--danger); }
+:root[data-theme] .app-shell :is(.header-action-divider, .composer-divider, .date-divider > span, .inspector-rule) { background: var(--border); }
+:root[data-theme] .app-shell :is(.conversation-header, .topbar, .sidebar-footer, .inspector-heading, .chat-sidebar,
+  .inspector-privacy, .catalog-heading, .catalog-bottom, .settings-section, .permission-list li,
+  .assistant-header, .assistant-provider-bar, .assistant-turn, .assistant-note-list, .telegram-local-exit) { border-color: var(--border); }
+:root[data-theme] .app-shell :is(.inline-discovery, .catalog-bottom, .plugin-planned) { background: var(--surface-soft); border-color: var(--border); }
+:root[data-theme] .app-shell :is(.catalog-heading h1 > span, .catalog-orbit, .assistant-welcome-symbol,
+  .assistant-fact > span, .inspector-spark, .catalog-bottom-icon, .verified, .tiny-status) { color: var(--accent); }
+:root[data-theme] .app-shell .catalog-orbit { border-color: var(--border); background: radial-gradient(circle, var(--accent-soft) 36%, transparent 37%); }
+:root[data-theme] .app-shell .catalog-orbit::before { border-color: var(--border); }
+:root[data-theme] .app-shell .orbit-dot { background: var(--accent); border-color: var(--canvas); }
+:root[data-theme] .app-shell .assistant-welcome-symbol { background: linear-gradient(140deg, var(--surface-soft), var(--accent-soft)); }
+:root[data-theme] .app-shell :is(.assistant-composer, .composer, .assistant-setup code) { border-color: var(--border); }
+:root[data-theme] .app-shell .assistant-setup code { background: var(--surface); color: var(--accent); }
+:root[data-theme] .app-shell .assistant-composer { box-shadow: 0 4px 15px var(--shadow); }
+:root[data-theme] .app-shell .modal { box-shadow: 0 30px 100px var(--shadow); }
+:root[data-theme] .app-shell .inspector-tabs .selected { background: var(--surface); color: var(--accent); }
+:root[data-theme] .app-shell .toast { background: var(--ink); color: var(--canvas); }
+:root[data-theme] .app-shell .toast :is(button, svg) { color: var(--canvas); }
+:root[data-theme] .app-shell :is(button, a, input, textarea):focus-visible { outline-color: var(--accent); }
+:root[data-theme] .app-shell .note-illustration::before { background: var(--surface); border-color: var(--border); }
+:root[data-theme] .app-shell .note-illustration { color: var(--accent); }
+:root[data-theme] .app-shell .note-illustration > span { background: var(--accent); color: var(--on-accent); border-color: var(--surface-soft); }
+
+/* Cada tarjeta usa las variables de su propio tema, sin estilos inline ni filtros. */
+.theme-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; margin: 19px 0 0; }
+.theme-option { text-align: left; padding: 9px; border: 2px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--ink); min-width: 0; }
+.theme-option-active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.theme-option:hover { transform: translateY(-1px); }
+.theme-preview { display: flex; height: 62px; border: 1px solid var(--border); border-radius: 5px; background: var(--canvas); overflow: hidden; margin-bottom: 10px; }
+.theme-preview-rail { width: 13px; background: var(--rail); }
+.theme-preview-list { width: 37%; background: var(--surface); padding: 9px 5px; border-right: 1px solid var(--border); }
+.theme-preview-list i { display: block; height: 5px; background: var(--surface-soft); margin-bottom: 8px; border-radius: 2px; }
+.theme-preview-list i:first-child { background: var(--accent-soft); }
+.theme-preview-chat { flex: 1; padding: 13px 7px; }
+.theme-preview-chat i { display: block; height: 11px; background: var(--bubble); border: 1px solid var(--border); border-radius: 3px; width: 74%; }
+.theme-preview-chat i:last-child { background: var(--accent); margin: 9px 0 0 auto; width: 62%; border-color: var(--accent); }
+.theme-option-name { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--ink); }
+.theme-option-name > svg:last-child:not(:first-child) { margin-left: auto; color: var(--accent); }
+.theme-option-description { display: block; color: var(--muted); font-size: 9px; line-height: 1.7; padding-top: 5px; }
+@media (max-width: 360px) { .theme-grid { grid-template-columns: 1fr; } }

@@ -1,0 +1,7 @@
+# PUBLIC Android client configuration only, NOT a service-account key or a Telegram bot token.
+# Copy to .private/firebase/client.properties locally. Keep values out of chat/logs.
+# The Android Firebase app must match cc.webrom.wrgram (or cc.webrom.wrgram.dev for debug).
+applicationId=
+apiKey=
+projectId=
+senderId=

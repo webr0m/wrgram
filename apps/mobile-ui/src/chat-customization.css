@@ -1,0 +1,39 @@
+.chat-main { position: relative; isolation: isolate; }
+.chat-wallpaper { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: -1; }
+.chat-wallpaper img, .chat-wallpaper-video, .wallpaper-preview img {
+  display: block; width: 100%; height: 100%; object-fit: cover;
+}
+.chat-wallpaper::after { content: ''; position: absolute; inset: 0; background: var(--chat); opacity: .47; }
+:root .chat-main[data-chat-wallpaper="media"] .message-history,
+:root .chat-main[data-chat-wallpaper="none"] .message-history { background-image: none; }
+:root .chat-main[data-chat-wallpaper] .message-history { background-color: transparent; }
+[data-chat-wallpaper="dots"].wallpaper-option,
+:root .chat-main[data-chat-wallpaper="dots"] .message-history {
+  background-image: radial-gradient(var(--wall-dot) 1.5px, transparent 1.6px); background-size: 17px 17px;
+}
+[data-chat-wallpaper="grid"].wallpaper-option,
+:root .chat-main[data-chat-wallpaper="grid"] .message-history {
+  background-image: linear-gradient(var(--wall-dot) 1px, transparent 1px), linear-gradient(90deg, var(--wall-dot) 1px, transparent 1px); background-size: 26px 26px;
+}
+[data-chat-wallpaper="aurora"].wallpaper-option,
+:root .chat-main[data-chat-wallpaper="aurora"] .message-history {
+  background-image: radial-gradient(70% 55% at 6% 0%, var(--wall-aurora-a), transparent 68%), radial-gradient(60% 50% at 100% 100%, var(--wall-aurora-b), transparent 72%); background-size: auto;
+}
+.wallpaper-settings { display: grid; gap: 12px; padding-block: 12px; }
+.wallpaper-settings h3 { margin: 0; }
+.wallpaper-options { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; }
+.wallpaper-options > .secondary { grid-column: 1 / -1; justify-self: start; }
+.wallpaper-option {
+  display: flex; align-items: end; justify-content: center; min-height: 65px; padding: 5px 2px;
+  border: 1px solid var(--border); border-radius: 10px; background-color: var(--chat); color: var(--text);
+}
+.wallpaper-option span { background: var(--surface); border-radius: 6px; padding: 2px 4px; overflow-wrap: anywhere; }
+.wallpaper-option[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.wallpaper-preview { height: 130px; overflow: hidden; border-radius: 10px; background: var(--chat); }
+.wallpaper-files label { position: relative; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+.wallpaper-files input { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
+.wallpaper-files label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.message-language { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 6px; font-size: .78em; }
+.message-language .text-button { min-height: 28px; padding: 2px 4px; gap: 5px; }
+.message-language select { max-width: 10em; }
+.message-language-status { flex-basis: 100%; color: var(--muted); }
