@@ -17,18 +17,39 @@ export const snapshot = () => state;
 // la cámara, un permiso de Android o un diálogo de confirmación: 35 s no es un plazo real.
 const USER_DRIVEN = new Set([
   'attachment.pick', 'attachment.camera', 'attachment.album', 'attachment.videoNote', 'attachment.videoNote.record',
-  'account.photo.pick', 'account.photo.delete', 'media.export',
+  'account.photo.pick', 'account.photo.delete', 'chat.photo.pick', 'chat.photo.delete', 'media.export',
   'story.create.photo', 'story.create.video',
   'contacts.import', 'contacts.add', 'contacts.sync.set', 'contacts.sync.now',
   'share.location', 'voice.start', 'bot.button', 'security.lock',
   'folders.link', 'folders.join', 'folders.links.edit',
   'chat.invite', 'chat.subscription.create', 'chat.transfer', 'groups.member.ban', 'groups.member.unban', 'groups.member.restrict',
+  // Cambiar el nombre o la descripción de una comunidad se pregunta en un `Dialogs` nativo antes de
+  // escribir: con el plazo corto la persona seguiría leyendo el diálogo mientras la promesa muere.
+  'chat.info.set',
+  // Escribe en Telegram solo después de que la persona lea un `Dialogs` nativo: el plazo corto
+  // abandonaría la solicitud mientras el diálogo sigue abierto y la respuesta llegaría tarde.
+  'chat.invitelink.create', 'chat.invitelink.edit', 'chat.invitelink.revoke', 'chat.request.answer',
+  'folders.links.delete', 'chat.paidMessages.set', 'send.paidMedia',
   'groups.member.promote', 'groups.member.demote', 'groups.permissions.set',
+  // Añadir gente se confirma en un `Dialogs` nativo y después se pregunta a Telegram de una en una:
+  // con el plazo corto la cola quedaría colgada mientras la persona mira la lista.
+  'groups.member.add',
   'chat.bot.add', 'chat.bot.remove', 'bot.delete',
   'message.react.paid', 'payments.stars.confirm', 'link.open', 'message.link', 'telegram.link',
   'stars.subscription.cancel', 'stars.subscription.resume', 'stars.subscription.reuse', 'stars.withdraw', 'stars.ads.url',
   'premium.gift.apply', 'chat.boost.apply',
+  'privacy.unblock',
+  'privacy.autoDelete.set', 'chat.autoDelete.set',
+  'chat.report', 'message.report',
+  'sponsored.report',
+  'chat.safety.dismiss', 'notify.scope.save',
+  // El reintento con espera pendiente y el descartado abren un `Dialogs`; el alto responde en cuanto
+  // TDLib acepta el reenvío, pero comparte handler y la guarda transversal lo exige listado.
+  'message.retry', 'message.unsent.delete',
   'gifts.send', 'gifts.sell', 'gifts.delete', 'gifts.upgrade', 'gifts.transfer',
+  // Unirse y salir se confirman en un `Dialogs` nativo antes de escribir, y Telegram puede devolver
+  // una aprobación de bot de seguridad: con el plazo corto la promesa moriría con el diálogo abierto.
+  'chat.join', 'chat.leave',
 ]);
 const STORAGE_SCAN = new Set(['storage.details', 'storage.optimize']);
 export const requestTimeoutMs = (method: string) => USER_DRIVEN.has(method) ? 300000 : STORAGE_SCAN.has(method) ? 130000 : 35000;

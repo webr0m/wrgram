@@ -25,6 +25,13 @@ public sealed class DesktopStore
 
     public string Root { get; }
     public string MediaDirectory { get; }
+
+    /// La copia del archivo que la persona elige para enviar, mientras no se confirme. Android usa
+    /// <c>no_backup/outbox/&lt;uuid&gt;/</c> por el mismo motivo: el selector puede devolver una ruta de un
+    /// proveedor temporal que se cierra en cuanto la persona vuelve a la app, y un archivo de 200 MB no puede
+    /// quedarse colgado de la memoria. Vaciarla al cerrar la sesión le toca al servicio, no al almacén.
+    public string OutboxDirectory { get; }
+
     public string SessionPath { get; }
     public AppearanceDto Appearance { get; private set; } = new();
     public bool Consent { get; private set; }
@@ -36,6 +43,7 @@ public sealed class DesktopStore
     {
         Root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WRGram");
         MediaDirectory = Path.Combine(Root, "media");
+        OutboxDirectory = Path.Combine(Root, "outbox");
         SessionPath = Path.Combine(Root, "session.dat");
         Directory.CreateDirectory(Root);
         Directory.CreateDirectory(MediaDirectory);

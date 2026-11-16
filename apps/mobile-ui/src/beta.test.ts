@@ -158,8 +158,8 @@ describe('lote de encuestas, voz, stickers, proxy y almacenamiento',()=>{
     expect(settings).toContain('<StorageSettings');
   });
   it('actualiza la versión empaquetada y la agenda en segundo plano en la documentación visible',()=>{
-    expect(contract).toContain("version: '1.0.0-beta20'");
-    expect(contract).toContain('currentVersionCode:48');
+    expect(contract).toContain("version: '1.0.0-beta24'");
+    expect(contract).toContain('currentVersionCode:52');
     expect(settings).toContain('trabajo periódico de Android');
     expect(settings).not.toContain('no como servicio en segundo plano');
   });
@@ -228,8 +228,11 @@ describe('programados, 2FA, privacidad, filtros, historias, estado emoji y reenv
     expect(contract).toContain('interface PasswordState');
   });
   it('aplica excepciones de privacidad por usuario con reglas reales de Telegram',()=>{
-    expect(bridge).toContain('new TdApi.UserPrivacySettingRuleAllowUsers(');
-    expect(bridge).toContain('new TdApi.UserPrivacySettingRuleRestrictUsers(');
+    const rules=readFileSync(new URL('../../mobile/android/app/src/main/java/cc/webrom/wrgram/PrivacyRules.java',import.meta.url),'utf8');
+    expect(rules).toContain('new TdApi.UserPrivacySettingRuleAllowUsers(');
+    expect(rules).toContain('new TdApi.UserPrivacySettingRuleRestrictUsers(');
+    expect(bridge).toContain('PrivacyRules.merge(');
+    expect(bridge).toContain('new TdApi.GetUserPrivacySettingRules(setting)');
     expect(bridge).toContain('"allowUsers"');
     expect(bridge).toContain('"restrictUsers"');
     expect(settings).toContain('Excepciones');

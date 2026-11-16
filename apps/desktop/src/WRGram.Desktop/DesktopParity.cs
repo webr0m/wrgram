@@ -20,6 +20,9 @@ public sealed partial class TelegramService
     private bool _downloadsPausedAll;
     private string _searchQuery = "";
     private string _searchFilter = "";
+    private string _searchSender = "";
+    private long _searchFrom;
+    private long _searchUntil;
     private int _searchLastId;
 
     // ---- búsqueda -----------------------------------------------------------------
@@ -38,7 +41,7 @@ public sealed partial class TelegramService
         "links" => new InputMessagesFilterUrl(),
         "polls" => new InputMessagesFilterPoll(),
         "mentions" => new InputMessagesFilterMyMentions(),
-        _ => throw new BridgeException("El filtro de búsqueda no es válido.")
+        _ => throw new BridgeException(DesktopSavedFilters.BadFilter)
     };
 
     private async Task<object?> MessagesSearchAsync(JsonElement args)
@@ -50,11 +53,21 @@ public sealed partial class TelegramService
         var filter = SearchFilter(filterKey);
         if (Bool(args, "global")) return await SearchGlobalAsync(client, args, query, filter);
         var chat = RequireEntry(_active);
-        var result = await client.Messages_Search(chat.Input, query, filter: filter, limit: SearchPageSize);
+        var sender = Str(args, "sender").Trim();
+        var from = Long(args, "from");
+        var until = Long(args, "until");
+        var bad = DesktopSearch.Problem(sender, from, until, DateTimeOffset.UtcNow.ToUnixTimeSeconds(), chat.Type == "channel");
+        if (bad != null) throw new BridgeException(bad);
+        var result = await client.Messages_Search(chat.Input, query, filter: filter,
+            from_id: AuthorPeer(sender, chat), min_date: DesktopSearch.MinDate(from), max_date: DesktopSearch.MaxDate(until),
+            limit: DesktopSearch.Limit);
         _searchQuery = query;
         _searchFilter = filterKey;
+        _searchSender = sender;
+        _searchFrom = from;
+        _searchUntil = until;
         _searchLastId = 0;
-        return SearchChatPage(result, chat, storeOffset: true);
+        return SearchChatPage(result, chat, from, until, storeOffset: true);
     }
 
     private async Task<object?> MessagesSearchMoreAsync(JsonElement args)
@@ -64,16 +77,38 @@ public sealed partial class TelegramService
         var chat = RequireEntry(_active);
         var query = Str(args, "query").Trim();
         var filterKey = Str(args, "filter");
-        if (query != _searchQuery || filterKey != _searchFilter)
+        var sender = Str(args, "sender").Trim();
+        var from = Long(args, "from");
+        var until = Long(args, "until");
+        // Las cinco partes, no dos: un cursor de «todo el mundo» seguido de un filtro por autor devolvería
+        // mensajes sueltos etiquetados como si fueran de esa persona.
+        if (!DesktopSearch.Same(query, sender, filterKey, from, until, _searchQuery, _searchSender, _searchFilter, _searchFrom, _searchUntil))
             throw new BridgeException("La búsqueda cambió. Lanza una nueva búsqueda.");
-        var result = await client.Messages_Search(chat.Input, query, filter: SearchFilter(filterKey), offset_id: _searchLastId, limit: SearchPageSize);
-        return SearchChatPage(result, chat, storeOffset: true);
+        var result = await client.Messages_Search(chat.Input, query, filter: SearchFilter(filterKey),
+            from_id: AuthorPeer(sender, chat), min_date: DesktopSearch.MinDate(from), max_date: DesktopSearch.MaxDate(until),
+            offset_id: _searchLastId, limit: DesktopSearch.Limit);
+        return SearchChatPage(result, chat, from, until, storeOffset: true);
     }
 
-    private object SearchChatPage(Messages_MessagesBase result, ChatEntry chat, bool storeOffset)
+    /// El peer con el que MTProto filtra por autor; null significa «cualquiera».
+    private TL.InputPeer? AuthorPeer(string sender, ChatEntry chat)
+    {
+        var who = sender.Trim();
+        if (who.Length == 0) return null;
+        if (who == DesktopSearch.Chat) return chat.Input;
+        // La propia cuenta no está en la caché de peers: su chip de autor se resuelve con `InputPeerSelf`,
+        // que es además lo que Telegram espera para «mensajes míos».
+        if (_client?.User != null && who == "u" + _client.User.id) return new InputPeerSelf();
+        return FindEntry(who)?.Input ?? throw new BridgeException(DesktopSearch.AuthorUnknown);
+    }
+
+    private object SearchChatPage(Messages_MessagesBase result, ChatEntry chat, long from, long until, bool storeOffset)
     {
         MergeSearchPeers(result);
-        var messages = result.Messages.Where(message => message.ID > 0).OrderByDescending(message => message.ID).ToArray();
+        // La banda ya la recorta el servidor, pero se comprueba aquí: si Telegram devolviera algo fuera
+        // del rango, la pantalla no lo enseñaría con una etiqueta que no corresponde.
+        var messages = result.Messages.Where(message => message.ID > 0 && DesktopSearch.Keep(Unix(message.Date), from, until))
+            .OrderByDescending(message => message.ID).ToArray();
         var items = messages.Select(message => ConvertMessage(message, chat)).OfType<MessageDto>().ToArray();
         var lastId = messages.Length > 0 ? messages.Min(message => message.ID) : 0;
         if (storeOffset) _searchLastId = lastId;
@@ -128,6 +163,79 @@ public sealed partial class TelegramService
         if (result is Messages_Messages page) MergePeers(page.users?.Values, page.chats?.Values);
         if (result is Messages_ChannelMessages channel) MergePeers(channel.users?.Values, channel.chats?.Values);
     }
+
+    // ---- filtros de búsqueda guardados -------------------------------------------------------------
+
+    private string SavedFiltersPath => System.IO.Path.Combine(_store.Root, "search-filters.json");
+
+    /// Los tres caminos del mismo flujo, como en Android: listar, guardar y borrar sobre una lista local.
+    private object SavedFilters(JsonElement args, bool save, bool delete)
+    {
+        var account = "u" + CollectionClient().User!.id;
+        var list = ReadSavedFilters(account);
+        var values = new DesktopSavedFilters.Values(
+            name: Raw(args, "name"), query: Raw(args, "query"), filter: Raw(args, "filter"),
+            mode: Raw(args, "mode"), chatId: Raw(args, "chatId"), id: Raw(args, "id"));
+        if (delete)
+        {
+            var missing = DesktopSavedFilters.DeleteProblem(values);
+            if (missing != null) throw new BridgeException(missing);
+            list.RemoveAll(entry => entry.Id == values.Id);
+        }
+        else if (save)
+        {
+            var bad = DesktopSavedFilters.SaveProblem(values, list.Count);
+            if (bad != null) throw new BridgeException(bad);
+            list.Add(DesktopSavedFilters.Create(values, list));
+        }
+        WriteSavedFilters(account, list);
+        return list.Select(entry => new
+        {
+            id = entry.Id, name = entry.Name, query = entry.Query, filter = entry.Filter, mode = entry.Mode,
+            chatId = entry.ChatId
+        }).ToArray();
+    }
+
+    private List<DesktopSavedFilters.Entry> ReadSavedFilters(string account)
+    {
+        try
+        {
+            if (!System.IO.File.Exists(SavedFiltersPath)) return [];
+            var file = JsonSerializer.Deserialize<SavedFilterFileDto>(System.IO.File.ReadAllText(SavedFiltersPath), SavedFiltersJson);
+            // Otra cuenta, otra lista: los filtros se guardan para quien los escribió, igual que la clave
+            // `slot.selfId` de las preferencias compartidas en Android.
+            if (file == null || file.Account != account) return [];
+            return file.Filters ?? [];
+        }
+        catch (Exception)
+        {
+            return [];
+        }
+    }
+
+    private void WriteSavedFilters(string account, List<DesktopSavedFilters.Entry> list)
+    {
+        try
+        {
+            var temp = SavedFiltersPath + ".tmp";
+            var json = JsonSerializer.Serialize(new SavedFilterFileDto { Account = account, Filters = list }, SavedFiltersJson);
+            System.IO.File.WriteAllText(temp, json);
+            System.IO.File.Move(temp, SavedFiltersPath, overwrite: true);
+        }
+        catch (Exception)
+        {
+            // Es estado de interfaz local: si el disco falla, la lista de esta sesión sigue siendo válida,
+            // igual que en Android, donde `apply()` escribe después sin esperar.
+        }
+    }
+
+    private static readonly JsonSerializerOptions SavedFiltersJson = new(JsonSerializerDefaults.Web);
+
+    /// Lo que `BridgePolicy.text` entiende por «traer el campo»: una cadena, ni ausente ni de otro tipo.
+    private static string? Raw(JsonElement element, string name) =>
+        element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
 
     // ---- traducción y transcripción ------------------------------------------------
 

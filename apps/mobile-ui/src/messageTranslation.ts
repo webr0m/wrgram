@@ -91,7 +91,7 @@ export function useShowMessageTranslation(message: Message, allowed: boolean): b
   const mode = useTranslationMode();
   const { language } = useLanguage();
   const eligible = allowed && !!message.text.trim() && !message.service && !message.rich &&
-    !message.checklist && message.status !== 'pending' && message.status !== 'failed';
+    !message.checklist && (!message.extra || message.extra.kind === 'game') && message.status !== 'pending' && message.status !== 'failed';
   const sample = eligible && mode === 'different' ? message.text : '';
   const [result, setResult] = useState<{ text: string; language?: string }>();
 

@@ -1,0 +1,36 @@
+.custom-emoji,.emoji-pack-cover {
+  display:inline-grid;
+  place-items:center;
+  position:relative;
+  flex:none;
+  contain:size layout paint;
+  overflow:hidden;
+  max-inline-size:100%;
+  line-height:1;
+}
+.custom-emoji { vertical-align:-3px; border-radius:inherit; }
+.emoji-pack-cover { inline-size:40px; block-size:40px; }
+.custom-emoji > .media-view,.emoji-pack-cover > .media-view {
+  position:absolute;
+  inset:0;
+  margin:0;
+  background:transparent;
+}
+:is(.custom-emoji,.emoji-pack-cover) :is(.media-view,.media-view.sticker,.media-passive,.tgs-sticker-animation,img,video,canvas,.tgs-sticker-animation svg) {
+  box-sizing:border-box;
+  inline-size:100%;
+  block-size:100%;
+  min-inline-size:0;
+  min-block-size:0;
+  max-inline-size:100%;
+  max-block-size:100%;
+  margin:0;
+  overflow:hidden;
+  object-fit:contain;
+}
+:is(.custom-emoji,.emoji-pack-cover) .media-passive { display:grid; place-items:center; }
+:is(.custom-emoji,.emoji-pack-cover) :is(img,video,canvas,svg) { display:block; }
+.custom-emoji-grid { grid-template-columns:repeat(auto-fill,minmax(min(42px,100%),1fr)); max-height:240px; overflow:auto; }
+.custom-emoji-grid > button { display:grid; place-items:center; block-size:44px; min-inline-size:0; min-block-size:0; padding:2px; overflow:hidden; }
+.custom-emoji-picker .chat-search { min-inline-size:0; }
+.custom-emoji-picker .chat-search input { min-inline-size:0; }

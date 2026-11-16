@@ -1,5 +1,7 @@
 # WRGram · Android beta09
 
+> **Guía histórica de beta09.** Para el alcance técnico de la fuente local `1.0.0-beta22`, los flujos que ya existen y las brechas frente a Telegram oficial, consultar la [auditoría del 13/11/2026](../../docs/telegram-flow-audit-2026-11-13.md). Los límites funcionales y estados de Play descritos abajo no son el inventario actual.
+
 Aplicación Android con **TDLib/JNI nativo** y una interfaz **React/Vite empaquetada localmente**. La versión de trabajo es `0.5.0-beta09` (versionCode 13); no carga la demo ni un sitio remoto. `ShellActivity` usa un origen local restringido; Java 17/AndroidX mantiene la sesión, el cifrado, el transporte y el selector de archivos. La UI nativa anterior se conserva como respaldo y para avisos/licencias/notas de WR IA. Beta significa canal de prueba, no certificación de estabilidad ni paridad completa.
 
 El árbol fuente y el artefacto local contienen `0.5.0-beta10`/code14 (comunidades, moderación, historias de foto e importación opcional de contactos). Play Console muestra el AAB en preparación de prueba cerrada, sin envío ni publicación; la ficha en directo sigue siendo beta09/code13. Beta10 requiere pruebas controladas, capturas actuales y revisión de privacidad. Ver [propuesta beta10](../../docs/beta10-proposal.md) e [informe del AAB](../../artifacts/android/BETA10.md).

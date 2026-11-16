@@ -64,7 +64,9 @@ describe('Ronda H en la interfaz', () => {
 
   it('App cambia el layout de la barra de navegación al modo lateral', () => {
     expect(app).toContain("state.appearance.navigation==='side'?'nav-side':''");
-    expect(app).toContain("state.appearance.navigation==='side'?'mobile-nav mobile-nav-side':'mobile-nav'");
+    expect(app).toContain("side={state.appearance.navigation==='side'}");
+    const nav=readFileSync(new URL('./MobileNavigation.tsx',import.meta.url),'utf8');
+    expect(nav).toContain("side?'mobile-nav mobile-nav-side':'mobile-nav'");
   });
 
   it('el CSS coloca la navegación lateral y libera el contenido', () => {

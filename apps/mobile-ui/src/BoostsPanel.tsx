@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BadgeCheck, ChevronDown, Copy, Gauge, LoaderCircle, RefreshCw, Rocket, Star, TriangleAlert } from 'lucide-react';
-import { request } from './bridge';
+import { request, snapshot } from './bridge';
 import { StarsRevenue } from './StarsPanels';
 import type { BoostFeatures, BoostLevelFeatures, BoostLink, BoostSlots, BoostStatus, Chat } from './contract';
 import { boostCountLabel, boostDate, boostLevelLabel, boostNumber, boostProgress, canBoostWith, giveawayLabel, levelFeatureRows, minimumFeatures, slotState, SLOT_STATE_LABEL, type SlotState } from './boostModel';
@@ -153,9 +153,11 @@ function BoostLevelsTab({ chat }: { chat: Chat }) {
 }
 
 export function BoostsPanel({ chat, chats = [] }: { chat: Chat; chats?: Chat[] }) {
-  const tabs: [Tab, string][] = chat.type === 'channel'
+  const allTabs: [Tab, string][] = chat.type === 'channel'
     ? [['status', 'Impulsos'], ['slots', 'Tus espacios'], ['levels', 'Niveles'], ['revenue', 'Ingresos del canal']]
     : [['status', 'Impulsos'], ['slots', 'Tus espacios'], ['levels', 'Niveles']];
+  // La tabla de niveles son `chat.boost.features` y `chat.boost.level`, sin brazo en el host de Windows.
+  const tabs = snapshot().platform === 'desktop' ? allTabs.filter(([id]) => id !== 'levels') : allTabs;
   const [tab, setTab] = useState<Tab>('status');
   return <div className="boost-panel">
     <header className="boost-head"><span className="boost-head-icon"><Rocket/></span><div><strong>Impulsos de Telegram</strong><small>{chat.title}</small></div></header>

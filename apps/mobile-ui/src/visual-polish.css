@@ -155,16 +155,8 @@ button:not(:disabled):active{transform:scale(.975)}
 .danger{background:color-mix(in srgb,var(--danger) 18%,var(--surface));border:1px solid color-mix(in srgb,var(--danger) 45%,transparent);color:var(--danger)}
 @keyframes polish-fade{from{opacity:0}to{opacity:1}}
 @keyframes polish-rise{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
-.custom-emoji{display:inline-flex;align-items:center;justify-content:center;vertical-align:-3px;flex:none;max-width:100%;max-height:100%;overflow:hidden;border-radius:inherit}
-.custom-emoji .media,.custom-emoji .media-view,.custom-emoji .media-view.sticker,.custom-emoji .tgs-sticker-animation,.custom-emoji img,.custom-emoji video,.custom-emoji svg,.custom-emoji canvas{display:block;width:100%!important;height:100%!important;max-width:100%;max-height:100%;object-fit:contain}
 .custom-emoji-fallback{display:inline-flex;align-items:center;justify-content:center;line-height:1}
-.custom-emoji{position:relative}
 .custom-emoji-alt{position:absolute;inset:0;display:grid;place-items:center;line-height:1;font-size:inherit;pointer-events:none}
-.custom-emoji .media-view{position:relative;z-index:1;background:transparent}
-.custom-emoji .media-load{display:none}
-.custom-emoji-grid{grid-template-columns:repeat(6,minmax(0,1fr));max-height:240px;overflow:auto}
-.custom-emoji-grid button{display:grid;place-items:center;min-height:44px}
-.custom-emoji-grid button img,.custom-emoji-grid button video{max-width:32px;max-height:32px}
 .paid-amounts{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .paid-amounts button{flex:0 0 auto;padding:7px 12px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);font-size:calc(13px * var(--ui-scale,1));cursor:pointer}
 .paid-amounts button.selected{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,var(--surface-2));color:var(--accent)}

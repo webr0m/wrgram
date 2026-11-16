@@ -147,7 +147,9 @@ describe('impulsos en la interfaz', () => {
     expect(app).toContain('function openBoosts(chat:Chat){setDialog({title:`Impulsos · ${chat.title}`,body:<BoostsPanel chat={chat} chats={state.chats}/>});}');
     expect(app).toContain('{(active.supergroup===true||active.type==="channel")&&<MenuItem icon={<Rocket/>} label="Impulsos del chat" onClick={()=>openBoosts(active)}/>}');
     expect(app).toMatch(/case 'boost':\s+if\(result\.chatId\)\{[^}]*openBoosts\(boostTarget\(result\.chatId,result\.title\|\|'',result\.channel===true\)\)/);
-    expect(app).toContain("'link.open',{url}).then(handleTelegramLinkResult)");
+    // Desde la ronda AB el enlace viaja con el resultado: si Windows devuelve una invitación, la
+    // confirmación tiene que volver a pedir `telegram.link` con el mismo url.
+    expect(app).toContain("'link.open',{url}).then(result=>handleTelegramLinkResult(result,url))");
     expect(profile).toContain('boosts(chat: Chat): void;');
     expect(profile).toContain('<button type="button" onClick={() => boosts(chat)}><Rocket size={16}/>Impulsos del chat</button>');
   });

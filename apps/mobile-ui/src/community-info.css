@@ -1,0 +1,13 @@
+.community-info { display:grid; gap:10px; }
+.community-field { display:grid; gap:6px; padding:12px; border:1px solid var(--line); border-radius:14px; background:var(--surface); }
+.community-field .field-label { margin:0; }
+.community-field textarea { width:100%; padding:12px 13px; background:var(--input); border:1px solid var(--line); border-radius:10px; color:var(--text); font:inherit; font-size:calc(14px * var(--ui-scale,1)); line-height:1.6; resize:vertical; }
+.community-field input[readonly], .community-field textarea[readonly] { color:var(--muted); background:var(--soft); }
+.community-field-foot { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.community-field-foot small { font-size:calc(10px * var(--ui-scale,1)); color:var(--faint); }
+.community-field-foot .primary { min-height:38px; padding:9px 14px; font-size:calc(11px * var(--ui-scale,1)); }
+.community-over { color:var(--danger) !important; }
+@media (max-width:420px) {
+  .community-field { padding:10px; border-radius:12px; }
+  .community-field-foot { flex-direction:column-reverse; align-items:stretch; }
+}

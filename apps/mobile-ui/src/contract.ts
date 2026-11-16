@@ -1,7 +1,7 @@
 import type { CustomTheme } from './themes';
 export interface State { mediaReady?: number[]; mediaLoading?:number[]; mediaFailed?:number[] }
 export interface SecurityStatus {enabled:boolean;available:boolean;biometric:boolean;lockAfter:number}
-export interface TelegramLinkResult {action:string;chatId?:string;title?:string;messageId?:string;storyId?:number;installed?:boolean;channel?:boolean}
+export interface TelegramLinkResult {action:string;chatId?:string;title?:string;messageId?:string;storyId?:number;installed?:boolean;channel?:boolean;opened?:boolean;members?:number;approval?:boolean;state?:string}
 export interface State { profilePhoto?:Media|null; emojiStatus?:EmojiStatusMark|null; startupError?:string; chatList?:string }
 export interface PlayUpdateStatus { starting?:boolean;downloading?:boolean;installing?:boolean;bytesDownloaded?:number;totalBytes?:number }
 export interface AccountBirthday { day:number;month:number;year:number }
@@ -17,10 +17,16 @@ export interface ChatProfile {
   phone?:string;presence?:string;birthday?:{day:number;month:number;year:number};
   verified?:boolean;premium?:boolean;emojiStatus?:EmojiStatusMark;photo?:Media;commands?:{name:string;description:string}[];privacyUrl?:string;blocked?:boolean;
 }
+export interface Chat { canReport?:boolean }
+export interface SafetySignal { id:string; tone:'bad'|'warn'|'good'|'info'; value?:string }
+export interface SafetyNotice { kind:'spam'|'unknown'|'invite'|'contact'|'phone'|'join'; tone:'warn'|'info'; canUnarchive?:boolean; registered?:string; title?:string; channel?:boolean; date?:number }
+export interface SafetyInfo { id:string; notice?:SafetyNotice; signals:SafetySignal[]; canReport:boolean; dismissible:boolean }
+export interface Chat { notice?:SafetyNotice }
+export interface Properties { report?:boolean }
 export interface AccountSession { id:string;current:boolean;device:string;platform:string;version:string;location:string;ip:string;lastActive:number }
 export interface MediaVariant { id:number; width:number; height:number; size:number }
 export interface Media { id: number; ready: boolean; mime: string; kind: 'image' | 'video' | 'audio' | 'file' | 'sticker'; name: string; size: number; animated?:boolean; width?:number; height?:number; downloadLimit?:number; thumbnail?: Media; minithumbnail?: string; exportable?: boolean; variants?: MediaVariant[] }
-export interface Chat { premium?:boolean; emojiStatus?:EmojiStatusMark; inList?:boolean; id: string; title: string; preview: string; date: number; unread: number; marked: boolean; bot: boolean; type: string; pinned: boolean; muted: boolean; archived: boolean; photo?: Media; supported: boolean; activeStories?:number;isContact?:boolean;supergroup?:boolean;isForum?:boolean;secretState?: 'pending'|'ready'|'closed'; fingerprint?: string; canSendExpressions?:boolean; username?:string; draft?:string; draftEntities?:TextEntity[]; readInbox?:string; senderKind?:'user'|'chat'; senderId?:string; senderName?:string; translatable?:boolean; automaticTranslation?:boolean }
+export interface Chat { premium?:boolean; emojiStatus?:EmojiStatusMark; inList?:boolean; id: string; title: string; preview: string; date: number; unread: number; marked: boolean; bot: boolean; type: string; pinned: boolean; muted: boolean; archived: boolean; photo?: Media; supported: boolean; activeStories?:number;isContact?:boolean;supergroup?:boolean;isForum?:boolean;secretState?: 'pending'|'ready'|'closed'; fingerprint?: string; canSendExpressions?:boolean; username?:string; draft?:string; draftEntities?:TextEntity[]; draftReply?:string; readInbox?:string; senderKind?:'user'|'chat'; senderId?:string; senderName?:string; translatable?:boolean; automaticTranslation?:boolean }
 export interface SpeechInfo { state:'pending'|'text'|'error'; partial?:string; text?:string; error?:string }
 export interface Message { speech?:SpeechInfo; transcribable?:boolean }
 export interface ChatSender { kind:'user'|'chat'; id:string; name:string; premium:boolean }
@@ -35,8 +41,18 @@ export interface Contact {id:string;name:string;username:string;bot:boolean;phot
 export interface GroupAdminRights {canChangeInfo:boolean;canPostMessages:boolean;canEditMessages:boolean;canDeleteMessages:boolean;canInviteUsers:boolean;canRestrictMembers:boolean;canPinMessages:boolean;canManageTopics:boolean;canPromoteMembers:boolean;canManageVideoChats:boolean;canPostStories:boolean;canEditStories:boolean;canDeleteStories:boolean;canManageDirectMessages:boolean;canManageTags:boolean;canSendWelcomeMessages:boolean}
 export interface GroupMember {id:string;name:string;status:string;admin?:boolean;bot?:boolean;canBan:boolean;canUnban?:boolean;canRestrict?:boolean;canPromote?:boolean;canDemote?:boolean;canEditRights?:boolean;restricted?:boolean;banned?:boolean;until?:number;currentRights?:GroupAdminRights;adminRights?:GroupAdminRights}
 export interface GroupMemberPage {members:GroupMember[];nextOffset:number;hasMore:boolean}
+/** `AddChatMember` solo nombra a los que no entraron: la interfaz distingue las tres salidas. */
+export type AddState = 'added' | 'rejected' | 'unclear'
+export interface AddResult {id:string;name:string;state:AddState;reason:string}
+export interface AddBatch {results:AddResult[];stopped:string}
+export interface AddPermission {allowed:boolean;reason:string;forward:boolean;remaining:number}
+export interface RosterMember {id:string;name:string;username:string;status:string;inside:boolean;self:boolean;bot:boolean;since:number;invitedBy:string;invitedByName:string;tag:string}
+export interface GroupRoster {members:RosterMember[];shown:number;listed:number;inside:number;creator:string;note:string;remaining:number;order:string;manage:boolean;scope:string}
 export interface GroupPermissions {canSendBasicMessages:boolean;canSendAudios:boolean;canSendDocuments:boolean;canSendPhotos:boolean;canSendVideos:boolean;canSendVideoNotes:boolean;canSendVoiceNotes:boolean;canSendPolls:boolean;canSendOtherMessages:boolean;canAddLinkPreviews:boolean;canReactToMessages:boolean;canEditTag:boolean;canChangeInfo:boolean;canInviteUsers:boolean;canPinMessages:boolean;canCreateTopics:boolean}
 export interface ChatUsername {editable:string;active:string[]}
+export interface CommunityInfo {title:string;description:string;descriptionKnown:boolean;canChange:boolean;maxTitle:number;maxDescription:number}
+/** `opened` solo significa algo en el estado «bot»: indica si se pudo abrir el chat del bot de seguridad. */
+export interface ChatMembership {state:string;opened:boolean;owner?:boolean;when?:string;successor?:string}
 export interface AdminEvent {id:string;date:number;title:string;description:string}
 export interface ActiveStory {id:number;date:number;closeFriends:boolean;live:boolean}
 export interface OpenStory {id:number;chatId:string;posterChatId:string;caption:string;media:Media;canEdit:boolean;canDelete:boolean;canToggleProfile:boolean;isPostedToChatPage:boolean;canArchive:boolean}
@@ -45,7 +61,16 @@ export interface StoryAlbum {id:number;name:string}
 export interface StoryAlbumStories {stories:ArchivedStory[];nextOffset:number;hasMore:boolean}
 export interface Sponsored { id:string; chatId:string; title:string; text:string; label:string; button:string; info:string; sponsor?:string; media?:Media }
 export interface State { sponsored?: Sponsored[]; sponsoredError?:string }
+export interface SponsoredSettings { premium:boolean; enabled:boolean; canDisable:boolean }
+export interface Sponsored { canReport?:boolean }
 export interface State { notifications?:{configured:boolean;missing?:string;enabled:boolean;permission:boolean;registered:boolean;status:string} }
+export type NotificationScopeId = 'private' | 'group' | 'channel';
+/** Los ids de sonido llegan en texto: un identificador de 64 bits no sobrevive en un double. */
+export interface ScopeSettings { scope:NotificationScopeId; muted:boolean; muteFor:number; sound:string; preview:boolean; muteStories:boolean; storyDefault:boolean; storySound:string; storyPoster:boolean; quietPinned:boolean; quietMentions:boolean }
+export interface NotificationSound { id:string; title:string; duration:number }
+export interface NotificationScopes { scopes:ScopeSettings[]; sounds:NotificationSound[] }
+/** Solo las claves presentes viajan a Telegram; las demás se conservan tal como las devolvió la lectura. */
+export interface ScopePatch { muted?:boolean; muteFor?:number; sound?:string; preview?:boolean; muteStories?:boolean; storySound?:string; storyPoster?:boolean; quietPinned?:boolean; quietMentions?:boolean }
 export interface PlayUpdateStatus { supported:boolean;checking:boolean;available:boolean;downloaded:boolean;currentVersionCode:number;availableVersionCode:number;priority:number;error:string;notes?:string }
 export interface State { update?:PlayUpdateStatus }
 export interface State { access:{checked:boolean;allowed:boolean;blocked:boolean;expiresAt:number;countries?:{code:string;name:string}[]}; qrImage?:string }
@@ -91,7 +116,9 @@ export interface BoostLink {link:string;isPublic:boolean}
 export interface Message {invoice?:StarsInvoice}
 export interface Message { inlineKeyboard?:BotButton[][] }
 export interface PollOption { index:number;text:string;votes:number;percentage:number;chosen:boolean;choosing:boolean }
-export interface Poll { question:string;description:string;totalVoters:number;anonymous:boolean;multiple:boolean;revoting:boolean;closed:boolean;canSeeResults:boolean;canGetVoters:boolean;canStop:boolean;quiz:boolean;explanation?:string;restriction?:string;options:PollOption[] }
+/** Identificador opaque de la encuesta. TDLib no lo manda nunca; Windows sí, porque su `updateMessagePoll`
+ *  puede llegar sin `peer` y entonces la única forma de encontrar la fila es comparar este número. */
+export interface Poll { pollId?:number;question:string;description:string;totalVoters:number;anonymous:boolean;multiple:boolean;revoting:boolean;closed:boolean;canSeeResults:boolean;canGetVoters:boolean;canStop:boolean;quiz:boolean;explanation?:string;restriction?:string;options:PollOption[] }
 export interface GiftInfo { stars:number;premium:boolean;unique:boolean;saved:boolean;private:boolean;upgraded:boolean;converted:boolean;refunded:boolean;canUpgrade:boolean;number?:number;text?:string }
 export interface Message { gift?:GiftInfo }
 export interface GiftAttribute { name:string;rarity:string;perMille:number;crafted?:boolean;sticker?:Media }
@@ -129,12 +156,51 @@ export interface TextEntity { type:TextEntityType; offset:number; length:number;
 export interface Message { entities?:TextEntity[]; albumId?:string; forumTopicId?:number }
 export interface ServiceInfo { kind:string; text:string; photo?:Media; messageId?:string; chatId?:string; userId?:string; currency?:string; amount?:number; date?:number; duration?:number; count?:number }
 export interface Message { service?:ServiceInfo }
-export interface Message { senderPremium?:boolean; senderEmojiStatus?:EmojiStatusMark; id: string; chatId: string; sender: string; text: string; date: number; outgoing: boolean; status: 'pending' | 'failed' | 'read' | 'sent' | ''; edited: boolean; reply?: string; media?: Media; reactions: { emoji: string; count: number; chosen: boolean; kind?: 'paid' | 'custom'; customEmojiId?: string }[]; scheduledAt?: number; chatTitle?: string }
+export type MessageExtra =
+  | {kind:'location';title:string;address:string;latitude?:number;longitude?:number;live?:boolean;expiresAt?:number;canOpen:boolean}
+  | {kind:'contact';name:string;phone:string;userId:string;canCopy:boolean}
+  | {kind:'animatedEmoji';emoji:string;media?:Media;interactive:boolean}
+  | {kind:'dice';emoji:string;value:number;media?:Media;stake?:string;prize?:string}
+  | {kind:'game';title:string;description?:string;media?:Media}
+  | {kind:'story';mention:boolean}
+  | {kind:'unsupported'};
+export interface Message { extra?:MessageExtra }
+export interface Message { senderPremium?:boolean; senderEmojiStatus?:EmojiStatusMark; authorKind?:'user'|'chat'; authorId?:string; id: string; chatId: string; sender: string; text: string; date: number; outgoing: boolean; status: 'pending' | 'failed' | 'read' | 'sent' | ''; edited: boolean; reply?: string; media?: Media; reactions: { emoji: string; count: number; chosen: boolean; kind?: 'paid' | 'custom'; customEmojiId?: string }[]; scheduledAt?: number; chatTitle?: string }
+/** Los cinco criterios que Telegram admite de una vez en una conversación. `sender` es un id en texto o «chat». */
+export interface SearchCriteria { query: string; sender: string; filter: string; from: number; until: number }
+export interface ForwardOrigin { kind:'user'|'hidden'|'chat'|'channel'; name:string; signature?:string; date?:number; chatId?:string; messageId?:string; userId?:string }
+/** Lo que Telegram dijo de un envío propio sin confirmar. Las Stars viajan en texto, como los ids de 64 bits. */
+export interface UnsentInfo { pending:boolean; code:number; telegram:string; canRetry:boolean; anotherSender:boolean; otherQuote:boolean; dropsReply:boolean; stars:string; wait:number }
+export interface Message { unsent?:UnsentInfo }
+export interface Message { forward?:ForwardOrigin; replyAuthor?:string; replyTo?:{chatId:string;messageId:string} }
+export interface MessageThreadBadge { comments:number; canOpen?:boolean }
+export interface Message { thread?:MessageThreadBadge }
+export interface ThreadPage { chatId:string; threadId:string; comments:number; unread:number; messages:Message[]; next:boolean }
+export interface JoinRequest { userId:string; name:string; date:number; bio:string }
+export interface JoinRequestPage { total:number; requests:JoinRequest[]; cursor?:string; next:boolean }
+export interface Chat { requests?:number }
+/**
+ * El derecho `send_polls` que Telegram negó para esta cuenta en esta conversación. En Android lo trae TDLib
+ * dentro de `chat.permissions`; en Windows se lee de los `ChatBannedRights` de la fila del canal, y el andamio
+ * solo puede decir la respuesta, que es lo que la pantalla necesita para no prometer una encuesta que no va a
+ * entrar. Ausente significa «no lo sé», y ahí decide Telegram.
+ */
+export interface Chat { noPolls?:boolean }
+/**
+ * El derecho que Telegram negó para las tarjetas de contacto en esta conversación. TDLib lo llama
+ * `canSendOtherMessages` —es el que mira `NativeBridge.java:4625`— y MTProto no tiene ese bit, así que el puente de
+ * Windows usa `send_docs`, que es lo que un contacto es ahí: un documento con atributo de contacto. Como con las
+ * encuestas, el andamio solo puede dar la respuesta, y ausente significa «no lo sé»: decide Telegram.
+ */
+export interface Chat { noContacts?:boolean }
+export interface InviteLink { link:string; name:string; creator:string; created:number; edited:number; expires:number; memberLimit:number; memberCount:number; pending:number; approval:boolean; primary:boolean; revoked:boolean; paid:boolean }
+export interface InviteLinkPage { total:number; links:InviteLink[]; revoked:boolean; cursor?:string; next:boolean }
+export interface LinkForm { name:string; expiresIn:number; memberLimit:number; approval:boolean }
 export interface GlobalSearch { messages: Message[]; nextOffset: string; total: number }
 export type FeedEntry = { chatId:string; messageId:string; title:string; text:string; date:number }
 export type SavedFilter = { id:string; name:string; query:string; filter:string; mode:'chat'|'global'; chatId?:string }
 export interface SavedTag { kind:'emoji'|'custom'; emoji?:string; customEmojiId?:string; label:string; count:number }
-export interface State { topic?: {id:number;name:string;closed:boolean;readInbox?:string;unread?:number;draft?:string;draftEntities?:TextEntity[]} }
+export interface State { topic?: {id:number;name:string;closed:boolean;readInbox?:string;unread?:number;draft?:string;draftEntities?:TextEntity[];draftReply?:string} }
 export interface ContactSync {enabled:boolean;running:boolean;last:number;matched:number;imported:number;skipped:boolean;error:string}
 export interface State { contactsSync?: ContactSync; authEmailPattern?: string; authCodeLength?: number; authHint?: string; authRecoveryAvailable?: boolean; authRecoveryPattern?: string; authTerms?: string; authMinAge?: number }
 export interface State { voiceAutoStopped?: boolean }
@@ -142,8 +208,11 @@ export interface State { ready: boolean; auth: string; consent: boolean; busy: b
 export interface CatalogItem { key: string; label: string; media?: Media; emoji?:string; premium?:boolean }
 export interface Catalog { items: CatalogItem[]; sets?: { id: string; title: string; thumbnail?:Media; emoji?:string }[] }
 export interface Properties { reply: boolean; copy: boolean; copyContent: boolean; edit: boolean; editChecklist: boolean; deleteSelf: boolean; deleteAll: boolean; forward: boolean; pin: boolean; editCaption: boolean; caption: string; reactions: string[]; paid?: boolean; allowCustom?: boolean; transcribe?: boolean; canBePaid?: boolean }
-export interface PasswordState { hasPassword: boolean; hint: string; hasRecoveryEmail: boolean; hasPassport: boolean; pendingReset: number }
-export interface PrivacySetting { key: string; value: string; allowUsers: string[]; restrictUsers: string[] }
+export interface PasswordState { hasPassword: boolean; hint: string; hasRecoveryEmail: boolean; hasPassport: boolean; pendingReset: number; recoveryEmailPattern?:string; recoveryCodeLength?:number }
+export interface AutoDeleteSettings { seconds:number; canChange:boolean }
+export interface PrivacySetting { key: string; value: string; allowUsers: string[]; restrictUsers: string[]; preserved?: string[] }
+export interface BlockedSender { kind:'user'|'chat'; id:string; name:string; photo?:Media }
+export interface BlockedSenders { items:BlockedSender[]; total:number; nextOffset:number; hasMore:boolean }
 export interface StoryReactionOption { kind: 'emoji' | 'custom'; emoji?: string; customEmojiId?: string; needsPremium?: boolean }
 export interface StoryReactions { top: StoryReactionOption[]; recent: StoryReactionOption[]; allowCustom: boolean; restriction?: string }
 export interface StoryInteraction { name: string; date: number; type: 'view' | 'forward' | 'repost'; emoji?: string; customEmojiId?: string }
@@ -165,4 +234,4 @@ export interface BusinessRecipientsInfo { existing?:boolean; newChats?:boolean; 
 export interface BusinessLinkInfo { link:string; title:string; text:string; views:number }
 export interface BusinessBotState { configured:boolean; botUserId?:string; name?:string; recipients?:BusinessRecipientsInfo; rights?:Record<string,boolean>; connectionDate?:number; deviceModel?:string; location?:string }
 export interface BusinessProfile { nextOpenIn?:number; nextCloseIn?:number; address?:string; timeZoneId?:string; hours?:{startMinute:number;endMinute:number}[]; greeting?:{shortcutId:string;inactivityDays:number;recipients:BusinessRecipientsInfo}; away?:{shortcutId:string;offlineOnly:boolean;schedule:{type:'always'|'outside'|'custom';startDate?:number;endDate?:number};recipients:BusinessRecipientsInfo}; startPage?:{title:string;message:string} }
-export const EMPTY: State = { ready: false, auth: 'welcome', consent: false, busy: false, connection: 'Sin conectar', online: false, error: '', notice: '', version: '1.0.0-beta20', selfId: '0', name: '', active: '0', canSend: false, sending: false, uncertain: false, chatsBusy: false, chats: [], messages: [], folders: [], history: { loading: false, error: '', end: false, latest: true }, typing: '', appearance: { theme: 'gold', font: 16, compact: false, typing: true, enter: false, fontFamily: 'system', wallpaper: 'none', auto: false, customThemes: [], chatThemes: {}, systemDark: false }, permissions: { notes: false, replies: false }, security:{enabled:false,available:false,biometric:false,lockAfter:0}, assistant: { state: 'Sin comprobar', ready: false, busy: false, consent: false, error: '', turns: [] }, access:{checked:false,allowed:false,blocked:false,expiresAt:0,countries:[]},update:{supported:false,checking:false,available:false,downloaded:false,currentVersionCode:48,availableVersionCode:0,priority:0,error:''},wallet:{stars:0,nanostars:0,premium:false},platform:'web' };
+export const EMPTY: State = { ready: false, auth: 'welcome', consent: false, busy: false, connection: 'Sin conectar', online: false, error: '', notice: '', version: '1.0.0-beta24', selfId: '0', name: '', active: '0', canSend: false, sending: false, uncertain: false, chatsBusy: false, chats: [], messages: [], folders: [], history: { loading: false, error: '', end: false, latest: true }, typing: '', appearance: { theme: 'gold', font: 16, compact: false, typing: true, enter: false, fontFamily: 'system', wallpaper: 'none', auto: false, customThemes: [], chatThemes: {}, systemDark: false }, permissions: { notes: false, replies: false }, security:{enabled:false,available:false,biometric:false,lockAfter:0}, assistant: { state: 'Sin comprobar', ready: false, busy: false, consent: false, error: '', turns: [] }, access:{checked:false,allowed:false,blocked:false,expiresAt:0,countries:[]},update:{supported:false,checking:false,available:false,downloaded:false,currentVersionCode:52,availableVersionCode:0,priority:0,error:''},wallet:{stars:0,nanostars:0,premium:false},platform:'web' };

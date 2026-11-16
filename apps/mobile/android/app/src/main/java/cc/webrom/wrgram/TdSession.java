@@ -258,8 +258,8 @@ final class TdSession {
         });
         try {
             current.send(function, result -> main.post(() -> {
-                if (client != current) { ticket.complete(); return; }
-                if (!ageAllowed() || ageClosing) { ticket.complete(); return; }
+                if (client != current) { if (ticket.complete()) failure.accept(new TdApi.Error(408, "WRGRAM_SESSION_CHANGED")); return; }
+                if (!ageAllowed() || ageClosing) { if (ticket.complete()) { pauseForAgeGate(); failure.accept(new TdApi.Error(403, "WRGRAM_AGE_GATE")); } return; }
                 if (!ticket.complete()) {
                     if (late != null && !(result instanceof TdApi.Error)) late.accept((T) result);
                     return;
@@ -274,6 +274,8 @@ final class TdSession {
 
     static String safeError(TdApi.Error value) {
         String name = value.message == null ? "" : value.message;
+        if (name.equals("WRGRAM_AGE_GATE")) return "Completa primero la comprobación regional de edad y residencia.";
+        if (name.equals("WRGRAM_SESSION_CHANGED")) return "La sesión cambió antes de recibir la respuesta. Revisa el resultado en Telegram antes de repetirlo.";
         if (name.startsWith("FLOOD_WAIT") || value.code == 429) return "Telegram solicita una pausa. Espera antes de volver a intentarlo; no se reintentará automáticamente.";
         if (name.contains("PHONE_CODE_INVALID")) return "El código no es válido. Revísalo en Telegram.";
         if (name.contains("PHONE_CODE_EXPIRED")) return "El código ha caducado. Reinicia el acceso.";
@@ -378,6 +380,10 @@ final class TdSession {
         } else if (object instanceof TdApi.UpdateChatTitle) {
             TdApi.UpdateChatTitle value = (TdApi.UpdateChatTitle) object;
             if (chats.containsKey(value.chatId)) chats.get(value.chatId).title = value.title; emit("chats");
+        } else if (object instanceof TdApi.UpdateChatMessageAutoDeleteTime) {
+            TdApi.UpdateChatMessageAutoDeleteTime value=(TdApi.UpdateChatMessageAutoDeleteTime)object;
+            if(chats.containsKey(value.chatId))chats.get(value.chatId).messageAutoDeleteTime=value.messageAutoDeleteTime;
+            emit("chats");
         } else if (object instanceof TdApi.UpdateChatDraftMessage) {
             TdApi.UpdateChatDraftMessage value = (TdApi.UpdateChatDraftMessage) object;
             TdApi.Chat draftChat = chats.get(value.chatId); if (draftChat != null) draftChat.draftMessage = value.draftMessage;
@@ -398,6 +404,12 @@ final class TdSession {
         } else if (object instanceof TdApi.UpdateChatPermissions) {
             TdApi.UpdateChatPermissions value = (TdApi.UpdateChatPermissions) object;
             if (chats.containsKey(value.chatId)) chats.get(value.chatId).permissions = value.permissions; emit("connection");
+        } else if (object instanceof TdApi.UpdateChatPendingJoinRequests) {
+            TdApi.UpdateChatPendingJoinRequests value = (TdApi.UpdateChatPendingJoinRequests) object;
+            if (chats.containsKey(value.chatId)) chats.get(value.chatId).pendingJoinRequests = value.pendingJoinRequests; emit("chats");
+        } else if (object instanceof TdApi.UpdateChatActionBar) {
+            TdApi.UpdateChatActionBar value = (TdApi.UpdateChatActionBar) object;
+            if (chats.containsKey(value.chatId)) chats.get(value.chatId).actionBar = value.actionBar; emit("chats");
         } else if (object instanceof TdApi.UpdateChatMessageSender) {
             TdApi.UpdateChatMessageSender value = (TdApi.UpdateChatMessageSender) object;
             if (chats.containsKey(value.chatId)) chats.get(value.chatId).messageSenderId = value.messageSenderId; emit("chats");
@@ -457,6 +469,11 @@ final class TdSession {
             TdApi.UpdateMessageContent value = (TdApi.UpdateMessageContent) object;
             HistoryWindow window = messageWindow(value.chatId,value.messageId);
             if (window != null) { window.content(value.messageId, value.newContent); emit("messages"); }
+            TdApi.Chat chat = chats.get(value.chatId);
+            if (chat != null && chat.lastMessage != null && chat.lastMessage.id == value.messageId) {
+                chat.lastMessage.content = value.newContent;
+                emit("chats");
+            }
         } else if (object instanceof TdApi.UpdateMessageEdited) {
             TdApi.UpdateMessageEdited value = (TdApi.UpdateMessageEdited) object;
             HistoryWindow window = messageWindow(value.chatId,value.messageId);
@@ -911,7 +928,7 @@ final class TdSession {
     }
     HistoryWindow currentWindow() { if(activeChat==0)return null; return activeTopic==0?windows.get(activeChat):topicWindow(activeChat,activeTopic); }
     List<TdApi.Message> history() { HistoryWindow window = currentWindow(); return window == null ? new ArrayList<>() : window.snapshot(); }
-    JSONObject topicState(){try{return new JSONObject().put("id",activeTopic).put("name",activeTopicName).put("closed",activeTopicClosed).put("readInbox",String.valueOf(activeTopicRead)).put("unread",activeTopic==0?0:activeTopicUnread).put("draft",activeTopic==0?"":activeTopicDraft).put("draftEntities",activeTopic==0?new JSONArray():activeTopicDraftEmojis);}catch(Exception ignored){return new JSONObject();}}
+    JSONObject topicState(){try{JSONObject value=new JSONObject().put("id",activeTopic).put("name",activeTopicName).put("closed",activeTopicClosed).put("readInbox",String.valueOf(activeTopicRead)).put("unread",activeTopic==0?0:activeTopicUnread).put("draft",activeTopic==0?"":activeTopicDraft).put("draftEntities",activeTopic==0?new JSONArray():activeTopicDraftEmojis);String cited=activeTopic==0?"":activeTopicDraftReply;if(!cited.isEmpty())value.put("draftReply",cited);return value;}catch(Exception ignored){return new JSONObject();}}
     TdApi.Message message(long id) { HistoryWindow window = currentWindow();TdApi.Message found=window==null?null:window.find(id);if(found!=null)return found;TdApi.Chat chat=chats.get(activeChat);if(chat!=null&&chat.lastMessage!=null&&chat.lastMessage.id==id)return chat.lastMessage;TdApi.Message markup=replyMarkupMessages.get(activeChat);return markup!=null&&markup.id==id?markup:null; }
     boolean loadingHistory() { HistoryWindow window = currentWindow(); return window != null && window.loading; }
     void loadHistory() { fetchHistory(true); }
@@ -921,6 +938,7 @@ final class TdSession {
                 error->{if(error.code==404)found.accept(null);else failure.accept(safeError(error));},null);
     }
     private String activeTopicDraft="";
+    private String activeTopicDraftReply="";
     private JSONArray activeTopicDraftEmojis=new JSONArray();
     void openTopic(TdApi.ForumTopic topic){
         TdApi.ForumTopicInfo info=topic.info;
@@ -931,6 +949,7 @@ final class TdSession {
         if(activeTopic!=info.forumTopicId)invalidateTopicRead();
         activeTopicDraft=NativeSnapshot.draftText(topic.draftMessage);
         activeTopicDraftEmojis=NativeSnapshot.draftEmojis(topic.draftMessage);
+        activeTopicDraftReply=Drafts.replyId(topic.draftMessage);
         activeTopic=info.forumTopicId;activeTopicName=info.name==null||info.name.isBlank()?"Tema":info.name;activeTopicClosed=info.isClosed;activeTopicRead=lastReadInboxMessageId;
         activeTopicNewest=newestMessageId;activeTopicUnread=unreadCount;
         HistoryWindow window=topicWindow(activeChat,activeTopic);
@@ -1330,6 +1349,15 @@ final class TdSession {
             String title = list == null || list.title == null || list.title.text == null ? "" : list.title.text.trim();
             return title.isEmpty() ? "Lista de tareas" : "Lista de tareas · " + title;
         }
-        return "Mensaje no compatible todavía · ábrelo en Telegram oficial";
+        String extra = MessageExtras.summary(message.content);
+        if (extra != null) return extra;
+        TdApi.FormattedText formatted = NativeSnapshot.formatted(message.content);
+        if (formatted != null && formatted.text != null && !formatted.text.isBlank()) return formatted.text;
+        if (message.content instanceof TdApi.MessageAudio) return "Audio";
+        if (message.content instanceof TdApi.MessageVideoNote) return "Videomensaje";
+        if (message.content instanceof TdApi.MessagePaidMedia) return "Multimedia de pago";
+        if (message.content instanceof TdApi.MessageInvoice) return "Solicitud de pago";
+        if (message.content instanceof TdApi.MessagePoll) return "Encuesta";
+        return "Contenido del mensaje no disponible";
     }
 }

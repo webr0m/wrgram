@@ -107,6 +107,7 @@ public final class ShellActivity extends AccessActivity {
     final ActivityResultLauncher<String[]> picker = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> { if (bridge != null) bridge.picked(uri); });
     final ActivityResultLauncher<String[]> albumPicker=registerForActivityResult(new ActivityResultContracts.OpenMultipleDocuments(),uris->{if(bridge!=null)bridge.pickedAlbum(uris);});
     final ActivityResultLauncher<String> profilePhotoPicker=registerForActivityResult(new ActivityResultContracts.GetContent(),uri->{if(bridge!=null)bridge.pickedProfilePhoto(uri);});
+    final ActivityResultLauncher<String> chatPhotoPicker=registerForActivityResult(new ActivityResultContracts.GetContent(),uri->{if(bridge!=null)bridge.pickedChatPhoto(uri);});
     final ActivityResultLauncher<String> videoNotePicker=registerForActivityResult(new ActivityResultContracts.GetContent(),uri->{if(bridge!=null)bridge.pickedVideoNote(uri);});
     final ActivityResultLauncher<String> microphonePermission=registerForActivityResult(new ActivityResultContracts.RequestPermission(),granted->{if(bridge!=null)bridge.voicePermissionResult(granted);});
     final ActivityResultLauncher<String> export = registerForActivityResult(new ActivityResultContracts.CreateDocument("application/octet-stream"), uri -> { if (bridge != null) bridge.exported(uri); });
@@ -117,6 +118,7 @@ public final class ShellActivity extends AccessActivity {
     final ActivityResultLauncher<android.content.Intent> themeFilePicker=registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),result->{android.webkit.ValueCallback<Uri[]> callback=fileChooserCallback;fileChooserCallback=null;if(callback!=null)callback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result.getResultCode(),result.getData()));});
 
     void chooseProfilePhoto(){profilePhotoPicker.launch("image/*");}
+    void chooseChatPhoto(){chatPhotoPicker.launch("image/*");}
     void chooseAlbum(){albumPicker.launch(new String[]{"image/*"});}
     void chooseVideoNote(){videoNotePicker.launch("video/mp4");}
     boolean recordVideoNote(){

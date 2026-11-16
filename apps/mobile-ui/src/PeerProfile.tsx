@@ -1,11 +1,12 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { AtSign, BadgeCheck, Ban, Bell, BellOff, CalendarDays, ChevronLeft, ChevronRight, Copy, Gift, Image, Link2, LoaderCircle, LockKeyhole, MessageCircle, MoreHorizontal, Phone, Rocket, SlidersHorizontal, Users } from 'lucide-react';
+import { AtSign, BadgeCheck, Ban, CalendarDays, ChevronLeft, ChevronRight, Copy, Gift, Image, Link2, LoaderCircle, LockKeyhole, MessageCircle, MoreHorizontal, Phone, Rocket, SlidersHorizontal, Users } from 'lucide-react';
 import { Avatar } from './Inbox';
 import { FormattedText } from './formatting';
 import { request, snapshot, subscribe } from './bridge';
 import { PremiumMark } from './PremiumMark';
 import { SharedGallery } from './Collections';
 import { MediaView } from './MediaView';
+import { ChatMuteControl } from './ChatMuteControl';
 import type { Chat, ChatProfile, Media, Message } from './contract';
 import './peer-profile.css';
 
@@ -40,7 +41,8 @@ export function PeerProfile({ initial, message, openChat, openUrl, jump, openPee
   const [tab, setTab] = useState<'info'|'media'|'related'>('info');
   const [more, setMore] = useState(false);
   const [notice, setNotice] = useState('');
-  const [busy, setBusy] = useState(false);
+  // Historias, regalos y temas de foro aún no tienen brazo en el host de Windows: la ficha no los ofrece.
+  const desktop = snapshot().platform === 'desktop';
   useEffect(() => {
     let mounted = true;
     setError('');
@@ -68,15 +70,6 @@ export function PeerProfile({ initial, message, openChat, openUrl, jump, openPee
   function copy(value: string) {
     void request('clipboard.copy', { text:value }).then(() => setNotice('Copiado al portapapeles.')).catch(() => setNotice('No se pudo copiar.'));
   }
-  async function mute() {
-    if (!chat || busy) return;
-    setBusy(true); setNotice('');
-    try {
-      await request('chat.mute', { id:chat.id, value:!chat.muted });
-      setChat({ ...chat, muted:!chat.muted });
-    } catch (reason) { setNotice(reason instanceof Error ? reason.message : 'No se pudo cambiar el aviso.'); }
-    finally { setBusy(false); }
-  }
 
   return <div className="peer-profile">
     {back && <button type="button" className="text-button peer-back" onClick={back}><ChevronLeft size={17}/> Volver al perfil</button>}
@@ -89,19 +82,19 @@ export function PeerProfile({ initial, message, openChat, openUrl, jump, openPee
       </section>
       <div className="peer-actions">
         {chat.supported && <button type="button" onClick={() => openChat(chat)}><MessageCircle size={20}/>Mensaje</button>}
-        {chat.supported && <button type="button" onClick={() => void mute()} disabled={busy}>{chat.muted ? <BellOff size={20}/> : <Bell size={20}/>} {chat.muted ? 'Activar avisos' : 'Silenciar'}</button>}
-        {!!chat.activeStories && <button type="button" onClick={() => stories(chat)}><Image size={20}/>Historias</button>}
+        {chat.supported && <ChatMuteControl chat={chat} run={request} changed={muted=>setChat({...chat,muted})}/>}
+        {!!chat.activeStories && !desktop && <button type="button" onClick={() => stories(chat)}><Image size={20}/>Historias</button>}
         <button type="button" aria-expanded={more} onClick={() => setMore(value => !value)}><MoreHorizontal size={20}/>Más</button>
       </div>
       {more && <div className="peer-menu">
         {publicLink && <button type="button" onClick={() => copy(publicLink)}><Link2 size={16}/>Copiar enlace público</button>}
         {profile?.phone && <button type="button" onClick={() => copy(profile.phone!)}><Copy size={16}/>Copiar número</button>}
-        {chat.type !== 'secret' && <button type="button" onClick={() => stories(chat)}><Image size={16}/>Historias</button>}
-        {profile?.hasStories && <button type="button" onClick={() => stories(chat,true)}><Image size={16}/>Historias del perfil</button>}
+        {!desktop && chat.type !== 'secret' && <button type="button" onClick={() => stories(chat)}><Image size={16}/>Historias</button>}
+        {!desktop && profile?.hasStories && <button type="button" onClick={() => stories(chat,true)}><Image size={16}/>Historias del perfil</button>}
         {profile?.canManageMembers && <button type="button" onClick={() => manage(chat)}><Users size={16}/>Administrar miembros</button>}
         {(chat.type === 'channel' || chat.type === 'group') && <button type="button" onClick={() => boosts(chat)}><Rocket size={16}/>Impulsos del chat</button>}
-        {chat.type !== 'secret' && !chat.bot && <button type="button" onClick={() => gifts(chat)}><Gift size={16}/>Regalos de Stars</button>}
-        {isForum && <button type="button" onClick={() => forum(chat)}><MessageCircle size={16}/>Temas del foro</button>}
+        {!desktop && chat.type !== 'secret' && !chat.bot && <button type="button" onClick={() => gifts(chat)}><Gift size={16}/>Regalos de Stars</button>}
+        {!desktop && isForum && <button type="button" onClick={() => forum(chat)}><MessageCircle size={16}/>Temas del foro</button>}
         {chat.type === 'secret' && chat.fingerprint && <button type="button" onClick={() => copy(chat.fingerprint!)}><LockKeyhole size={16}/>Copiar huella de cifrado</button>}
         {chat.type==='private' && !chat.bot && chat.id!==ownId && <button type="button" onClick={() => changeContact(chat,!!chat.isContact)}><Users size={16}/>{chat.isContact?'Quitar de contactos':'Añadir a contactos'}</button>}
         {chat.type==='private' && chat.id!==ownId && profile && <button type="button" onClick={() => changeBlock(chat,!!profile.blocked)}><Ban size={16}/>{profile.blocked?'Desbloquear':'Bloquear'}</button>}

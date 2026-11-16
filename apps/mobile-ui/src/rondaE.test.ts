@@ -56,9 +56,9 @@ describe('Ronda E en el puente', () => {
   });
 
   it('los gestos se validan por lado y acción y vuelven en el estado de apariencia', () => {
-    expect(bridge).toContain('if(!side.matches("left|right")||!gestures.optString(side,"").matches("none|reply|copy|forward|select"))throw new IllegalArgumentException();');
+    expect(bridge).toContain('if(!side.matches("left|right")||!gestures.optString(side,"").matches("none|reply|menu|copy|forward|select"))throw new IllegalArgumentException();');
     expect(bridge).toContain('edit.putString("gestures",gestures.toString());');
-    expect(snapshot).toContain('value.put("gestures",new JSONObject().put("left",parsed.optString("left","none")).put("right",parsed.optString("right","none")));');
+    expect(snapshot).toContain('value.put("gestures",new JSONObject().put("left",parsed.optString("left","reply")).put("right",parsed.optString("right","menu")));');
     expect(contract).toContain('gestures?: { left:string; right:string }');
   });
 });
@@ -99,14 +99,26 @@ describe('Ronda E en la interfaz', () => {
   });
 
   it('los gestos de burbuja leen la apariencia y ejecutan acciones reales', () => {
-    expect(appearance).toContain("['none', 'Nada'], ['reply', 'Responder'], ['copy', 'Copiar texto'], ['forward', 'Reenviar'], ['select', 'Seleccionar']");
-    expect(appearance).toContain("run('appearance', { gestures: { left: state.appearance.gestures?.left || 'none', right: event.target.value } })");
+    expect(appearance).toContain("['none', 'Nada'], ['reply', 'Responder'], ['menu', 'Menú del mensaje'], ['copy', 'Copiar texto'], ['forward', 'Reenviar'], ['select', 'Seleccionar']");
+    expect(appearance).toContain("run('appearance', { gestures: { left: state.appearance.gestures?.left || 'reply', right: event.target.value } })");
     expect(app).toContain('function bubbleSwipeStart(event:TouchEvent)');
     expect(app).toContain('if(Math.abs(dx)<72||Math.abs(dx)<Math.abs(dy)*1.8)return;');
-    expect(app).toContain("dx>0?state.appearance.gestures?.right||'none':state.appearance.gestures?.left||'none'");
+    expect(app).toContain("dx>0?state.appearance.gestures?.right||'menu':state.appearance.gestures?.left||'reply'");
     expect(app).toContain('onTouchStart={bubbleSwipeStart} onTouchEnd={event=>bubbleSwipeEnd(message,event)}');
+    expect(app).toContain("if(action==='menu'){void messageMenu(message);return;}");
     expect(app).toContain("void run('message.copy',{id:message.id})");
     expect(styles).toContain('.gesture-selects');
+  });
+
+  it('deslizar la lista de conversaciones cambia de pestaña sin abrir un chat', () => {
+    expect(app).toContain('const listSwipe=useRef<{x:number;y:number}|undefined>(undefined);const tabSwipeGuard=useRef(0);');
+    expect(app).toContain('<aside className="conversation-list" onTouchStart={listSwipeStart} onTouchEnd={listSwipeEnd}>');
+    expect(app).toContain('const next=dx<0?visibleTabs[index+1]:visibleTabs[index-1];');
+    expect(app).toContain('if(next)chooseFilter(next.id);');
+    expect(app).toContain('function openFromList(chat:Chat){if(Date.now()-tabSwipeGuard.current<700)return;open(chat);}');
+    expect(app).toContain('function chooseFromBar(key:string){if(Date.now()-tabSwipeGuard.current<700)return;chooseFilter(key);}');
+    expect(app).toContain('select={openFromList}');
+    expect(app).toContain('choose={chooseFromBar}');
   });
 
   it('el encabezado ofrece volver al chat anterior', () => {

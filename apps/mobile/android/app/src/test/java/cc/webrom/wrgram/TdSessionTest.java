@@ -1,6 +1,7 @@
 package cc.webrom.wrgram;
 
 import static org.junit.Assert.*;
+import org.drinkless.tdlib.TdApi;
 import org.junit.Test;
 
 public class TdSessionTest {
@@ -15,5 +16,14 @@ public class TdSessionTest {
         assertEquals(-99, TdSession.unreadOffset(99, true));
         assertEquals(-99, TdSession.unreadOffset(500, true));
         assertEquals(0, TdSession.unreadOffset(5, false));
+    }
+    @Test public void abandonedResponsesTellTheUserNotToRepeatTheOperation() {
+        // A reply dropped because the session was replaced still has to reach the interface, and it
+        // keeps code 408 so a send is marked uncertain instead of silently failed.
+        String changed = TdSession.safeError(new TdApi.Error(408, "WRGRAM_SESSION_CHANGED"));
+        assertTrue(changed.contains("antes de repetirlo"));
+        String timeout = TdSession.safeError(new TdApi.Error(408, "WRGRAM_TIMEOUT"));
+        assertTrue(timeout.contains("revisa el chat"));
+        assertTrue(TdSession.safeError(new TdApi.Error(403, "WRGRAM_AGE_GATE")).contains("edad"));
     }
 }

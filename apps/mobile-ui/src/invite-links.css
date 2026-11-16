@@ -1,0 +1,36 @@
+.invite-links { display:grid; gap:10px; width:min(480px,94vw); min-width:0; }
+.invite-total { margin:0; font-size:12px; color:var(--accent); font-weight:600; }
+.invite-tabs { display:flex; gap:6px; }
+.invite-tabs button { flex:1; min-height:36px; padding:4px 8px; border:1px solid var(--line); border-radius:9px; background:transparent; color:var(--muted); font:inherit; font-size:12px; cursor:pointer; }
+.invite-tabs button.is-on { border-color:var(--accent); color:var(--accent); background:var(--hover); }
+.invite-tabs button:disabled { opacity:.5; cursor:default; }
+.invite-new { display:flex; align-items:center; justify-content:center; gap:6px; min-height:40px; padding:6px 10px; border:1px dashed var(--line); border-radius:10px; background:transparent; color:var(--accent); font:inherit; font-size:13px; cursor:pointer; }
+.invite-new:disabled { opacity:.5; cursor:default; }
+.invite-form { display:grid; gap:8px; padding:10px; border:1px solid var(--line); border-radius:10px; background:var(--soft); min-width:0; }
+.invite-form strong { font-size:13px; }
+.invite-form label { display:grid; gap:4px; font-size:12px; color:var(--muted); min-width:0; }
+.invite-form input[type="text"],.invite-form input[type="number"],.invite-form select,.invite-form input:not([type]) { min-width:0; padding:7px 8px; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--text); font:inherit; font-size:13px; }
+.invite-form input[type="number"] { max-width:150px; }
+.invite-check { display:flex !important; align-items:center; gap:8px; font-size:13px !important; color:var(--text) !important; }
+.invite-check input { flex:none; width:18px; height:18px; }
+.invite-form-actions { display:flex; flex-wrap:wrap; gap:6px; }
+.invite-save,.invite-cancel { display:inline-flex; align-items:center; gap:6px; min-height:40px; padding:4px 12px; border:1px solid var(--line); border-radius:9px; background:transparent; color:var(--text); font:inherit; font-size:13px; cursor:pointer; }
+.invite-save { border-color:var(--accent); color:var(--accent); }
+.invite-save:disabled,.invite-cancel:disabled { opacity:.5; cursor:default; }
+.invite-list { display:grid; gap:6px; max-height:min(52vh,520px); overflow:auto; min-width:0; padding-right:2px; }
+.invite-row { display:flex; align-items:flex-start; flex-wrap:wrap; gap:9px; padding:9px; border:1px solid var(--line); border-radius:10px; min-width:0; }
+.invite-who { flex:1 1 190px; min-width:0; display:grid; gap:3px; }
+.invite-who strong,.invite-who small { overflow-wrap:anywhere; }
+.invite-who strong { font-size:14px; }
+.invite-who small { font-size:11px; color:var(--muted); }
+.invite-who input { width:100%; min-width:0; padding:5px 7px; border:1px solid var(--line); border-radius:7px; background:var(--panel); color:var(--text); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px; }
+.invite-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:6px; flex:none; }
+.invite-copy,.invite-edit,.invite-revoke { display:inline-flex; align-items:center; gap:5px; min-height:40px; padding:4px 9px; border:1px solid var(--line); border-radius:9px; background:transparent; color:var(--text); font:inherit; font-size:12px; cursor:pointer; }
+.invite-copy,.invite-edit { border-color:var(--accent); color:var(--accent); }
+.invite-revoke { color:#e0575a; }
+.invite-copy:hover,.invite-edit:hover,.invite-revoke:hover { background:var(--hover); }
+.invite-copy:disabled,.invite-edit:disabled,.invite-revoke:disabled,.invite-more:disabled { opacity:.5; cursor:default; }
+.invite-state { display:flex; align-items:center; justify-content:center; gap:8px; padding:8px; font-size:13px; color:var(--muted); text-align:center; }
+.invite-more { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:4px; padding:9px; border:0; border-radius:10px; background:var(--hover); color:var(--accent); font:inherit; font-size:13px; cursor:pointer; }
+@media(max-width:420px) { .invite-actions { width:100%; justify-content:stretch; } .invite-copy,.invite-edit,.invite-revoke { flex:1; justify-content:center; } }
+@media(prefers-reduced-motion:no-preference) { .invite-copy,.invite-edit,.invite-revoke,.invite-more,.invite-new { transition:background .14s,color .14s,border-color .14s; } }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, CalendarDays, ChevronLeft, ChevronRight, File, Film, Image, Link, LoaderCircle, Pin } from 'lucide-react';
-import { request } from './bridge';
+import { request, snapshot } from './bridge';
 import type { Chat, Media, Message, SavedTag } from './contract';
 import { appendCollection, calendarDays, dayBounds, GALLERY_FILTERS, type CollectionPage, type SavedSource } from './collectionModel';
 import { dayKey, historyDate, inboxTime } from './inboxModel';
@@ -70,13 +70,18 @@ export function SavedBrowser({ openAll, jump, openUrl }: { openAll(): void; jump
 
 function SavedSources({ open }: { open(item: SavedSource): void }) {
   const [version, setVersion] = useState(0);
+  const [error, setError] = useState('');
+  const desktop = snapshot().platform === 'desktop';
   function pin(item: SavedSource) {
-    void request('saved.topics.pin', { id: item.id, pin: !item.pinned }).then(() => setVersion(value => value + 1));
+    setError('');
+    void request('saved.topics.pin', { id: item.id, pin: !item.pinned })
+      .then(() => setVersion(value => value + 1))
+      .catch(() => setError(`Telegram no pudo ${item.pinned ? 'quitar el fijado de' : 'fijar'} “${item.title}”. El listado no cambió.`));
   }
-  return <SavedSourcesList key={version} open={open} pin={pin}/>;
+  return <SavedSourcesList key={version} open={open} pin={desktop ? undefined : pin} error={error}/>;
 }
 
-function SavedSourcesList({ open, pin }: { open(item: SavedSource): void; pin(item: SavedSource): void }) {
+function SavedSourcesList({ open, pin, error }: { open(item: SavedSource): void; pin?: (item: SavedSource) => void; error: string }) {
   const page = usePages<SavedSource>('saved.sources', {});
   return <>
     <div className="source-list">
@@ -87,10 +92,11 @@ function SavedSourcesList({ open, pin }: { open(item: SavedSource): void; pin(it
           {item.date > 0 && <time>{inboxTime(item.date, new Date())}</time>}
           <ArrowRight size={15} aria-hidden="true"/>
         </button>
-        <button type="button" className="collection-row-pin" aria-label={item.pinned ? `Quitar fijado de ${item.title}` : `Fijar ${item.title}`} aria-pressed={item.pinned} onClick={() => pin(item)}><Pin size={15}/></button>
+        {pin && <button type="button" className="collection-row-pin" aria-label={item.pinned ? `Quitar fijado de ${item.title}` : `Fijar ${item.title}`} aria-pressed={item.pinned} onClick={() => pin(item)}><Pin size={15}/></button>}
       </div>)}
     </div>
     <CollectionStatus page={page} empty="Todavía no hay mensajes guardados."/>
+    {error && <p className="collection-status" role="status">{error}</p>}
   </>;
 }
 
@@ -102,6 +108,7 @@ function SavedHistory({ source, jump, openUrl }: { source: SavedSource; jump: Ju
   const [label, setLabel] = useState('');
   const [saving, setSaving] = useState(false);
   useEffect(() => {
+    if (snapshot().platform === 'desktop') return;
     void request<SavedTag[]>('saved.tags', { topic: source.id })
       .then(value => value && setTags({ tags: value }))
       .catch(error => setTags({ error: error instanceof Error ? error.message : 'No se pudieron leer las etiquetas.' }));
@@ -112,7 +119,7 @@ function SavedHistory({ source, jump, openUrl }: { source: SavedSource; jump: Ju
     setSaving(true);
     void request('saved.tag.label', { tag: { kind: selected.kind, emoji: selected.emoji, customEmojiId: selected.customEmojiId }, label: label.trim() }).then(() => {
       setTags(current => ({ tags: current.tags?.map(item => savedTagKey(item) === tag ? { ...item, label: label.trim() } : item) }));
-    }).catch(() => {}).finally(() => setSaving(false));
+    }).catch(() => setTags(current => ({ ...current, error: 'Telegram no guardó el nombre de la etiqueta. No se cambió nada.' }))).finally(() => setSaving(false));
   }
   return <>
     <h3 className="collection-origin">{source.title}</h3>

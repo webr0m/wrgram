@@ -79,6 +79,35 @@ public sealed class MediaRegistry
         return Register(entry);
     }
 
+    /// <summary>
+    /// Olvida la foto de perfil de <paramref name="ownerKey"/>: quita sus alias del registro y borra el archivo de
+    /// disco. Hace falta porque <see cref="RegisterProfile"/> deriva el identificador de una clave que no cambia
+    /// nunca (<c>photo:self:&lt;id&gt;</c>); sin esto, la foto vieja seguiría sirviéndose después de cambiarla.
+    /// </summary>
+    public void Forget(string ownerKey)
+    {
+        var raw = StableId("photo:" + ownerKey);
+        List<long> aliases;
+        lock (_sync)
+        {
+            aliases = _entries.Where(pair => pair.Value.Id == raw).Select(pair => pair.Key).ToList();
+            foreach (var alias in aliases)
+            {
+                _entries.Remove(alias);
+                _tasks.Remove(alias);
+                _loading.Remove(alias);
+                _failed.Remove(alias);
+            }
+        }
+        try
+        {
+            if (File.Exists(PathFor(raw))) File.Delete(PathFor(raw));
+        }
+        catch
+        {
+        }
+    }
+
     private MediaDto? Register(Entry entry)
     {
         // Telegram IDs are 64-bit. Keep them for disk paths and give the WebView a safe alias.
@@ -133,12 +162,28 @@ public sealed class MediaRegistry
 
         var path = PathFor(entry.Id);
         var temp = path + ".part";
+        var replaced = false;
         try
         {
             var client = _client() ?? throw new BridgeException("La cuenta no está conectada.");
             Directory.CreateDirectory(_directory);
             await using (var stream = File.Create(temp))
                 await entry.Download(client, stream);
+            // Si algo borró este registro (Forget) mientras bajaba, el alias ya apunta a otra entrada distinta y
+            // publicar estos bytes volvería a escribir lo viejo encima de lo nuevo.
+            lock (_sync) replaced = !ReferenceEquals(_entries.GetValueOrDefault(id), entry);
+            if (replaced)
+            {
+                try
+                {
+                    File.Delete(temp);
+                }
+                catch
+                {
+                }
+                Changed?.Invoke();
+                return null;
+            }
             File.Move(temp, path, overwrite: true);
 
             lock (_sync) { _loading.Remove(id); _failed.Remove(id); }
@@ -154,7 +199,10 @@ public sealed class MediaRegistry
         }
         finally
         {
-            lock (_sync) { _tasks.Remove(id); }
+            lock (_sync)
+            {
+                if (!replaced) _tasks.Remove(id);
+            }
         }
     }
 

@@ -6,6 +6,14 @@
 .search-filters::-webkit-scrollbar{display:none}
 .search-filter{flex:none;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:var(--soft);color:var(--muted);font-size:calc(10px * var(--ui-scale,1));white-space:nowrap}
 .search-filter.active{color:var(--accent);border-color:var(--gold-line);background:var(--surface)}
+.search-who{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:4px 0 2px}
+.search-who-label{color:var(--muted);font-size:calc(10px * var(--ui-scale,1))}
+.search-author{padding:3px 9px;border:1px solid var(--line);border-radius:999px;background:var(--soft);color:var(--muted);font-size:calc(10px * var(--ui-scale,1));white-space:nowrap}
+.search-author.active{color:var(--accent);border-color:var(--gold-line);background:var(--surface)}
+.search-author.clear{border-style:dashed}
+.search-date{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:calc(10px * var(--ui-scale,1))}
+.search-date>input{background:var(--soft);border:1px solid var(--line);border-radius:8px;color:var(--text);padding:3px 6px;font-size:calc(11px * var(--ui-scale,1))}
+.search-band-warning{display:flex;align-items:center;gap:6px;color:var(--danger);font-size:calc(11px * var(--ui-scale,1))}
 .scheduled-actions{display:flex;flex-wrap:wrap;gap:2px 12px}
 .danger-text{color:var(--danger)}
 .forward-list{display:grid;gap:2px;max-height:58vh;overflow:auto;align-content:start}
@@ -21,3 +29,12 @@
 .story-reactions>strong,.story-views>strong{font-size:calc(12px * var(--ui-scale,1))}
 .story-reactions small,.story-views small{color:var(--muted);font-size:calc(10px * var(--ui-scale,1))}
 .story-views .action-list{width:100%}
+.group-add{display:grid;gap:8px;width:100%;justify-items:start;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.group-add-people{display:flex;flex-wrap:wrap;gap:6px}
+.group-add-people button{padding:6px 10px;border-radius:16px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:calc(12px * var(--ui-scale,1))}
+.group-add-people button.selected{background:var(--accent);border-color:var(--accent);color:#fff}
+.group-add-people button:disabled{opacity:.45}
+.group-add-forward{display:flex;align-items:center;gap:8px;font-size:calc(12px * var(--ui-scale,1));color:var(--muted)}
+.group-add-forward input{width:64px;padding:4px 6px}
+.group-add-report{display:grid;gap:4px;width:100%}
+.group-add-report ul{margin:0;padding-left:18px;font-size:calc(12px * var(--ui-scale,1))}

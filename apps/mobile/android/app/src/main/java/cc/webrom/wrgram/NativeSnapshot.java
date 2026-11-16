@@ -40,7 +40,7 @@ final class NativeSnapshot {
         data.put("permissions",new JSONObject().put("notes",granted("notes")).put("replies",granted("replies")));
         JSONArray turns=new JSONArray();for(AssistantPayload.Turn turn:assistant.history())turns.put(new JSONObject().put("role",turn.role).put("content",turn.content));
         data.put("assistant",new JSONObject().put("state",assistant.state).put("ready",assistant.ready).put("busy",assistant.busy).put("consent",assistant.consent).put("error",assistant.error).put("turns",turns));
-        JSONArray ads=new JSONArray();for(TdApi.SponsoredMessage ad:session.sponsored.values()){JSONObject value=new JSONObject().put("id",String.valueOf(ad.messageId)).put("chatId",String.valueOf(session.activeChat)).put("title",ad.title).put("text",contentCaption(ad.content)).put("label",ad.isRecommended?"Recomendado":"Patrocinado").put("button",ad.buttonText).put("info",ad.additionalInfo==null?"":ad.additionalInfo);if(ad.sponsor!=null)value.put("sponsor",ad.sponsor.info==null?"":ad.sponsor.info);JSONObject file=contentMedia(ad.content);if(file!=null){media.protect(file.getInt("id"));value.put("media",file);}ads.put(value);}data.put("sponsored",ads).put("sponsoredError",session.sponsoredError);
+        JSONArray ads=new JSONArray();for(TdApi.SponsoredMessage ad:session.sponsored.values()){JSONObject value=new JSONObject().put("id",String.valueOf(ad.messageId)).put("chatId",String.valueOf(session.activeChat)).put("title",ad.title).put("text",contentCaption(ad.content)).put("canReport",ad.canBeReported).put("label",ad.isRecommended?"Recomendado":"Patrocinado").put("button",ad.buttonText).put("info",ad.additionalInfo==null?"":ad.additionalInfo);if(ad.sponsor!=null)value.put("sponsor",ad.sponsor.info==null?"":ad.sponsor.info);JSONObject file=contentMedia(ad.content);if(file!=null){media.protect(file.getInt("id"));value.put("media",file);}ads.put(value);}data.put("sponsored",ads).put("sponsoredError",session.sponsoredError);
         data.put("wallet",wallet()).put("access",accessStatus()).put("notifications",session.notificationStatus()).put("security",AppLock.status(session.context())).put("mediaReady",media.refreshReady()).put("mediaLoading",media.loadingIds()).put("mediaFailed",media.failedIds());return data;
     }
     /** Saldo y Premium llegan por UpdateOwnedStarCount/UpdateUser; aquí solo se reflejan, nunca se consultan. */
@@ -87,11 +87,16 @@ final class NativeSnapshot {
         boolean pinned=false,archived=false;if(chat.positions!=null)for(TdApi.ChatPosition position:chat.positions){if(TdSession.sameList(position.list,session.selectedList()))pinned=position.isPinned;if(position.list instanceof TdApi.ChatListArchive&&position.order>0)archived=true;}
          JSONObject data=new JSONObject().put("id",String.valueOf(chat.id)).put("title",chat.title).put("preview",caption(chat.lastMessage)).put("date",chat.lastMessage==null?0:chat.lastMessage.date).put("unread",chat.unreadCount).put("marked",chat.isMarkedAsUnread).put("bot",session.bot(chat)).put("type",chat.type instanceof TdApi.ChatTypePrivate?"private":"group").put("pinned",pinned).put("archived",archived).put("readInbox",String.valueOf(chat.lastReadInboxMessageId)).put("muted",chat.notificationSettings!=null&&chat.notificationSettings.muteFor>0).put("supported",session.unsupported(chat).isEmpty()).put("activeStories",session.activeStoryCount(chat.id));
          String draft=draftText(chat.draftMessage);
+         data.put("canReport",chat.canBeReported);
+         int requests=JoinRequests.count(chat);if(requests>0)data.put("requests",requests);
+         JSONObject notice=SafetySignals.notice(chat);if(notice!=null)data.put("notice",notice);
          if(!draft.isEmpty()){
              data.put("draft",draft);
              JSONArray emojis=draftEmojis(chat.draftMessage);
              if(emojis.length()>0)data.put("draftEntities",emojis);
          }
+         // La respuesta citada viaja aunque el texto no se vea: es un id de Telegram, no un adorno.
+         String cited=Drafts.replyId(chat.draftMessage);if(!cited.isEmpty())data.put("draftReply",cited);
          data.put("canSendExpressions",session.canSendExpressions(chat));
          if(chat.type instanceof TdApi.ChatTypePrivate){TdApi.User privateUser=session.user(((TdApi.ChatTypePrivate)chat.type).userId);data.put("isContact",privateUser!=null&&privateUser.isContact);addPremiumMark(data,privateUser,"premium","emojiStatus");}
          if(chat.type instanceof TdApi.ChatTypeSupergroup){data.put("supergroup",true);if(((TdApi.ChatTypeSupergroup)chat.type).isChannel)data.put("type","channel");TdApi.Supergroup group=session.supergroup(((TdApi.ChatTypeSupergroup)chat.type).supergroupId);if(group!=null){if(group.isForum)data.put("isForum",true);if(group.hasAutomaticTranslation)data.put("automaticTranslation",true);}}
@@ -118,13 +123,30 @@ final class NativeSnapshot {
         data.put("chatTitle",chat==null?"":chat.title);
         return data;
     }
+    /** Nombres ya cacheados: pintar la procedencia de un reenvío nunca puede disparar una consulta a Telegram. */
+    private ForwardOrigin.Names forwardNames(){
+        return new ForwardOrigin.Names(){
+            @Override public String user(long id){
+                TdApi.User value=session.user(id);if(value==null)return null;
+                String name=((value.firstName==null?"":value.firstName)+" "+(value.lastName==null?"":value.lastName)).trim();
+                return name.isEmpty()?null:name;
+            }
+            @Override public String chat(long id){TdApi.Chat value=session.chat(id);return value==null||value.title==null||value.title.isBlank()?null:value.title;}
+        };
+    }
     JSONObject message(TdApi.Message message)throws Exception{
         TdApi.Chat chat=session.chat(message.chatId);String status=message.sendingState instanceof TdApi.MessageSendingStatePending?"pending":message.sendingState instanceof TdApi.MessageSendingStateFailed?"failed":!message.isOutgoing?"":chat!=null&&chat.type instanceof TdApi.ChatTypePrivate&&((TdApi.ChatTypePrivate)chat.type).userId!=session.selfId&&message.id<=chat.lastReadOutboxMessageId?"read":"sent";
          JSONObject data=new JSONObject().put("id",String.valueOf(message.id)).put("chatId",String.valueOf(message.chatId)).put("sender",session.senderName(message.senderId)).put("text",caption(message)).put("date",message.date).put("outgoing",message.isOutgoing).put("status",status).put("edited",message.editDate>0);
+         // Lo que Telegram dijo de un envío propio que no llegó: la interfaz no lo deduce, lo proyecta.
+         if(UnsentMessages.waiting(message))data.put("unsent",UnsentMessages.reason(message));
          if(message.senderId instanceof TdApi.MessageSenderUser){
              TdApi.User sender=session.user(((TdApi.MessageSenderUser)message.senderId).userId);
              addPremiumMark(data,sender,"senderPremium","senderEmojiStatus");
          }
+         // El autor con el que Telegram filtra (un usuario o el propio canal), en texto: un id de 64 bits
+         // no sobrevive a un double de JSON, y sin él la interfaz no puede ofrecer «buscar a quién escribe».
+         String authorKind=TdSession.senderKind(message.senderId);
+         if(!"other".equals(authorKind))data.put("authorKind",authorKind).put("authorId",String.valueOf(TdSession.senderId(message.senderId)));
          if(message.topicId instanceof TdApi.MessageTopicForum)data.put("forumTopicId",((TdApi.MessageTopicForum)message.topicId).forumTopicId);
          if(message.mediaAlbumId!=0)data.put("albumId",String.valueOf(message.mediaAlbumId));
          if(message.selfDestructType==null&&message.ephemeralContent==null){JSONArray formatted=entities(formatted(message.content));if(formatted.length()>0)data.put("entities",formatted);}
@@ -135,6 +157,11 @@ final class NativeSnapshot {
          }
          else if(message.schedulingState instanceof TdApi.MessageSchedulingStateSendWhenOnline)data.put("scheduledOnline",true);
          JSONObject service=ServiceMessages.dto(message,this);if(service!=null)data.put("service",service);
+         boolean temporary=MessageExtras.temporary(message);
+         boolean restricted=!message.canBeSaved||(chat!=null&&(chat.hasProtectedContent||chat.type instanceof TdApi.ChatTypeSecret));
+         JSONObject extra=MessageExtras.card(message,this,restricted);
+         if(extra!=null)data.put("extra",extra);
+         if(!temporary){
          if(message.content instanceof TdApi.MessageInvoice){TdApi.MessageInvoice invoice=(TdApi.MessageInvoice)message.content;TdApi.ProductInfo product=invoice.productInfo;data.put("invoice",new JSONObject().put("title",product==null||product.title==null?"Pago de Telegram":limit(product.title,180)).put("description",product==null||product.description==null||product.description.text==null?"":limit(product.description.text,600)).put("currency",invoice.currency==null?"":invoice.currency).put("amount",invoice.totalAmount).put("eligible","XTR".equals(invoice.currency)&&!invoice.needShippingAddress&&invoice.receiptMessageId==0).put("paid",invoice.receiptMessageId>0).put("test",invoice.isTest));}
         if(message.content instanceof TdApi.MessagePaidMedia){
             TdApi.MessagePaidMedia paid=(TdApi.MessagePaidMedia)message.content;
@@ -181,15 +208,17 @@ final class NativeSnapshot {
             }
         }
         if(message.content instanceof TdApi.MessageRichMessage){JSONObject rich=rich((TdApi.MessageRichMessage)message.content);if(rich!=null)data.put("rich",rich);}
-        boolean temporary=message.selfDestructType!=null||message.ephemeralContent!=null;
+        }
         if(!temporary&&chat!=null&&!(chat.type instanceof TdApi.ChatTypeSecret)){
             if(message.content instanceof TdApi.MessageVoiceNote){TdApi.SpeechRecognitionResult speech=((TdApi.MessageVoiceNote)message.content).voiceNote.speechRecognitionResult;if(speech!=null)data.put("speech",speechDto(speech));data.put("transcribable",true);}
             else if(message.content instanceof TdApi.MessageVideoNote){TdApi.SpeechRecognitionResult speech=((TdApi.MessageVideoNote)message.content).videoNote.speechRecognitionResult;if(speech!=null)data.put("speech",speechDto(speech));data.put("transcribable",true);}
         }
-        if(!temporary){JSONObject file=contentMedia(message.content);if(file!=null){if(chat!=null&&(chat.hasProtectedContent||chat.type instanceof TdApi.ChatTypeSecret)){protect(file);file.put("exportable",false);}data.put("media",file);}}
+        if(!temporary){JSONObject file=contentMedia(message.content);if(file!=null){if(restricted){protect(file);file.put("exportable",false);}data.put("media",file);}}
         if(!temporary){TdApi.File avatar=session.senderPhoto(message.senderId);if(avatar!=null)data.put("senderPhoto",media.register(avatar,"image/jpeg","image","Foto del remitente"));}
-        if(!temporary&&message.content instanceof TdApi.MessageText&&(chat==null||!(chat.type instanceof TdApi.ChatTypeSecret))){TdApi.LinkPreview link=((TdApi.MessageText)message.content).linkPreview;if(link!=null){JSONObject card=new JSONObject().put("title",limit(link.title==null?"":link.title,240)).put("site",link.siteName==null?"":link.siteName).put("description",limit(link.description==null?"":link.description.text,700));JSONObject image=linkThumbnail(link.type);if(image!=null){if(chat!=null&&chat.hasProtectedContent){protect(image);image.put("exportable",false);}card.put("photo",image);}data.put("preview",card);}}
-        if(message.replyTo instanceof TdApi.MessageReplyToMessage){TdApi.MessageReplyToMessage reply=(TdApi.MessageReplyToMessage)message.replyTo;TdApi.Message original=reply.chatId==0||reply.chatId==message.chatId?session.message(reply.messageId):null;data.put("reply",original==null?"Respuesta a otro mensaje":limit(caption(original),120));}
+        if(!temporary&&message.content instanceof TdApi.MessageText&&(chat==null||!(chat.type instanceof TdApi.ChatTypeSecret))){TdApi.LinkPreview link=((TdApi.MessageText)message.content).linkPreview;if(link!=null){JSONObject card=new JSONObject().put("title",limit(link.title==null?"":link.title,240)).put("site",link.siteName==null?"":link.siteName).put("description",limit(link.description==null?"":link.description.text,700));JSONObject image=linkThumbnail(link.type);if(image!=null){if(restricted){protect(image);image.put("exportable",false);}card.put("photo",image);}data.put("preview",card);}}
+        if(!temporary&&message.forwardInfo!=null){JSONObject forward=ForwardOrigin.project(message.forwardInfo,forwardNames());if(forward!=null)data.put("forward",forward);}
+        if(message.replyTo instanceof TdApi.MessageReplyToMessage){TdApi.MessageReplyToMessage reply=(TdApi.MessageReplyToMessage)message.replyTo;long target=reply.chatId==0?message.chatId:reply.chatId;TdApi.Message original=target==message.chatId?session.message(reply.messageId):null;data.put("reply",original==null?"Respuesta a otro mensaje":limit(caption(original),120));if(original!=null)data.put("replyAuthor",limit(session.senderName(original.senderId),80));if(target!=0&&reply.messageId!=0)data.put("replyTo",new JSONObject().put("chatId",String.valueOf(target)).put("messageId",String.valueOf(reply.messageId)));}
+        if(!temporary){JSONObject thread=MessageThread.badge(message);if(thread!=null)data.put("thread",thread);}
          JSONArray reactions=new JSONArray();if(!temporary&&message.interactionInfo!=null&&message.interactionInfo.reactions!=null)for(TdApi.MessageReaction reaction:message.interactionInfo.reactions.reactions){JSONObject item=new JSONObject().put("count",reaction.totalCount).put("chosen",reaction.isChosen);if(reaction.type instanceof TdApi.ReactionTypeEmoji)item.put("emoji",((TdApi.ReactionTypeEmoji)reaction.type).emoji);else if(reaction.type instanceof TdApi.ReactionTypePaid)item.put("emoji","⭐").put("kind","paid");else if(reaction.type instanceof TdApi.ReactionTypeCustomEmoji){item.put("emoji","✨").put("kind","custom").put("customEmojiId",String.valueOf(((TdApi.ReactionTypeCustomEmoji)reaction.type).customEmojiId));}else continue;reactions.put(item);}data.put("reactions",reactions);if(!temporary&&message.replyMarkup instanceof TdApi.ReplyMarkupInlineKeyboard)data.put("inlineKeyboard",inlineKeyboard(((TdApi.ReplyMarkupInlineKeyboard)message.replyMarkup).rows));return data;
     }
     JSONObject botKeyboard()throws Exception{TdApi.Chat chat=session.chat(session.activeChat);if(chat==null||chat.replyMarkupMessageId==0)return null;TdApi.Message source=session.message(chat.replyMarkupMessageId);if(source==null||source.replyMarkup==null||source.selfDestructType!=null||source.ephemeralContent!=null||chat.type instanceof TdApi.ChatTypeSecret||!(source.replyMarkup instanceof TdApi.ReplyMarkupShowKeyboard))return null;TdApi.ReplyMarkupShowKeyboard markup=(TdApi.ReplyMarkupShowKeyboard)source.replyMarkup;return new JSONObject().put("messageId",String.valueOf(source.id)).put("rows",keyboard(markup.rows));}
@@ -414,13 +443,31 @@ final class NativeSnapshot {
         return thumb==null?null:thumbnail(thumb,"Vista previa del enlace");
     }
     JSONObject preview(JSONObject file,TdApi.Thumbnail thumb,TdApi.Minithumbnail mini)throws Exception{if(file==null)return null;if(thumb!=null){JSONObject image=thumbnail(thumb,"Miniatura");if(image!=null)file.put("thumbnail",image);}if(mini!=null&&mini.data!=null&&mini.data.length<=16384)file.put("minithumbnail","data:image/jpeg;base64,"+java.util.Base64.getEncoder().encodeToString(mini.data));return file;}
-    private void protect(JSONObject file)throws Exception{media.protect(file.getInt("id"));JSONObject thumb=file.optJSONObject("thumbnail");if(thumb!=null)media.protect(thumb.getInt("id"));}
+    void protect(JSONObject file)throws Exception{
+        int id=file.optInt("id");
+        if(id>0)media.protect(id);
+        JSONObject thumb=file.optJSONObject("thumbnail");
+        if(thumb!=null)protect(thumb);
+        JSONArray variants=file.optJSONArray("variants");
+        if(variants!=null)for(int i=0;i<variants.length();i++){
+            JSONObject variant=variants.optJSONObject(i);
+            if(variant!=null)protect(variant);
+        }
+    }
     static String contentCaption(TdApi.MessageContent content){TdApi.Message message=new TdApi.Message();message.content=content;return TdSession.text(message,null);}
     String caption(TdApi.Message message){
         if(message==null)return "";if(message.selfDestructType!=null||message.ephemeralContent!=null)return "Contenido temporal · ábrelo en Telegram oficial";
         String service=ServiceMessages.text(message,session);if(service!=null)return service;
-        TdApi.MessageContent c=message.content;if(c instanceof TdApi.MessageText)return ((TdApi.MessageText)c).text.text;
-        if(c instanceof TdApi.MessagePhoto)return ((TdApi.MessagePhoto)c).caption.text;if(c instanceof TdApi.MessageVideo)return ((TdApi.MessageVideo)c).caption.text;if(c instanceof TdApi.MessageAnimation)return ((TdApi.MessageAnimation)c).caption.text;if(c instanceof TdApi.MessageDocument)return ((TdApi.MessageDocument)c).caption.text;if(c instanceof TdApi.MessageAudio)return ((TdApi.MessageAudio)c).caption.text;if(c instanceof TdApi.MessagePaidMedia)return ((TdApi.MessagePaidMedia)c).caption.text;if(c instanceof TdApi.MessageSticker)return ((TdApi.MessageSticker)c).sticker.emoji;if(c instanceof TdApi.MessageGift)return "Regalo de Telegram";if(c instanceof TdApi.MessageVoiceNote)return "Nota de voz";if(c instanceof TdApi.MessagePoll)return "Encuesta · "+limit(((TdApi.MessagePoll)c).poll==null||((TdApi.MessagePoll)c).poll.question==null?"":((TdApi.MessagePoll)c).poll.question.text,160);return TdSession.text(message,session);
+        TdApi.MessageContent content=message.content;
+        TdApi.FormattedText formatted=formatted(content);
+        if(formatted!=null&&formatted.text!=null&&(!(content instanceof TdApi.MessageGame)||!formatted.text.isBlank()))return formatted.text;
+        if(content instanceof TdApi.MessageGift)return "Regalo de Telegram";
+        if(content instanceof TdApi.MessageVoiceNote)return "Nota de voz";
+        if(content instanceof TdApi.MessagePoll){
+            TdApi.Poll poll=((TdApi.MessagePoll)content).poll;
+            return poll==null||poll.question==null?"Encuesta":"Encuesta · "+limit(poll.question.text,160);
+        }
+        return TdSession.text(message,session);
     }
     static String pollRestriction(TdApi.PollVoteRestrictionReason reason){
         if(reason instanceof TdApi.PollVoteRestrictionReasonClosed)return "La encuesta está cerrada.";
@@ -438,6 +485,7 @@ final class NativeSnapshot {
         if(content instanceof TdApi.MessageDocument)return ((TdApi.MessageDocument)content).caption;
         if(content instanceof TdApi.MessageAudio)return ((TdApi.MessageAudio)content).caption;
         if(content instanceof TdApi.MessagePaidMedia)return ((TdApi.MessagePaidMedia)content).caption;
+        if(content instanceof TdApi.MessageGame){TdApi.Game game=((TdApi.MessageGame)content).game;return game==null?null:game.text;}
         return null;
     }
     static JSONArray entities(TdApi.FormattedText formatted){
@@ -463,7 +511,7 @@ final class NativeSnapshot {
     static JSONObject appearanceDto(SharedPreferences prefs,Context context)throws Exception{
         JSONObject value=new JSONObject().put("theme",prefs.getString("theme","gold")).put("font",prefs.getInt("font",16)).put("compact",prefs.getBoolean("compact",false)).put("typing",prefs.getBoolean("typing",true)).put("enter",prefs.getBoolean("enter",false)).put("fontFamily",prefs.getString("fontFamily","system")).put("wallpaper",prefs.getString("wallpaper","none")).put("auto",prefs.getBoolean("auto",false)).put("navigation","side".equals(prefs.getString("navigation","bar"))?"side":"bar").put("systemDark",Palette.systemDark(context));
         String gestures=prefs.getString("gestures","");
-        if(gestures!=null&&!gestures.isEmpty())try{JSONObject parsed=new JSONObject(gestures);value.put("gestures",new JSONObject().put("left",parsed.optString("left","none")).put("right",parsed.optString("right","none")));}catch(Exception ignored){}
+        if(gestures!=null&&!gestures.isEmpty())try{JSONObject parsed=new JSONObject(gestures);value.put("gestures",new JSONObject().put("left",parsed.optString("left","reply")).put("right",parsed.optString("right","menu")));}catch(Exception ignored){}
         String custom=prefs.getString("customTheme","");
         if(custom!=null&&!custom.isEmpty())try{value.put("custom",new JSONObject(custom));}catch(Exception ignored){}
         JSONArray themes=new JSONArray();

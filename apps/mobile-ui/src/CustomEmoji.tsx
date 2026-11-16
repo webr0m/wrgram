@@ -2,6 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { request, snapshot, subscribe } from './bridge';
 import type { Media } from './contract';
 import { MediaView } from './MediaView';
+import './custom-emoji.css';
 
 type EmojiMedia = { media:Media; emoji?:string };
 const cache = new Map<string, EmojiMedia>();

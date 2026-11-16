@@ -19,7 +19,7 @@ type Tab = 'presets' | 'wallpapers' | 'create' | 'community' | 'saved';
 
 const QUICK_THEMES = ['gold', 'day', 'night', 'telegram', 'telegram-night', 'tgx', 'nekogram', 'plus'];
 const TYPEFACES: [string, string][] = [['system', 'Sistema'], ['serif', 'Serif'], ['mono', 'Mono'], ['rounded', 'Redonda']];
-const GESTURE_ACTIONS: [string, string][] = [['none', 'Nada'], ['reply', 'Responder'], ['copy', 'Copiar texto'], ['forward', 'Reenviar'], ['select', 'Seleccionar']];
+const GESTURE_ACTIONS: [string, string][] = [['none', 'Nada'], ['reply', 'Responder'], ['menu', 'Menú del mensaje'], ['copy', 'Copiar texto'], ['forward', 'Reenviar'], ['select', 'Seleccionar']];
 const NAVIGATIONS: ['bar' | 'side', string][] = [['bar', 'Barra inferior'], ['side', 'Lateral']];
 type SystemPalette = { scheme: 'dark' | 'light'; accent: string; canvas: string; text: string; outgoing: string };
 
@@ -105,9 +105,9 @@ export function AppearanceSettings({ state, run }: { state: State; run: Run }) {
       const palette = resolvePreset(item);
       return <button key={id} aria-pressed={state.appearance.theme === id && !state.appearance.auto} onClick={() => void run('appearance', { theme: id, auto: false })}><span style={{ background: palette.canvas, borderColor: palette.accent }}>{state.appearance.theme === id && !state.appearance.auto && <Check size={15} style={{ color: palette.accent }} />}</span>{item.name}</button>;
     })}</div>
-    <div className="setting-row"><span>Color dinámico del sistema</span><button type="button" className="secondary" onClick={applySystemPalette}><Palette size={16} />Aplicar paleta</button></div>
+    {state.platform!=='desktop'&&<div className="setting-row"><span>Color dinámico del sistema</span><button type="button" className="secondary" onClick={applySystemPalette}><Palette size={16} />Aplicar paleta</button></div>}
     {paletteNotice && <p className="settings-note" role="status">{paletteNotice}</p>}
-    <p className="settings-note">Toma la paleta Material You de tu fondo de pantalla (Android 12 o superior) y la aplica como tema personalizado «Sistema · Material You», sin tocar tu cuenta de Telegram. Si cambias el fondo o el modo oscuro, vuelve a aplicar la paleta.</p>
+    {state.platform!=='desktop'&&<p className="settings-note">Toma la paleta Material You de tu fondo de pantalla (Android 12 o superior) y la aplica como tema personalizado «Sistema · Material You», sin tocar tu cuenta de Telegram. Si cambias el fondo o el modo oscuro, vuelve a aplicar la paleta.</p>}
     <Toggle label="Seguir al sistema" description="Usa Día u Noche según el modo oscuro de Android o Windows" checked={state.appearance.auto === true} change={(auto) => void run('appearance', { auto })} />
     <div className="setting-row"><span>Tamaño del texto</span><div className="segmented" role="group" aria-label="Tamaño del texto">{[14, 16, 18, 21].map((font) => <button type="button" aria-pressed={state.appearance.font === font} className={state.appearance.font === font ? 'selected' : ''} key={font} onClick={() => void run('appearance', { font })}>{font === 14 ? 'Pequeño' : font === 16 ? 'Normal' : font === 18 ? 'Grande' : 'Enorme'}</button>)}</div></div>
     <p className="font-preview" style={{ fontSize: 'var(--font-size)' }}>Aa · Así se verán tus chats, menús y ajustes.</p>
@@ -119,10 +119,11 @@ export function AppearanceSettings({ state, run }: { state: State; run: Run }) {
     <Toggle label="Mostrar que estoy escribiendo" description="Comparte el estado de escritura con Telegram" checked={state.appearance.typing} change={(typing) => void run('appearance', { typing })} />
     <Toggle label="Enter para enviar" description="Si está desactivado, usa Ctrl + Enter" checked={state.appearance.enter} change={(enter) => void run('appearance', { enter })} />
     <div className="setting-row"><span>Gesto al deslizar una burbuja</span><div className="gesture-selects">
-      <label className="field-label">Hacia la derecha<select aria-label="Acción del gesto hacia la derecha" value={state.appearance.gestures?.right || 'none'} onChange={(event) => void run('appearance', { gestures: { left: state.appearance.gestures?.left || 'none', right: event.target.value } })}>{GESTURE_ACTIONS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
-      <label className="field-label">Hacia la izquierda<select aria-label="Acción del gesto hacia la izquierda" value={state.appearance.gestures?.left || 'none'} onChange={(event) => void run('appearance', { gestures: { left: event.target.value, right: state.appearance.gestures?.right || 'none' } })}>{GESTURE_ACTIONS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+      <label className="field-label">Hacia la derecha<select aria-label="Acción del gesto hacia la derecha" value={state.appearance.gestures?.right || 'menu'} onChange={(event) => void run('appearance', { gestures: { left: state.appearance.gestures?.left || 'reply', right: event.target.value } })}>{GESTURE_ACTIONS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+      <label className="field-label">Hacia la izquierda<select aria-label="Acción del gesto hacia la izquierda" value={state.appearance.gestures?.left || 'reply'} onChange={(event) => void run('appearance', { gestures: { left: event.target.value, right: state.appearance.gestures?.right || 'menu' } })}>{GESTURE_ACTIONS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
     </div></div>
-    <p className="settings-note">Los gestos se ejecutan deslizando una burbuja unos 70 px en horizontal, en pantallas táctiles.</p>
+    <p className="settings-note">Los gestos de burbuja se ejecutan deslizando una burbuja unos 70 px en horizontal, en pantallas táctiles. Por defecto, a la izquierda respondes al mensaje y a la derecha abres su menú.</p>
+    <p className="settings-note">En la lista de conversaciones, deslizar a la izquierda o a la derecha salta a la pestaña siguiente o anterior.</p>
     <p className="settings-note">Los cambios se aplican al instante y se guardan en este dispositivo; no modifican tu cuenta de Telegram.</p>
     {manager && <ThemeManager state={state} run={run} close={() => setManager(false)} />}
   </>;

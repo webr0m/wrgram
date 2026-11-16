@@ -128,10 +128,16 @@ export function UserMenu({state,run,desktop=false,openDataFolder,openProfile,ope
     </button>
 
     <section className="account-menu-section">
+      <div className="account-menu-heading"><span>CUENTA</span></div>
+      {state.ready&&<Row icon={<Users/>} label="Mi perfil de Telegram" detail="Nombre, biografía y nombre público, escritos en tu cuenta" onClick={openProfile}/>}
+    </section>
+
+    <section className="account-menu-section">
       <div className="account-menu-heading"><span>ESCRITORIO</span></div>
       <Row icon={<Bookmark/>} label="Mensajes guardados" detail="Tus notas y mensajes privados" onClick={openSaved}/>
       <Row icon={<Settings/>} label="Ajustes y apariencia" detail="Tema, tipografía y fondo del chat" onClick={openSettings}/>
       {openDataFolder&&<Row icon={<Link2/>} label="Abrir carpeta de datos" detail="Sesión, ajustes y multimedia local" onClick={openDataFolder}/>}
+      <Row icon={<Link2/>} label="Abrir enlace de Telegram" detail="Las invitaciones entran aquí; lo demás, en el navegador" onClick={openLink}/>
     </section>
 
     <div className="account-menu-footer">

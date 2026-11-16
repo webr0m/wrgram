@@ -2,6 +2,8 @@
 
 **Tu espacio, conectado.** Base de un cliente no oficial de Telegram con complementos basados en permisos.
 
+> **Inventario técnico revisado el 13/11/2026:** la [auditoría frente a Telegram oficial](docs/telegram-flow-audit-2026-11-13.md) describe la fuente local `1.0.0-beta22`, sus límites y las adaptaciones prioritarias. Las referencias de distribución y versiones anteriores que siguen debajo son registros históricos; esta auditoría no comprueba ni cambia Google Play.
+
 > Estado: la **demo web pública** (`alpha 0.1.0`) no conecta con Telegram ni envía mensajes reales. Por separado, Android tiene una beta conectada mediante TDLib: `0.5.0-beta11` (código 15) figura en el borrador de una prueba cerrada de Google Play y en comprobaciones de revisión; no está disponible para el público general. iOS aún no está disponible. WR IA tiene integración configurable Groq/Ollama; la generación permanece deshabilitada en la alpha pública. No se afirma paridad completa ni estabilidad de producción. [Estado Android/Play](docs/android-play.md).
 
 Se generó localmente WRGram `0.5.0-beta11` (code15) con AAB/APK firmados y se procesó en Play Console como borrador. No se envió a revisión ni se publicó. La ficha en directo sigue siendo beta09/code13. Ver [informe](artifacts/android/BETA11.md).
@@ -127,6 +129,7 @@ Llamadas, pagos con monedas distintas de XTR, facturas de Mini Apps por *slug*, 
 
 ## Decisiones y referencias
 
+- [Auditoría actual de flujos frente a Telegram oficial y backlog priorizado](docs/telegram-flow-audit-2026-11-13.md)
 - [Arquitectura y límites](docs/architecture.md)
 - [Revisión de competencia y oportunidades](docs/competition.md)
 - [Hoja de ruta priorizada](docs/roadmap.md)

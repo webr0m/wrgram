@@ -117,7 +117,7 @@ describe('Listas de tareas en la interfaz', () => {
   it('el chat crea listas desde Adjuntar con las mismas puertas que Telegram', () => {
     expect(app).toContain('function openChecklist(){');
     expect(app).toContain('label="Crear lista de tareas"');
-    expect(app).toContain("run<boolean>('checklist.send',{title:draft.title,tasks:draft.tasks,othersCanAdd:draft.othersCanAdd,othersCanDone:draft.othersCanDone,reply:reply?.id||'0',silent})");
+    expect(app).toContain("run<boolean>('checklist.send',{title:draft.title,tasks:draft.tasks,othersCanAdd:draft.othersCanAdd,othersCanDone:draft.othersCanDone,reply:replyId||'0',silent})");
     expect(app).toContain('Los chats secretos no admiten listas de tareas.');
     expect(app).toContain('Los canales no admiten listas de tareas.');
   });

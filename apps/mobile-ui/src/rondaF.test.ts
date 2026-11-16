@@ -98,7 +98,7 @@ describe('Ronda F en la interfaz', () => {
     expect(app).toContain("run<{token:string;name:string;size:number}>('attachment.pick')");
     expect(app).toContain('void runRef.current(\'attachment.discard\',{token:item.token})');
     expect(app).toContain('<PaidMediaComposer run={run} close={()=>setDialog(undefined)}');
-    expect(app).toContain("run<boolean>('send.paidMedia',{tokens:items.map(item=>item.token),starCount:price,text:formatted.text,entities:formatted.entities,reply:reply?.id||'0',silent})");
+    expect(app).toContain("run<boolean>('send.paidMedia',{tokens:items.map(item=>item.token),starCount:price,text:formatted.text,entities:formatted.entities,reply:replyId||'0',silent})");
     expect(app).toContain('label="Publicar contenido de pago"');
     expect(app).toContain("active?.type==='channel'&&<MenuItem icon={<LockKeyhole/>} label=\"Publicar contenido de pago\"");
   });

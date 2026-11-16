@@ -1,5 +1,7 @@
 # Revisión de flujos de Telegram X · primera tanda de mensajería
 
+> **Histórico de tandas anteriores.** Las referencias de versión y funciones pendientes de este documento no describen la fuente local actual. Consultar la [auditoría de flujos del 13/11/2026](telegram-flow-audit-2026-11-13.md), que distingue implementaciones, límites y validación pendiente.
+
 Revisión puntual del código público de [TGX-Android/Telegram-X](https://github.com/TGX-Android/Telegram-X), licencia GPL-3.0, y documentación actual de TDLib. No se copió código fuente de TGX; se adaptaron los patrones a la UI WebView/React y al puente de capacidades allowlist de WRGram. En TGX se revisaron `TGInlineKeyboard.java` y `TdlibFilesManager.java`.
 
 ## Patrones aplicados

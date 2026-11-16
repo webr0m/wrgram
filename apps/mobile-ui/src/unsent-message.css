@@ -1,0 +1,8 @@
+.unsent-actions { display: grid; gap: 5px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line); }
+.unsent-notice { margin: 0; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.unsent-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.unsent-buttons button { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 3px 9px; border: 1px solid var(--accent); border-radius: 8px; background: transparent; color: var(--accent); font: inherit; font-size: 12px; cursor: pointer; }
+.unsent-buttons button:disabled { opacity: .55; cursor: default; }
+.unsent-remove { border-color: #e0575a !important; color: #e0575a !important; }
+.unsent-blocked { margin: 0; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.unsent-note { margin: 0; font-size: 12px; color: var(--accent); overflow-wrap: anywhere; }

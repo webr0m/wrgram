@@ -1,5 +1,7 @@
 # WRGram: interfaz y paridad de clientes
 
+> **Registro histórico.** La matriz inferior conserva el estado de `0.5.0-beta20`, no el de `1.0.0-beta22`. Para el inventario revisado frente a Telegram oficial y las siguientes adaptaciones, consultar la [auditoría de flujos del 13/11/2026](telegram-flow-audit-2026-11-13.md). En particular, ya existe voz individual experimental, código push FCM y Telegram Business; no interpretar los pendientes antiguos como diagnóstico vigente.
+
 ## Referencias y alcance
 
 Referencias indicadas por el propietario: **Nekogram, Webogram, Unigram y Plus Messenger**, además del cliente oficial. Se toma como referencia la organización y calidad visual, no se copia su código, marca ni se afirma equivalencia completa con sus versiones actuales. Esta matriz es el inventario de WRGram, no una auditoría de funciones de terceros.

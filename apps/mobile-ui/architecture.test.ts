@@ -6,6 +6,17 @@ const sources=(dir:string):string[]=>readdirSync(new URL(dir,import.meta.url),{w
   if(entry.isDirectory())return sources(`${path}/`);
   return /\.tsx?$/.test(entry.name)&&!/\.test\.tsx?$/.test(entry.name)?[path]:[];
 });
+const block=(source:string,start:string)=>{
+  const open=source.indexOf(start);
+  if(open<0)throw new Error(`No se encuentra ${start}`);
+  const brace=source.indexOf('{',open);
+  let depth=0;
+  for(let i=brace;i<source.length;i++){
+    if(source[i]==='{')depth++;
+    if(source[i]==='}'&&--depth===0)return source.slice(open,i+1);
+  }
+  throw new Error(`Llave sin cerrar tras ${start}`);
+};
 describe('interfaz Android comercial',()=>{
   it('empaqueta assets locales con CSP sin código remoto',()=>{const html=read('./index.html');expect(html).toContain("script-src 'self'");expect(html).toContain("frame-src 'none'");expect(html).not.toContain('cdn.');});
   it('mantiene los IDs como strings y no guarda mensajes en localStorage',()=>{const bridge=read('./src/bridge.ts');expect(bridge).not.toMatch(/localStorage|sessionStorage|apiHash|TELEGRAM_API/);expect(read('./src/contract.ts')).toContain('id: string');});
@@ -26,5 +37,18 @@ describe('interfaz Android comercial',()=>{
     const dispatched=new Set([...handlers.matchAll(/case "([\w.]+)":/g)].map(match=>match[1]));
     const dead=[...allowed].filter(method=>!dispatched.has(method)).sort();
     expect(dead,`permitidos sin manejador en dispatch: ${dead.join(', ')}`).toEqual([]);
+  });
+  it('Android y Windows guardan las mismas claves de apariencia',()=>{
+    const android=block(read('../mobile/android/app/src/main/java/cc/webrom/wrgram/NativeBridge.java'),'private void appearance(JSONObject p)');
+    const windows=block(read('../desktop/src/WRGram.Desktop/TelegramService.cs'),'private object? Appearance(JsonElement args)');
+    const androidKeys=new Set<string>();
+    for(const match of android.matchAll(/p\.has\("([^"]+)"\)/g))androidKeys.add(match[1]);
+    for(const list of android.matchAll(/new String\[\]\{([^}]*)\}/g))for(const key of list[1].matchAll(/"([^"]+)"/g))androidKeys.add(key[1]);
+    const windowsKeys=new Set([...windows.matchAll(/args\.TryGetProperty\("([^"]+)",/g)].map(match=>match[1]));
+    expect(androidKeys.size).toBeGreaterThan(10);
+    const soloAndroid=[...androidKeys].filter(key=>!windowsKeys.has(key)).sort();
+    expect(soloAndroid,`el puente C# descarta estas claves de apariencia: ${soloAndroid.join(', ')}`).toEqual([]);
+    const soloWindows=[...windowsKeys].filter(key=>!androidKeys.has(key)).sort();
+    expect(soloWindows,'chrome es el único tinte propio de la ventana de Windows').toEqual(['chrome']);
   });
 });

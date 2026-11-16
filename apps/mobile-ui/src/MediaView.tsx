@@ -28,6 +28,8 @@ export function MediaView({media,auto=false,eager=false,fallback,passive=false,f
   const format=media.kind==='file'?documentFormat(media):undefined;
   const [fileBusy,setFileBusy]=useState(false);
   const stickerError=useCallback(()=>setError(true),[]);
+  // `media.play` abre el reproductor nativo de Android; en Windows el vídeo se reproduce con el <video> del WebView.
+  const nativePlayer=native&&state.platform!=='desktop';
   // Only message photos carry variants; avatars, stickers and previews keep using `media.id`.
   const variants=media.variants&&media.variants.length>0?media.variants:undefined;
   const chosen=variants?pickImageVariant(variants,imageTargetWidth(boxWidth,density())):undefined;
@@ -101,10 +103,10 @@ export function MediaView({media,auto=false,eager=false,fallback,passive=false,f
 
   // A downloaded video opens in the native Media3 player once the file is on disk.
   useEffect(()=>{
-    if(!pendingPlayer||!native||!ready)return;
+    if(!pendingPlayer||!nativePlayer||!ready)return;
     setPendingPlayer(false);
     void request('media.play',{id:media.id,title:media.name}).catch(()=>setNativePlayback(true));
-  },[pendingPlayer,native,ready,media.id,media.name]);
+  },[pendingPlayer,nativePlayer,ready,media.id,media.name]);
 
   // Recover visible photos and previews after Telegram returns from a network outage.
   useEffect(()=>{
@@ -148,7 +150,7 @@ export function MediaView({media,auto=false,eager=false,fallback,passive=false,f
     if(tooLarge)return;
     setError(false);setNativePlayback(false);setRetry(value=>value+1);
     if(!ready){setManualRequest(resourceKey);setLoad(true);}
-    if(!native)return;
+    if(!nativePlayer)return;
     if(ready)void request('media.play',{id:media.id,title:media.name}).catch(()=>setNativePlayback(true));
     else setPendingPlayer(true);
   };
@@ -171,20 +173,20 @@ export function MediaView({media,auto=false,eager=false,fallback,passive=false,f
   function renderVideo(){
     if(passive||media.animated){
       const video=<video key={`${media.id}:${retry}`} src={mediaUrl(media.id)} poster={thumbnailVideo?undefined:placeholder} muted autoPlay loop playsInline preload="metadata" onError={()=>setError(true)}/>;
-      return !passive&&native?<span className="animation-player">{video}<button type="button" className="animation-enlarge" aria-label="Abrir animación a pantalla completa" onClick={startVideo}><Maximize2 size={16}/></button></span>:video;
+      return !passive&&nativePlayer?<span className="animation-player">{video}<button type="button" className="animation-enlarge" aria-label="Abrir animación a pantalla completa" onClick={startVideo}><Maximize2 size={16}/></button></span>:video;
     }
-    if(!native||nativePlayback)return <video key={`${media.id}:${retry}`} src={mediaUrl(media.id)} poster={thumbnailVideo?undefined:placeholder} controls playsInline preload="metadata" onError={()=>setError(true)}/>;
+    if(!nativePlayer||nativePlayback)return <video key={`${media.id}:${retry}`} src={mediaUrl(media.id)} poster={thumbnailVideo?undefined:placeholder} controls playsInline preload="metadata" onError={()=>setError(true)}/>;
     return <span className="media-player"><video src={mediaUrl(media.id)} poster={thumbnailVideo?undefined:placeholder} muted playsInline preload="metadata" onError={()=>setNativePlayback(true)}/><button type="button" className="media-play" aria-label={`Reproducir ${media.name||'vídeo'} a pantalla completa`} onClick={startVideo}><span><Play size={26} fill="currentColor"/></span></button></span>;
   }
   const presentation=ready&&!error&&(!animate||visible)?media.kind==='video'?renderVideo():media.kind==='audio'?<><span className="audio-cover">{placeholder&&<img src={placeholder} alt="Portada del audio" loading="eager" decoding="async" onError={()=>setThumbError(true)}/>}</span><audio key={`${media.id}:${retry}`} src={mediaUrl(media.id)} controls preload="metadata" onError={()=>setError(true)}/></>:media.kind==='sticker'?<TgsSticker key={`${media.id}:${retry}`} id={media.id} onError={stickerError}/>:media.kind==='image'?expandable?<span className="media-shot"><img key={`${loadId}:${retry}`} src={mediaUrl(loadId)} alt={media.name||'Imagen de Telegram'} loading={eager?'eager':'lazy'} decoding="async" onClick={openViewer} onError={()=>setError(true)}/><button type="button" className="media-expand" aria-label={`Ampliar ${media.name||'foto'}`} onClick={openViewer}><Maximize2 size={14}/></button></span>:<img key={`${loadId}:${retry}`} src={mediaUrl(loadId)} alt={media.name||'Imagen de Telegram'} loading={eager?'eager':'lazy'} decoding="async" onError={()=>setError(true)}/>:<span className="file-ready">{thumbnailVideo?<video className="document-thumb" src={mediaUrl(thumb!.id)} muted autoPlay loop playsInline preload="metadata" aria-label="Vista previa animada" onError={()=>setThumbError(true)}/>:thumbnailSticker?<TgsSticker id={thumb!.id} onError={()=>setThumbError(true)}/>:placeholder?<img className="document-thumb" src={placeholder} alt="Miniatura del documento" loading="eager" decoding="async" onError={()=>setThumbError(true)}/>:<FileText/>}{media.name}</span>
       :passive||(media.animated&&ready&&!failed)?<span className="media-passive" aria-hidden="true">{fallback&&!placeholder?fallback:thumbnailVideo&&(!trackVisibility||visible)?<video className="media-thumbnail" src={mediaUrl(thumb!.id)} muted autoPlay loop playsInline preload="metadata"/>:thumbnailSticker&&(!trackVisibility||visible)?<TgsSticker id={thumb!.id} onError={()=>setThumbError(true)}/>:placeholder&&!thumbnailVideo&&!thumbnailSticker?<img src={placeholder} alt="" loading="eager" decoding="async"/>:spinner?<LoaderCircle className="spin" size={18}/>:media.kind==='video'?<Video size={18}/>:media.kind==='image'?<Image size={18}/>:<FileText size={18}/>}</span>
-      :<button className="media-load" disabled={tooLarge||spinner} title={tooLarge?`Límite de descarga: ${bytes(media.downloadLimit||0)}`:undefined} onClick={media.kind==='video'&&native?startVideo:beginLoad} aria-label={tooLarge?`Archivo demasiado grande: ${media.name}`:`Descargar ${media.name}`}>{thumbnailVideo?<video className="media-thumbnail" src={mediaUrl(thumb!.id)} muted autoPlay loop playsInline preload="metadata" aria-label={`Vista previa de ${media.name||'archivo'}`} onError={()=>setThumbError(true)}/>:thumbnailSticker?<TgsSticker id={thumb!.id} onError={()=>setThumbError(true)}/>:placeholder&&<img className="media-thumbnail" src={placeholder} alt={`Miniatura de ${media.name||'archivo'}`} loading="eager" decoding="async" onError={()=>setThumbError(true)}/>}<span>{media.kind==='video'?<Video/>:media.kind==='image'?<Image/>:<FileText/>}</span>{spinner?<LoaderCircle className="spin" size={18}/>:<Download size={18}/>}<small>{tooLarge?`Límite ${bytes(media.downloadLimit||0)}`:failed?'No se pudo cargar · toca para reintentar':bytes(media.size)}</small></button>;
+      :<button className="media-load" disabled={tooLarge||spinner} title={tooLarge?`Límite de descarga: ${bytes(media.downloadLimit||0)}`:undefined} onClick={media.kind==='video'&&nativePlayer?startVideo:beginLoad} aria-label={tooLarge?`Archivo demasiado grande: ${media.name}`:`Descargar ${media.name}`}>{thumbnailVideo?<video className="media-thumbnail" src={mediaUrl(thumb!.id)} muted autoPlay loop playsInline preload="metadata" aria-label={`Vista previa de ${media.name||'archivo'}`} onError={()=>setThumbError(true)}/>:thumbnailSticker?<TgsSticker id={thumb!.id} onError={()=>setThumbError(true)}/>:placeholder&&<img className="media-thumbnail" src={placeholder} alt={`Miniatura de ${media.name||'archivo'}`} loading="eager" decoding="async" onError={()=>setThumbError(true)}/>}<span>{media.kind==='video'?<Video/>:media.kind==='image'?<Image/>:<FileText/>}</span>{spinner?<LoaderCircle className="spin" size={18}/>:<Download size={18}/>}<small>{tooLarge?`Límite ${bytes(media.downloadLimit||0)}`:failed?'No se pudo cargar · toca para reintentar':bytes(media.size)}</small></button>;
   return <span className={`media-view ${media.kind}${animationFrame?" media-animated":""}`} ref={ref}>
     {animationFrame?<span className="animation-frame" style={{aspectRatio}}>{presentation}</span>:presentation}
     {ready&&native&&fileControls&&<span className="file-actions">
-      {format&&<button type="button" disabled={fileBusy} onClick={()=>format==='video'?void fileAction('media.play',loadId):setDocumentOpen(true)}>{format==='video'?<Play size={14}/>:<FileText size={14}/>} {format==='video'?'Reproducir':'Vista previa'}</button>}
+      {format&&(format!=='video'||nativePlayer)&&<button type="button" disabled={fileBusy} onClick={()=>format==='video'?void fileAction('media.play',loadId):setDocumentOpen(true)}>{format==='video'?<Play size={14}/>:<FileText size={14}/>} {format==='video'?'Reproducir':'Vista previa'}</button>}
       {media.exportable!==false&&<>
-        {media.kind!=='sticker'&&<button type="button" disabled={fileBusy} onClick={()=>void fileAction('media.open',loadId)}>Abrir con…</button>}
+        {media.kind!=='sticker'&&nativePlayer&&<button type="button" disabled={fileBusy} onClick={()=>void fileAction('media.open',loadId)}>Abrir con…</button>}
         <button type="button" disabled={fileBusy} onClick={()=>void fileAction('media.export',viewerReady?viewerId:loadId)}><Download size={14}/> Guardar</button>
       </>}
       {fileError&&<small role="status">{fileError}</small>}

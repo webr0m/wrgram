@@ -1,0 +1,25 @@
+.safety-bar { display:flex; align-items:center; flex-wrap:wrap; gap:9px; padding:9px 12px; border-bottom:1px solid var(--line); background:var(--hover); font-size:13px; }
+.safety-bar span { flex:1 1 200px; min-width:0; }
+.safety-bar button { display:inline-flex; align-items:center; gap:5px; min-height:34px; padding:4px 10px; border:1px solid var(--accent); border-radius:9px; background:transparent; color:var(--accent); font:inherit; font-size:12px; cursor:pointer; }
+.safety-bar.warn { background:color-mix(in srgb,#e0a757 18%,transparent); }
+.safety-panel { display:grid; gap:10px; width:min(480px,94vw); min-width:0; }
+.safety-notice { display:grid; gap:5px; padding:11px; border:1px solid var(--line); border-radius:12px; }
+.safety-notice.warn { border-color:#e0a757; }
+.safety-notice-head { display:flex; align-items:center; gap:7px; font-size:13px; }
+.safety-notice p { margin:0; font-size:13px; overflow-wrap:anywhere; }
+.safety-quiet { margin:0; font-size:13px; color:var(--muted); }
+.safety-list { display:grid; gap:6px; margin:0; padding:0; list-style:none; }
+.safety-signal { display:flex; align-items:flex-start; gap:9px; padding:9px 10px; border:1px solid var(--line); border-radius:10px; font-size:13px; }
+.safety-signal i { flex:none; width:9px; height:9px; margin-top:5px; border-radius:50%; background:var(--muted); }
+.safety-signal.bad i { background:#e0575a; }
+.safety-signal.warn i { background:#e0a757; }
+.safety-signal.good i { background:var(--accent); }
+.safety-signal span { min-width:0; overflow-wrap:anywhere; }
+.safety-digest { margin:0; font-size:12px; color:var(--accent); font-weight:600; }
+.safety-actions { display:grid; gap:6px; }
+.safety-dismiss { display:inline-flex; align-items:center; gap:6px; min-height:40px; padding:6px 10px; border:1px solid var(--line); border-radius:10px; background:transparent; color:var(--text); font:inherit; font-size:13px; cursor:pointer; }
+.safety-dismiss:disabled { opacity:.5; cursor:default; }
+.safety-state { display:flex; align-items:center; justify-content:center; gap:8px; padding:8px; font-size:13px; color:var(--muted); text-align:center; }
+.safety-state button { min-height:34px; padding:4px 10px; border:1px solid var(--accent); border-radius:9px; background:transparent; color:var(--accent); font:inherit; font-size:12px; cursor:pointer; }
+@media(prefers-reduced-motion:no-preference) { .safety-bar button,.safety-dismiss,.safety-state button { transition:background .14s,color .14s; } }
+@media(max-width:420px) { .safety-bar button { width:100%; justify-content:center; } }

@@ -53,9 +53,12 @@ final class NativeBridge implements TdSession.Listener {
     private final NativeCatalog catalog;
     private final Handler main=new Handler(Looper.getMainLooper());
     private final Runnable assistantChanged=this::schedule;
-    private final Set<String> pending=new HashSet<>();
+    private final PendingRequests pending=new PendingRequests();
     private final Map<Long,TdApi.Message> searchResults=new HashMap<>();
-    private long searchOwner,searchChat,searchNext;private String searchQuery="",searchFilterKey="";private int searchTopic,searchGeneration;
+    private long searchOwner,searchChat,searchNext,searchFrom,searchUntil;private String searchQuery="",searchFilterKey="",searchSender="",searchSecretOffset="";private int searchTopic,searchGeneration;private boolean searchSecret;
+    private long threadOwner,threadRootChat,threadRootId,threadNext;private JSONObject threadSummary;
+    private long requestOwner,requestChat,requestCursorUser;private int requestCursorDate;
+    private long linkOwner,linkChat;private int linkOffsetDate;private String linkOffsetLink="";private boolean linkRevoked;
     private final Map<String,InlineBatch> inlineBatches=new HashMap<>();
     private final Map<String,InlineSelection> inlineSelections=new HashMap<>();
     private final Set<String> openStoryViews=new HashSet<>();
@@ -89,6 +92,7 @@ final class NativeBridge implements TdSession.Listener {
     private Answer videoNotePicking;
     private File exportFile;
     private File profilePhotoFile;
+    private Answer chatPhotoPicking;private File chatPhotoFile;private long chatPhotoTarget;
     private File storyPhotoFile;
     private Bitmap storyPhotoPreview;
     private File storyVideoFile;
@@ -96,6 +100,7 @@ final class NativeBridge implements TdSession.Listener {
     private double storyVideoDuration;
     private boolean storyVideoSilent,storyVideoPicking;
     private static final class Attachment {File path;String name,mime;long size,account,chat;boolean voice,videoNote;int voiceDuration,videoLength;byte[] waveform;}
+    private static final class PreparedPhoto {final File file;final Bitmap preview;PreparedPhoto(File file,Bitmap preview){this.file=file;this.preview=preview;}}
     private static final class PendingStarsPayment {final long owner,chatId,messageId,formId,amount,expiresAt;final String title,description,seller;final boolean test,subscription;final int period;PendingStarsPayment(long owner,long chatId,long messageId,long formId,long amount,String title,String description,String seller,boolean test,boolean subscription,int period){this.owner=owner;this.chatId=chatId;this.messageId=messageId;this.formId=formId;this.amount=amount;this.title=title;this.description=description;this.seller=seller;this.test=test;this.subscription=subscription;this.period=period;this.expiresAt=SystemClock.elapsedRealtime()+120_000;}}
     private static final class InlineBatch {final long owner,originChatId,chatId,botId;final TdApi.MessageTopic topic;final TdApi.TargetChatTypes allowedTypes;final String botName,targetChat,query;long queryId,expiresAt;String nextOffset;final ArrayList<TdApi.InlineQueryResult> results=new ArrayList<>();InlineBatch(long owner,long originChatId,long chatId,long botId,TdApi.MessageTopic topic,TdApi.TargetChatTypes allowedTypes,String botName,String targetChat,String query,TdApi.InlineQueryResults values){this.owner=owner;this.originChatId=originChatId;this.chatId=chatId;this.botId=botId;this.topic=topic;this.allowedTypes=allowedTypes;this.botName=botName;this.targetChat=targetChat;this.query=query;append(values);}void append(TdApi.InlineQueryResults values){queryId=values.inlineQueryId;nextOffset=values.nextOffset;expiresAt=SystemClock.elapsedRealtime()+60_000;if(values.results!=null)for(TdApi.InlineQueryResult item:values.results)if(results.size()<30)results.add(item);if(results.size()>=30)nextOffset="";}}
     private static final class InlineSelection {final long owner,originChatId,messageId,botId;final int row,column;final String query,botName;final TdApi.TargetChatTypes types;final TdApi.MessageTopic originTopic;final long expiresAt;InlineSelection(long owner,long originChatId,long messageId,int row,int column,long botId,String query,String botName,TdApi.TargetChatTypes types,TdApi.MessageTopic originTopic){this.owner=owner;this.originChatId=originChatId;this.messageId=messageId;this.row=row;this.column=column;this.botId=botId;this.query=query;this.botName=botName;this.types=types;this.originTopic=originTopic;this.expiresAt=SystemClock.elapsedRealtime()+60_000;}}
@@ -105,10 +110,11 @@ final class NativeBridge implements TdSession.Listener {
     void attach(){if(!currentAccount())return;attached=true;chatsDirty=true;messagesDirty=true;session.observe(this);assistant.observe(assistantChanged);if(((WrgramApplication)activity.getApplication()).ageAccess().allowed())session.onForeground();if(session.ready()&&contactSyncEnabled(session.selfId))armContactSync();schedule();}
     void detach(){if(!((WrgramApplication)activity.getApplication()).ageAccess().allowed())activity.clearSensitiveGateFields();attached=false;main.removeCallbacks(contactSyncTrigger);session.unobserve(this);assistant.unobserve(assistantChanged);session.stopTyping();cancelVoiceRecording();}
     private void armContactSync(){main.removeCallbacks(contactSyncTrigger);main.postDelayed(contactSyncTrigger,8000);}
-    void destroy(){cancelVoiceRecording();if(videoNotePicking!=null)videoNotePicking.fail("La app se cerró; no se envió el videomensaje.");videoNotePicking=null;if(locationAnswer!=null)locationAnswer.fail("La app se cerró; no se compartió ninguna ubicación.");if(profilePhotoPicking!=null)profilePhotoPicking.fail("La app se cerró; no se cambió la foto.");locationAnswer=null;locationSource=null;profilePhotoPicking=null;if(storyPicking!=null)storyPicking.fail("La app se cerró; no se publicó ninguna historia.");storyPicking=null;if(albumPicking!=null)albumPicking.fail("La app se cerró; no se envió el álbum.");albumPicking=null;if(contactsImportAnswer!=null)contactsImportAnswer.fail("La app se cerró; no se importaron contactos.");contactsImportAnswer=null;if(contactSyncPending!=null)contactSyncPending.fail("La app se cerró; no se activó la sincronización de agenda.");contactSyncPending=null;if(contactSyncNowAnswer!=null)contactSyncNowAnswer.fail("La app se cerró; no se sincronizó la agenda.");contactSyncNowAnswer=null;discardStoryDraft();deleteProfilePhotoFile();starsPayments.clear();destroyed=true;main.removeCallbacksAndMessages(null);events=null;media.clear();catalog.clear();inlineBatches.clear();inlineSelections.clear();clearUnsent();}
+    void destroy(){cancelVoiceRecording();if(videoNotePicking!=null)videoNotePicking.fail("La app se cerró; no se envió el videomensaje.");videoNotePicking=null;if(locationAnswer!=null)locationAnswer.fail("La app se cerró; no se compartió ninguna ubicación.");if(profilePhotoPicking!=null)profilePhotoPicking.fail("La app se cerró; no se cambió la foto.");locationAnswer=null;locationSource=null;profilePhotoPicking=null;if(chatPhotoPicking!=null)chatPhotoPicking.fail("La app se cerró; no se cambió la foto de la comunidad.");chatPhotoPicking=null;if(storyPicking!=null)storyPicking.fail("La app se cerró; no se publicó ninguna historia.");storyPicking=null;if(albumPicking!=null)albumPicking.fail("La app se cerró; no se envió el álbum.");albumPicking=null;if(contactsImportAnswer!=null)contactsImportAnswer.fail("La app se cerró; no se importaron contactos.");contactsImportAnswer=null;if(contactSyncPending!=null)contactSyncPending.fail("La app se cerró; no se activó la sincronización de agenda.");contactSyncPending=null;if(contactSyncNowAnswer!=null)contactSyncNowAnswer.fail("La app se cerró; no se sincronizó la agenda.");contactSyncNowAnswer=null;discardStoryDraft();deleteProfilePhotoFile();deleteChatPhotoFile();starsPayments.clear();pending.clear();destroyed=true;main.removeCallbacksAndMessages(null);events=null;media.clear();catalog.clear();inlineBatches.clear();inlineSelections.clear();clearUnsent();}
     @Override public void changed(String kind){syncAccount();if(kind.equals("chats"))chatsDirty=true;if(kind.equals("messages")||kind.startsWith("history"))messagesDirty=true;if(kind.equals("selected")||kind.equals("auth")||kind.equals("account")){chatsDirty=true;messagesDirty=true;}if(kind.equals("auth")&&session.ready()&&contactSyncEnabled(session.selfId))armContactSync();schedule();}
     private void syncAccount(){if(account==session.selfId)return;account=session.selfId;chatsDirty=true;messagesDirty=true;media.clear();catalog.clear();searchResults.clear();inlineBatches.clear();inlineSelections.clear();openStoryViews.clear();starsPayments.clear();clearUnsent();if(account==0)assistant.clear();}
     private static void post(JavaScriptReplyProxy proxy,String value){if(WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER))proxy.postMessage(value);}
+    private static void reject(JavaScriptReplyProxy proxy,String id,String error){try{post(proxy,object("id",id,"result",JSONObject.NULL,"error",error).toString());}catch(Exception ignored){}}
     void refreshAccessGate(){chatsDirty=true;messagesDirty=true;schedule();}
     void updateChanged(){schedule();}
     private JSONObject bridgeState(boolean includeChats,boolean includeMessages)throws Exception{if(((WrgramApplication)activity.getApplication()).ageAccess().allowed()){JSONObject value=dto.state(includeChats,includeMessages);value.put("update",activity.playUpdateStatus());value.put("contactsSync",contactSyncStatus());value.put("voiceAutoStopped",voiceAutoStopped);return value;}return object("ready",false,"auth","age","consent",false,"busy",false,"connection","Sin conectar","online",false,"error","","notice","","version",BuildConfig.VERSION_NAME,"selfId","0","name","","active","0","canSend",false,"sending",false,"uncertain",false,"chatsBusy",false,"chats",new JSONArray(),"messages",new JSONArray(),"folders",new JSONArray(),"history",object("loading",false,"error","","end",false,"latest",true),"appearance",NativeSnapshot.appearanceDto(prefs,activity),"permissions",object("notes",false,"replies",false),"assistant",object("state","Sin comprobar","ready",false,"busy",false,"consent",false,"error","","turns",new JSONArray()),"security",AppLock.status(activity),"access",session.accessState(),"wallet",object("stars",0,"nanostars",0,"premium",false));}
@@ -135,15 +141,16 @@ final class NativeBridge implements TdSession.Listener {
         Answer(String id,JavaScriptReplyProxy proxy){this.id=id;this.proxy=proxy;owner=session.selfId;}
         void ok(Object result){finish(result,null);}
         void fail(String error){finish(null,error);}
-        void finish(Object result,String error){if(finished)return;finished=true;pending.remove(id);if(destroyed||!currentAccount())return;try{post(proxy,object("id",id,"result",result==null?JSONObject.NULL:result,"error",error==null?JSONObject.NULL:error).toString());}catch(Exception ignored){}}
+        void finish(Object result,String error){if(finished)return;finished=true;pending.release(id);if(destroyed||!currentAccount())return;try{post(proxy,object("id",id,"result",result==null?JSONObject.NULL:result,"error",error==null?JSONObject.NULL:error).toString());}catch(Exception ignored){}}
     }
     private interface LinkSink {void ok(JSONObject value);void fail(String error);}
+    private boolean reporting;
     void receive(String raw,JavaScriptReplyProxy proxy){
         if(destroyed||!attached||!currentAccount()||raw==null||raw.length()>BridgePolicy.MAX_BYTES)return;
         if(!activity.requireAccess())return;
         Answer answer=null;
         try{
-            JSONObject envelope=new JSONObject(raw);BridgePolicy.envelope(envelope);String id=envelope.getString("id");if(pending.contains(id))return;if(pending.size()>=32){new Answer(id,proxy).fail("Hay demasiadas solicitudes pendientes. Espera un momento y reintenta.");return;}pending.add(id);answer=new Answer(id,proxy);events=proxy;syncAccount();String method=envelope.getString("method");if(!((WrgramApplication)activity.getApplication()).ageAccess().allowed()&&!ACCESS_METHODS.contains(method)){answer.fail("Completa primero la comprobación regional de edad y residencia.");return;}dispatch(method,envelope.getJSONObject("params"),answer);
+            JSONObject envelope=new JSONObject(raw);BridgePolicy.envelope(envelope);String id=envelope.getString("id");boolean repeated=pending.contains(id);if(!pending.admit(id,SystemClock.elapsedRealtime())){reject(proxy,id,repeated?"Esa solicitud sigue abierta en Telegram. Espera a que termine y vuelve a intentarla.":"Hay demasiadas solicitudes pendientes. Espera un momento y reintenta.");return;}answer=new Answer(id,proxy);events=proxy;syncAccount();String method=envelope.getString("method");if(!((WrgramApplication)activity.getApplication()).ageAccess().allowed()&&!ACCESS_METHODS.contains(method)){answer.fail("Completa primero la comprobación regional de edad y residencia.");return;}dispatch(method,envelope.getJSONObject("params"),answer);
         }catch(Exception ignored){if(answer!=null)answer.fail("Solicitud no válida o función no disponible.");}
     }
     private void requireAccount(){if(!currentAccount()||!session.ready()||session.selfId<=0)throw new IllegalArgumentException("Account required");}
@@ -218,12 +225,16 @@ final class NativeBridge implements TdSession.Listener {
         });
     }
     private static JSONObject passwordDto(TdApi.PasswordState state)throws Exception{
-        return object("hasPassword",state.hasPassword,"hint",state.passwordHint==null?"":NativeSnapshot.limit(state.passwordHint,64),"hasRecoveryEmail",state.hasRecoveryEmailAddress,"hasPassport",state.hasPassportData,"pendingReset",state.pendingResetDate);
+        JSONObject result=object("hasPassword",state.hasPassword,"hint",state.passwordHint==null?"":NativeSnapshot.limit(state.passwordHint,64),"hasRecoveryEmail",state.hasRecoveryEmailAddress,"hasPassport",state.hasPassportData,"pendingReset",state.pendingResetDate);
+        if(state.recoveryEmailAddressCodeInfo!=null)result.put("recoveryEmailPattern",state.recoveryEmailAddressCodeInfo.emailAddressPattern).put("recoveryCodeLength",state.recoveryEmailAddressCodeInfo.length);
+        return result;
     }
     private void passwordState(Answer a){
+        requireAccount();
         perform(new TdApi.GetPasswordState(),a,state->{try{a.ok(passwordDto(state));}catch(Exception ignored){a.fail("No se pudo leer la contraseña de dos pasos.");}});
     }
     private void passwordSet(JSONObject p,Answer a){
+        requireAccount();
         String current=BridgePolicy.text(p,"current",256),next=BridgePolicy.text(p,"next",256),hint=BridgePolicy.text(p,"hint",64).trim();
         if(next.isEmpty()&&!p.optBoolean("confirmRemove")){a.fail("Confirma que quieres quitar la contraseña de dos pasos.");return;}
         perform(new TdApi.SetPassword(current,next,hint,false,""),a,state->{try{a.ok(passwordDto(state));}catch(Exception ignored){a.fail("Telegram cambió la contraseña, pero no se pudo leer el nuevo estado.");}});
@@ -346,7 +357,63 @@ final class NativeBridge implements TdSession.Listener {
             answer.ok(items);
         });return;
     }perform(new TdApi.GetChatActiveStories(chat.id),answer,value->{try{JSONArray items=new JSONArray();if(value.stories!=null)for(TdApi.StoryInfo info:value.stories)items.put(object("id",info.storyId,"date",info.date,"closeFriends",info.isForCloseFriends,"live",info.isLive));answer.ok(items);}catch(Exception ignored){answer.fail("No se pudieron preparar las historias.");}});}
-    private void openStory(JSONObject p,Answer answer)throws Exception{requireAccount();long chatId=BridgePolicy.id(p,"id");int storyId=p.optInt("storyId");TdApi.Chat chat=session.chat(chatId);if(chat==null||chat.type instanceof TdApi.ChatTypeSecret)throw new IllegalArgumentException();perform(new TdApi.GetStory(chatId,storyId,false),answer,story->{try{JSONObject file=dto.storyMedia(story);if(file==null){answer.fail("Este formato de historia todavía no está disponible.");return;}String caption=story.caption==null||story.caption.text==null?"":NativeSnapshot.limit(story.caption.text,1000);perform(new TdApi.OpenStory(chatId,storyId),answer,ignored->{openStoryViews.add(storyKey(chatId,storyId));answer.ok(object("id",storyId,"chatId",Long.toString(chatId),"posterChatId",Long.toString(story.posterChatId),"caption",caption,"media",file,"canEdit",story.canBeEdited,"canDelete",story.canBeDeleted,"canToggleProfile",story.canToggleIsPostedToChatPage,"isPostedToChatPage",story.isPostedToChatPage,"canArchive",story.canBeAddedToAlbum));});}catch(Exception ignored){answer.fail("No se pudo abrir la historia.");}});}
+    private void openStory(JSONObject p,Answer answer)throws Exception{
+        requireAccount();
+        long chatId=BridgePolicy.id(p,"id");
+        int storyId=p.getInt("storyId");
+        TdApi.Chat chat=session.chat(chatId);
+        if(chat==null||chat.type instanceof TdApi.ChatTypeSecret||storyId<=0)throw new IllegalArgumentException();
+        openStory(chatId,storyId,answer);
+    }
+
+    private void openSharedStory(JSONObject params,Answer answer){
+        TdApi.Message source=message(params);
+        if(MessageExtras.temporary(source)||!(source.content instanceof TdApi.MessageStory)){
+            answer.fail("Esta historia ya no está disponible.");
+            return;
+        }
+        TdApi.MessageStory story=(TdApi.MessageStory)source.content;
+        if(story.storyPosterChatId==0||story.storyId<=0){
+            answer.fail("Esta historia ya no está disponible.");
+            return;
+        }
+        openStory(story.storyPosterChatId,story.storyId,answer);
+    }
+
+    private void playMessageEmoji(JSONObject params,Answer answer){
+        TdApi.Message source=message(params);
+        TdApi.Chat chat=session.chat(source.chatId);
+        if(MessageExtras.temporary(source)||!(source.content instanceof TdApi.MessageAnimatedEmoji)
+                ||!source.canBeSaved||chat==null||chat.hasProtectedContent||chat.type instanceof TdApi.ChatTypeSecret){
+            answer.fail("Este emoji no tiene un efecto interactivo disponible.");
+            return;
+        }
+        session.perform(new TdApi.ClickAnimatedEmojiMessage(source.chatId,source.id),sticker->{
+            if(!currentAccount()||answer.owner!=session.selfId||source.chatId!=session.activeChat){answer.ok(null);return;}
+            try{answer.ok(sticker==null?null:dto.sticker(sticker));}
+            catch(Exception ignored){answer.ok(null);}
+        },error->answer.ok(null)); // TDLib returns 404 when only the normal animation is available.
+    }
+
+    private void openMessageLocation(JSONObject params,Answer answer)throws Exception{
+        TdApi.Message source=message(params);
+        TdApi.Chat chat=session.chat(source.chatId);
+        if(MessageExtras.temporary(source)||!source.canBeSaved||chat==null
+                ||chat.hasProtectedContent||chat.type instanceof TdApi.ChatTypeSecret){
+            answer.fail("Esta ubicación solo se puede ver dentro de este chat.");
+            return;
+        }
+        TdApi.Location location=MessageExtras.coordinates(source.content);
+        if(!MessageExtras.validLocation(location)){
+            answer.fail("La ubicación ya no está disponible.");
+            return;
+        }
+        String point=location.latitude+","+location.longitude;
+        ExternalLinks.open(activity,"https://www.google.com/maps/search/?api=1&query="+point,()->answer.ok(true),()->answer.ok(false));
+    }
+
+    private void openStory(long chatId,int storyId,Answer answer){
+        perform(new TdApi.GetStory(chatId,storyId,false),answer,story->{try{JSONObject file=dto.storyMedia(story);if(file==null){answer.fail("Este formato de historia todavía no está disponible.");return;}String caption=story.caption==null||story.caption.text==null?"":NativeSnapshot.limit(story.caption.text,1000);perform(new TdApi.OpenStory(chatId,storyId),answer,ignored->{openStoryViews.add(storyKey(chatId,storyId));answer.ok(object("id",storyId,"chatId",Long.toString(chatId),"posterChatId",Long.toString(story.posterChatId),"caption",caption,"media",file,"canEdit",story.canBeEdited,"canDelete",story.canBeDeleted,"canToggleProfile",story.canToggleIsPostedToChatPage,"isPostedToChatPage",story.isPostedToChatPage,"canArchive",story.canBeAddedToAlbum));});}catch(Exception ignored){answer.fail("No se pudo abrir la historia.");}});}
     private void closeStory(JSONObject p,Answer answer){requireAccount();long chatId=BridgePolicy.id(p,"id");int storyId=p.optInt("storyId",-1);String key=storyKey(chatId,storyId);if(!openStoryViews.remove(key)){answer.ok(false);return;}perform(new TdApi.CloseStory(chatId,storyId),answer,ignored->answer.ok(true));}
     private void editStoryCaption(JSONObject params,Answer answer)throws Exception{requireAccount();long chatId=BridgePolicy.id(params,"id");int storyId=params.getInt("storyId");String caption=BridgePolicy.text(params,"caption",1024);perform(new TdApi.GetStory(chatId,storyId,false),answer,story->{if(!story.canBeEdited){answer.fail("Telegram no permite editar esta historia.");return;}perform(new TdApi.EditStory(story.posterChatId,storyId,null,null,new TdApi.FormattedText(caption,new TdApi.TextEntity[0])),answer,ignored->{schedule();answer.ok(true);});});}
     private void deleteStory(JSONObject params,Answer answer)throws Exception{requireAccount();long chatId=BridgePolicy.id(params,"id");int storyId=params.getInt("storyId");perform(new TdApi.GetStory(chatId,storyId,false),answer,story->{if(!story.canBeDeleted){answer.fail("Telegram no permite eliminar esta historia.");return;}perform(new TdApi.DeleteStory(story.posterChatId,storyId),answer,ignored->{openStoryViews.remove(storyKey(chatId,storyId));schedule();answer.ok(true);});});}
@@ -434,9 +501,14 @@ final class NativeBridge implements TdSession.Listener {
             case "apps.open":openApp(BridgePolicy.text(p,"app",20),true,a);break;
             case "apps.chat":openApp(BridgePolicy.text(p,"app",20),false,a);break;
             case "sponsored.view":case "sponsored.open":sponsored(method,p,a);break;
+            case "sponsored.settings":sponsoredSettings(p,a);break;
+            case "sponsored.settings.set":setSponsoredSettings(p,a);break;
+            case "sponsored.report":reportSponsored(p,a);break;
             case "notifications.status":a.ok(PushNotifications.status(activity));break;
             case "notifications.enable":activity.enableNotifications();schedule();a.ok(true);break;
             case "notifications.disable":PushNotifications.disable((WrgramApplication)activity.getApplication());schedule();a.ok(true);break;
+            case "notify.scopes":scopeSettings(p,a);break;
+            case "notify.scope.save":saveScopeSettings(p,a);break;
             case "app.background":activity.moveTaskToBack(true);a.ok(true);break;
             case "connect":session.setConsent(true);session.start();a.ok(true);break;
             case "authenticate":if(!session.consent())throw new IllegalArgumentException();session.authenticate(BridgePolicy.text(p,"value",256));a.ok(true);break;
@@ -448,22 +520,36 @@ final class NativeBridge implements TdSession.Listener {
             case "logout":session.logOut();assistant.clear();a.ok(true);break;
             case "account.profile":accountProfile(a);break;
             case "chat.profile":chatProfile(p,a);break;
+            case "chat.report":reportChat(p,a,false);break;
+            case "message.report":reportChat(p,a,true);break;
             case "profile.related":profileRelated(p,a);break;
             case "profile.peer":{requireAccount();perform(new TdApi.GetChat(BridgePolicy.id(p,"id")),a,chat->respondProfilePeer(chat,a));break;}
             case "profile.block":profileBlock(p,a);break;
             case "profile.sender":senderProfile(p,a);break;
             case "profile.contact":{requireAccount();long userId=BridgePolicy.id(p,"id");perform(new TdApi.CreatePrivateChat(userId,false),a,chat->respondProfilePeer(chat,a));break;}
             case "clipboard.copy":{String text=BridgePolicy.text(p,"text",4096);ClipboardManager clipboard=(ClipboardManager)activity.getSystemService(Context.CLIPBOARD_SERVICE);if(clipboard==null){a.fail("El portapapeles no está disponible.");break;}clipboard.setPrimaryClip(ClipData.newPlainText("WRGram",text));a.ok(true);break;}
-            case "account.photo.pick":{requireAccount();if(profilePhotoPicking!=null)throw new IllegalArgumentException("Ya hay un selector de imagen abierto.");profilePhotoPicking=a;activity.chooseProfilePhoto();break;}
+            case "account.photo.pick":{requireAccount();if(profilePhotoPicking!=null)throw new IllegalArgumentException(PHOTO_BUSY);profilePhotoPicking=a;activity.chooseProfilePhoto();break;}
             case "account.photo.delete":deleteAccountPhoto(a);break;
+            case "chat.photo.pick":chatPhotoPick(p,a);break;
+            case "chat.photo.delete":deleteChatPhoto(p,a);break;
             case "account.name":{requireAccount();String first=BridgePolicy.text(p,"firstName",64).trim(),last=BridgePolicy.text(p,"lastName",64).trim();if(first.isEmpty())throw new IllegalArgumentException("El nombre no puede quedar vacío.");perform(new TdApi.SetName(first,last),a,result->{schedule();a.ok(true);});break;}
             case "account.bio":{requireAccount();String bio=BridgePolicy.text(p,"bio",140).replace('\n',' ').trim();perform(new TdApi.SetBio(bio),a,result->{schedule();a.ok(true);});break;}
             case "account.username":{requireAccount();String username=BridgePolicy.text(p,"username",32).trim();if(!username.isEmpty()&&!username.matches("[A-Za-z][A-Za-z0-9_]{4,31}"))throw new IllegalArgumentException("El nombre público debe tener de 5 a 32 caracteres y empezar con una letra.");perform(new TdApi.SetUsername(username),a,result->{schedule();a.ok(true);});break;}
             case "account.sessions":accountSessions(a);break;
             case "privacy.get":privacyGet(a);break;
+            case "privacy.blocked":blockedSenders(p,a);break;
+            case "privacy.unblock":unblockSender(p,a);break;
             case "privacy.set":privacySet(p,a);break;
             case "password.state":passwordState(a);break;
             case "password.set":passwordSet(p,a);break;
+            case "password.email.set":recoveryEmailSet(p,a);break;
+            case "password.email.check":recoveryEmailAction("check",p,a);break;
+            case "password.email.resend":recoveryEmailAction("resend",p,a);break;
+            case "password.email.cancel":recoveryEmailAction("cancel",p,a);break;
+            case "privacy.autoDelete":autoDeleteGet(p,a,false);break;
+            case "chat.autoDelete":autoDeleteGet(p,a,true);break;
+            case "privacy.autoDelete.set":autoDeleteSet(p,a,false);break;
+            case "chat.autoDelete.set":autoDeleteSet(p,a,true);break;
             case "account.session.revoke":{requireAccount();long id=BridgePolicy.id(p,"id");perform(new TdApi.TerminateSession(id),a,result->{a.ok(true);});break;}
             case "security.lock":{boolean enabled=p.getBoolean("enabled");activity.changeAppLock(enabled,granted->{if(granted){schedule();a.ok(true);}else a.fail("No se cambió el bloqueo de la app.");});break;}
             case "security.timeout":{AppLock.setLockAfter(activity,p.optInt("seconds",-1));schedule();a.ok(true);break;}
@@ -480,6 +566,7 @@ final class NativeBridge implements TdSession.Listener {
              case "groups.createSuper":createSupergroup(p,a);break;
              case "groups.members":groupMembers(p,a);break;
              case "groups.members.page":groupMembersPage(p,a);break;
+             case "groups.members.basic":basicRoster(p,a);break;
              case "groups.banned":bannedMembers(p,a);break;
              case "groups.member.ban":banGroupMember(p,a,false);break;
              case "groups.member.restrict":banGroupMember(p,a,true);break;
@@ -494,6 +581,8 @@ final class NativeBridge implements TdSession.Listener {
             case "chat.senders.set":setChatSender(p,a);break;
             case "chat.username":chatUsername(p,a);break;
             case "chat.username.set":setChatUsername(p,a);break;
+            case "chat.info":chatInfo(p,a);break;
+            case "chat.info.set":setChatInfo(p,a);break;
             case "groups.events":adminEvents(p,a);break;
             case "chat.transfer.check":transferOwnershipCheck(p,a);break;
             case "chat.transfer":transferOwnership(p,a);break;
@@ -592,6 +681,9 @@ final class NativeBridge implements TdSession.Listener {
              case "chat.invite":createInviteLink(p,a);break;
              case "chat.subscription.create":createSubscriptionInvite(p,a);break;
              case "story.open":openStory(p,a);break;
+             case "message.story.open":openSharedStory(p,a);break;
+             case "message.emoji.play":playMessageEmoji(p,a);break;
+             case "message.location.open":openMessageLocation(p,a);break;
              case "story.close":closeStory(p,a);break;
              case "story.create.photo":createPhotoStory(a);break;
              case "story.create.video":createVideoStory(a);break;
@@ -623,15 +715,17 @@ final class NativeBridge implements TdSession.Listener {
             case "chat.pin":{TdApi.Chat chat=target(p);perform(new TdApi.ToggleChatIsPinned(session.selectedList(),chat.id,p.getBoolean("value")),a,value->a.ok(true));break;}
             case "chat.archive":{TdApi.Chat chat=target(p);TdApi.AddChatToList action=new TdApi.AddChatToList();action.chatId=chat.id;action.chatList=p.getBoolean("value")?new TdApi.ChatListArchive():new TdApi.ChatListMain();perform(action,a,value->a.ok(true));break;}
             case "chat.unread":{TdApi.Chat chat=target(p);TdApi.ToggleChatIsMarkedAsUnread action=new TdApi.ToggleChatIsMarkedAsUnread();action.chatId=chat.id;action.isMarkedAsUnread=p.getBoolean("value");perform(action,a,value->a.ok(true));break;}
-            case "chat.mute":{TdApi.Chat chat=target(p);if(chat.notificationSettings==null)throw new IllegalArgumentException();TdApi.ChatNotificationSettings value=copySettings(chat.notificationSettings);value.useDefaultMuteFor=false;value.muteFor=p.getBoolean("value")?Integer.MAX_VALUE:0;perform(new TdApi.SetChatNotificationSettings(chat.id,value),a,result->a.ok(true));break;}
+            case "chat.mute":{TdApi.Chat chat=target(p);if(chat.notificationSettings==null)throw new IllegalArgumentException();TdApi.ChatNotificationSettings value=copySettings(chat.notificationSettings);value.useDefaultMuteFor=false;value.muteFor=ChatNotificationPolicy.muteFor(p);perform(new TdApi.SetChatNotificationSettings(chat.id,value),a,result->a.ok(true));break;}
             case "chat.read":{
                 if(!p.has("messageId")){session.markRead();a.ok(true);break;}
                 requireAccount();
                 if(BridgePolicy.id(p,"accountId")!=session.selfId||BridgePolicy.id(p,"chatId")!=session.activeChat||p.optInt("topicId",-1)!=session.activeTopic){a.ok(false);break;}
                 a.ok(session.markVisibleRead(BridgePolicy.id(p,"messageId")));break;
             }
-            case "chat.join":{TdApi.Chat chat=target(p);if(!(chat.type instanceof TdApi.ChatTypeSupergroup)||!((TdApi.ChatTypeSupergroup)chat.type).isChannel)throw new IllegalArgumentException();perform(new TdApi.JoinChat(chat.id),a,result->{session.refreshChats();a.ok(true);});break;}
-            case "chat.leave":{TdApi.Chat chat=target(p);if(!(chat.type instanceof TdApi.ChatTypeSupergroup)||!((TdApi.ChatTypeSupergroup)chat.type).isChannel)throw new IllegalArgumentException();perform(new TdApi.LeaveChat(chat.id),a,result->{if(session.activeChat==chat.id)session.closeChat();session.refreshChats();a.ok(true);});break;}
+            case "chat.join":chatJoin(p,a);break;
+            case "chat.leave":chatLeave(p,a);break;
+            case "groups.add.info":addInfo(p,a);break;
+            case "groups.member.add":addMembers(p,a);break;
             case "history.byDate":messageByDate(p,a);break;
             case "history.older":session.loadHistory();a.ok(true);break;
             case "history.newer":session.loadNewer();a.ok(true);break;
@@ -642,6 +736,15 @@ final class NativeBridge implements TdSession.Listener {
             case "messages.delete":{requireAccount();long[] ids=BridgePolicy.ids(p,"ids",100);session.deleteMessages(session.activeChat,ids,p.optBoolean("revoke"),a::ok);break;}
             case "messages.search":search(p,a);break;
             case "messages.search.more":searchMore(p,a);break;
+            case "thread.load":threadLoad(p,a);break;
+            case "chat.requests":joinRequests(p,a);break;
+            case "chat.invitelinks":inviteLinks(p,a);break;
+            case "chat.invitelink.create":try{inviteLinkForm(p,a,true);}catch(Exception invalid){a.fail(invalid.getMessage());}break;
+            case "chat.invitelink.edit":try{inviteLinkForm(p,a,false);}catch(Exception invalid){a.fail(invalid.getMessage());}break;
+            case "chat.invitelink.revoke":revokeInviteLink(p,a);break;
+            case "chat.safety":safety(p,a);break;
+            case "chat.safety.dismiss":dismissSafety(p,a);break;
+            case "chat.request.answer":answerJoinRequest(p,a);break;
             case "scheduled.list":scheduledList(p,a);break;
             case "scheduled.reschedule":scheduledSchedule(p,a,false);break;
             case "scheduled.sendNow":scheduledSchedule(p,a,true);break;
@@ -708,6 +811,8 @@ final class NativeBridge implements TdSession.Listener {
             case "chat.bot.remove":removeBotFromChat(p,a);break;
             case "sponsored.retry":session.retrySponsoredMessages();a.ok(true);break;
             case "message.edit":case "message.edit.caption":case "message.delete":case "message.copy":case "message.forward":messageAction(method,p,a);break;
+            case "message.retry":retryUnsent(p,a);break;
+            case "message.unsent.delete":deleteUnsent(p,a);break;
             case "message.pin":if(p.has("value")&&!p.getBoolean("value"))unpin(BridgePolicy.id(p,"id"),a);else messageAction(method,p,a);break;
             case "catalog":catalog.list(BridgePolicy.text(p,"tab",10),BridgePolicy.text(p,"query",100),BridgePolicy.text(p,"setId",40),a::ok,a::fail);break;
             case "send.catalog":catalog.send(BridgePolicy.text(p,"key",80),BridgePolicy.id(p,"reply"),a::ok,a::fail);break;
@@ -843,9 +948,17 @@ final class NativeBridge implements TdSession.Listener {
         if(!currentAccount()||owner!=session.selfId){sink.fail("La cuenta cambió.");return;}
         session.perform(new TdApi.JoinChatByInviteLink(invite),result->{
             if(!currentAccount()||owner!=session.selfId){sink.fail("La cuenta cambió.");return;}
-            if(result instanceof TdApi.ChatJoinResultSuccess)openChatLink(((TdApi.ChatJoinResultSuccess)result).chatId,"invite",0,sink);
-            else if(result instanceof TdApi.ChatJoinResultRequestSent)sink.ok(object("action","request_sent","title",title));
-            else sink.fail("Telegram no permitió unirte a este chat.");
+            String state=ChatMembership.state(result);
+            if(ChatMembership.JOINED.equals(state)){session.refreshChats();openChatLink(((TdApi.ChatJoinResultSuccess)result).chatId,"invite",0,sink);return;}
+            if(ChatMembership.REQUEST.equals(state)){sink.ok(object("action","request_sent","title",title));return;}
+            if(ChatMembership.DECLINED.equals(state)){sink.ok(object("action","join_declined","title",title));return;}
+            if(ChatMembership.GUARD.equals(state)){
+                long bot=ChatMembership.guardBot(result);
+                if(bot<=0){sink.ok(object("action","join_guard","title",title,"opened",false));return;}
+                openGuardBot(bot,owner,opened->sink.ok(object("action","join_guard","title",title,"opened",opened)));
+                return;
+            }
+            sink.fail(MEMBERSHIP_UNKNOWN);
         },sink::fail);
     }
     private void openStoryLink(TdApi.InternalLinkTypeStory link,LinkSink sink){if(link.storyPosterUsername==null||!link.storyPosterUsername.matches("[A-Za-z0-9_]{3,32}")){sink.fail("El enlace no contiene una historia válida.");return;}session.findPublic(link.storyPosterUsername,chat->session.perform(new TdApi.GetStory(chat.id,link.storyId,false),story->{session.open(chat.id);sink.ok(object("action","story","chatId",Long.toString(chat.id),"title",chat.title,"storyId",link.storyId));},sink::fail),sink::fail);}
@@ -1172,6 +1285,261 @@ final class NativeBridge implements TdSession.Listener {
         boolean block=params.getBoolean("value");
         perform(new TdApi.SetMessageSenderBlockList(new TdApi.MessageSenderUser(userId),block?new TdApi.BlockListMain():null),answer,ignored->answer.ok(true));
     }
+    private void reportChat(JSONObject params,Answer answer,boolean messageMode) {
+        requireAccount();
+        AccountSafetyPolicy.owner(params,session.selfId);
+        if(messageMode&&BridgePolicy.id(params,"chatId")!=session.activeChat){answer.fail("La conversación cambió. No se inició la denuncia.");return;}
+        if(reporting){answer.fail("Ya hay una denuncia abierta. Termínala o cancélala primero.");return;}
+        long chat;long[] ids;
+        if(messageMode){TdApi.Message message=message(params);chat=message.chatId;ids=new long[]{message.id};}
+        else{chat=target(params).id;ids=new long[0];}
+        reporting=true;
+        new ChatReportFlow(activity,session,chat,ids,()->!destroyed&&currentAccount()&&session.selfId==answer.owner,
+            done->{reporting=false;answer.ok(done);},error->{reporting=false;answer.fail(error);}).start();
+    }
+    private void reportSponsored(JSONObject params,Answer answer) {
+        requireAccount();AccountSafetyPolicy.owner(params,session.selfId);
+        if(reporting){answer.fail("Ya hay una denuncia abierta. Termínala o cancélala primero.");return;}
+        long chat=BridgePolicy.id(params,"chatId"),id=BridgePolicy.id(params,"id");
+        TdApi.SponsoredMessage ad=session.sponsored.get(id);
+        if(chat!=session.activeChat||ad==null||!ad.canBeReported){answer.fail("El anuncio no admite esta operación o ya no está disponible.");return;}
+        reporting=true;
+        new SponsoredReportFlow(activity,session,chat,id,()->!destroyed&&currentAccount()&&session.selfId==answer.owner&&session.activeChat==chat,
+            action->{
+                reporting=false;
+                if(action.equals("cancel")){answer.ok(false);return;}
+                if(action.equals("hidden")){session.sponsored.clear();session.sponsoredError="";session.retrySponsoredMessages();}
+                answer.ok(object("reported",action.equals("reported"),"hidden",action.equals("hidden")));
+            },error->{reporting=false;answer.fail(error);}).start();
+    }
+    private void recoveryEmailSet(JSONObject params,Answer answer) {
+        requireAccount();
+        AccountSafetyPolicy.owner(params,session.selfId);
+        String password=BridgePolicy.text(params,"password",256);
+        String email=AccountSafetyPolicy.recoveryEmail(params);
+        perform(new TdApi.GetPasswordState(),answer,state->{
+            if(!state.hasPassword){answer.fail("Establece primero la contraseña de dos pasos.");return;}
+            perform(new TdApi.SetRecoveryEmailAddress(password,email),answer,next->{
+                try{answer.ok(passwordDto(next));}catch(Exception ignored){answer.fail("Consulta el estado de verificación antes de repetir el cambio.");}
+            });
+        });
+    }
+    private void recoveryEmailAction(String action,JSONObject params,Answer answer) {
+        requireAccount();
+        AccountSafetyPolicy.owner(params,session.selfId);
+        final String code=action.equals("check")?AccountSafetyPolicy.code(params):"";
+        perform(new TdApi.GetPasswordState(),answer,state->{
+            if(state.recoveryEmailAddressCodeInfo==null){answer.fail("No hay un correo pendiente de verificar. Actualiza el estado.");return;}
+            TdApi.Function<TdApi.PasswordState> request=action.equals("check")?new TdApi.CheckRecoveryEmailAddressCode(code):action.equals("resend")?new TdApi.ResendRecoveryEmailAddressCode():new TdApi.CancelRecoveryEmailAddressVerification();
+            perform(request,answer,next->{try{answer.ok(passwordDto(next));}catch(Exception ignored){answer.fail("No se pudo leer el estado del correo.");}});
+        });
+    }
+    private void autoDeleteGet(JSONObject params,Answer answer,boolean chatMode) {
+        requireAccount();
+        AccountSafetyPolicy.owner(params,session.selfId);
+        if(!chatMode){perform(new TdApi.GetDefaultMessageAutoDeleteTime(),answer,value->answer.ok(object("seconds",value.time,"canChange",true)));return;}
+        TdApi.Chat selected=target(params);
+        perform(new TdApi.GetChat(selected.id),answer,chat->{
+            if(chat.type instanceof TdApi.ChatTypeSecret){answer.fail("El temporizador de chats secretos requiere un flujo distinto.");return;}
+            boolean privateChat=chat.type instanceof TdApi.ChatTypePrivate;
+            if(privateChat){
+                long userId=((TdApi.ChatTypePrivate)chat.type).userId;
+                answer.ok(object("seconds",chat.messageAutoDeleteTime,"canChange",userId!=session.selfId&&userId!=777000));
+            }else perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,member->
+                answer.ok(object("seconds",chat.messageAutoDeleteTime,"canChange",grantedAdminRight(member,"canChangeInfo"))));
+        });
+    }
+    private void autoDeleteSet(JSONObject params,Answer answer,boolean chatMode) {
+        requireAccount();
+        AccountSafetyPolicy.owner(params,session.selfId);
+        int seconds=AccountSafetyPolicy.autoDeleteSeconds(params);
+        if(!chatMode){
+            perform(new TdApi.GetDefaultMessageAutoDeleteTime(),answer,previous->confirmAutoDelete("Chats nuevos",seconds,answer,()->
+                perform(new TdApi.GetDefaultMessageAutoDeleteTime(),answer,current->{
+                    if(current.time!=previous.time){answer.fail("El ajuste cambió en otro dispositivo. Actualiza el estado.");return;}
+                    perform(new TdApi.SetDefaultMessageAutoDeleteTime(new TdApi.MessageAutoDeleteTime(seconds)),answer,ignored->
+                        perform(new TdApi.GetDefaultMessageAutoDeleteTime(),answer,value->answer.ok(object("seconds",value.time,"canChange",true))));
+                })));
+            return;
+        }
+        TdApi.Chat selected=target(params);
+        perform(new TdApi.GetChat(selected.id),answer,chat->{
+            if(chat.type instanceof TdApi.ChatTypeSecret){answer.fail("No se modifica la autodestrucción de chats secretos desde este ajuste.");return;}
+            if(chat.type instanceof TdApi.ChatTypePrivate){
+                long id=((TdApi.ChatTypePrivate)chat.type).userId;
+                if(id==session.selfId||id==777000){answer.fail("Telegram no permite borrado automático en este chat.");return;}
+                confirmChatAutoDelete(chat,seconds,answer);
+            }else perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,actor->{
+                if(!grantedAdminRight(actor,"canChangeInfo")){answer.fail("Necesitas permiso para cambiar la información del chat.");return;}
+                confirmChatAutoDelete(chat,seconds,answer);
+            });
+        });
+    }
+    private void confirmChatAutoDelete(TdApi.Chat chat,int seconds,Answer answer) {
+        final int previous=chat.messageAutoDeleteTime;
+        confirmAutoDelete(chat.title,seconds,answer,()->perform(new TdApi.GetChat(chat.id),answer,current->{
+            if(current.messageAutoDeleteTime!=previous){answer.fail("El temporizador cambió. Actualiza el estado antes de modificarlo.");return;}
+            perform(new TdApi.SetChatMessageAutoDeleteTime(chat.id,seconds),answer,ignored->{
+                perform(new TdApi.GetChat(chat.id),answer,updated->answer.ok(object("seconds",updated.messageAutoDeleteTime,"canChange",true)));
+            });
+        }));
+    }
+    private void confirmAutoDelete(String title,int seconds,Answer answer,Runnable save) {
+        String description=seconds==0?"Se desactivará el temporizador para los mensajes futuros. Esto no recupera mensajes ya borrados.":"Los mensajes futuros se eliminarán automáticamente para todos después de "+(seconds/86400)+" días. No es una limpieza del historial existente.";
+        Dialogs.builder(activity).setTitle("Borrado automático · "+NativeSnapshot.limit(title,100)).setMessage(description)
+            .setNegativeButton("Cancelar",(dialog,which)->answer.ok(false))
+            .setPositiveButton("Aplicar en Telegram",(dialog,which)->{
+                if(destroyed||!currentAccount()||session.selfId!=answer.owner){answer.fail("La cuenta cambió. No se modificó el temporizador.");return;}
+                save.run();
+            }).setOnCancelListener(dialog->answer.ok(false)).show();
+    }
+    private void sponsoredSettings(JSONObject params,Answer answer) {
+        requireAccount();
+        AccountSafetyPolicy.owner(params,session.selfId);
+        perform(new TdApi.GetMe(),answer,user->perform(new TdApi.GetUserFullInfo(user.id),answer,info->
+            answer.ok(AccountSafetyPolicy.sponsoredSettings(user.isPremium,info.hasSponsoredMessagesEnabled))));
+    }
+    private void setSponsoredSettings(JSONObject params,Answer answer) {
+        requireAccount();
+        AccountSafetyPolicy.owner(params,session.selfId);
+        Object requested=params.opt("enabled");
+        if(!(requested instanceof Boolean))throw new IllegalArgumentException("Ajuste de publicidad no válido.");
+        boolean enabled=(Boolean)requested;
+        perform(new TdApi.GetMe(),answer,user->{
+            if(!user.isPremium){answer.fail("Telegram solo permite desactivar los mensajes patrocinados a las cuentas Premium.");return;}
+            perform(new TdApi.ToggleHasSponsoredMessagesEnabled(enabled),answer,ignored->{
+                session.sponsored.clear();session.sponsoredError="";
+                session.retrySponsoredMessages();
+                sponsoredSettings(params,answer);
+            });
+        });
+    }
+    /** Los tres alcances se leen directo en Telegram, uno tras otro: no hay caché local que pueda adelantarse. */
+    private void scopeSettings(JSONObject p,Answer a) {
+        requireAccount();
+        AccountSafetyPolicy.owner(p,session.selfId);
+        scopeStep(a,0,new JSONArray());
+    }
+    private void scopeStep(Answer a,int index,JSONArray scopes) {
+        if(index>=ScopeSettings.IDS.length){savedSounds(a,scopes);return;}
+        final TdApi.NotificationSettingsScope scope=ScopeSettings.scope(ScopeSettings.IDS[index]);
+        perform(new TdApi.GetScopeNotificationSettings(scope),a,value->{
+            try{
+                JSONObject row=ScopeSettings.row(scope,value);
+                if(row!=null)scopes.put(row);
+            }catch(Exception invalid){a.fail("No se pudieron leer los ajustes de notificación de Telegram.");return;}
+            scopeStep(a,index+1,scopes);
+        });
+    }
+    /** La lista de sonidos solo aporta nombres: si falla, los dos estados (-1 y 0) siguen siendo válidos. */
+    private void savedSounds(Answer a,JSONArray scopes) {
+        session.perform(new TdApi.GetSavedNotificationSounds(),list->{
+            if(destroyed||!currentAccount()||a.owner!=session.selfId){a.fail("La cuenta cambió. Vuelve a abrir los ajustes.");return;}
+            try{a.ok(object("scopes",scopes,"sounds",ScopeSettings.sounds(list)));}
+            catch(Exception invalid){a.fail("No se pudieron leer los ajustes de notificación de Telegram.");}
+        },ignored->{
+            if(destroyed||!currentAccount()||a.owner!=session.selfId){a.fail("La cuenta cambió. Vuelve a abrir los ajustes.");return;}
+            try{a.ok(object("scopes",scopes,"sounds",new JSONArray()));}
+            catch(Exception invalid){a.fail("No se pudieron leer los ajustes de notificación de Telegram.");}
+        });
+    }
+    private void saveScopeSettings(JSONObject p,Answer a) {
+        requireAccount();
+        try{
+            if(p.has("accountId")&&BridgePolicy.id(p,"accountId")!=session.selfId){a.ok(false);return;}
+        }catch(Exception invalid){a.ok(false);return;}
+        final TdApi.NotificationSettingsScope scope=ScopeSettings.scope(p.optString("scope",""));
+        if(scope==null){a.fail("Ese tipo de chat no corresponde a ninguno de los ajustes de Telegram.");return;}
+        final JSONObject patch=p.optJSONObject("patch");
+        if(patch==null||patch.length()==0){a.fail("No hay ningún ajuste que cambiar.");return;}
+        perform(new TdApi.GetScopeNotificationSettings(scope),a,current->{
+            if(patch.has("sound")||patch.has("storySound"))session.perform(new TdApi.GetSavedNotificationSounds(),list->{
+                if(destroyed||!currentAccount()||a.owner!=session.selfId){a.fail("La cuenta cambió. No se modificó ningún ajuste.");return;}
+                try{prepareScope(a,scope,patch,current,ScopeSettings.sounds(list));}
+                catch(Exception invalid){a.fail("No se pudo comprobar la lista de sonidos que Telegram guarda en esta cuenta.");}
+            },ignored->{a.fail("No se pudo comprobar la lista de sonidos que Telegram guarda en esta cuenta.");});
+            else prepareScope(a,scope,patch,current,new JSONArray());
+        });
+    }
+    /** Se parte siempre de lo que Telegram dice ahora: `SetScopeNotificationSettings` sustituye el objeto completo. */
+    private void prepareScope(Answer a,TdApi.NotificationSettingsScope scope,JSONObject patch,TdApi.ScopeNotificationSettings current,JSONArray sounds) {
+        final TdApi.ScopeNotificationSettings next;
+        final JSONArray changes;
+        try{
+            next=ScopeSettings.merge(current,patch,ScopeSettings.allowed(sounds));
+            changes=ScopeSettings.changes(current,next,sounds);
+        }catch(Exception invalid){
+            String reason=invalid.getMessage();
+            a.fail(reason==null||reason.isEmpty()?"No se pudo preparar el ajuste de notificación.":reason);
+            return;
+        }
+        if(changes.length()==0){a.fail("No hay ningún ajuste que cambiar.");return;}
+        final TdApi.ScopeNotificationSettings before=ScopeSettings.copy(current);
+        confirmScope(a,scope,before,next,changes,()->perform(new TdApi.GetScopeNotificationSettings(scope),a,latest->{
+            if(!ScopeSettings.sameAsRead(before,latest)){a.fail("El ajuste cambió en otro dispositivo. Vuelve a abrir los ajustes de notificación.");return;}
+            perform(new TdApi.SetScopeNotificationSettings(scope,next),a,ignored->{
+                schedule();
+                perform(new TdApi.GetScopeNotificationSettings(scope),a,updated->respondScope(a,scope,updated));
+            });
+        }));
+    }
+    private void respondScope(Answer a,TdApi.NotificationSettingsScope scope,TdApi.ScopeNotificationSettings value) {
+        try{
+            JSONObject row=ScopeSettings.row(scope,value);
+            if(row==null){a.fail("No se pudieron leer los ajustes de notificación de Telegram.");return;}
+            a.ok(row);
+        }catch(Exception ignored){a.fail("No se pudieron leer los ajustes de notificación de Telegram.");}
+    }
+    private void confirmScope(Answer a,TdApi.NotificationSettingsScope scope,TdApi.ScopeNotificationSettings before,TdApi.ScopeNotificationSettings next,JSONArray changes,Runnable accepted) {
+        StringBuilder list=new StringBuilder();
+        String caveat=ScopeSettings.storyCaveat(next);
+        try{
+            for(int i=0;i<changes.length();i++){if(i>0)list.append(", ");list.append(changes.getString(i));}
+        }catch(Exception invalid){a.fail("No se pudo preparar la confirmación del ajuste.");return;}
+        Dialogs.builder(activity).setTitle("Ajustes de notificación")
+            .setMessage("En "+ScopeSettings.phrase(ScopeSettings.idOf(scope))+" cambiará: "+list+". Afecta a los chats que no tengan su propio ajuste; los de cada chat concreto no se modifican."+(caveat.isEmpty()?"":" "+caveat))
+            .setNegativeButton("Cancelar",(d,w)->a.ok(false))
+            .setPositiveButton("Aplicar en Telegram",(d,w)->{
+                if(destroyed||!currentAccount()||a.owner!=session.selfId){a.fail("La cuenta cambió. No se modificó ningún ajuste.");return;}
+                accepted.run();
+            }).setOnCancelListener(d->a.ok(false)).show();
+    }
+    private void blockedSenders(JSONObject params,Answer answer) {
+        requireAccount();
+        int offset=BlockedSendersPolicy.offset(params);
+        perform(new TdApi.GetBlockedMessageSenders(new TdApi.BlockListMain(),offset,BlockedSendersPolicy.PAGE_SIZE),answer,result->{
+            JSONArray items=new JSONArray();
+            int count=result.senders==null?0:result.senders.length;
+            if(result.senders!=null)for(TdApi.MessageSender sender:result.senders){
+                try{
+                    String kind=BlockedSendersPolicy.kind(sender);
+                    long id=BlockedSendersPolicy.id(sender);
+                    JSONObject item=object("kind",kind,"id",Long.toString(id),"name",NativeSnapshot.limit(session.senderName(sender),120));
+                    JSONObject photo=null;
+                    if("user".equals(kind))photo=dto.userPhoto(session.user(id));
+                    else {
+                        TdApi.Chat chat=session.chat(id);
+                        if(chat!=null&&chat.photo!=null)photo=dto.photoDto(chat.photo.small,chat.photo.big,chat.photo.minithumbnail,chat.title);
+                    }
+                    if(photo!=null)item.put("photo",photo);
+                    items.put(item);
+                }catch(Exception invalid){answer.fail("No se pudo preparar la lista de bloqueados.");return;}
+            }
+            answer.ok(object("items",items,"total",result.totalCount,"nextOffset",offset+count,"hasMore",count>0&&(count>=BlockedSendersPolicy.PAGE_SIZE||offset+count<result.totalCount)));
+        });
+    }
+    private void unblockSender(JSONObject params,Answer answer) {
+        requireAccount();
+        TdApi.MessageSender sender=BlockedSendersPolicy.sender(params,session.selfId);
+        String name=NativeSnapshot.limit(session.senderName(sender),120);
+        Dialogs.builder(activity).setTitle("Desbloquear a "+name)
+            .setMessage("Se quitará el bloqueo de esta cuenta de Telegram. Podrá volver a contactarte según tus ajustes de privacidad. No se envía ningún mensaje ni se añade a contactos.")
+            .setNegativeButton("Cancelar",(dialog,which)->answer.ok(false))
+            .setPositiveButton("Desbloquear",(dialog,which)->{
+                if(destroyed||!currentAccount()||session.selfId!=answer.owner){answer.fail("La cuenta cambió. No se modificó el bloqueo.");return;}
+                perform(new TdApi.SetMessageSenderBlockList(sender,null),answer,ignored->{schedule();answer.ok(true);});
+            }).setOnCancelListener(dialog->answer.ok(false)).show();
+    }
     private static String presence(TdApi.UserStatus status){
         if(status instanceof TdApi.UserStatusOnline&&((TdApi.UserStatusOnline)status).expires>System.currentTimeMillis()/1000)return "En línea";
         if(status instanceof TdApi.UserStatusOffline){
@@ -1286,19 +1654,36 @@ final class NativeBridge implements TdSession.Listener {
     void pickedProfilePhoto(Uri uri){
         Answer answer=profilePhotoPicking;if(answer==null)return;if(uri==null){profilePhotoPicking=null;answer.ok(false);return;}long owner=answer.owner;
         ((WrgramApplication)activity.getApplication()).storage().execute(()->{
-            File output=null;Bitmap decoded=null,oriented=null,crop=null,scaled=null,preview=null;
             try{
-                String mime=activity.getContentResolver().getType(uri);if(mime==null||!mime.startsWith("image/"))throw new IllegalArgumentException();
-                try(Cursor cursor=activity.getContentResolver().query(uri,new String[]{OpenableColumns.SIZE},null,null,null)){if(cursor!=null&&cursor.moveToFirst()&&!cursor.isNull(0)&&cursor.getLong(0)>20L*1024*1024)throw new IllegalArgumentException();}
-                BitmapFactory.Options bounds=new BitmapFactory.Options();bounds.inJustDecodeBounds=true;try(InputStream input=activity.getContentResolver().openInputStream(uri)){if(input==null)throw new IllegalArgumentException();BitmapFactory.decodeStream(input,null,bounds);}if(bounds.outWidth<=0||bounds.outHeight<=0||bounds.outWidth>12000||bounds.outHeight>12000)throw new IllegalArgumentException();
-                BitmapFactory.Options options=new BitmapFactory.Options();options.inSampleSize=1;while(Math.max(bounds.outWidth,bounds.outHeight)/options.inSampleSize>2048)options.inSampleSize*=2;options.inPreferredConfig=Bitmap.Config.ARGB_8888;try(InputStream input=activity.getContentResolver().openInputStream(uri)){if(input==null)throw new IllegalArgumentException();decoded=BitmapFactory.decodeStream(input,null,options);}if(decoded==null)throw new IllegalArgumentException();
-                int rotation=0;boolean flip=false;try(InputStream input=activity.getContentResolver().openInputStream(uri)){if(input!=null){androidx.exifinterface.media.ExifInterface exif=new androidx.exifinterface.media.ExifInterface(input);int orientation=exif.getAttributeInt(androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION,androidx.exifinterface.media.ExifInterface.ORIENTATION_NORMAL);rotation=orientation==3||orientation==4?180:orientation==5||orientation==6?90:orientation==7||orientation==8?270:0;flip=orientation==2||orientation==4||orientation==5||orientation==7;}}
-                Matrix matrix=new Matrix();if(rotation!=0)matrix.postRotate(rotation);if(flip)matrix.postScale(-1f,1f);oriented=rotation==0&&!flip?decoded:Bitmap.createBitmap(decoded,0,0,decoded.getWidth(),decoded.getHeight(),matrix,true);int side=Math.min(oriented.getWidth(),oriented.getHeight());crop=Bitmap.createBitmap(oriented,(oriented.getWidth()-side)/2,(oriented.getHeight()-side)/2,side,side);scaled=Bitmap.createScaledBitmap(crop,640,640,true);
-                File directory=new File(session.filesDirectory(),"profile");if(!directory.isDirectory()&&!directory.mkdirs())throw new IllegalStateException();output=new File(directory,UUID.randomUUID()+".jpg");try(FileOutputStream stream=new FileOutputStream(output)){if(!scaled.compress(Bitmap.CompressFormat.JPEG,88,stream))throw new IllegalStateException();}preview=BitmapFactory.decodeFile(output.getAbsolutePath());if(preview==null)throw new IllegalStateException();
-                File photo=output;Bitmap image=preview;main.post(()->{if(destroyed||!currentAccount()||session.selfId!=owner){photo.delete();image.recycle();profilePhotoPicking=null;answer.fail("La cuenta cambió. No se estableció la foto.");return;}profilePhotoFile=photo;showProfilePhotoConfirmation(photo,image,answer,owner);});output=null;preview=null;
-            }catch(Exception failure){if(output!=null)output.delete();main.post(()->{profilePhotoPicking=null;answer.fail("No se pudo preparar la imagen. Elige una foto válida de hasta 20 MB.");});}
-            finally{if(decoded!=null&&!decoded.isRecycled())decoded.recycle();if(oriented!=null&&oriented!=decoded&&!oriented.isRecycled())oriented.recycle();if(crop!=null&&crop!=oriented&&crop!=decoded&&!crop.isRecycled())crop.recycle();if(scaled!=null&&scaled!=crop&&scaled!=oriented&&scaled!=decoded&&!scaled.isRecycled())scaled.recycle();if(preview!=null&&!preview.isRecycled())preview.recycle();}
+                PreparedPhoto prepared=preparePhoto(uri,"profile");
+                main.post(()->{if(destroyed||!currentAccount()||session.selfId!=owner){prepared.file.delete();prepared.preview.recycle();profilePhotoPicking=null;answer.fail("La cuenta cambió. No se estableció la foto.");return;}profilePhotoFile=prepared.file;showProfilePhotoConfirmation(prepared.file,prepared.preview,answer,owner);});
+            }catch(IllegalArgumentException invalid){main.post(()->{profilePhotoPicking=null;answer.fail(invalid.getMessage());});}
         });
+    }
+    /**
+     * La misma cadena que produce el cuadro que Telegram publica, sirva para la foto del perfil o para la de una
+     * comunidad: tipo, peso, dimensiones leídas sin decodificar, EXIF, recuadro al centro del lado menor, 640 píxeles
+     * y JPEG a calidad 88. Lo único que se parametriza es la carpeta, para que los dos temporales no se pisen. Se
+     * extrajo al conectar la foto de la comunidad porque duplicar estos cinco números era la forma más fácil de
+     * publicar dos encuadres distintos desde el mismo teléfono.
+     */
+    private PreparedPhoto preparePhoto(Uri uri,String folder){
+        File output=null;Bitmap decoded=null,oriented=null,crop=null,scaled=null,preview=null;
+        try{
+            String mime=activity.getContentResolver().getType(uri);if(mime==null||!mime.startsWith("image/"))throw new IllegalArgumentException();
+            try(Cursor cursor=activity.getContentResolver().query(uri,new String[]{OpenableColumns.SIZE},null,null,null)){if(cursor!=null&&cursor.moveToFirst()&&!cursor.isNull(0)&&cursor.getLong(0)>20L*1024*1024)throw new IllegalArgumentException();}
+            BitmapFactory.Options bounds=new BitmapFactory.Options();bounds.inJustDecodeBounds=true;try(InputStream input=activity.getContentResolver().openInputStream(uri)){if(input==null)throw new IllegalArgumentException();BitmapFactory.decodeStream(input,null,bounds);}if(bounds.outWidth<=0||bounds.outHeight<=0||bounds.outWidth>12000||bounds.outHeight>12000)throw new IllegalArgumentException();
+            BitmapFactory.Options options=new BitmapFactory.Options();options.inSampleSize=1;while(Math.max(bounds.outWidth,bounds.outHeight)/options.inSampleSize>2048)options.inSampleSize*=2;options.inPreferredConfig=Bitmap.Config.ARGB_8888;try(InputStream input=activity.getContentResolver().openInputStream(uri)){if(input==null)throw new IllegalArgumentException();decoded=BitmapFactory.decodeStream(input,null,options);}if(decoded==null)throw new IllegalArgumentException();
+            int rotation=0;boolean flip=false;try(InputStream input=activity.getContentResolver().openInputStream(uri)){if(input!=null){androidx.exifinterface.media.ExifInterface exif=new androidx.exifinterface.media.ExifInterface(input);int orientation=exif.getAttributeInt(androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION,androidx.exifinterface.media.ExifInterface.ORIENTATION_NORMAL);rotation=orientation==3||orientation==4?180:orientation==5||orientation==6?90:orientation==7||orientation==8?270:0;flip=orientation==2||orientation==4||orientation==5||orientation==7;}}
+            Matrix matrix=new Matrix();if(rotation!=0)matrix.postRotate(rotation);if(flip)matrix.postScale(-1f,1f);oriented=rotation==0&&!flip?decoded:Bitmap.createBitmap(decoded,0,0,decoded.getWidth(),decoded.getHeight(),matrix,true);int side=Math.min(oriented.getWidth(),oriented.getHeight());crop=Bitmap.createBitmap(oriented,(oriented.getWidth()-side)/2,(oriented.getHeight()-side)/2,side,side);scaled=Bitmap.createScaledBitmap(crop,640,640,true);
+            File directory=new File(session.filesDirectory(),folder);if(!directory.isDirectory()&&!directory.mkdirs())throw new IllegalStateException();output=new File(directory,UUID.randomUUID()+".jpg");try(FileOutputStream stream=new FileOutputStream(output)){if(!scaled.compress(Bitmap.CompressFormat.JPEG,88,stream))throw new IllegalStateException();}preview=BitmapFactory.decodeFile(output.getAbsolutePath());if(preview==null)throw new IllegalStateException();
+            return new PreparedPhoto(output,preview);
+        }catch(Exception failure){
+            if(output!=null)output.delete();
+            if(preview!=null&&!preview.isRecycled())preview.recycle();
+            throw new IllegalArgumentException("No se pudo preparar la imagen. Elige una foto válida de hasta 20 MB.");
+        }
+        finally{if(decoded!=null&&!decoded.isRecycled())decoded.recycle();if(oriented!=null&&oriented!=decoded&&!oriented.isRecycled())oriented.recycle();if(crop!=null&&crop!=oriented&&crop!=decoded&&!crop.isRecycled())crop.recycle();if(scaled!=null&&scaled!=crop&&scaled!=oriented&&scaled!=decoded&&!scaled.isRecycled())scaled.recycle();}
     }
     private void showProfilePhotoConfirmation(File photo,Bitmap image,Answer answer,long owner){
         ImageView view=new ImageView(activity);view.setImageBitmap(image);view.setScaleType(ImageView.ScaleType.CENTER_CROP);int width=Math.round(240*activity.getResources().getDisplayMetrics().density);view.setLayoutParams(new android.view.ViewGroup.LayoutParams(width,width));
@@ -1313,6 +1698,71 @@ final class NativeBridge implements TdSession.Listener {
     }
     private void finishProfilePhoto(File photo,Bitmap image,Answer answer,boolean saved,String error){if(profilePhotoFile==photo)profilePhotoFile=null;if(profilePhotoPicking==answer)profilePhotoPicking=null;if(photo!=null)photo.delete();if(image!=null&&!image.isRecycled())image.recycle();if(error!=null)answer.fail(error);else answer.ok(saved);}
     private void deleteProfilePhotoFile(){File file=profilePhotoFile;profilePhotoFile=null;if(file!=null)file.delete();}
+    private static final String PHOTO_BUSY = "Ya hay un selector de imagen abierto.";
+    private static final String CHAT_PHOTO_UNSUPPORTED = "La foto solo se edita en grupos, supergrupos y canales.";
+    private static final String CHAT_PHOTO_CHANGED = "La cuenta cambió. No se cambió la foto de la comunidad.";
+    private static final String CHAT_PHOTO_PICK_TITLE = "Confirmar foto de la comunidad";
+    private static final String CHAT_PHOTO_PICK_BODY = "Esta foto se establecerá en Telegram como imagen de la comunidad. Todas las personas que estén dentro la verán y WRGram no la envía a sus servidores.";
+    private static final String CHAT_PHOTO_DELETE_TITLE = "Quitar foto de la comunidad";
+    private static final String CHAT_PHOTO_DELETE_BODY = "La imagen actual se quitará de la comunidad en Telegram. WRGram no conserva una copia.";
+
+    /**
+     * <c>chat.photo.pick</c>: la forma del chat primero, porque <c>SetChatPhoto</c> documenta que solo sirve para
+     * básicos, supergrupos y canales; después el derecho, que es el mismo <c>canChangeInfo</c> con el que Android ya
+     * decide el nombre y la descripción ({@link ChatEditing#canChange}); y solo entonces se abre el selector. Se
+     * pregunta antes de elegir y no después porque abrir la galería para devolver luego un «no tienes permiso» es
+     * hacerle a la persona un trabajo que no era suyo.
+     */
+    private void chatPhotoPick(JSONObject params,Answer answer){
+        TdApi.Chat chat=target(params);
+        if(!ChatEditing.supported(chat)){answer.fail(CHAT_PHOTO_UNSUPPORTED);return;}
+        if(chatPhotoPicking!=null){answer.fail(PHOTO_BUSY);return;}
+        perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,member->{
+            if(!ChatEditing.canChange(chat,member.status)){answer.fail(COMMUNITY_NO_RIGHT);return;}
+            chatPhotoPicking=answer;chatPhotoTarget=chat.id;activity.chooseChatPhoto();
+        });
+    }
+    void pickedChatPhoto(Uri uri){
+        Answer answer=chatPhotoPicking;if(answer==null)return;if(uri==null){chatPhotoPicking=null;answer.ok(false);return;}long owner=answer.owner,chatId=chatPhotoTarget;
+        ((WrgramApplication)activity.getApplication()).storage().execute(()->{
+            try{
+                PreparedPhoto prepared=preparePhoto(uri,"chat");
+                main.post(()->{if(destroyed||!currentAccount()||session.selfId!=owner){prepared.file.delete();prepared.preview.recycle();chatPhotoPicking=null;answer.fail(CHAT_PHOTO_CHANGED);return;}chatPhotoFile=prepared.file;showChatPhotoConfirmation(prepared.file,prepared.preview,answer,owner,chatId);});
+            }catch(IllegalArgumentException invalid){main.post(()->{chatPhotoPicking=null;answer.fail(invalid.getMessage());});}
+        });
+    }
+    private void showChatPhotoConfirmation(File photo,Bitmap image,Answer answer,long owner,long chatId){
+        ImageView view=new ImageView(activity);view.setImageBitmap(image);view.setScaleType(ImageView.ScaleType.CENTER_CROP);int width=Math.round(240*activity.getResources().getDisplayMetrics().density);view.setLayoutParams(new android.view.ViewGroup.LayoutParams(width,width));
+        AlertDialog dialog=Dialogs.builder(activity).setTitle(CHAT_PHOTO_PICK_TITLE).setMessage(CHAT_PHOTO_PICK_BODY).setView(view).setNegativeButton("Cancelar",(d,w)->finishChatPhoto(photo,image,answer,false,null)).setPositiveButton("Establecer foto",null).create();
+        dialog.setOnCancelListener(ignored->finishChatPhoto(photo,image,answer,false,null));
+        dialog.setOnShowListener(ignored->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(button->{
+            if(!currentAccount()||session.selfId!=owner){dialog.setOnCancelListener(null);dialog.dismiss();finishChatPhoto(photo,image,answer,false,CHAT_PHOTO_CHANGED);return;}
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+            session.perform(new TdApi.SetChatPhoto(chatId,new TdApi.InputChatPhotoStatic(new TdApi.InputFileLocal(photo.getAbsolutePath()))),result->{schedule();dialog.setOnCancelListener(null);dialog.dismiss();finishChatPhoto(photo,image,answer,true,null);},error->{dialog.setOnCancelListener(null);dialog.dismiss();finishChatPhoto(photo,image,answer,false,error);});
+        }));
+        dialog.show();
+    }
+    private void finishChatPhoto(File photo,Bitmap image,Answer answer,boolean saved,String error){if(chatPhotoFile==photo)chatPhotoFile=null;if(chatPhotoPicking==answer)chatPhotoPicking=null;if(photo!=null)photo.delete();if(image!=null&&!image.isRecycled())image.recycle();if(error!=null)answer.fail(error);else answer.ok(saved);}
+    private void deleteChatPhotoFile(){File file=chatPhotoFile;chatPhotoFile=null;if(file!=null)file.delete();}
+
+    /**
+     * <c>chat.photo.delete</c>. Borrar aquí no es una petición aparte: TDLib documenta en {@code SetChatPhoto} que
+     * un {@code photo} vacío deja la comunidad sin imagen, así que el mismo método sirve para las dos cosas y no hay
+     * {@code DeleteChatPhoto} que llamar. Sin foto tampoco hay diálogo: se responde {@code false}, que es lo que la
+     * pantalla ya traduce por «en Telegram no ha cambiado nada».
+     */
+    private void deleteChatPhoto(JSONObject params,Answer answer){
+        TdApi.Chat chat=target(params);
+        if(!ChatEditing.supported(chat)){answer.fail(CHAT_PHOTO_UNSUPPORTED);return;}
+        if(chat.photo==null){answer.ok(false);return;}
+        perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,member->{
+            if(!ChatEditing.canChange(chat,member.status)){answer.fail(COMMUNITY_NO_RIGHT);return;}
+            Dialogs.builder(activity).setTitle(CHAT_PHOTO_DELETE_TITLE).setMessage(CHAT_PHOTO_DELETE_BODY).setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton("Quitar foto",(d,w)->{
+                if(destroyed||!currentAccount()||answer.owner!=session.selfId){answer.fail(CHAT_PHOTO_CHANGED);return;}
+                perform(new TdApi.SetChatPhoto(chat.id,null),answer,ignored->{schedule();answer.ok(true);});
+            }).setOnCancelListener(ignored->answer.ok(false)).show();
+        });
+    }
     private void accountSessions(Answer answer){requireAccount();perform(new TdApi.GetActiveSessions(),answer,result->{try{JSONArray items=new JSONArray();if(result.sessions!=null)for(TdApi.Session item:result.sessions)items.put(object("id",Long.toString(item.id),"current",item.isCurrent,"device",item.deviceModel==null?"Dispositivo":item.deviceModel,"platform",item.platform==null?"":item.platform,"version",item.applicationName==null?"":item.applicationName+" "+(item.applicationVersion==null?"":item.applicationVersion),"location",item.location==null?"":item.location,"ip",item.ipAddress==null?"":item.ipAddress,"lastActive",item.lastActiveDate));answer.ok(items);}catch(Exception ignored){answer.fail("No se pudieron consultar las sesiones.");}});}
     private void contacts(String mode,String query,Answer answer){requireAccount();TdApi.Function<TdApi.Users> request=mode.equals("search")?new TdApi.SearchContacts(query,50):new TdApi.GetContacts();perform(request,answer,result->{try{JSONArray values=new JSONArray();if(result.userIds!=null)for(long id:result.userIds){TdApi.User user=session.user(id);if(user==null)continue;String name=((user.firstName==null?"":user.firstName)+" "+(user.lastName==null?"":user.lastName)).trim();String username=user.usernames==null||user.usernames.activeUsernames==null||user.usernames.activeUsernames.length==0?"":user.usernames.activeUsernames[0];JSONObject contact=object("id",Long.toString(id),"name",name.isEmpty()?"Usuario":name,"username",username,"bot",user.type instanceof TdApi.UserTypeBot);JSONObject photo=dto.userPhoto(user);if(photo!=null)contact.put("photo",photo);values.put(contact);}answer.ok(values);}catch(Exception ignored){answer.fail("No se pudieron preparar los contactos.");}});}
     private void importPhonebook(Answer answer){requireAccount();if(contactsImportAnswer!=null){answer.fail("Ya hay una importación de contactos en curso.");return;}contactsImportAnswer=answer;Dialogs.builder(activity).setTitle("Importar agenda a Telegram").setMessage("WRGram leerá nombres y teléfonos solo después del permiso Android. Solo se incluirán números con prefijo internacional (+…). Nada se envía hasta que selecciones contactos y confirmes el envío a Telegram. WRGram no guardará una copia de la agenda.").setNegativeButton("Cancelar",(d,w)->finishContactsImport(answer,false,null)).setPositiveButton("Continuar",(d,w)->activity.requestContactsImportPermission()).setOnCancelListener(d->finishContactsImport(answer,false,null)).show();}
@@ -1420,6 +1870,390 @@ final class NativeBridge implements TdSession.Listener {
     private void chatUsername(JSONObject params,Answer answer){TdApi.Chat chat=target(params);if(!(chat.type instanceof TdApi.ChatTypeSupergroup)){answer.fail("Los nombres públicos solo están disponibles en supergrupos y canales.");return;}long supergroupId=((TdApi.ChatTypeSupergroup)chat.type).supergroupId;TdApi.Supergroup group=session.supergroup(supergroupId);if(group!=null&&group.usernames!=null){sendChatUsername(group.usernames,answer);return;}perform(new TdApi.GetSupergroup(supergroupId),answer,loaded->sendChatUsername(loaded.usernames,answer));}
     private void sendChatUsername(TdApi.Usernames names,Answer answer){try{JSONArray active=new JSONArray();if(names!=null&&names.activeUsernames!=null)for(String name:names.activeUsernames)active.put(name);answer.ok(object("editable",names==null||names.editableUsername==null?"":names.editableUsername,"active",active));}catch(Exception ignored){answer.fail("No se pudo preparar el nombre público.");}}
     private void setChatUsername(JSONObject params,Answer answer)throws Exception{TdApi.Chat chat=target(params);if(!(chat.type instanceof TdApi.ChatTypeSupergroup))throw new IllegalArgumentException("Los nombres públicos solo están disponibles en supergrupos y canales.");String username=BridgePolicy.text(params,"username",32).trim();if(!username.isEmpty()&&!username.matches("[A-Za-z][A-Za-z0-9_]{4,31}"))throw new IllegalArgumentException("El nombre público debe tener de 5 a 32 caracteres y empezar con una letra.");long supergroupId=((TdApi.ChatTypeSupergroup)chat.type).supergroupId;perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,actor->{if(!grantedAdminRight(actor,"canChangeInfo")){answer.fail("Telegram no concede a esta cuenta permiso para cambiar el nombre público.");return;}perform(new TdApi.SetSupergroupUsername(supergroupId,username),answer,ignored->{schedule();answer.ok(true);});});}
+    private static final String COMMUNITY_UNSUPPORTED = "El nombre y la descripción solo se editan en grupos, supergrupos y canales.";
+    private static final String COMMUNITY_NO_RIGHT = "Telegram no concede a esta cuenta permiso para cambiar la información de la comunidad.";
+    private static final String COMMUNITY_CHANGED = "La información cambió en otro dispositivo. Vuelve a abrirla antes de guardar.";
+    private static final String COMMUNITY_UNREADABLE = "Telegram no devolvió la descripción actual de la comunidad. Vuelve a intentarlo.";
+
+    /**
+     * Lo que hay que enseñar antes de tocar nada: el nombre real de `chat`, la descripción que vive
+     * en el *full info* y si esta cuenta puede cambiarla. La descripción se lee aparte porque TDLib
+     * no la guarda en `Chat`, y si ese lectura falla se dice (`descriptionKnown=false`) en lugar de
+     * mandar un vacío que borre lo que la persona no llegó a ver.
+     */
+    private void chatInfo(JSONObject params, Answer answer) throws Exception {
+        TdApi.Chat chat = target(params);
+        if (!ChatEditing.supported(chat)) { answer.fail(COMMUNITY_UNSUPPORTED); return; }
+        perform(new TdApi.GetChatMember(chat.id, new TdApi.MessageSenderUser(session.selfId)), answer, member -> {
+            boolean can = ChatEditing.canChange(chat, member.status);
+            if (chat.type instanceof TdApi.ChatTypeBasicGroup) readBasicDescription(chat, can, answer);
+            else readSuperDescription(chat, can, answer);
+        });
+    }
+
+    private void readBasicDescription(TdApi.Chat chat, boolean can, Answer a) {
+        session.perform(new TdApi.GetBasicGroupFullInfo(((TdApi.ChatTypeBasicGroup) chat.type).basicGroupId),
+            value -> sendCommunity(chat, can, ((TdApi.BasicGroupFullInfo) value).description, true, a),
+            failure -> sendCommunity(chat, can, "", false, a));
+    }
+
+    private void readSuperDescription(TdApi.Chat chat, boolean can, Answer a) {
+        session.perform(new TdApi.GetSupergroupFullInfo(((TdApi.ChatTypeSupergroup) chat.type).supergroupId),
+            value -> sendCommunity(chat, can, ((TdApi.SupergroupFullInfo) value).description, true, a),
+            failure -> sendCommunity(chat, can, "", false, a));
+    }
+
+    private void sendCommunity(TdApi.Chat chat, boolean can, String description, boolean known, Answer a) {
+        try {
+            a.ok(object("title", chat.title == null ? "" : chat.title, "description", description == null ? "" : description,
+                "descriptionKnown", known, "canChange", can, "maxTitle", ChatEditing.MAX_TITLE, "maxDescription", ChatEditing.MAX_DESCRIPTION));
+        } catch (Exception ignored) {
+            a.fail("No se pudo preparar la información de la comunidad.");
+        }
+    }
+
+    /**
+     * Escribir es la única validación que vale: se relee el permiso contra el servidor, se compara
+     * lo que la interfaz creía que había con lo que hay ahora, y solo entonces se pregunta.
+     */
+    private void setChatInfo(JSONObject params, Answer a) throws Exception {
+        TdApi.Chat chat = target(params);
+        String field = params.optString("field", "");
+        if (!ChatEditing.supported(chat)) { a.fail(COMMUNITY_UNSUPPORTED); return; }
+        String value, previous;
+        try { value = BridgePolicy.text(params, "value", 1024); }
+        catch (Exception invalid) { a.fail("Ese texto es demasiado largo para enviarlo a Telegram."); return; }
+        try { previous = BridgePolicy.text(params, "previous", 1024); }
+        catch (Exception invalid) { a.fail(COMMUNITY_CHANGED); return; }
+        String prepared = ChatEditing.prepared(value);
+        String reason = ChatEditing.problem(field, prepared);
+        if (reason != null) { a.fail(reason); return; }
+        perform(new TdApi.GetChatMember(chat.id, new TdApi.MessageSenderUser(session.selfId)), a, member -> {
+            if (!ChatEditing.canChange(chat, member.status)) { a.fail(COMMUNITY_NO_RIGHT); return; }
+            if ("title".equals(field)) {
+                String current = ChatEditing.prepared(chat.title);
+                if (!ChatEditing.prepared(previous).equals(current)) { a.fail(COMMUNITY_CHANGED); return; }
+                confirmCommunity(a, field, current, prepared, () -> perform(new TdApi.SetChatTitle(chat.id, prepared), a, ignored -> { schedule(); a.ok(true); }));
+            } else if (chat.type instanceof TdApi.ChatTypeBasicGroup) {
+                confirmBasicDescription(a, chat, previous, prepared);
+            } else {
+                confirmSuperDescription(a, chat, previous, prepared);
+            }
+        });
+    }
+
+    private void confirmBasicDescription(Answer a, TdApi.Chat chat, String previous, String prepared) {
+        session.perform(new TdApi.GetBasicGroupFullInfo(((TdApi.ChatTypeBasicGroup) chat.type).basicGroupId),
+            value -> describeCommunity(a, chat, previous, prepared, ((TdApi.BasicGroupFullInfo) value).description),
+            failure -> a.fail(COMMUNITY_UNREADABLE));
+    }
+
+    private void confirmSuperDescription(Answer a, TdApi.Chat chat, String previous, String prepared) {
+        session.perform(new TdApi.GetSupergroupFullInfo(((TdApi.ChatTypeSupergroup) chat.type).supergroupId),
+            value -> describeCommunity(a, chat, previous, prepared, ((TdApi.SupergroupFullInfo) value).description),
+            failure -> a.fail(COMMUNITY_UNREADABLE));
+    }
+
+    /**
+     * Una descripción que no se pudo leer no se pisa: si lo que Telegram guarda ya no es lo que la
+     * interfaz mostró, el botón verde se detiene aquí y hay que volver a abrir la ficha.
+     */
+    private void describeCommunity(Answer a, TdApi.Chat chat, String previous, String prepared, String current) {
+        if (destroyed || !currentAccount() || a.owner != session.selfId) { a.fail("La cuenta cambió. No se modificó la comunidad."); return; }
+        String stored = ChatEditing.prepared(current);
+        if (!ChatEditing.prepared(previous).equals(stored)) { a.fail(COMMUNITY_CHANGED); return; }
+        confirmCommunity(a, "description", stored, prepared, () -> perform(new TdApi.SetChatDescription(chat.id, prepared), a, ignored -> { schedule(); a.ok(true); }));
+    }
+
+    private void confirmCommunity(Answer a, String field, String current, String prepared, Runnable accepted) {
+        String message = "title".equals(field)
+            ? "El nombre de la comunidad pasará de «" + NativeSnapshot.limit(current, 64) + "» a «" + NativeSnapshot.limit(prepared, 64) + "». Todas las personas que estén dentro verán el nombre nuevo."
+            : (prepared.isEmpty()
+                ? "Se quitará la descripción que Telegram muestra en la información de la comunidad."
+                : "La descripción que Telegram muestra en la información de la comunidad pasará a ser «" + NativeSnapshot.limit(prepared, 96) + "».");
+        Dialogs.builder(activity).setTitle("Guardar en Telegram")
+            .setMessage(message + " El cambio se envía a Telegram.")
+            .setNegativeButton("Cancelar", (d, w) -> a.ok(false))
+            .setPositiveButton("Aplicar en Telegram", (d, w) -> {
+                if (destroyed || !currentAccount() || a.owner != session.selfId) { a.fail("La cuenta cambió. No se modificó la comunidad."); return; }
+                accepted.run();
+            }).setOnCancelListener(d -> a.ok(false)).show();
+    }
+
+    private static final String MEMBERSHIP_UNSUPPORTED = "Unirse y salir solo existen para grupos, supergrupos y canales.";
+    private static final String MEMBERSHIP_INSIDE = "Esta cuenta ya es miembro de esa comunidad en Telegram.";
+    private static final String MEMBERSHIP_OUTSIDE = "Esta cuenta ya no es miembro de esa comunidad en Telegram.";
+    private static final String MEMBERSHIP_BLOCKED = "Telegram bloqueó esta cuenta en esa comunidad: no puede unirse desde WRGram.";
+    private static final String MEMBERSHIP_UNKNOWN = "Telegram devolvió un resultado que WRGram no sabe interpretar. No se dio por hecho que entraste.";
+
+    /**
+     * Antes de prometer un ingreso se lee el estado real de la cuenta, porque el mismo menú puede
+     * abrirse sobre una comunidad de la que ya se es miembro (un chat encontrado por usuario no
+     * aparece en la lista) o sobre un baneo. Las dos cosas tienen respuesta propia y ninguna es
+     * «hecho»: el `throw` genérico que había aquí se traducía en un aviso del puente sin sentido.
+     */
+    private void chatJoin(JSONObject params, Answer a) throws Exception {
+        TdApi.Chat chat = target(params);
+        if (!ChatMembership.applicable(chat)) { a.fail(MEMBERSHIP_UNSUPPORTED); return; }
+        readMembership(chat, a, status -> {
+            if (ChatMembership.blocked(status)) { a.fail(MEMBERSHIP_BLOCKED); return; }
+            if (ChatMembership.inside(status)) { a.fail(MEMBERSHIP_INSIDE); return; }
+            confirmMembership(a, ChatMembership.JOINED, chat, () -> perform(new TdApi.JoinChat(chat.id), a, result -> finishJoin(result, a)));
+        });
+    }
+
+    private void chatLeave(JSONObject params, Answer a) throws Exception {
+        TdApi.Chat chat = target(params);
+        if (!ChatMembership.applicable(chat)) { a.fail(MEMBERSHIP_UNSUPPORTED); return; }
+        readMembership(chat, a, status -> {
+            if (!ChatMembership.inside(status)) { a.fail(MEMBERSHIP_OUTSIDE); return; }
+            // La schema desmontó el susto: salir siendo propietaria no es un método prohibido, es un
+            // método con consecuencias —`GetChatOwnerAfterLeaving` nombra al heredero—, así que aquí se
+            // pregunta quién recibe el chat antes de confirmar, y el mismo diálogo ofrece el traspaso.
+            if (ChatOwnership.creator(status)) { readSuccessor(a, chat); return; }
+            confirmMembership(a, ChatMembership.LEFT, chat, () -> perform(new TdApi.LeaveChat(chat.id), a, ignored -> {
+                if (session.activeChat == chat.id) session.closeChat();
+                session.refreshChats();
+                schedule();
+                answerMembership(a, ChatMembership.LEFT, false);
+            }));
+        });
+    }
+
+    /** Sin respuesta de herencia no hay nombre que prometer: se sale con `ChatOwnership.NO_SUCCESSOR` delante. */
+    private void readSuccessor(Answer a, TdApi.Chat chat) {
+        long owner = a.owner;
+        session.perform(new TdApi.GetChatOwnerAfterLeaving(chat.id), user -> {
+            if (destroyed || !currentAccount() || session.selfId != owner) { a.fail("La cuenta cambió. No se envió nada a Telegram."); return; }
+            long heir = ChatOwnership.successor(user);
+            confirmOwnerExit(a, chat, heir > 0 ? rosterName(user) : "");
+        }, ignored -> confirmOwnerExit(a, chat, ""));
+    }
+
+    /**
+     * El botón neutro no es un adorno: es la diferencia entre aceptar el heredero que Telegram eligió y
+     * elegirlo una misma. Aquí se responde `transfer` y la interfaz abre el selector de traspaso, que ya
+     * comprueba sesión y contraseña antes de escribir.
+     */
+    private void confirmOwnerExit(Answer a, TdApi.Chat chat, String heir) {
+        Dialogs.builder(activity).setTitle("Salir en Telegram").setMessage(ChatOwnership.exitMessage(chat.title, heir, chat))
+            .setNegativeButton("Cancelar", (d, w) -> answerMembership(a, ChatMembership.CANCELLED, false))
+            .setNeutralButton("Transferir antes", (d, w) -> answerMembership(a, ChatOwnership.TRANSFER, false))
+            .setPositiveButton("Salir", (d, w) -> {
+                if (destroyed || !currentAccount() || a.owner != session.selfId) { a.fail("La cuenta cambió. No se envió nada a Telegram."); return; }
+                perform(new TdApi.LeaveChat(chat.id), a, ignored -> {
+                    if (session.activeChat == chat.id) session.closeChat();
+                    session.refreshChats();
+                    schedule();
+                    answerOwnerExit(a, chat, heir);
+                });
+            }).setOnCancelListener(d -> answerMembership(a, ChatMembership.CANCELLED, false)).show();
+    }
+
+    /**
+     * Salir siendo propietaria no es un `left` corriente: la interfaz necesita el nombre del heredero y
+     * el plazo con el que Telegram lo convierte en propietario, porque son dos salidas distintas.
+     */
+    private void answerOwnerExit(Answer a, TdApi.Chat chat, String heir) {
+        try {
+            JSONObject value = object("state", ChatMembership.LEFT, "opened", false,
+                "owner", true, "when", ChatOwnership.moment(chat), "successor", heir);
+            a.ok(value);
+        } catch (Exception ignored) { a.fail("No se pudo preparar el resultado de Telegram."); }
+    }
+
+    /** `Chat` no trae el estado de la cuenta: lo dice `GetChatMember` sobre el propio usuario. */
+    private void readMembership(TdApi.Chat chat, Answer a, Consumer<TdApi.ChatMemberStatus> completed) {
+        perform(new TdApi.GetChatMember(chat.id, new TdApi.MessageSenderUser(session.selfId)), a, member -> completed.accept(member.status));
+    }
+
+    /**
+     * El resultado de `JoinChat` es la respuesta, no un detalle: dentro, solicitud, aprobación de un
+     * bot de seguridad o rechazo del bot. En el caso del bot se abre su chat, que es donde Telegram
+     * pone el botón de aprobación; si eso falla se dice con `opened=false` en lugar de callarse.
+     */
+    private void finishJoin(TdApi.ChatJoinResult result, Answer a) {
+        String state = ChatMembership.state(result);
+        if (state.isEmpty()) { a.fail(MEMBERSHIP_UNKNOWN); return; }
+        session.refreshChats();
+        long bot = ChatMembership.guardBot(result);
+        if (ChatMembership.GUARD.equals(state) && bot > 0) { openGuardBot(bot, a.owner, opened -> answerMembership(a, state, opened)); return; }
+        answerMembership(a, state, false);
+    }
+
+    private void openGuardBot(long botUserId, long owner, Consumer<Boolean> completed) {
+        session.perform(new TdApi.CreatePrivateChat(botUserId, false), chat -> {
+            if (destroyed || !currentAccount() || session.selfId != owner) { completed.accept(false); return; }
+            session.open(chat.id);
+            session.refreshChats();
+            schedule();
+            completed.accept(true);
+        }, error -> completed.accept(false));
+    }
+
+    private void answerMembership(Answer a, String state, boolean opened) {
+        try { a.ok(object("state", state, "opened", opened)); }
+        catch (Exception ignored) { a.fail("No se pudo preparar el resultado de Telegram."); }
+    }
+
+    private void confirmMembership(Answer a, String action, TdApi.Chat chat, Runnable accepted) {
+        String title = NativeSnapshot.limit(chat.title == null ? "" : chat.title, 64);
+        boolean leaving = ChatMembership.LEFT.equals(action);
+        String message = leaving
+            ? "«" + title + "» dejará de aparecer en los chats de esta cuenta y dejarás de recibir sus mensajes. WRGram solo pide abandonar: no borra ningún mensaje."
+            : "WRGram pedirá a Telegram añadir esta cuenta a «" + title + "». Si la comunidad exige aprobación, aquí se dice qué contestó Telegram.";
+        Dialogs.builder(activity).setTitle(leaving ? "Salir en Telegram" : "Unirse en Telegram")
+            .setMessage(message)
+            .setNegativeButton("Cancelar", (d, w) -> answerMembership(a, ChatMembership.CANCELLED, false))
+            .setPositiveButton("Aplicar en Telegram", (d, w) -> {
+                if (destroyed || !currentAccount() || a.owner != session.selfId) { a.fail("La cuenta cambió. No se envió nada a Telegram."); return; }
+                accepted.run();
+            }).setOnCancelListener(d -> answerMembership(a, ChatMembership.CANCELLED, false)).show();
+    }
+
+    /** Lo que `AddChatMember` necesita saber antes de preguntar: migración, ocupación y el estado propio. */
+    private interface AddContext { void apply(long migratedTo, int memberCount, TdApi.ChatMemberStatus self); }
+
+    /**
+     * La schema reparte los datos: `GetBasicGroup` trae miembros, estado propio y en qué supergrupo se
+     * convirtió el grupo; un supergrupo no trae estado útil en `GetSupergroup` para los permisos, así que
+     * ahí manda `GetChatMember` sobre la propia cuenta, como en unirse y salir.
+     */
+    private void addContext(TdApi.Chat chat, Answer a, AddContext done) {
+        if (MemberAdditions.basic(chat)) {
+            perform(new TdApi.GetBasicGroup(((TdApi.ChatTypeBasicGroup) chat.type).basicGroupId), a, group ->
+                done.apply(group.upgradedToSupergroupId, group.memberCount, group.status));
+            return;
+        }
+        if (!MemberAdditions.supergroup(chat)) { done.apply(0, -1, new TdApi.ChatMemberStatusLeft()); return; }
+        long id = ((TdApi.ChatTypeSupergroup) chat.type).supergroupId;
+        perform(new TdApi.GetSupergroup(id), a, group ->
+            perform(new TdApi.GetChatMember(chat.id, new TdApi.MessageSenderUser(session.selfId)), a,
+                member -> done.apply(0, group.memberCount, member.status)));
+    }
+
+    /** `chat.profile` no dice si se puede invitar: esta lectura sí, y con el mismo razonamiento que el alta. */
+    private void addInfo(JSONObject p, Answer a) {
+        TdApi.Chat chat = target(p);
+        addContext(chat, a, (migratedTo, memberCount, self) -> {
+            String problem = MemberAdditions.problem(chat, migratedTo, memberCount, self);
+            try {
+                a.ok(object("allowed", problem == null, "reason", problem == null ? "" : problem,
+                    "forward", problem == null && MemberAdditions.forwardsHistory(chat),
+                    "remaining", MemberAdditions.basic(chat) && memberCount >= 0
+                        ? MemberAdditions.BASIC_LIMIT - memberCount : -1));
+            } catch (Exception ignored) { a.fail("No se pudo preparar el permiso de Telegram."); }
+        });
+    }
+
+    /**
+     * C10: meter personas normales en un grupo. `AddChatMember` es de una en una y su respuesta buena
+     * solo nombra a los que NO entraron, así que cada alta se confirma con `GetChatMember`; un error
+     * fuerte corta la cola y se dice dónde quedó, en lugar de seguir sumando fallos sobre lo mismo.
+     */
+    private void addMembers(JSONObject p, Answer a) {
+        TdApi.Chat chat = target(p);
+        JSONArray raw = p.optJSONArray("userIds");
+        if (raw == null) { a.fail(MemberAdditions.EMPTY); return; }
+        java.util.LinkedHashSet<Long> unique = new java.util.LinkedHashSet<>();
+        for (int index = 0; index < raw.length(); index++) {
+            String value = raw.optString(index, "");
+            if (!MemberAdditions.positive(value)) { a.fail(MemberAdditions.BAD_ID); return; }
+            long id;
+            try { id = Long.parseLong(value); } catch (Exception overflow) { a.fail(MemberAdditions.BAD_ID); return; }
+            if (id != session.selfId) unique.add(id);
+        }
+        String batch = MemberAdditions.batch(unique.size());
+        if (batch != null) { a.fail(batch); return; }
+        String asked = p.optString("forwardLimit", "");
+        if (!asked.isEmpty() && !asked.matches("[0-9]{1,3}")) { a.fail(MemberAdditions.BAD_FORWARD); return; }
+        final int forward = asked.isEmpty() ? 0 : Integer.parseInt(asked);
+        String range = MemberAdditions.forwardProblem(forward);
+        if (range != null) { a.fail(range); return; }
+        final long[] wanted = new long[unique.size()];
+        int position = 0;
+        for (long id : unique) wanted[position++] = id;
+        addContext(chat, a, (migratedTo, memberCount, self) -> {
+            String problem = MemberAdditions.problem(chat, migratedTo, memberCount, self);
+            if (problem != null) { a.fail(problem); return; }
+            final int sending = MemberAdditions.forward(chat, forward);
+            confirmAdd(a, chat, wanted, sending, () -> runAdd(chat, wanted, 0, sending, new JSONArray(), a));
+        });
+    }
+
+    private void confirmAdd(Answer a, TdApi.Chat chat, long[] ids, int forward, Runnable accepted) {
+        StringBuilder names = new StringBuilder();
+        for (int index = 0; index < Math.min(ids.length, 3); index++) {
+            if (index > 0) names.append(", ");
+            names.append(NativeSnapshot.limit(session.senderName(new TdApi.MessageSenderUser(ids[index])), 40));
+        }
+        if (ids.length > 3) names.append(" y ").append(ids.length - 3).append(" más");
+        String title = NativeSnapshot.limit(chat.title == null ? "" : chat.title, 64);
+        String message = "WRGram añadirá a " + names + " en «" + title + "». Telegram decide una por una y "
+            + "puede negarse sin dar motivo; cada respuesta aparece al terminar."
+            + (forward > 0 ? " Verá los " + forward + " mensajes anteriores." : "");
+        Dialogs.builder(activity).setTitle("Añadir en Telegram")
+            .setMessage(message)
+            .setNegativeButton("Cancelar", (d, w) -> answerAdd(a, new JSONArray(), MemberAdditions.CANCELLED))
+            .setPositiveButton("Añadir en Telegram", (d, w) -> {
+                if (destroyed || !currentAccount() || a.owner != session.selfId) { a.fail("La cuenta cambió. No se envió nada a Telegram."); return; }
+                accepted.run();
+            }).setOnCancelListener(d -> answerAdd(a, new JSONArray(), MemberAdditions.CANCELLED)).show();
+    }
+
+    private void runAdd(TdApi.Chat chat, long[] ids, int index, int forward, JSONArray results, Answer a) {
+        if (index >= ids.length) { finishAdd(chat, results, a); return; }
+        long id = ids[index];
+        session.perform(new TdApi.AddChatMember(chat.id, id, forward), value -> {
+            if (destroyed || !currentAccount() || a.owner != session.selfId) { stopAdd(results, "La cuenta cambió. Revisa el grupo antes de repetir.", a); return; }
+            TdApi.FailedToAddMember named = MemberAdditions.named(
+                value instanceof TdApi.FailedToAddMembers ? (TdApi.FailedToAddMembers) value : null, id);
+            if (named != null) {
+                addResult(results, id, MemberAdditions.REJECTED, MemberAdditions.reason(named));
+                runAdd(chat, ids, index + 1, forward, results, a);
+                return;
+            }
+            session.perform(new TdApi.GetChatMember(chat.id, new TdApi.MessageSenderUser(id)), check -> {
+                if (destroyed || !currentAccount() || a.owner != session.selfId) { stopAdd(results, "La cuenta cambió. Revisa el grupo antes de repetir.", a); return; }
+                TdApi.ChatMemberStatus after = check instanceof TdApi.ChatMember ? ((TdApi.ChatMember) check).status : null;
+                String state = MemberAdditions.outcome(null, after);
+                addResult(results, id, state, MemberAdditions.ADDED.equals(state) ? "" : MemberAdditions.UNCONFIRMED);
+                runAdd(chat, ids, index + 1, forward, results, a);
+            }, rejected -> {
+                addResult(results, id, MemberAdditions.UNCLEAR, rejected);
+                runAdd(chat, ids, index + 1, forward, results, a);
+            });
+        }, rejected -> {
+            addResult(results, id, MemberAdditions.UNCLEAR, rejected);
+            stopAdd(results, rejected, a);
+        });
+    }
+
+    private void addResult(JSONArray results, long id, String state, String reason) {
+        try {
+            results.put(object("id", Long.toString(id), "name",
+                NativeSnapshot.limit(session.senderName(new TdApi.MessageSenderUser(id)), 60),
+                "state", state, "reason", reason == null ? "" : reason));
+        } catch (Exception ignored) { /* el puente responde con lo que cupo */ }
+    }
+
+    private void stopAdd(JSONArray results, String reason, Answer a) {
+        session.refreshChats();
+        schedule();
+        answerAdd(a, results, reason);
+    }
+
+    private void finishAdd(TdApi.Chat chat, JSONArray results, Answer a) {
+        session.refreshChats();
+        schedule();
+        answerAdd(a, results, null);
+    }
+
+    private void answerAdd(Answer a, JSONArray results, String stopped) {
+        try { a.ok(object("results", results, "stopped", stopped == null ? "" : stopped)); }
+        catch (Exception ignored) { a.fail("No se pudo preparar el resultado de Telegram."); }
+    }
+
     private void adminEvents(JSONObject params,Answer answer){TdApi.Chat chat=target(params);if(!(chat.type instanceof TdApi.ChatTypeSupergroup)){answer.fail("El registro de actividad solo está disponible en supergrupos y canales.");return;}perform(new TdApi.GetChatEventLog(chat.id,"",0,50,allEventFilters(),new long[0]),answer,result->{try{JSONArray values=new JSONArray();if(result.events!=null)for(TdApi.ChatEvent event:result.events){String actor=session.senderName(event.memberId);values.put(object("id",Long.toString(event.id),"date",event.date,"title",NativeSnapshot.limit(actor,80),"description",adminEventDescription(event.action)));}answer.ok(values);}catch(Exception ignored){answer.fail("No se pudo preparar el registro de actividad.");}});}
     private static String adminEventDescription(TdApi.ChatEventAction action){
         if(action instanceof TdApi.ChatEventMessageEdited)return "Editó un mensaje";
@@ -1508,7 +2342,7 @@ final class NativeBridge implements TdSession.Listener {
     }
     private void transferOwnershipCheck(JSONObject params,Answer answer)throws Exception{
         TdApi.Chat chat=target(params);
-        if(!(chat.type instanceof TdApi.ChatTypeSupergroup))throw new IllegalArgumentException("La transferencia de propiedad solo está disponible en supergrupos y canales.");
+        if(!ChatOwnership.applicable(chat)){answer.fail(ChatOwnership.UNSUPPORTED);return;}
         perform(new TdApi.CanTransferOwnership(),answer,result->{
             try{
                 if(result instanceof TdApi.CanTransferOwnershipResultOk)answer.ok(object("state","ok","retryAfter",0));
@@ -1521,16 +2355,22 @@ final class NativeBridge implements TdSession.Listener {
     }
     private void transferOwnership(JSONObject params,Answer answer)throws Exception{
         TdApi.Chat chat=target(params);
-        if(!(chat.type instanceof TdApi.ChatTypeSupergroup))throw new IllegalArgumentException("La transferencia de propiedad solo está disponible en supergrupos y canales.");
+        if(!ChatOwnership.applicable(chat)){answer.fail(ChatOwnership.UNSUPPORTED);return;}
         long userId=BridgePolicy.id(params,"userId");
-        if(userId<=0||userId==session.selfId)throw new IllegalArgumentException("Elige a otra persona para recibir la propiedad.");
+        if(userId<=0||userId==session.selfId)throw new IllegalArgumentException(ChatOwnership.SELF_RECIPIENT);
         String password=BridgePolicy.text(params,"password",256);
-        perform(new TdApi.CanTransferOwnership(),answer,result->{
+        // El destinatario lo fija la schema, no la lista pintada hace un minuto: «The ownership can't be
+        // transferred to a bot or to a deleted user», y de `UserTypeDeleted` añade que no se puede hacer
+        // ninguna acción activa sobre esa cuenta. Se vuelve a preguntar antes de confirmar.
+        perform(new TdApi.GetUser(userId),answer,user->{
+            if(!ChatOwnership.recipient(user,session.selfId)){answer.fail(ChatOwnership.BAD_RECIPIENT);return;}
+            String recipient=rosterName(user);
+            perform(new TdApi.CanTransferOwnership(),answer,result->{
             if(result instanceof TdApi.CanTransferOwnershipResultPasswordTooFresh||result instanceof TdApi.CanTransferOwnershipResultSessionTooFresh){answer.fail("Telegram todavía no permite transferir la propiedad desde esta sesión. Espera antes de reintentarlo.");return;}
             if(result instanceof TdApi.CanTransferOwnershipResultPasswordNeeded&&password.isEmpty()){answer.fail("Tu cuenta tiene verificación en dos pasos. Introduce la contraseña para transferir la propiedad.");return;}
             if(!(result instanceof TdApi.CanTransferOwnershipResultOk)&&!(result instanceof TdApi.CanTransferOwnershipResultPasswordNeeded)){answer.fail("Telegram no permite transferir la propiedad de este chat desde tu cuenta.");return;}
-            String recipient=session.senderName(new TdApi.MessageSenderUser(userId));
             Dialogs.builder(activity).setTitle("Transferir propiedad").setMessage("Se transferirá la propiedad de “"+chat.title+"” a "+recipient+". Dejarás de ser propietario y no podrás recuperarla desde WRGram sin que la otra persona la devuelva.").setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton("Transferir propiedad",(d,w)->{if(!currentAccount()||session.selfId!=answer.owner||session.activeChat!=chat.id){answer.fail("La cuenta o conversación cambió. No se transfirió la propiedad.");return;}perform(new TdApi.TransferChatOwnership(chat.id,userId,password),answer,ignored->{schedule();answer.ok(true);});}).setOnCancelListener(d->answer.ok(false)).show();
+            });
         });
     }
     private void setGroupPermissions(JSONObject params,Answer answer)throws Exception{TdApi.Chat chat=target(params);if(!(chat.type instanceof TdApi.ChatTypeSupergroup))throw new IllegalArgumentException("Se requiere un supergrupo o canal.");JSONObject p=params.getJSONObject("permissions");TdApi.ChatPermissions value=new TdApi.ChatPermissions(requiredBool(p,"canSendBasicMessages"),requiredBool(p,"canSendAudios"),requiredBool(p,"canSendDocuments"),requiredBool(p,"canSendPhotos"),requiredBool(p,"canSendVideos"),requiredBool(p,"canSendVideoNotes"),requiredBool(p,"canSendVoiceNotes"),requiredBool(p,"canSendPolls"),requiredBool(p,"canSendOtherMessages"),requiredBool(p,"canAddLinkPreviews"),requiredBool(p,"canReactToMessages"),requiredBool(p,"canEditTag"),requiredBool(p,"canChangeInfo"),requiredBool(p,"canInviteUsers"),requiredBool(p,"canPinMessages"),requiredBool(p,"canCreateTopics"));perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,actor->{if(!canRestrictMembers(actor)){answer.fail("Telegram no concede a esta cuenta el permiso para cambiar permisos del grupo.");return;}Dialogs.builder(activity).setTitle("Cambiar permisos predeterminados").setMessage("Se aplicarán a los miembros del grupo. No cambian los permisos de administradores ni se enviarán mensajes.").setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton("Guardar permisos",(d,w)->{if(!currentAccount()||session.selfId!=answer.owner){answer.fail("La cuenta cambió. No se cambiaron permisos.");return;}perform(new TdApi.SetChatPermissions(chat.id,value),answer,ignored->{schedule();answer.ok(true);});}).setOnCancelListener(d->answer.ok(false)).show();});}
@@ -1948,16 +2788,95 @@ final class NativeBridge implements TdSession.Listener {
             });
         });
     }
+    /**
+     * Quién está dentro de un grupo básico. `GetSupergroupMembers` no sirve aquí y `SearchChatMembers`
+     * solo existe en supergrupos, así que la lista entera viene de `GetBasicGroupFullInfo`: Telegram la da
+     * de una vez porque un básico no pasa de 200. Se dice cuántos siguen dentro y cuántos se fueron, porque
+     * el básico conserva a los que salieron y mezclar las dos cifras daría más miembros de los reales.
+     */
+    private void basicRoster(JSONObject params,Answer answer){
+        TdApi.Chat chat=target(params);
+        if(!BasicGroupRoster.applicable(chat)){answer.fail(BasicGroupRoster.UNSUPPORTED);return;}
+        String query=params.optString("query","");
+        if(BasicGroupRoster.tooLong(query)){answer.fail(BasicGroupRoster.TOO_LONG);return;}
+        // La lista y el permiso se piden juntos: ofrecer «Expulsar» fila a fila sin saber si la cuenta
+        // puede hacerlo solo sirve para que Telegram lo niegue después, y negarlo tarde es peor.
+        perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,actor->
+            perform(new TdApi.GetBasicGroupFullInfo(BasicGroupRoster.groupId(chat)),answer,info->writeRoster(info,query,actor.status,answer)));
+    }
+
+    /** El cuerpo de la lista: filas ya ordenadas y filtradas, más lo que un básico admite hacer con ellas. */
+    private void writeRoster(TdApi.BasicGroupFullInfo info,String query,TdApi.ChatMemberStatus self,Answer answer){
+        try{
+            int insideAll=BasicGroupRoster.inside(info.members),listed=0;
+            JSONArray rows=new JSONArray();
+            for(TdApi.ChatMember member:BasicGroupRoster.order(info.members)){
+                if(!BasicGroupRoster.visible(member))continue;
+                listed++;
+                long userId=BasicGroupRoster.userId(member);
+                TdApi.User user=session.user(userId);
+                String name=rosterName(user),username=rosterUsername(user);
+                if(!BasicGroupRoster.matches(query,name,username))continue;
+                rows.put(object("id",Long.toString(userId),"name",name,"username",username==null?"":"@"+username,
+                    "status",BasicGroupRoster.status(member.status),"inside",ChatMembership.inside(member.status),
+                    "self",userId==session.selfId,"bot",user!=null&&user.type instanceof TdApi.UserTypeBot,
+                    "since",member.joinedChatDate,"invitedBy",Long.toString(member.inviterUserId),"invitedByName",BasicGroupRoster.invitedName(member.inviterUserId,rosterName(session.user(member.inviterUserId))),
+                    "tag",NativeSnapshot.limit(member.tag==null?"":member.tag,16)));
+            }
+            answer.ok(object("members",rows,"shown",rows.length(),"listed",listed,"inside",insideAll,
+                "creator",Long.toString(info.creatorUserId),
+                "note",BasicGroupRoster.note(info.creatorUserId,listed,insideAll),
+                "remaining",BasicGroupRoster.remaining(insideAll),"order",BasicGroupRoster.ORDER,
+                "manage",BasicGroupMemberAction.mayRemove(self),"scope",BasicGroupMemberAction.scope()));
+        }catch(Exception ignored){answer.fail("No se pudo preparar la lista del grupo.");}
+    }
+    private static String rosterName(TdApi.User user){
+        if(user==null)return "Usuario de Telegram";
+        String name=NativeSnapshot.limit(((user.firstName==null?"":user.firstName)+" "+(user.lastName==null?"":user.lastName)).trim(),90);
+        if(!name.isEmpty())return name;
+        String username=rosterUsername(user);
+        return username==null?"Usuario de Telegram":NativeSnapshot.limit("@"+username,90);
+    }
+    private static String rosterUsername(TdApi.User user){
+        if(user==null||user.usernames==null)return null;
+        if(user.usernames.editableUsername!=null&&!user.usernames.editableUsername.isEmpty())return user.usernames.editableUsername;
+        return user.usernames.activeUsernames!=null&&user.usernames.activeUsernames.length>0?user.usernames.activeUsernames[0]:null;
+    }
     private void bannedMembers(JSONObject params,Answer answer)throws Exception{TdApi.Chat chat=target(params);if(!(chat.type instanceof TdApi.ChatTypeSupergroup)){answer.fail("La lista de baneos solo está disponible en supergrupos y canales.");return;}String query=BridgePolicy.text(params,"query",80).trim();long supergroupId=((TdApi.ChatTypeSupergroup)chat.type).supergroupId;boolean channel=((TdApi.ChatTypeSupergroup)chat.type).isChannel;TdApi.Supergroup info=session.supergroup(supergroupId);boolean forum=info!=null&&info.isForum;perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,actor->{if(!canRestrictMembers(actor)){answer.fail("Telegram no concede permiso para consultar baneos.");return;}TdApi.Function<TdApi.ChatMembers> request=query.isEmpty()?new TdApi.GetSupergroupMembers(supergroupId,new TdApi.SupergroupMembersFilterBanned(),0,50):new TdApi.SearchChatMembers(chat.id,query,50,new TdApi.ChatMembersFilterBanned());perform(request,answer,result->{try{JSONArray values=new JSONArray();if(result.members!=null)for(TdApi.ChatMember member:result.members){if(!(member.memberId instanceof TdApi.MessageSenderUser))continue;values.put(memberDto(member,actor,channel,forum,true,false));}answer.ok(values);}catch(Exception ignored){answer.fail("No se pudo preparar la lista de baneos.");}});});}
-    private void unbanGroupMember(JSONObject params,Answer answer){TdApi.Chat chat=target(params);if(!(chat.type instanceof TdApi.ChatTypeSupergroup)){answer.fail("Esta acción requiere un supergrupo o canal.");return;}long userId=BridgePolicy.id(params,"userId");if(userId==session.selfId){answer.fail("No puedes cambiar tu propio estado desde esta lista.");return;}perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,actor->{if(!canRestrictMembers(actor)){answer.fail("Telegram no concede permiso para quitar restricciones.");return;}perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(userId)),answer,target->{boolean banned=target.status instanceof TdApi.ChatMemberStatusBanned,restricted=target.status instanceof TdApi.ChatMemberStatusRestricted;if(!banned&&!restricted){answer.fail("Este usuario ya no figura como baneado o restringido.");return;}boolean left=restricted&&!((TdApi.ChatMemberStatusRestricted)target.status).isMember;TdApi.ChatMemberStatus restored=left?new TdApi.ChatMemberStatusLeft():new TdApi.ChatMemberStatusMember(0);String name=session.senderName(new TdApi.MessageSenderUser(userId));Dialogs.builder(activity).setTitle(banned?"Quitar baneo":"Quitar restricción").setMessage(left?"Se quitará la restricción de "+name+". Como no es miembro, no se le añadirá al chat; podrá volver a unirse si el chat lo permite.":"Se restaurará el acceso completo de "+name+" a este grupo o canal. No se enviará una invitación.").setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton(banned?"Quitar baneo":"Quitar restricción",(d,w)->{if(!currentAccount()||session.selfId!=answer.owner||session.activeChat!=chat.id){answer.fail("La conversación cambió. No se cambió el estado del usuario.");return;}perform(new TdApi.SetChatMemberStatus(chat.id,new TdApi.MessageSenderUser(userId),restored),answer,ignored->{schedule();answer.ok(true);});}).setOnCancelListener(d->answer.ok(false)).show();});});}
+    private void unbanGroupMember(JSONObject params,Answer answer){TdApi.Chat chat=target(params);if(BasicGroupMemberAction.applicable(chat)){answer.fail(BasicGroupMemberAction.unbanProblem(chat));return;}if(!(chat.type instanceof TdApi.ChatTypeSupergroup)){answer.fail("Esta acción requiere un supergrupo o canal.");return;}long userId=BridgePolicy.id(params,"userId");if(userId==session.selfId){answer.fail("No puedes cambiar tu propio estado desde esta lista.");return;}perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,actor->{if(!canRestrictMembers(actor)){answer.fail("Telegram no concede permiso para quitar restricciones.");return;}perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(userId)),answer,target->{boolean banned=target.status instanceof TdApi.ChatMemberStatusBanned,restricted=target.status instanceof TdApi.ChatMemberStatusRestricted;if(!banned&&!restricted){answer.fail("Este usuario ya no figura como baneado o restringido.");return;}boolean left=restricted&&!((TdApi.ChatMemberStatusRestricted)target.status).isMember;TdApi.ChatMemberStatus restored=left?new TdApi.ChatMemberStatusLeft():new TdApi.ChatMemberStatusMember(0);String name=session.senderName(new TdApi.MessageSenderUser(userId));Dialogs.builder(activity).setTitle(banned?"Quitar baneo":"Quitar restricción").setMessage(left?"Se quitará la restricción de "+name+". Como no es miembro, no se le añadirá al chat; podrá volver a unirse si el chat lo permite.":"Se restaurará el acceso completo de "+name+" a este grupo o canal. No se enviará una invitación.").setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton(banned?"Quitar baneo":"Quitar restricción",(d,w)->{if(!currentAccount()||session.selfId!=answer.owner||session.activeChat!=chat.id){answer.fail("La conversación cambió. No se cambió el estado del usuario.");return;}perform(new TdApi.SetChatMemberStatus(chat.id,new TdApi.MessageSenderUser(userId),restored),answer,ignored->{schedule();answer.ok(true);});}).setOnCancelListener(d->answer.ok(false)).show();});});}
     private static boolean grantedAdminRight(TdApi.ChatMember actor,String name){if(actor.status instanceof TdApi.ChatMemberStatusCreator)return true;TdApi.ChatAdministratorRights rights=administratorRights(actor);if(rights==null)return false;switch(name){case "canChangeInfo":return rights.canChangeInfo;case "canPostMessages":return rights.canPostMessages;case "canEditMessages":return rights.canEditMessages;case "canDeleteMessages":return rights.canDeleteMessages;case "canInviteUsers":return rights.canInviteUsers;case "canRestrictMembers":return rights.canRestrictMembers;case "canPinMessages":return rights.canPinMessages;case "canManageTopics":return rights.canManageTopics;case "canPromoteMembers":return rights.canPromoteMembers;case "canManageVideoChats":return rights.canManageVideoChats;case "canPostStories":return rights.canPostStories;case "canEditStories":return rights.canEditStories;case "canDeleteStories":return rights.canDeleteStories;case "canManageDirectMessages":return rights.canManageDirectMessages;case "canManageTags":return rights.canManageTags;case "canSendWelcomeMessages":return rights.canSendWelcomeMessages;default:return false;}}
     private static boolean adminRightValue(TdApi.ChatAdministratorRights rights,String name){switch(name){case "canChangeInfo":return rights.canChangeInfo;case "canPostMessages":return rights.canPostMessages;case "canEditMessages":return rights.canEditMessages;case "canDeleteMessages":return rights.canDeleteMessages;case "canInviteUsers":return rights.canInviteUsers;case "canRestrictMembers":return rights.canRestrictMembers;case "canPinMessages":return rights.canPinMessages;case "canManageTopics":return rights.canManageTopics;case "canPromoteMembers":return rights.canPromoteMembers;case "canManageVideoChats":return rights.canManageVideoChats;case "canPostStories":return rights.canPostStories;case "canEditStories":return rights.canEditStories;case "canDeleteStories":return rights.canDeleteStories;case "canManageDirectMessages":return rights.canManageDirectMessages;case "canManageTags":return rights.canManageTags;case "canSendWelcomeMessages":return rights.canSendWelcomeMessages;default:return false;}}
     private TdApi.ChatAdministratorRights requestedAdminRights(JSONObject params,TdApi.ChatMember actor,boolean channel,boolean forum,TdApi.ChatAdministratorRights current)throws Exception{String[] fields={"canChangeInfo","canPostMessages","canEditMessages","canDeleteMessages","canInviteUsers","canRestrictMembers","canPinMessages","canManageTopics","canPromoteMembers","canManageVideoChats","canPostStories","canEditStories","canDeleteStories","canManageDirectMessages","canManageTags","canSendWelcomeMessages"};boolean[] values=new boolean[fields.length];boolean any=false;for(int i=0;i<fields.length;i++){boolean requested=requiredBool(params,fields[i]);if(grantedAdminRight(actor,fields[i]))values[i]=requested;else if(current!=null)values[i]=adminRightValue(current,fields[i]);else if(requested)throw new IllegalArgumentException("No puedes delegar un permiso que no tienes en Telegram.");any|=values[i];}if(channel&&(values[6]||values[7]||values[14])||!channel&&(values[1]||values[2]||values[13])||!forum&&values[7])throw new IllegalArgumentException("Uno de los permisos no es compatible con este tipo de chat.");if(!any)throw new IllegalArgumentException("Selecciona al menos un permiso administrativo.");return new TdApi.ChatAdministratorRights(true,values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7],values[8],values[9],values[10],values[11],values[12],values[13],values[14],values[15],current!=null&&!channel&&current.isAnonymous);}
     private static String adminRightsSummary(TdApi.ChatAdministratorRights rights){java.util.ArrayList<String> labels=new java.util.ArrayList<>();if(rights.canChangeInfo)labels.add("editar información");if(rights.canPostMessages)labels.add("publicar en canales");if(rights.canEditMessages)labels.add("editar mensajes");if(rights.canDeleteMessages)labels.add("borrar mensajes");if(rights.canInviteUsers)labels.add("invitar miembros");if(rights.canRestrictMembers)labels.add("restringir miembros");if(rights.canPinMessages)labels.add("fijar mensajes");if(rights.canManageTopics)labels.add("gestionar temas");if(rights.canPromoteMembers)labels.add("promover administradores");if(rights.canManageVideoChats)labels.add("gestionar videollamadas");if(rights.canPostStories)labels.add("publicar historias");if(rights.canEditStories)labels.add("editar historias");if(rights.canDeleteStories)labels.add("eliminar historias");if(rights.canManageDirectMessages)labels.add("gestionar mensajes directos");if(rights.canManageTags)labels.add("gestionar etiquetas");if(rights.canSendWelcomeMessages)labels.add("enviar bienvenidas");return String.join(", ",labels);}
-    private void promoteGroupMember(JSONObject params,Answer answer)throws Exception{TdApi.Chat chat=target(params);if(!(chat.type instanceof TdApi.ChatTypeSupergroup))throw new IllegalArgumentException("Esta acción requiere un supergrupo o canal.");long userId=BridgePolicy.id(params,"userId");if(userId==session.selfId)throw new IllegalArgumentException("No puedes cambiar tu propio rol desde aquí.");boolean channel=((TdApi.ChatTypeSupergroup)chat.type).isChannel,forum=!channel&&session.supergroup(((TdApi.ChatTypeSupergroup)chat.type).supergroupId)!=null&&session.supergroup(((TdApi.ChatTypeSupergroup)chat.type).supergroupId).isForum;perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,actor->{if(!canPromoteMembers(actor)){answer.fail("Telegram no concede a esta cuenta permiso para administrar roles.");return;}perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(userId)),answer,target->{boolean normal=target.status instanceof TdApi.ChatMemberStatusMember,editable=target.status instanceof TdApi.ChatMemberStatusAdministrator&&((TdApi.ChatMemberStatusAdministrator)target.status).canBeEdited;if(!normal&&!editable){answer.fail("Telegram solo permite promover a un miembro normal o editar un administrador que puedas modificar.");return;}final TdApi.ChatAdministratorRights rights;try{rights=requestedAdminRights(params,actor,channel,forum,editable?administratorRights(target):null);}catch(Exception invalid){answer.fail(invalid.getMessage());return;}String name=session.senderName(new TdApi.MessageSenderUser(userId));boolean editing=editable;Dialogs.builder(activity).setTitle(editing?"Editar permisos de administrador":"Promover a administrador").setMessage((editing?"Se actualizarán los permisos de ":"Se otorgarán a ")+name+": "+adminRightsSummary(rights)+". Telegram volverá a validar tu autoridad.").setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton(editing?"Guardar permisos":"Promover",(d,w)->{if(!currentAccount()||session.selfId!=answer.owner||session.activeChat!=chat.id){answer.fail("La cuenta cambió. No se cambió el rol.");return;}perform(new TdApi.SetChatMemberStatus(chat.id,new TdApi.MessageSenderUser(userId),new TdApi.ChatMemberStatusAdministrator(editing,rights)),answer,ignored->{schedule();answer.ok(true);});}).setOnCancelListener(d->answer.ok(false)).show();});});}
-    private void demoteGroupMember(JSONObject params,Answer answer){TdApi.Chat chat=target(params);if(!(chat.type instanceof TdApi.ChatTypeSupergroup))throw new IllegalArgumentException("Esta acción requiere un supergrupo o canal.");long userId=BridgePolicy.id(params,"userId");if(userId==session.selfId)throw new IllegalArgumentException("No puedes quitarte el rol desde este menú.");perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,actor->{if(!canPromoteMembers(actor)){answer.fail("Telegram no concede a esta cuenta permiso para quitar roles de administrador.");return;}perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(userId)),answer,target->{if(!(target.status instanceof TdApi.ChatMemberStatusAdministrator)||!((TdApi.ChatMemberStatusAdministrator)target.status).canBeEdited){answer.fail("Telegram no permite editar este rol de administrador.");return;}String name=session.senderName(new TdApi.MessageSenderUser(userId));Dialogs.builder(activity).setTitle("Quitar administración").setMessage(""+name+" dejará de ser administrador y conservará su membresía normal.").setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton("Quitar rol",(d,w)->{if(!currentAccount()||session.selfId!=answer.owner||session.activeChat!=chat.id){answer.fail("La conversación cambió. No se quitó el rol.");return;}perform(new TdApi.SetChatMemberStatus(chat.id,new TdApi.MessageSenderUser(userId),new TdApi.ChatMemberStatusMember(0)),answer,ignored->{schedule();answer.ok(true);});}).setOnCancelListener(d->answer.ok(false)).show();});});}
+    private void promoteGroupMember(JSONObject params,Answer answer)throws Exception{TdApi.Chat chat=target(params);String basics=BasicGroupMemberAction.promoteProblem(chat);if(basics!=null)throw new IllegalArgumentException(basics);if(!(chat.type instanceof TdApi.ChatTypeSupergroup))throw new IllegalArgumentException("Esta acción requiere un supergrupo o canal.");long userId=BridgePolicy.id(params,"userId");if(userId==session.selfId)throw new IllegalArgumentException("No puedes cambiar tu propio rol desde aquí.");boolean channel=((TdApi.ChatTypeSupergroup)chat.type).isChannel,forum=!channel&&session.supergroup(((TdApi.ChatTypeSupergroup)chat.type).supergroupId)!=null&&session.supergroup(((TdApi.ChatTypeSupergroup)chat.type).supergroupId).isForum;perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,actor->{if(!canPromoteMembers(actor)){answer.fail("Telegram no concede a esta cuenta permiso para administrar roles.");return;}perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(userId)),answer,target->{boolean normal=target.status instanceof TdApi.ChatMemberStatusMember,editable=target.status instanceof TdApi.ChatMemberStatusAdministrator&&((TdApi.ChatMemberStatusAdministrator)target.status).canBeEdited;if(!normal&&!editable){answer.fail("Telegram solo permite promover a un miembro normal o editar un administrador que puedas modificar.");return;}final TdApi.ChatAdministratorRights rights;try{rights=requestedAdminRights(params,actor,channel,forum,editable?administratorRights(target):null);}catch(Exception invalid){answer.fail(invalid.getMessage());return;}String name=session.senderName(new TdApi.MessageSenderUser(userId));boolean editing=editable;Dialogs.builder(activity).setTitle(editing?"Editar permisos de administrador":"Promover a administrador").setMessage((editing?"Se actualizarán los permisos de ":"Se otorgarán a ")+name+": "+adminRightsSummary(rights)+". Telegram volverá a validar tu autoridad.").setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton(editing?"Guardar permisos":"Promover",(d,w)->{if(!currentAccount()||session.selfId!=answer.owner||session.activeChat!=chat.id){answer.fail("La cuenta cambió. No se cambió el rol.");return;}perform(new TdApi.SetChatMemberStatus(chat.id,new TdApi.MessageSenderUser(userId),new TdApi.ChatMemberStatusAdministrator(editing,rights)),answer,ignored->{schedule();answer.ok(true);});}).setOnCancelListener(d->answer.ok(false)).show();});});}
+    private void demoteGroupMember(JSONObject params,Answer answer){TdApi.Chat chat=target(params);String basics=BasicGroupMemberAction.promoteProblem(chat);if(basics!=null){answer.fail(basics);return;}if(!(chat.type instanceof TdApi.ChatTypeSupergroup))throw new IllegalArgumentException("Esta acción requiere un supergrupo o canal.");long userId=BridgePolicy.id(params,"userId");if(userId==session.selfId)throw new IllegalArgumentException("No puedes quitarte el rol desde este menú.");perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,actor->{if(!canPromoteMembers(actor)){answer.fail("Telegram no concede a esta cuenta permiso para quitar roles de administrador.");return;}perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(userId)),answer,target->{if(!(target.status instanceof TdApi.ChatMemberStatusAdministrator)||!((TdApi.ChatMemberStatusAdministrator)target.status).canBeEdited){answer.fail("Telegram no permite editar este rol de administrador.");return;}String name=session.senderName(new TdApi.MessageSenderUser(userId));Dialogs.builder(activity).setTitle("Quitar administración").setMessage(""+name+" dejará de ser administrador y conservará su membresía normal.").setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton("Quitar rol",(d,w)->{if(!currentAccount()||session.selfId!=answer.owner||session.activeChat!=chat.id){answer.fail("La conversación cambió. No se quitó el rol.");return;}perform(new TdApi.SetChatMemberStatus(chat.id,new TdApi.MessageSenderUser(userId),new TdApi.ChatMemberStatusMember(0)),answer,ignored->{schedule();answer.ok(true);});}).setOnCancelListener(d->answer.ok(false)).show();});});}
     private static String banDurationLabel(long seconds){if(seconds==0)return "de forma permanente";if(seconds%86400==0)return "durante "+(seconds/86400)+" día(s)";if(seconds%3600==0)return "durante "+(seconds/3600)+" hora(s)";return "durante "+(seconds/60)+" minuto(s)";}
-    private void banGroupMember(JSONObject params,Answer answer,boolean restrict){TdApi.Chat chat=target(params);if(!(chat.type instanceof TdApi.ChatTypeSupergroup)){answer.fail("Esta acción requiere un supergrupo o canal.");return;}long userId=BridgePolicy.id(params,"userId");if(userId==session.selfId){answer.fail("No puedes cambiar tu propio estado desde este menú.");return;}long duration=params.optLong("duration",3600);if(duration!=0&&(duration<60||duration>366L*86400)){answer.fail("La duración debe ser permanente o estar entre 1 minuto y 366 días.");return;}boolean deleteMessages=params.optBoolean("deleteMessages",false);boolean channel=((TdApi.ChatTypeSupergroup)chat.type).isChannel;if(restrict&&channel){answer.fail("Los canales no admiten restricciones de miembros; usa Banear para expulsar del canal.");return;}perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,actor->{if(!canRestrictMembers(actor)){answer.fail("Telegram no concede permiso para restringir miembros.");return;}if(deleteMessages&&(!grantedAdminRight(actor,"canDeleteMessages")||channel)){answer.fail("Telegram no permite borrar mensajes de un miembro desde este tipo de chat o tu cuenta no tiene ese permiso.");return;}perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(userId)),answer,target->{boolean normal=target.status instanceof TdApi.ChatMemberStatusMember,restricted=target.status instanceof TdApi.ChatMemberStatusRestricted;if(!normal&&!restricted){answer.fail("Telegram solo permite aplicar esta acción a un miembro normal o ya restringido. Los administradores deben perder su rol primero.");return;}String name=session.senderName(new TdApi.MessageSenderUser(userId));int until=duration==0?0:(int)Math.min(Integer.MAX_VALUE,System.currentTimeMillis()/1000L+duration);String action=restrict?"Restringir":"Banear";Dialogs.builder(activity).setTitle(action+" a "+name).setMessage((restrict?"Se quitarán los permisos de envío a ":"Se expulsará a ")+name+" "+banDurationLabel(duration)+". "+(deleteMessages?"También se borrarán todos los mensajes que envió en este chat. ":"No se borrarán mensajes. ")+"Telegram validará el cambio en la cuenta.").setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton(action,(d,w)->{if(!currentAccount()||session.selfId!=answer.owner||session.activeChat!=chat.id){answer.fail("La conversación cambió. No se aplicó la restricción.");return;}TdApi.ChatMemberStatus status=restrict?new TdApi.ChatMemberStatusRestricted(true,until,new TdApi.ChatPermissions(false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false)):new TdApi.ChatMemberStatusBanned(until);perform(new TdApi.SetChatMemberStatus(chat.id,new TdApi.MessageSenderUser(userId),status),answer,ignored->{if(!deleteMessages){schedule();answer.ok(true);return;}session.perform(new TdApi.DeleteChatMessagesBySender(chat.id,new TdApi.MessageSenderUser(userId)),deleted->{schedule();answer.ok(true);},error->{schedule();answer.fail("La restricción se aplicó, pero Telegram no permitió borrar los mensajes: "+error);});});}).setOnCancelListener(d->answer.ok(false)).show();});});}
+    /**
+     * Expulsar a alguien de un grupo básico: `BanChatMember` con el plazo a 0 —la schema dice que en un
+     * básico «bannedUntilDate … Always 0»— y con `revokeMessages` decidido por la persona, que es justo lo
+     * que la schema reserva para aquí («Always true for supergroups and channels»). Se confirma en un
+     * `Dialogs` nativo y se vuelve a leer el estado de la persona antes de escribir, no el de la lista.
+     */
+    private void banBasicMember(TdApi.Chat chat,JSONObject params,Answer answer,boolean restrict){
+        if(restrict){answer.fail(BasicGroupMemberAction.restrictProblem(chat));return;}
+        long userId=BridgePolicy.id(params,"userId");
+        String badDuration=BasicGroupMemberAction.durationProblem(chat,params.optLong("duration",0));
+        if(badDuration!=null){answer.fail(badDuration);return;}
+        boolean revoke=BasicGroupMemberAction.revokes(chat,params.optBoolean("deleteMessages",false));
+        perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,actor->
+            perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(userId)),answer,target->{
+                String problem=BasicGroupMemberAction.banProblem(actor.status,target.status,session.selfId,userId);
+                if(problem!=null){answer.fail(problem);return;}
+                String name=session.senderName(new TdApi.MessageSenderUser(userId));
+                Dialogs.builder(activity).setTitle("Expulsar de "+chat.title).setMessage(BasicGroupMemberAction.confirm(name,revoke))
+                    .setNegativeButton("Cancelar",(d,w)->answer.ok(false))
+                    .setPositiveButton("Expulsar",(d,w)->{
+                        if(!currentAccount()||session.selfId!=answer.owner||session.activeChat!=chat.id){answer.fail("La conversación cambió. No se expulsó a nadie.");return;}
+                        perform(new TdApi.BanChatMember(chat.id,new TdApi.MessageSenderUser(userId),BasicGroupMemberAction.until(chat,0),revoke),answer,ignored->{schedule();answer.ok(true);});
+                    }).setOnCancelListener(d->answer.ok(false)).show();
+            }));
+    }
+    private void banGroupMember(JSONObject params,Answer answer,boolean restrict){TdApi.Chat chat=target(params);if(BasicGroupMemberAction.applicable(chat)){banBasicMember(chat,params,answer,restrict);return;}if(!(chat.type instanceof TdApi.ChatTypeSupergroup)){answer.fail("Esta acción requiere un supergrupo o canal.");return;}long userId=BridgePolicy.id(params,"userId");if(userId==session.selfId){answer.fail("No puedes cambiar tu propio estado desde este menú.");return;}long duration=params.optLong("duration",3600);if(duration!=0&&(duration<60||duration>366L*86400)){answer.fail("La duración debe ser permanente o estar entre 1 minuto y 366 días.");return;}boolean deleteMessages=params.optBoolean("deleteMessages",false);boolean channel=((TdApi.ChatTypeSupergroup)chat.type).isChannel;if(restrict&&channel){answer.fail("Los canales no admiten restricciones de miembros; usa Banear para expulsar del canal.");return;}perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),answer,actor->{if(!canRestrictMembers(actor)){answer.fail("Telegram no concede permiso para restringir miembros.");return;}if(deleteMessages&&(!grantedAdminRight(actor,"canDeleteMessages")||channel)){answer.fail("Telegram no permite borrar mensajes de un miembro desde este tipo de chat o tu cuenta no tiene ese permiso.");return;}perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(userId)),answer,target->{boolean normal=target.status instanceof TdApi.ChatMemberStatusMember,restricted=target.status instanceof TdApi.ChatMemberStatusRestricted;if(!normal&&!restricted){answer.fail("Telegram solo permite aplicar esta acción a un miembro normal o ya restringido. Los administradores deben perder su rol primero.");return;}String name=session.senderName(new TdApi.MessageSenderUser(userId));int until=duration==0?0:(int)Math.min(Integer.MAX_VALUE,System.currentTimeMillis()/1000L+duration);String action=restrict?"Restringir":"Banear";Dialogs.builder(activity).setTitle(action+" a "+name).setMessage((restrict?"Se quitarán los permisos de envío a ":"Se expulsará a ")+name+" "+banDurationLabel(duration)+". "+(deleteMessages?"También se borrarán todos los mensajes que envió en este chat. ":"No se borrarán mensajes. ")+"Telegram validará el cambio en la cuenta.").setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton(action,(d,w)->{if(!currentAccount()||session.selfId!=answer.owner||session.activeChat!=chat.id){answer.fail("La conversación cambió. No se aplicó la restricción.");return;}TdApi.ChatMemberStatus status=restrict?new TdApi.ChatMemberStatusRestricted(true,until,new TdApi.ChatPermissions(false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false)):new TdApi.ChatMemberStatusBanned(until);perform(new TdApi.SetChatMemberStatus(chat.id,new TdApi.MessageSenderUser(userId),status),answer,ignored->{if(!deleteMessages){schedule();answer.ok(true);return;}session.perform(new TdApi.DeleteChatMessagesBySender(chat.id,new TdApi.MessageSenderUser(userId)),deleted->{schedule();answer.ok(true);},error->{schedule();answer.fail("La restricción se aplicó, pero Telegram no permitió borrar los mensajes: "+error);});});}).setOnCancelListener(d->answer.ok(false)).show();});});}
     private void prepareStarsPayment(JSONObject params,Answer answer)throws Exception{
         TdApi.Message source=message(params);
         TdApi.MessagePaidMedia paid=source.content instanceof TdApi.MessagePaidMedia?(TdApi.MessagePaidMedia)source.content:null;
@@ -2175,7 +3094,7 @@ final class NativeBridge implements TdSession.Listener {
                 JSONObject gestures=new JSONObject(raw.toString());
                 if(gestures.length()>2)throw new IllegalArgumentException();
                 java.util.Iterator<String> keys=gestures.keys();
-                while(keys.hasNext()){String side=keys.next();if(!side.matches("left|right")||!gestures.optString(side,"").matches("none|reply|copy|forward|select"))throw new IllegalArgumentException();}
+                while(keys.hasNext()){String side=keys.next();if(!side.matches("left|right")||!gestures.optString(side,"").matches("none|reply|menu|copy|forward|select"))throw new IllegalArgumentException();}
                 edit.putString("gestures",gestures.toString());
             }
         }
@@ -2452,11 +3371,13 @@ final class NativeBridge implements TdSession.Listener {
         long chatId=BridgePolicy.id(params,"id"),at=params.optLong("at",0);
         TdApi.Chat chat=session.chat(chatId);
         if(chat==null||chatId!=session.activeChat||session.activeTopic!=0||chat.type instanceof TdApi.ChatTypeSecret){
-            answer.fail("Este historial no admite saltos por fecha.");return;
+            answer.fail(HistoryDate.History);return;
         }
-        if(at<=0||at>Integer.MAX_VALUE||at>System.currentTimeMillis()/1000){answer.fail("Fecha fuera de rango.");return;}
+        // El formulario ya corta su propia frontera a «ahora» (inboxModel.ts:endOfLocalDate), así que esto no es un
+        // gesto de la pantalla: es la guarda del puente sobre un llamador que manda basura o futuro.
+        if(!HistoryDate.acceptable(at,System.currentTimeMillis()/1000)){answer.fail(HistoryDate.Range);return;}
         session.messageByDate(chatId,(int)at,message->{
-            if(answer.owner!=session.selfId||session.activeChat!=chatId||session.activeTopic!=0){answer.fail("La conversación cambió.");return;}
+            if(answer.owner!=session.selfId||session.activeChat!=chatId||session.activeTopic!=0){answer.fail(HistoryDate.Changed);return;}
             answer.ok(message==null?null:Long.toString(message.id));
         },answer::fail);
     }
@@ -2464,23 +3385,396 @@ final class NativeBridge implements TdSession.Listener {
         requireAccount();
         String query=BridgePolicy.text(p,"query",100);
         String filter=p.has("filter")?BridgePolicy.text(p,"filter",16):p.optBoolean("media")?"photoVideo":"";
-        if(p.optBoolean("global")){globalSearch(query,p.optString("offset",""),filter,a);return;}
+        String sender=p.optString("sender","").trim();
+        long from=p.optLong("from",0),until=p.optLong("until",0);
+        boolean page=p.optBoolean("page");
+        if(p.optBoolean("global")){
+            if(MessageSearch.band(sender,from,until)){a.fail(MessageSearch.GLOBAL_BAND);return;}
+            globalSearch(query,p.optString("offset",""),filter,a);return;
+        }
         long chat=session.activeChat;int topic=session.activeTopic;
+        TdApi.Chat value=session.chat(chat);
+        String problem=MessageSearch.problem(sender,from,until,System.currentTimeMillis()/1000,value);
+        if(problem!=null){a.fail(problem);return;}
         int generation=++searchGeneration;
-        searchNext=0;
-        if(query.trim().isEmpty()&&filter.isEmpty()){try{a.ok(p.optBoolean("page")?new JSONObject().put("messages",new JSONArray()).put("next",false):new JSONArray());}catch(Exception ignored){a.fail("No se pudo preparar la búsqueda.");}return;}
-        TdApi.SearchChatMessages search=new TdApi.SearchChatMessages();search.chatId=chat;search.topicId=topic==0?null:new TdApi.MessageTopicForum(topic);search.query=query;search.limit=50;search.filter=messageFilter(filter);
-        perform(search,a,result->{if(generation!=searchGeneration||session.activeChat!=chat||session.activeTopic!=topic){a.fail("La búsqueda cambió.");return;}try{searchResults.clear();JSONArray messages=new JSONArray();for(TdApi.Message message:result.messages){searchResults.put(message.id,message);messages.put(dto.message(message));}searchOwner=session.selfId;searchChat=chat;searchQuery=query;searchFilterKey=filter;searchTopic=topic;searchNext=result.nextFromMessageId;if(p.optBoolean("page"))a.ok(new JSONObject().put("messages",messages).put("next",searchNext!=0&&result.messages!=null&&result.messages.length>0));else a.ok(messages);}catch(Exception ignored){a.fail("No se pudieron preparar los resultados.");}});
+        searchNext=0;searchSecretOffset="";
+        if(query.trim().isEmpty()&&filter.isEmpty()&&sender.isEmpty()&&from==0&&until==0){emptySearch(page,a);return;}
+        searchOwner=session.selfId;searchChat=chat;searchTopic=topic;searchQuery=query;searchFilterKey=filter;searchSender=sender;searchFrom=from;searchUntil=until;
+        // `SearchChatMessages` está prohibido en un secreto con consulta: TDLib manda `SearchSecretMessages`,
+        // que no conoce autor, fechas ni cursor por mensaje —solo un texto opaco—.
+        if(MessageSearch.secret(value)&&!query.trim().isEmpty()){searchSecret=true;secretPage(query,filter,"",page,a);return;}
+        searchSecret=false;
+        TdApi.MessageSender who=MessageSearch.sender(sender,value);
+        long seed=MessageSearch.seed(until);
+        if(seed==0){searchPage(query,filter,who,from,until,0,generation,page,a);return;}
+        session.messageByDate(chat,(int)seed,message->{
+            if(!currentAccount()||a.owner!=session.selfId||generation!=searchGeneration||session.activeChat!=chat||session.activeTopic!=topic){a.fail("La conversación cambió.");return;}
+            // Sin mensaje cerca del tope de arriba, o ya por debajo del principio, la banda está vacía.
+            if(message==null||MessageSearch.older(message.date,from)){emptySearch(page,a);return;}
+            searchPage(query,filter,who,from,until,message.id,generation,page,a);
+        },a::fail);
+    }
+    private void emptySearch(boolean page,Answer a){
+        try{a.ok(page?new JSONObject().put("messages",new JSONArray()).put("next",false):new JSONArray());}catch(Exception ignored){a.fail("No se pudo preparar la búsqueda.");}
+    }
+    private void searchPage(String query,String filter,TdApi.MessageSender sender,long from,long until,long seed,int generation,boolean page,Answer a){
+        long chat=searchChat;int topic=searchTopic;
+        TdApi.SearchChatMessages search=new TdApi.SearchChatMessages();search.chatId=chat;search.topicId=topic==0?null:new TdApi.MessageTopicForum(topic);search.query=query;search.senderId=sender;search.fromMessageId=seed;search.limit=MessageSearch.LIMIT;search.filter=messageFilter(filter);
+        perform(search,a,result->{
+            if(generation!=searchGeneration||session.activeChat!=chat||session.activeTopic!=topic||searchOwner!=session.selfId){a.fail("La búsqueda cambió.");return;}
+            try{
+                searchResults.clear();
+                JSONArray messages=new JSONArray();
+                boolean past=false;
+                if(result.messages!=null)for(TdApi.Message message:result.messages){
+                    if(message==null)continue;
+                    if(MessageSearch.older(message.date,from)){past=true;break;}
+                    if(!MessageSearch.keep(message.date,from,until))continue;
+                    searchResults.put(message.id,message);messages.put(dto.message(message));
+                }
+                long next=result.nextFromMessageId==seed?0:result.nextFromMessageId;
+                searchNext=past?0:next;
+                boolean more=searchNext!=0&&result.messages!=null&&result.messages.length>0;
+                if(page)a.ok(new JSONObject().put("messages",messages).put("next",more));else a.ok(messages);
+            }catch(Exception ignored){a.fail("No se pudieron preparar los resultados.");}
+        });
+    }
+    private void secretPage(String query,String filter,String cursor,boolean page,Answer a){
+        long chat=searchChat;
+        TdApi.SearchSecretMessages search=new TdApi.SearchSecretMessages(chat,query,cursor,MessageSearch.LIMIT,messageFilter(filter));
+        perform(search,a,result->{
+            if(searchOwner!=session.selfId||session.activeChat!=chat||!cursor.isEmpty()&&!cursor.equals(searchSecretOffset)){a.fail("La búsqueda cambió.");return;}
+            try{
+                JSONArray messages=new JSONArray();
+                if(result.messages!=null)for(TdApi.Message message:result.messages){if(message==null)continue;searchResults.put(message.id,message);messages.put(dto.message(message));}
+                searchSecretOffset=result.nextOffset==null||result.nextOffset.isEmpty()||result.messages==null||result.messages.length==0?"":result.nextOffset;
+                boolean more=!searchSecretOffset.isEmpty();
+                if(page)a.ok(new JSONObject().put("messages",messages).put("next",more));else a.ok(messages);
+            }catch(Exception ignored){a.fail("No se pudieron preparar los resultados.");}
+        });
     }
     private void searchMore(JSONObject p,Answer a){
         requireAccount();
         long chat=session.activeChat;
-        if(searchOwner!=session.selfId||searchChat!=chat||session.activeTopic!=searchTopic||searchNext==0||
-                !searchQuery.equals(p.optString("query"))||!searchFilterKey.equals(p.optString("filter"))){a.fail("Vuelve a buscar para continuar.");return;}
-        int generation=searchGeneration;
+        if(searchOwner!=session.selfId||searchChat!=chat||session.activeTopic!=searchTopic||
+                !MessageSearch.same(searchQuery,searchSender,searchFilterKey,searchFrom,searchUntil,
+                        p.optString("query",""),p.optString("sender","").trim(),p.optString("filter",""),p.optLong("from",0),p.optLong("until",0))){
+            a.fail("Vuelve a buscar para continuar.");return;
+        }
+        if(searchSecret){
+            String cursor=searchSecretOffset;
+            if(cursor.isEmpty()){a.fail("Vuelve a buscar para continuar.");return;}
+            secretPage(searchQuery,searchFilterKey,cursor,true,a);return;
+        }
+        if(searchNext==0){a.fail("Vuelve a buscar para continuar.");return;}
         long cursor=searchNext;
-        TdApi.SearchChatMessages search=new TdApi.SearchChatMessages();search.chatId=chat;search.topicId=searchTopic==0?null:new TdApi.MessageTopicForum(searchTopic);search.query=searchQuery;search.fromMessageId=cursor;search.limit=50;search.filter=messageFilter(searchFilterKey);
-        perform(search,a,result->{if(generation!=searchGeneration||searchNext!=cursor||session.activeChat!=chat||session.activeTopic!=searchTopic||searchOwner!=session.selfId){a.fail("La conversación cambió.");return;}try{JSONArray messages=new JSONArray();for(TdApi.Message message:result.messages){searchResults.put(message.id,message);messages.put(dto.message(message));}searchNext=result.nextFromMessageId==cursor?0:result.nextFromMessageId;a.ok(new JSONObject().put("messages",messages).put("next",searchNext!=0&&result.messages!=null&&result.messages.length>0));}catch(Exception ignored){a.fail("No se pudieron preparar más resultados.");}});
+        searchPage(searchQuery,searchFilterKey,MessageSearch.sender(searchSender,session.chat(chat)),searchFrom,searchUntil,cursor,searchGeneration,true,a);
+    }
+    /**
+     * Página de comentarios de un post de canal. La primera llamada pregunta a Telegram en qué chat
+     * vive el hilo; las siguientes reutilizan esa respuesta solo si cuenta, post y cursor no cambiaron.
+     */
+    private void threadLoad(JSONObject p,Answer a){
+        requireAccount();
+        long chat=BridgePolicy.id(p,"id"),root=p.optLong("messageId",0),cursor=p.optLong("before",0);
+        if(root==0){a.fail("El mensaje no tiene comentarios que abrir.");return;}
+        if(cursor!=0){
+            if(threadOwner!=session.selfId||threadRootChat!=chat||threadRootId!=root||threadNext!=cursor){a.fail("Vuelve a abrir los comentarios para continuar.");return;}
+            threadHistory(chat,root,cursor,threadSummary,a);
+            return;
+        }
+        threadOwner=0;threadNext=0;threadSummary=null;
+        perform(new TdApi.GetMessageThread(chat,root),a,info->{
+            try{
+                JSONObject head=MessageThread.summary(info);
+                if(head==null){a.fail("Telegram no devolvió la conversación de estos comentarios.");return;}
+                threadOwner=session.selfId;threadRootChat=chat;threadRootId=root;threadSummary=head;
+                threadHistory(chat,root,0,head,a);
+            }catch(Exception ignored){a.fail("No se pudieron preparar los comentarios.");}
+        });
+    }
+    private void threadHistory(long chat,long root,long cursor,JSONObject head,Answer a){
+        perform(new TdApi.GetMessageThreadHistory(chat,root,cursor,0,40),a,result->{
+            if(threadOwner!=session.selfId||threadOwner==0||threadRootChat!=chat||threadRootId!=root){a.fail("La conversación cambió. No se recargaron los comentarios.");return;}
+            try{
+                JSONArray messages=new JSONArray();
+                if(result.messages!=null)for(TdApi.Message message:result.messages)messages.put(dto.message(message));
+                threadNext=MessageThread.cursor(result.messages,cursor);
+                a.ok(head.put("messages",messages).put("next",threadNext!=0));
+            }catch(Exception ignored){a.fail("No se pudieron preparar los comentarios.");}
+        });
+    }
+    /** Cola de solicitudes de ingreso. El permiso lo comprueba Telegram; aquí solo se proyecta su lista. */
+    private void joinRequests(JSONObject p,Answer a){
+        TdApi.Chat chat=target(p);
+        if(!(chat.type instanceof TdApi.ChatTypeBasicGroup||chat.type instanceof TdApi.ChatTypeSupergroup)){a.fail("Las solicitudes de ingreso solo existen en grupos y canales.");return;}
+        TdApi.ChatJoinRequest offset;
+        try{offset=JoinRequests.offset(p.optString("cursor",""));}catch(Exception invalid){a.fail(invalid.getMessage());return;}
+        if(offset!=null){
+            if(requestOwner==0||requestOwner!=session.selfId||requestChat!=chat.id||requestCursorUser!=offset.userId||requestCursorDate!=offset.date){a.fail("Vuelve a abrir las solicitudes para continuar.");return;}
+            requestJoinPage(chat,offset,a);
+            return;
+        }
+        requestOwner=0;requestChat=0;requestCursorUser=0;requestCursorDate=0;
+        perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),a,actor->{
+            if(!canInviteMembers(actor)){a.fail("Telegram no concede a esta cuenta permiso para revisar solicitudes de ingreso.");return;}
+            requestJoinPage(chat,null,a);
+        });
+    }
+    private void requestJoinPage(TdApi.Chat chat,TdApi.ChatJoinRequest offset,Answer a){
+        perform(new TdApi.GetChatJoinRequests(chat.id,"","",offset,JoinRequests.PAGE),a,result->{
+            try{
+                JSONArray rows=new JSONArray();
+                java.util.List<Long> missing=new java.util.ArrayList<>();
+                if(result.requests!=null)for(TdApi.ChatJoinRequest request:result.requests){
+                    JSONObject row=JoinRequests.row(request);
+                    if(row==null)continue;
+                    rows.put(row);
+                    if(session.user(request.userId)==null&&!missing.contains(request.userId))missing.add(request.userId);
+                }
+                joinResolve(a,chat,rows,missing,0,Math.max(0,result.totalCount));
+            }catch(Exception ignored){a.fail("No se pudo preparar la lista de solicitudes de ingreso.");}
+        });
+    }
+    /** GetChatJoinRequests solo da identificadores: la caché resuelve lo posible y GetUser completa el resto, una página como mucho. */
+    private void joinResolve(Answer a,TdApi.Chat chat,JSONArray rows,java.util.List<Long> missing,int index,int total){
+        if(index>=missing.size()){finishJoinPage(a,chat,rows,total);return;}
+        final long id=missing.get(index);
+        session.perform(new TdApi.GetUser(id),user->joinResolve(a,chat,rows,missing,index+1,total),ignored->joinResolve(a,chat,rows,missing,index+1,total));
+    }
+    private void finishJoinPage(Answer a,TdApi.Chat chat,JSONArray rows,int total){
+        try{
+            for(int i=0;i<rows.length();i++){
+                JSONObject row=rows.getJSONObject(i);
+                row.put("name",NativeSnapshot.limit(session.senderName(new TdApi.MessageSenderUser(Long.parseLong(row.getString("userId")))),80));
+            }
+            JSONObject page=JoinRequests.page(rows,total);
+            TdApi.ChatJoinRequest next=JoinRequests.offset(page.optString("cursor",""));
+            if(next==null){requestOwner=0;requestChat=0;requestCursorUser=0;requestCursorDate=0;}
+            else{requestOwner=session.selfId;requestChat=chat.id;requestCursorUser=next.userId;requestCursorDate=next.date;}
+            a.ok(page);
+        }catch(Exception ignored){a.fail("No se pudo preparar la lista de solicitudes de ingreso.");}
+    }
+    private void answerJoinRequest(JSONObject p,Answer a){
+        TdApi.Chat chat=target(p);
+        if(!(chat.type instanceof TdApi.ChatTypeBasicGroup||chat.type instanceof TdApi.ChatTypeSupergroup)){a.fail("Las solicitudes de ingreso solo existen en grupos y canales.");return;}
+        final long userId;final boolean approve;
+        try{
+            if(p.has("accountId")&&BridgePolicy.id(p,"accountId")!=session.selfId){a.ok(false);return;}
+            userId=BridgePolicy.id(p,"userId");
+            approve=requiredBool(p,"approve");
+        }catch(Exception invalid){a.fail(invalid.getMessage());return;}
+        if(userId==0||userId==session.selfId){a.fail("Esa solicitud no se puede responder desde aquí.");return;}
+        final String title=NativeSnapshot.limit(chat.title,80);
+        final String name=NativeSnapshot.limit(session.senderName(new TdApi.MessageSenderUser(userId)),80);
+        perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),a,actor->{
+            if(!canInviteMembers(actor)){a.fail("Telegram no concede a esta cuenta permiso para decidir solicitudes de ingreso.");return;}
+            Dialogs.builder(activity).setTitle(approve?"Aprobar solicitud":"Rechazar solicitud")
+                .setMessage(approve?"«"+name+"» entrará en «"+title+"» en cuanto Telegram lo confirme. Podrás retirarlo después desde Miembros."
+                                   :"Se descartará la solicitud de «"+name+"» para «"+title+"». La persona podrá enviar otra si sigue teniendo un enlace válido.")
+                .setNegativeButton("Cancelar",(d,w)->a.ok(false))
+                .setPositiveButton(approve?"Aprobar en Telegram":"Rechazar en Telegram",(d,w)->{
+                    if(!currentAccount()||session.selfId!=a.owner){a.fail("La cuenta cambió. No se respondió a la solicitud.");return;}
+                    perform(new TdApi.ProcessChatJoinRequest(chat.id,userId,approve),a,ignored->{
+                        requestOwner=0;requestChat=0;requestCursorUser=0;requestCursorDate=0;
+                        schedule();
+                        a.ok(true);
+                    });
+                }).setOnCancelListener(d->a.ok(false)).show();
+        });
+    }
+    private void clearLinkCursor(){linkOwner=0;linkChat=0;linkRevoked=false;linkOffsetDate=0;linkOffsetLink="";}
+    private void inviteLinks(JSONObject p,Answer a){
+        TdApi.Chat chat=target(p);
+        if(!(chat.type instanceof TdApi.ChatTypeBasicGroup||chat.type instanceof TdApi.ChatTypeSupergroup)){a.fail("Los enlaces de invitación solo existen en grupos y canales.");return;}
+        boolean revoked=p.optBoolean("revoked");
+        InviteLinks.Cursor cursor;
+        try{cursor=InviteLinks.cursor(p.optString("cursor",""));}catch(Exception invalid){a.fail(invalid.getMessage());return;}
+        if(cursor!=null){
+            if(linkOwner==0||linkOwner!=session.selfId||linkChat!=chat.id||linkRevoked!=revoked||linkOffsetDate!=cursor.date||!cursor.link.equals(linkOffsetLink)){a.fail("Vuelve a abrir los enlaces para continuar.");return;}
+            loadInviteLinks(chat,revoked,cursor,a);return;
+        }
+        clearLinkCursor();
+        perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),a,actor->{
+            if(!canInviteMembers(actor)){a.fail("Telegram no concede a esta cuenta permiso para revisar sus enlaces de invitación.");return;}
+            loadInviteLinks(chat,revoked,null,a);
+        });
+    }
+    private void loadInviteLinks(TdApi.Chat chat,boolean revoked,InviteLinks.Cursor cursor,Answer a){
+        TdApi.GetChatInviteLinks request=new TdApi.GetChatInviteLinks(chat.id,session.selfId,revoked,0,"",InviteLinks.PAGE);
+        if(cursor!=null){request.offsetDate=cursor.date;request.offsetInviteLink=cursor.link;}
+        perform(request,a,result->{
+            try{
+                JSONArray rows=new JSONArray();
+                if(result.inviteLinks!=null)for(TdApi.ChatInviteLink link:result.inviteLinks){JSONObject row=InviteLinks.row(link);if(row!=null)rows.put(row);}
+                finishInviteLinks(a,chat,revoked,InviteLinks.page(rows,result.totalCount,revoked));
+            }catch(Exception ignored){a.fail("No se pudieron preparar los enlaces de invitación.");}
+        });
+    }
+    private void finishInviteLinks(Answer a,TdApi.Chat chat,boolean revoked,JSONObject page){
+        try{
+            InviteLinks.Cursor next=InviteLinks.cursor(page.optString("cursor",""));
+            if(next==null)clearLinkCursor();
+            else{linkOwner=session.selfId;linkChat=chat.id;linkRevoked=revoked;linkOffsetDate=next.date;linkOffsetLink=next.link;}
+            a.ok(page);
+        }catch(Exception ignored){a.fail("No se pudieron preparar los enlaces de invitación.");}
+    }
+    /** Formulario compartido por crear y editar: `link` vacío pide creación; si viene, es una edición. */
+    private void inviteLinkForm(JSONObject p,Answer a,boolean create)throws Exception{
+        TdApi.Chat chat=target(p);
+        if(!(chat.type instanceof TdApi.ChatTypeBasicGroup||chat.type instanceof TdApi.ChatTypeSupergroup)){a.fail("Los enlaces de invitación solo existen en grupos y canales.");return;}
+        if(p.has("accountId")&&BridgePolicy.id(p,"accountId")!=session.selfId){a.ok(false);return;}
+        String url;
+        try{
+            url=create?"":BridgePolicy.text(p,"link",InviteLinks.MAX_URL).trim();
+            if(!create&&!InviteLinks.validUrl(url))throw new IllegalArgumentException("El enlace no es válido.");
+        }catch(Exception invalid){a.fail(invalid.getMessage());return;}
+        String name=BridgePolicy.text(p,"name",InviteLinks.MAX_NAME).trim();
+        long expiresIn=p.optLong("expiresIn",0);
+        int memberLimit=p.optInt("memberLimit",0);
+        boolean approval=requiredBool(p,"approval");
+        String problem=InviteLinks.problem(name,expiresIn,memberLimit,approval);
+        if(problem!=null){a.fail(problem);return;}
+        final int expiration=InviteLinks.expiration(System.currentTimeMillis()/1000L,expiresIn);
+        final String linkUrl=url,title=NativeSnapshot.limit(chat.title,80);
+        if(create){
+            final String label=name.isEmpty()?"WRGram":name;
+            perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),a,actor->{
+                if(!canInviteMembers(actor)){a.fail("Telegram no concede a esta cuenta permiso para crear enlaces de invitación.");return;}
+                confirmLink(a,"Crear enlace de invitación",linkDescription(label,expiration,memberLimit,approval,title),()->{
+                    perform(new TdApi.CreateChatInviteLink(chat.id,label,expiration,memberLimit,approval),a,ignored->{
+                        clearLinkCursor();requestOwner=0;requestChat=0;requestCursorUser=0;requestCursorDate=0;
+                        schedule();a.ok(true);
+                    });
+                });
+            });
+            return;
+        }
+        // Telegram manda: se lee el enlace antes de tocarlo, porque un enlace principal o de suscripción no admite estos cambios.
+        perform(new TdApi.GetChatInviteLink(chat.id,linkUrl),a,current->{
+            if(current==null||current.inviteLink==null||!current.inviteLink.equals(linkUrl)){a.fail("Telegram ya no reconoce ese enlace en este chat.");return;}
+            if(!InviteLinks.editable(current)){
+                if(current.subscriptionPricing!=null)a.fail("Los enlaces de suscripción se administran desde Stars.");
+                else if(current.isPrimary)a.fail("El enlace principal no admite nombre, caducidad ni límite: revócalo y Telegram creará uno nuevo.");
+                else a.fail("Ese enlace ya está revocado y no se puede editar.");
+                return;
+            }
+            perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),a,actor->{
+                if(!canInviteMembers(actor)){a.fail("Telegram no concede a esta cuenta permiso para editar sus enlaces de invitación.");return;}
+                if(current.creatorUserId!=0&&current.creatorUserId!=session.selfId){a.fail("Solo el propietario puede cambiar un enlace creado por otra persona.");return;}
+                final String label=name.isEmpty()?"sin nombre":name;
+                confirmLink(a,"Cambiar enlace de invitación",linkDescription(label,expiration,memberLimit,approval,title),()->{
+                    perform(new TdApi.EditChatInviteLink(chat.id,linkUrl,name,expiration,memberLimit,approval),a,ignored->{
+                        clearLinkCursor();requestOwner=0;requestChat=0;requestCursorUser=0;requestCursorDate=0;
+                        schedule();a.ok(true);
+                    });
+                });
+            });
+        });
+    }
+    private static String linkDescription(String name,int expiration,int memberLimit,boolean approval,String title){
+        String validity=expiration==0?"no caduca":"caduca el "+java.time.Instant.ofEpochSecond(expiration).atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        String capacity=approval?"los nuevos tendrán que aprobarse":"sin límite de miembros";
+        if(!approval&&memberLimit>0)capacity="hasta "+memberLimit+" miembros a la vez";
+        return "Enlace «"+name+"» en «"+title+"»: "+validity+" y "+capacity+". Telegram aplica estos ajustes en cuanto lo confirmes; nadie se une por sí solo.";
+    }
+    private void revokeInviteLink(JSONObject p,Answer a){
+        TdApi.Chat chat=target(p);
+        if(!(chat.type instanceof TdApi.ChatTypeBasicGroup||chat.type instanceof TdApi.ChatTypeSupergroup)){a.fail("Los enlaces de invitación solo existen en grupos y canales.");return;}
+        String url;
+        try{
+            if(p.has("accountId")&&BridgePolicy.id(p,"accountId")!=session.selfId){a.ok(false);return;}
+            url=BridgePolicy.text(p,"link",InviteLinks.MAX_URL).trim();
+        }catch(Exception invalid){a.fail(invalid.getMessage());return;}
+        if(url.isEmpty()){a.fail("Indica qué enlace quieres revocar.");return;}
+        final String linkUrl=url,title=NativeSnapshot.limit(chat.title,80);
+        perform(new TdApi.GetChatInviteLink(chat.id,linkUrl),a,current->{
+            if(current==null||current.inviteLink==null||!current.inviteLink.equals(linkUrl)){a.fail("Telegram ya no reconoce ese enlace en este chat.");return;}
+            if(current.isRevoked){a.ok(false);return;}
+            perform(new TdApi.GetChatMember(chat.id,new TdApi.MessageSenderUser(session.selfId)),a,actor->{
+                if(!canInviteMembers(actor)){a.fail("Telegram no concede a esta cuenta permiso para revocar sus enlaces de invitación.");return;}
+                if(current.creatorUserId!=0&&current.creatorUserId!=session.selfId){a.fail("Solo el propietario puede revocar un enlace creado por otra persona.");return;}
+                String name=current.name==null||current.name.isBlank()?"sin nombre":NativeSnapshot.limit(current.name,InviteLinks.MAX_NAME);
+                confirmLink(a,"Revocar enlace de invitación","Dejará de funcionar el enlace «"+name+"» de «"+title+"»"
+                    +(current.isPrimary?", que además es el enlace principal: Telegram creará uno nuevo.":".")
+                    +(current.memberCount>0?" Las "+current.memberCount+" personas que ya entraron seguirán en el chat.":""),()->{
+                    perform(new TdApi.RevokeChatInviteLink(chat.id,linkUrl),a,ignored->{
+                        clearLinkCursor();requestOwner=0;requestChat=0;requestCursorUser=0;requestCursorDate=0;
+                        schedule();a.ok(true);
+                    });
+                });
+            });
+        });
+    }
+    private void confirmLink(Answer a,String title,String message,Runnable accepted){
+        Dialogs.builder(activity).setTitle(title).setMessage(message)
+            .setNegativeButton("Cancelar",(d,w)->a.ok(false))
+            .setPositiveButton("Aplicar en Telegram",(d,w)->{
+                if(!currentAccount()||session.selfId!=a.owner){a.fail("La cuenta cambió. No se modificó ningún enlace.");return;}
+                accepted.run();
+            }).setOnCancelListener(d->a.ok(false)).show();
+    }
+    /** Lectura sin efectos: como mucho GetSupergroup/GetUser y un GetUserFullInfo, uno por viaje. */
+    private void safety(JSONObject p,Answer a){
+        TdApi.Chat chat=target(p);
+        try{
+            if(p.has("accountId")&&BridgePolicy.id(p,"accountId")!=session.selfId){a.fail("La cuenta cambió. Vuelve a abrir la conversación.");return;}
+        }catch(Exception invalid){a.fail(invalid.getMessage());return;}
+        if(chat.type instanceof TdApi.ChatTypeSecret){a.fail("Los chats secretos ya cifran de extremo a extremo: Telegram no añade señales adicionales.");return;}
+        if(chat.type instanceof TdApi.ChatTypePrivate){
+            long userId=((TdApi.ChatTypePrivate)chat.type).userId;
+            TdApi.User cached=session.user(userId);
+            if(cached!=null){safetyPeer(a,chat,cached);return;}
+            perform(new TdApi.GetUser(userId),a,user->safetyPeer(a,chat,user));
+            return;
+        }
+        if(chat.type instanceof TdApi.ChatTypeSupergroup){
+            long groupId=((TdApi.ChatTypeSupergroup)chat.type).supergroupId;
+            TdApi.Supergroup cached=session.supergroup(groupId);
+            if(cached!=null){respondSafety(a,chat,null,null,cached);return;}
+            perform(new TdApi.GetSupergroup(groupId),a,group->respondSafety(a,chat,null,null,group));
+            return;
+        }
+        respondSafety(a,chat,null,null,null);
+    }
+    /** El perfil completo solo aporta matices: si Telegram falla, se responden las señales que ya se conocen. */
+    private void safetyPeer(Answer a,TdApi.Chat chat,TdApi.User user){
+        session.perform(new TdApi.GetUserFullInfo(user.id),full->{
+            if(destroyed||!currentAccount()||a.owner!=session.selfId){a.fail("La cuenta cambió. Vuelve a abrir la conversación.");return;}
+            respondSafety(a,chat,user,full,null);
+        },ignored->respondSafety(a,chat,user,null,null));
+    }
+    private void respondSafety(Answer a,TdApi.Chat chat,TdApi.User user,TdApi.UserFullInfo full,TdApi.Supergroup group){
+        try{
+            JSONObject data=new JSONObject().put("id",String.valueOf(chat.id))
+                .put("signals",SafetySignals.signals(chat,user,full,group))
+                .put("canReport",chat.canBeReported)
+                .put("dismissible",SafetySignals.dismissible(chat));
+            JSONObject notice=SafetySignals.notice(chat);
+            if(notice!=null)data.put("notice",notice);
+            a.ok(data);
+        }catch(Exception ignored){a.fail("No se pudieron preparar las señales de seguridad.");}
+    }
+    private void dismissSafety(JSONObject p,Answer a){
+        TdApi.Chat chat=target(p);
+        try{
+            if(p.has("accountId")&&BridgePolicy.id(p,"accountId")!=session.selfId){a.ok(false);return;}
+        }catch(Exception invalid){a.ok(false);return;}
+        if(!SafetySignals.dismissible(chat)){a.fail("Telegram ya no muestra ningún aviso en este chat.");return;}
+        confirmSafety(a,"Descartar el aviso de Telegram",
+            "El aviso sobre «"+NativeSnapshot.limit(chat.title,80)+"» dejará de mostrarse en esta conversación. Si Telegram vuelve a considerarlo necesario, aparecerá otra vez.",
+            ()->{
+                if(!SafetySignals.dismissible(session.chat(chat.id))){a.fail("Telegram ya no muestra ningún aviso en este chat.");return;}
+                perform(new TdApi.RemoveChatActionBar(chat.id),a,ignored->{schedule();a.ok(true);});
+            });
+    }
+    private void confirmSafety(Answer a,String title,String message,Runnable accepted){
+        Dialogs.builder(activity).setTitle(title).setMessage(message)
+            .setNegativeButton("Cancelar",(d,w)->a.ok(false))
+            .setPositiveButton("Descartar aviso",(d,w)->{
+                if(!currentAccount()||session.selfId!=a.owner){a.fail("La cuenta cambió. No se descartó ningún aviso.");return;}
+                accepted.run();
+            }).setOnCancelListener(d->a.ok(false)).show();
     }
     private void pinned(Answer a){
         requireAccount();
@@ -2496,6 +3790,13 @@ final class NativeBridge implements TdSession.Listener {
         search.query="";search.limit=100;search.filter=new TdApi.SearchMessagesFilterPinned();
         session.perform(search,result->{if(session.activeChat!=chat||session.activeTopic!=topic){a.fail("La conversación cambió.");return;}try{JSONArray messages=new JSONArray();if(result.messages!=null)for(TdApi.Message message:result.messages){session.putMessage(message);messages.put(dto.message(message));}a.ok(messages);}catch(Exception ignored){a.fail("No se pudieron preparar los mensajes fijados.");}},failure->{if(session.activeChat!=chat||session.activeTopic!=topic){a.fail("La conversación cambió.");return;}a.fail(failure==null?"No se pudieron consultar los mensajes fijados.":failure);});
     }
+    /**
+     * El borrador se guarda con su texto, su formato y el mensaje al que responde, todo en el mismo
+     * `DraftMessage` de la nube de la cuenta. Puede fallar **por la cita**: si ese mensaje se borró
+     * entre el toque y el debounce, TDLib rechaza el objeto completo y se perdería también lo escrito.
+     * La segunda intentiva quita solo la respuesta y lo avisa en `note`, para que la interfaz retire
+     * la chapa en lugar de prometer una cita que Telegram ya no tiene.
+     */
     private void setDraft(JSONObject p,Answer a)throws Exception{
         requireAccount();
         String text=BridgePolicy.text(p,"text",4096);
@@ -2504,8 +3805,20 @@ final class NativeBridge implements TdSession.Listener {
         if(p.has("accountId")&&BridgePolicy.id(p,"accountId")!=session.selfId){a.ok(false);return;}
         TdApi.Chat target=session.chat(chat);
         if(target==null||target.type instanceof TdApi.ChatTypeSecret){a.ok(false);return;}
-        TdApi.DraftMessage draft=text.isEmpty()?null:new TdApi.DraftMessage(null,0,new TdApi.DraftMessageContentText(new TdApi.FormattedText(text,textEntities(p,text.length())),null),0,null);
-        session.perform(new TdApi.SetChatDraftMessage(chat,topic==0?null:new TdApi.MessageTopicForum(topic),draft),result->a.ok(true),failure->a.fail(failure==null?"No se pudo guardar el borrador en Telegram.":failure));
+        long reply=0L;
+        if(p.has("reply")){try{reply=BridgePolicy.id(p,"reply");}catch(Exception invalid){a.fail("La respuesta del borrador no corresponde a un mensaje de esta conversación.");return;}}
+        saveDraft(chat,topic,text,textEntities(p,text.length()),text.trim().isEmpty()?0L:reply,a);
+    }
+    private void saveDraft(long chat,int topic,String text,TdApi.TextEntity[] entities,long reply,Answer a){
+        TdApi.DraftMessage draft=Drafts.build(text,entities,reply);
+        session.perform(new TdApi.SetChatDraftMessage(chat,topic==0?null:new TdApi.MessageTopicForum(topic),draft),
+            result->a.ok(object("reply",Drafts.replyId(draft))),
+            failure->{
+                if(reply==0L){a.fail(failure==null?"No se pudo guardar el borrador en Telegram.":failure);return;}
+                session.perform(new TdApi.SetChatDraftMessage(chat,topic==0?null:new TdApi.MessageTopicForum(topic),Drafts.build(text,entities,0L)),
+                    kept->a.ok(object("reply","","note","Telegram no aceptó la respuesta citada. El borrador se guardó sin ella.")),
+                    again->a.fail(again==null?"No se pudo guardar el borrador en Telegram.":again));
+            });
     }
     private void unpin(long id,Answer a){
         requireAccount();
@@ -2530,16 +3843,7 @@ final class NativeBridge implements TdSession.Listener {
         }
     }
     private static JSONObject privacyRules(TdApi.UserPrivacySettingRule[] rules)throws Exception{
-        boolean everyone=false,nobody=false,contacts=false;JSONArray allow=new JSONArray(),restrict=new JSONArray();
-        if(rules!=null)for(TdApi.UserPrivacySettingRule rule:rules){
-            if(rule instanceof TdApi.UserPrivacySettingRuleAllowAll)everyone=true;
-            else if(rule instanceof TdApi.UserPrivacySettingRuleRestrictAll)nobody=true;
-            else if(rule instanceof TdApi.UserPrivacySettingRuleAllowContacts)contacts=true;
-            else if(rule instanceof TdApi.UserPrivacySettingRuleAllowUsers)for(long id:((TdApi.UserPrivacySettingRuleAllowUsers)rule).userIds)allow.put(String.valueOf(id));
-            else if(rule instanceof TdApi.UserPrivacySettingRuleRestrictUsers)for(long id:((TdApi.UserPrivacySettingRuleRestrictUsers)rule).userIds)restrict.put(String.valueOf(id));
-            else return object("value","custom","allowUsers",allow,"restrictUsers",restrict);
-        }
-        return object("value",everyone?"everyone":nobody?"nobody":contacts?"contacts":"custom","allowUsers",allow,"restrictUsers",restrict);
+        return PrivacyRules.project(rules);
     }
     private void privacyGet(Answer a){
         requireAccount();
@@ -2557,15 +3861,16 @@ final class NativeBridge implements TdSession.Listener {
         requireAccount();
         String key=BridgePolicy.text(p,"key",20),value=BridgePolicy.text(p,"value",12);
         long[] allow=optionalIds(p,"allowUsers",100),restrict=optionalIds(p,"restrictUsers",100);
-        if(allow.length+restrict.length>200)throw new IllegalArgumentException("Máximo 200 excepciones por ajuste.");
-        java.util.Set<Long> seen=new java.util.HashSet<>();for(long id:allow)if(!seen.add(id))throw new IllegalArgumentException("Hay usuarios duplicados en las excepciones.");
-        for(long id:restrict)if(!seen.add(id))throw new IllegalArgumentException("Un usuario no puede estar permitido y restringido a la vez.");
-        java.util.List<TdApi.UserPrivacySettingRule> rules=new java.util.ArrayList<>();
-        if(value.equals("everyone")){rules.add(new TdApi.UserPrivacySettingRuleAllowAll());if(restrict.length>0)rules.add(new TdApi.UserPrivacySettingRuleRestrictUsers(restrict));}
-        else if(value.equals("contacts")){rules.add(new TdApi.UserPrivacySettingRuleAllowContacts());if(allow.length>0)rules.add(new TdApi.UserPrivacySettingRuleAllowUsers(allow));if(restrict.length>0)rules.add(new TdApi.UserPrivacySettingRuleRestrictUsers(restrict));}
-        else if(value.equals("nobody")){rules.add(new TdApi.UserPrivacySettingRuleRestrictAll());if(allow.length>0)rules.add(new TdApi.UserPrivacySettingRuleAllowUsers(allow));}
-        else throw new IllegalArgumentException("Valor de privacidad no válido.");
-        perform(new TdApi.SetUserPrivacySettingRules(privacySetting(key),new TdApi.UserPrivacySettingRules(rules.toArray(new TdApi.UserPrivacySettingRule[0]))),a,ok->a.ok(true));
+        TdApi.UserPrivacySetting setting=privacySetting(key);
+        long owner=session.selfId;
+        perform(new TdApi.GetUserPrivacySettingRules(setting),a,current->{
+            TdApi.UserPrivacySettingRule[] next;
+            try{next=PrivacyRules.merge(current.rules,value,allow,restrict);}
+            catch(IllegalArgumentException error){a.fail(error.getMessage());return;}
+            catch(Exception error){a.fail("No se pudo leer la privacidad actual de este ajuste. No se cambió nada.");return;}
+            if(!currentAccount()||session.selfId!=owner){a.fail("La cuenta cambió; no se modificó la privacidad.");return;}
+            perform(new TdApi.SetUserPrivacySettingRules(setting,new TdApi.UserPrivacySettingRules(next)),a,ok->a.ok(true));
+        });
     }
     private static long[] optionalIds(JSONObject p,String key,int maximum){JSONArray value=p.optJSONArray(key);return value==null||value.length()==0?new long[0]:BridgePolicy.ids(p,key,maximum);}
     private static JSONArray idList(long[] values){JSONArray array=new JSONArray();if(values!=null)for(long value:values)array.put(String.valueOf(value));return array;}
@@ -3001,6 +4306,7 @@ final class NativeBridge implements TdSession.Listener {
         perform(new TdApi.GetMessageProperties(message.chatId,message.id),a,props->{
             JSONObject result=object("reply",props.canBeReplied,"copy",props.canBeCopied&&message.content instanceof TdApi.MessageText&&message.selfDestructType==null&&message.ephemeralContent==null,"copyContent",props.canBeCopied,"edit",props.canBeEdited&&message.content instanceof TdApi.MessageText,"editChecklist",props.canBeEdited&&message.content instanceof TdApi.MessageChecklist,"deleteSelf",props.canBeDeletedOnlyForSelf||props.canBeDeletedForAllUsers,"deleteAll",props.canBeDeletedForAllUsers,"forward",props.canBeForwarded,"pin",props.canBePinned,"editCaption",props.canBeEdited&&hasCaption(message),"caption",dto.caption(message),"canBePaid",props.canBePaid,"transcribe",props.canRecognizeSpeech&&(message.content instanceof TdApi.MessageVoiceNote||message.content instanceof TdApi.MessageVideoNote));
             TdApi.GetMessageAvailableReactions reactions=new TdApi.GetMessageAvailableReactions();reactions.chatId=message.chatId;reactions.messageId=message.id;reactions.rowSize=8;
+            try{result.put("report",props.canReportChat);}catch(Exception invalid){a.fail("No se pudieron leer los permisos de denuncia.");return;}
             session.perform(reactions,value->{try{result.put("reactions",emojis(value));result.put("paid",hasPaidReaction(value));result.put("allowCustom",value.allowCustomEmoji);a.ok(result);}catch(Exception ignored){a.fail("No se pudieron preparar las reacciones.");}},failure->{try{result.put("reactions",new JSONArray());a.ok(result);}catch(Exception ignored){a.fail("No se pudo preparar el menú.");}});
         });
     }
@@ -3218,6 +4524,59 @@ final class NativeBridge implements TdSession.Listener {
         }
         entities.sort(java.util.Comparator.comparingInt(entity->entity.offset));
         return entities.toArray(new TdApi.TextEntity[0]);
+    }
+    /**
+     * Mensaje propio sin confirmar del chat abierto, con la cuenta y la conversación atadas.
+     * No se reutiliza `message(p)` porque su excepción genérica («Unknown message») se convertiría
+     * en el aviso estándar del puente y la persona perdería el motivo concreto que acabamos de comprobar.
+     */
+    private TdApi.Message unsentMessage(JSONObject p,Answer a){
+        requireAccount();
+        long id;
+        try{id=BridgePolicy.id(p,"id");}catch(Exception invalid){a.fail("Ese mensaje no corresponde a ninguno de la conversación.");return null;}
+        // Desajuste de cuenta: se responde «no hecho», nunca un error que asuste con dos sesiones abiertas.
+        if(p.has("accountId")){try{if(BridgePolicy.id(p,"accountId")!=session.selfId){a.ok(false);return null;}}catch(Exception invalid){a.ok(false);return null;}}
+        TdApi.Message message=session.message(id);
+        if(message==null){a.fail("El mensaje ya no está cargado. Vuelve a abrir la conversación.");return null;}
+        if(message.chatId!=session.activeChat){a.fail("La conversación cambió. Vuelve a abrir el chat.");return null;}
+        return message;
+    }
+    private void retryUnsent(JSONObject p,Answer a){
+        TdApi.Message message=unsentMessage(p,a);
+        if(message==null)return;
+        String problem=UnsentMessages.retryProblem(message);
+        if(problem!=null){a.fail(problem);return;}
+        long chatId=message.chatId,messageId=message.id;
+        Runnable send=()->perform(new TdApi.ResendMessages(chatId,new long[]{messageId},null,0L),a,ignored->{schedule();a.ok(true);});
+        int wait=UnsentMessages.waitSeconds(message);
+        // Solo hace falta preguntar cuando el reintento cambia algo que la persona no pidió ver:
+        // la respuesta que Telegram va a tirar o la espera que todavía no ha terminado.
+        if(!UnsentMessages.dropsReply(message)&&wait<=0){send.run();return;}
+        confirmUnsent(a,"Reintentar el mensaje",UnsentMessages.retryExplanation(message),"Reintentar",()->{
+            if(destroyed||!currentAccount()||session.selfId!=a.owner||session.activeChat!=chatId){a.fail("La conversación cambió. No se reenvió nada.");return;}
+            send.run();
+        });
+    }
+    private void deleteUnsent(JSONObject p,Answer a){
+        TdApi.Message message=unsentMessage(p,a);
+        if(message==null)return;
+        String problem=UnsentMessages.deleteProblem(message);
+        if(problem!=null){a.fail(problem);return;}
+        long chatId=message.chatId,messageId=message.id;
+        // El permiso lo decide Telegram con `GetMessageProperties`; WRGram no lo deduce del estado local.
+        perform(new TdApi.GetMessageProperties(chatId,messageId),a,props->{
+            if(!props.canBeDeletedOnlyForSelf&&!props.canBeDeletedForAllUsers){a.fail("Telegram no permite quitar este mensaje.");return;}
+            confirmUnsent(a,"Quitar el mensaje sin enviar",UnsentMessages.deleteExplanation(message),"Quitar",()->{
+                if(destroyed||!currentAccount()||session.selfId!=a.owner||session.activeChat!=chatId){a.fail("La conversación cambió. No se quitó ningún mensaje.");return;}
+                perform(new TdApi.DeleteMessages(chatId,new long[]{messageId},false),a,ignored->{schedule();a.ok(true);});
+            });
+        });
+    }
+    private void confirmUnsent(Answer a,String title,String message,String positive,Runnable accepted){
+        Dialogs.builder(activity).setTitle(title).setMessage(message)
+            .setNegativeButton("Cancelar",(d,w)->a.ok(false))
+            .setPositiveButton(positive,(d,w)->accepted.run())
+            .setOnCancelListener(d->a.ok(false)).show();
     }
     private void messageAction(String method,JSONObject p,Answer a){TdApi.Message message=message(p);perform(new TdApi.GetMessageProperties(message.chatId,message.id),a,props->{try{
         if(method.equals("message.edit")&&props.canBeEdited&&message.content instanceof TdApi.MessageText){String text=BridgePolicy.text(p,"text",4096);session.edit(message,text,textEntities(p,text.length()));a.ok(true);}
