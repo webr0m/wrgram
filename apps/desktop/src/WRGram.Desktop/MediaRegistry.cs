@@ -19,8 +19,7 @@ public sealed class MediaRegistry
 
     private readonly object _sync = new();
     private readonly Dictionary<long, Entry> _entries = new();
-    private readonly Dictionary<long, Task<string?>> _tasks = new();
-    private readonly HashSet<long> _loading = new();
+    private readonly Dictionary<long, TaskCompletionSource<string?>> _tasks = new();
     private readonly HashSet<long> _failed = new();
     private readonly string _directory;
     private readonly Func<Client?> _client;
@@ -87,24 +86,18 @@ public sealed class MediaRegistry
     public void Forget(string ownerKey)
     {
         var raw = StableId("photo:" + ownerKey);
-        List<long> aliases;
         lock (_sync)
         {
-            aliases = _entries.Where(pair => pair.Value.Id == raw).Select(pair => pair.Key).ToList();
+            var aliases = _entries.Where(pair => pair.Value.Id == raw).Select(pair => pair.Key).ToList();
             foreach (var alias in aliases)
             {
                 _entries.Remove(alias);
-                _tasks.Remove(alias);
-                _loading.Remove(alias);
+                if (_tasks.Remove(alias, out var pending)) pending.SetResult(null);
                 _failed.Remove(alias);
             }
-        }
-        try
-        {
-            if (File.Exists(PathFor(raw))) File.Delete(PathFor(raw));
-        }
-        catch
-        {
+            try { File.Delete(PathFor(raw)); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
         }
     }
 
@@ -137,73 +130,59 @@ public sealed class MediaRegistry
 
     public Task<string?> EnsureFileAsync(long id)
     {
+        Entry entry;
+        TaskCompletionSource<string?> pending;
         lock (_sync)
         {
-            if (!_entries.TryGetValue(id, out var entry)) return Task.FromResult<string?>(null);
+            if (!_entries.TryGetValue(id, out entry!)) return Task.FromResult<string?>(null);
             var path = PathFor(entry.Id);
             if (File.Exists(path)) return Task.FromResult<string?>(path);
-            if (_tasks.TryGetValue(id, out var running)) return running;
-            var task = DownloadAsync(id);
-            _tasks[id] = task;
-            return task;
-        }
-    }
-
-    private async Task<string?> DownloadAsync(long id)
-    {
-        Entry entry;
-        lock (_sync)
-        {
-            if (!_entries.TryGetValue(id, out entry!)) return null;
-            _loading.Add(id);
+            if (_tasks.TryGetValue(id, out var running)) return running.Task;
+            pending = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            _tasks.Add(id, pending);
             _failed.Remove(id);
         }
-        Changed?.Invoke();
+        _ = DownloadAsync(id, entry, pending);
+        return pending.Task;
+    }
 
+    private async Task DownloadAsync(long id, Entry entry, TaskCompletionSource<string?> pending)
+    {
         var path = PathFor(entry.Id);
-        var temp = path + ".part";
-        var replaced = false;
+        var temp = $"{path}.{Guid.NewGuid():N}.part";
         try
         {
+            Changed?.Invoke();
             var client = _client() ?? throw new BridgeException("La cuenta no está conectada.");
             Directory.CreateDirectory(_directory);
             await using (var stream = File.Create(temp))
                 await entry.Download(client, stream);
-            // Si algo borró este registro (Forget) mientras bajaba, el alias ya apunta a otra entrada distinta y
-            // publicar estos bytes volvería a escribir lo viejo encima de lo nuevo.
-            lock (_sync) replaced = !ReferenceEquals(_entries.GetValueOrDefault(id), entry);
-            if (replaced)
+            lock (_sync)
             {
-                try
-                {
-                    File.Delete(temp);
-                }
-                catch
-                {
-                }
-                Changed?.Invoke();
-                return null;
+                // Forget puede liberar este alias y arrancar otra descarga mientras llega la anterior.
+                if (!ReferenceEquals(_tasks.GetValueOrDefault(id), pending)) return;
+                File.Move(temp, path, overwrite: true);
+                _tasks.Remove(id);
+                pending.SetResult(path);
             }
-            File.Move(temp, path, overwrite: true);
-
-            lock (_sync) { _loading.Remove(id); _failed.Remove(id); }
-            Changed?.Invoke();
-            return path;
         }
-        catch
-        {
-            try { if (File.Exists(temp)) File.Delete(temp); } catch { }
-            lock (_sync) { _loading.Remove(id); _failed.Add(id); }
-            Changed?.Invoke();
-            throw;
-        }
-        finally
+        catch (Exception error)
         {
             lock (_sync)
             {
-                if (!replaced) _tasks.Remove(id);
+                if (!ReferenceEquals(_tasks.GetValueOrDefault(id), pending)) return;
+                _tasks.Remove(id);
+                _failed.Add(id);
+                pending.SetException(error);
             }
         }
+        finally
+        {
+            try { File.Delete(temp); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
+        Changed?.Invoke();
     }
 
     public string? NameOf(long id)
@@ -212,7 +191,7 @@ public sealed class MediaRegistry
     }
 
     public bool Known(long id) { lock (_sync) return _entries.ContainsKey(id); }
-    public bool IsLoading(long id) { lock (_sync) return _loading.Contains(id); }
+    public bool IsLoading(long id) { lock (_sync) return _tasks.ContainsKey(id); }
     public bool IsFailed(long id) { lock (_sync) return _failed.Contains(id); }
 
     /// <summary>Null cuando el alias no existe en esta sesión; true cuando el archivo ya está en disco.</summary>
@@ -245,15 +224,21 @@ public sealed class MediaRegistry
     }
 
     public List<long> ReadyIds() { lock (_sync) return _entries.Where(pair => File.Exists(PathFor(pair.Value.Id))).Select(pair => pair.Key).Take(1500).ToList(); }
-    public List<long> LoadingIds() { lock (_sync) return _loading.ToList(); }
+    public List<long> LoadingIds() { lock (_sync) return _tasks.Keys.ToList(); }
     public List<long> FailedIds() { lock (_sync) return _failed.ToList(); }
 
     public int RetryFailed()
     {
         List<long> failed;
         lock (_sync) failed = _failed.ToList();
-        foreach (var id in failed) _ = EnsureFileAsync(id);
+        foreach (var id in failed) _ = RetryAsync(id);
         return failed.Count;
+    }
+
+    private async Task RetryAsync(long id)
+    {
+        try { await EnsureFileAsync(id); }
+        catch { /* El fallo ya se refleja en FailedIds para que la interfaz pueda reintentar. */ }
     }
 
     private static string KindOf(string mime, Document document)

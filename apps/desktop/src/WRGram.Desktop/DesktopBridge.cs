@@ -58,6 +58,8 @@ public sealed class DesktopBridge
 
     private async void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
+        if (!string.Equals(e.Source, MainWindow.UiAddress, StringComparison.Ordinal)) return;
+
         string raw;
         try { raw = e.TryGetWebMessageAsString(); }
         catch { return; }

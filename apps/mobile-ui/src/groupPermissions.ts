@@ -7,7 +7,7 @@ import type { GroupPermissions } from './contract';
  * las mismas en C#—, copiadas carácter a carácter; `rondaBE.test.ts` las compara con el Java y con el C# para que la
  * vista de diseño no enseñe nunca una palabra que Android o Windows no dirían.
  *
- * Lo que no está aquí a propósito: las etiquetas del panel. `GROUP_PERMISSION_FIELDS` (`App.tsx:1371`) ya es la tabla
+ * Lo que no está aquí a propósito: las etiquetas del panel. `GROUP_PERMISSION_FIELDS` (`App.tsx:1399`) ya es la tabla
  * que la pantalla pinta, con su orden de lectura para una persona, y esta es la orden del puente. Son dos cosas
  * distintas y por eso viven separadas: la interfaz agrupa por tema, el contrato por la posición del constructor de
  * `TdApi.ChatPermissions` (`TdApi.java:17751`).

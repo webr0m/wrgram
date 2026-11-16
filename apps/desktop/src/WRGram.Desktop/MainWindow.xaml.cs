@@ -10,6 +10,10 @@ namespace WRGram.Desktop;
 public partial class MainWindow : Window
 {
     private const string VirtualHost = "wrgram.local";
+    private const string UiOrigin = "https://" + VirtualHost;
+    private const string MediaHost = "media.wrgram.test";
+    private const string MediaOrigin = "https://" + MediaHost;
+    internal const string UiAddress = UiOrigin + "/index.html";
 
     private readonly DesktopState _state = new();
     private DesktopStore? _store;
@@ -57,12 +61,14 @@ public partial class MainWindow : Window
         core.Settings.AreDevToolsEnabled = Environment.GetEnvironmentVariable("WRGRAM_DEBUG") == "1";
 
         core.SetVirtualHostNameToFolderMapping(VirtualHost, ui, CoreWebView2HostResourceAccessKind.DenyCors);
-        core.AddWebResourceRequestedFilter($"https://{VirtualHost}/media/*", CoreWebView2WebResourceContext.All);
+        // Los recursos de un host mapeado a una carpeta no pasan por WebResourceRequested.
+        core.AddWebResourceRequestedFilter(MediaOrigin + "/media/*", CoreWebView2WebResourceContext.All,
+            CoreWebView2WebResourceRequestSourceKinds.All);
         core.WebResourceRequested += OnWebResourceRequested;
         core.NavigationStarting += OnNavigationStarting;
         core.NewWindowRequested += OnNewWindowRequested;
 
-        ApplyShim(core);
+        await InstallShimAsync(core);
 
         _store = new DesktopStore();
         _media = new MediaRegistry(_store, () => _service?.Client);
@@ -74,14 +80,15 @@ public partial class MainWindow : Window
         ApplyAppearance();
 
         Web.NavigationCompleted += OnNavigationCompleted;
-        core.Navigate($"https://{VirtualHost}/index.html");
+        core.Navigate(UiAddress);
         _ = _service.InitializeAsync();
     }
 
-    private static async void ApplyShim(CoreWebView2 core)
+    private static Task<string> InstallShimAsync(CoreWebView2 core)
     {
-        const string shim = """
-            window.WRGRAM_MEDIA_BASE = 'https://wrgram.local';
+        const string shim = $$"""
+            if (window.self !== window.top || window.location.href !== '{{UiAddress}}') return;
+            window.WRGRAM_MEDIA_BASE = '{{MediaOrigin}}';
             window.WRGramNative = {
               onmessage: null,
               postMessage: function (message) { window.chrome.webview.postMessage(String(message)); }
@@ -92,8 +99,7 @@ public partial class MainWindow : Window
               handler({ data: typeof event.data === 'string' ? event.data : JSON.stringify(event.data) });
             });
             """;
-        try { await core.AddScriptToExecuteOnDocumentCreatedAsync(shim); }
-        catch { /* Navigation will fail with a visible error if the bridge is unavailable. */ }
+        return core.AddScriptToExecuteOnDocumentCreatedAsync("(function () {\n" + shim + "\n})();");
     }
 
     private void OnNavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
@@ -104,7 +110,7 @@ public partial class MainWindow : Window
 
     private static void OnNavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
     {
-        if (e.Uri.StartsWith($"https://{VirtualHost}/", StringComparison.OrdinalIgnoreCase)) return;
+        if (e.Uri == UiAddress) return;
         e.Cancel = true;
         OpenExternal(e.Uri);
     }
@@ -118,38 +124,53 @@ public partial class MainWindow : Window
     private static void OpenExternal(string url)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return;
-        if (uri.Scheme != "http" && uri.Scheme != "https") return;
+        if ((uri.Scheme != "http" && uri.Scheme != "https") || uri.Host == VirtualHost || uri.Host == MediaHost) return;
         try { Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true }); }
         catch { }
     }
 
     private void OnWebResourceRequested(object? sender, CoreWebView2WebResourceRequestedEventArgs e)
     {
-        var deferral = e.GetDeferral();
+        var environment = Web.CoreWebView2.Environment;
+        const string headers = "Access-Control-Allow-Origin: " + UiOrigin + "\r\n"
+            + "Access-Control-Expose-Headers: Accept-Ranges, Content-Range\r\n"
+            + "Cache-Control: no-store\r\nX-Content-Type-Options: nosniff";
+        Stream? body = null;
         try
         {
-            var path = new Uri(e.Request.Uri).AbsolutePath.Trim('/');
-            if (!path.StartsWith("media/", StringComparison.Ordinal) || !long.TryParse(path[6..], out var id)
+            var path = new Uri(e.Request.Uri).AbsolutePath;
+            if (!path.StartsWith("/media/", StringComparison.Ordinal) || !long.TryParse(path[7..], out var id)
                 || _media == null || !_media.TryGetFile(id, out var file, out var mime))
             {
-                e.Response = Web.CoreWebView2.Environment.CreateWebResourceResponse(null, 404, "Not Found", "Content-Type: text/plain; charset=utf-8");
+                e.Response = environment.CreateWebResourceResponse(null, 404, "Not Found", headers);
                 return;
             }
-
-            Stream stream = mime.StartsWith("image/", StringComparison.OrdinalIgnoreCase) || mime == "application/x-tgsticker"
-                ? new MemoryStream(File.ReadAllBytes(file), writable: false)
-                : File.OpenRead(file);
-            var headers = $"Content-Type: {mime}\r\nCache-Control: public, max-age=86400";
-            e.Response = Web.CoreWebView2.Environment.CreateWebResourceResponse(stream, 200, "OK", headers);
+            if (e.Request.Method == "OPTIONS")
+            {
+                e.Response = environment.CreateWebResourceResponse(null, 204, "No Content", headers
+                    + "\r\nAccess-Control-Allow-Methods: GET, HEAD\r\nAccess-Control-Allow-Headers: Range");
+                return;
+            }
+            if (e.Request.Method is not ("GET" or "HEAD"))
+            {
+                e.Response = environment.CreateWebResourceResponse(null, 405, "Method Not Allowed", headers + "\r\nAllow: GET, HEAD, OPTIONS");
+                return;
+            }
+            var range = e.Request.Method == "GET" && e.Request.Headers.Contains("Range") ? e.Request.Headers.GetHeader("Range") : null;
+            var response = DesktopMediaResponse.Open(file, mime, range, e.Request.Method == "HEAD");
+            body = response.Body;
+            e.Response = environment.CreateWebResourceResponse(body, response.Status, response.Reason, headers + "\r\n" + response.Headers);
+            body = null; // WebView2 mantiene el stream hasta consumir la respuesta.
         }
-        catch
+        catch (FileNotFoundException)
         {
-            e.Response = Web.CoreWebView2.Environment.CreateWebResourceResponse(null, 500, "Internal Error", "Content-Type: text/plain; charset=utf-8");
+            e.Response = environment.CreateWebResourceResponse(null, 404, "Not Found", headers);
         }
-        finally
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or COMException)
         {
-            deferral.Complete();
+            e.Response = environment.CreateWebResourceResponse(null, 500, "Internal Error", headers);
         }
+        finally { body?.Dispose(); }
     }
 
     private static string? ResolveUiDirectory()

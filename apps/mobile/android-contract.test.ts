@@ -94,8 +94,8 @@ describe('contrato de la beta Android', () => {
     expect(engine).toContain('historyQuery(id, read.cursor, true)');
     expect(engine).toContain('historyQuery(id, read.cursor, false)');
     expect(engine).toContain('12_000');
-    expect(read('version.properties')).toContain('versionCode=52');
-    expect(read('version.properties')).toContain('versionName=1.0.0-beta24');
+    expect(read('version.properties')).toContain('versionCode=54');
+    expect(read('version.properties')).toContain('versionName=1.0.0-beta26');
     expect(read('app/build.gradle')).toContain('dependsOn syncMobileUiAssets');
   });
 

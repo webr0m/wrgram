@@ -101,7 +101,7 @@ describe('ronda D: orden y fusión de las páginas del hilo', () => {  it('lee e
   });
   it('une una página más antigua sin repetir ni desordenar', () => {
     const shown = chronological([row('503', 300), row('502', 200)]);
-    const merged = mergeThread(shown, [row('501', 100), row('503', 300)]);
+    const merged = mergeThread(shown, [row('501', 100), row('503', 300), row('501', 100)]);
     expect(merged.map(item => item.id)).toEqual(['501', '502', '503']);
   });
   it('etiqueta el medio de un comentario', () => {

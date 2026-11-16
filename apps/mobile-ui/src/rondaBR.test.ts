@@ -264,7 +264,7 @@ describe('ronda BR · la tarjeta del enlace y su botón también en Windows', ()
     expect(desktopGapRefusal('message.link')).toBeUndefined();
     const available = new Set(DESKTOP_AVAILABLE.flatMap(claim => claim.methods));
     const pending = new Set(DESKTOP_PENDING.flatMap(claim => claim.methods));
-    expect(available.size).toBe(138);
+    expect(available.size).toBe(140);
     expect(pending.size).toBe(122);
     expect([...available].filter(method => pending.has(method))).toEqual([]);
   });

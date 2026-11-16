@@ -34,3 +34,6 @@ apps/mobile/android/app/src/main/assets/ui/
 *.apk
 apps/desktop/**/bin/
 apps/desktop/**/obj/
+
+# Salidas locales de las pruebas de Vitest
+.vitest/

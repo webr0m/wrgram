@@ -20,7 +20,7 @@ namespace WRGram.Desktop;
 /// <para>
 /// El identificador es la diferencia con más consecuencias. TDLib da un <c>item.id</c> de sesión; MTProto da un
 /// <c>hash</c> de 64 bits que solo tiene sentido para la sesión que está viva en este momento. Por eso la pantalla
-/// lo trata como una opaca cadena de ida y vuelta —<c>item.id</c> en <c>App.tsx:369</c>— y por eso la lista se lee
+/// lo trata como una opaca cadena de ida y vuelta —<c>item.id</c> en <c>App.tsx:397</c>— y por eso la lista se lee
 /// <b>siempre</b> antes de cerrar: un <c>hash</c> guardado de una lectura anterior ya no vale. Aquí no hay caché de
 /// sesiones, igual que en Android, que tampoco guarda la lista: cada apertura del diálogo vuelve a preguntar.
 /// </para>
@@ -65,7 +65,7 @@ public sealed partial class TelegramService
     /// <c>account.session.revoke</c> (<c>NativeBridge.java:553</c>) con el guardaje de esa línea, en ese orden:
     /// sesión montada, identificador con forma, y recién entonces la escritura. Android no comprueba nada más —no
     /// prohíbe cerrar la sesión propia— porque la pantalla ya no ofrece el botón en esa fila
-    /// (<c>App.tsx:369</c>, <c>!item.current</c>); copiar esa omisión es más honesto que inventar una guarda que el
+    /// (<c>App.tsx:397</c>, <c>!item.current</c>); copiar esa omisión es más honesto que inventar una guarda que el
     /// otro cliente no tiene.
     /// <para>
     /// Se devuelve el <c>bool</c> de la librería en vez del <c>true</c> fijo de Android. Allá el <c>case</c>

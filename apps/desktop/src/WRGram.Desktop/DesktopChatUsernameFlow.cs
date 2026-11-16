@@ -12,7 +12,7 @@ using WTelegram;
 /// faltaba: las dos órdenes llevaban desde la ronda A cayendo en el <c>_ =&gt; throw</c> genérico del host
 /// (<c>TelegramService.cs:440</c>, «No disponible en escritorio (beta): chat.username»), mientras las dos peticiones
 /// de MTProto —<c>channels.getChannels</c> y <c>channels.updateUsername</c>— llevan todo ese tiempo existiendo en la
-/// librería. La pantalla tampoco llegaba: la entrada vive en <c>chatInfo</c> de Android (<c>App.tsx:754</c> y
+/// librería. La pantalla tampoco llegaba: la entrada vive en <c>chatInfo</c> de Android (<c>App.tsx:782</c> y
 /// <c>:1146</c>) y la hoja de opciones de escritorio se corta antes, así que esta ronda añade también el botón, que
 /// es la norma que fijó la ronda AK —ninguna opción que la interfaz ofrece puede caer en el aviso de beta—.
 /// <para>

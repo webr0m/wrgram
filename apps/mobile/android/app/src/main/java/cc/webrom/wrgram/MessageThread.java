@@ -46,6 +46,6 @@ final class MessageThread {
         long oldest = 0;
         if (messages != null) for (TdApi.Message message : messages) if (message != null && (oldest == 0 || message.id < oldest)) oldest = message.id;
         // 0 corta la paginación: también cuando la página no retrocedió, señal de que el hilo se agotó.
-        return oldest != 0 && oldest != previous ? oldest : 0;
+        return oldest > 0 && (previous == 0 || oldest < previous) ? oldest : 0;
     }
 }

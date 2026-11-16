@@ -128,7 +128,7 @@ function applyChatUsername(entry:ChatUsernameFixture, username:string) {
  * en la tabla se arranca en cero, igual que un chat recién creado.
  *
  * Los chats secretos no tienen fila aquí, y no hace falta: la pantalla no abre el ajuste sobre uno en ninguna de las
- * dos capas (`App.tsx:850` y `:916`), así que las dos frases con las que Android los niega (`:1343` y `:1367`) no
+ * dos capas (`App.tsx:878` y `:916`), así que las dos frases con las que Android los niega (`:1343` y `:1367`) no
  * tienen por dónde alcanzarse. Es el mismo motivo por el que la ronda AN dejó fuera del andamio la de las encuestas.
  */
 const autoDeleteFixtures: Record<string, number> = { '12': AUTO_DELETE_DAY, '14': 7 * AUTO_DELETE_DAY, '18': 30 * AUTO_DELETE_DAY };
@@ -1158,7 +1158,7 @@ const CONTACT_WRITE_REFUSALS = {
  * son: tres guardas y un cambio de marca. El orden es el del brazo de Windows, que a su vez es el de Java —la
  * conversación cargada, la forma del chat, la persona con su bot y su cuenta propia— y detrás los dos «no hace nada»
  * que la pantalla ya sabe leer: quitar a quien no está y añadir a quien ya está devuelven `false` sin tocar el
- * estado, y `App.tsx:707` no repinta la ficha con un `false`. El cuadro de confirmar no está aquí porque el andamio
+ * estado, y `App.tsx:735` no repinta la ficha con un `false`. El cuadro de confirmar no está aquí porque el andamio
  * no abre ventanas, igual que `designUnblockSender` declaró lo mismo para el desbloqueo: cancelar responde `false`,
  * así que la vista queda idéntica al camino corto.
  */
@@ -2123,7 +2123,7 @@ export async function designRequest(method: string, params: Record<string, unkno
     if (!isSupergroupOrChannel(chat)) throw new Error(CHAT_USERNAME_REFUSALS.unsupported);
     const malformed = profileUsernameProblem(params.username);
     if (malformed) throw new Error(malformed);
-    // Solo el `trim()` del puente: la `@` la quita la pantalla antes de llamar (`App.tsx:342`), así que un
+    // Solo el `trim()` del puente: la `@` la quita la pantalla antes de llamar (`App.tsx:370`), así que un
     // «@nombre» que llega hasta aquí —una llamada hecha a mano, otra pantalla— es el nombre malo, igual que en
     // Windows. Aflojarlo en el andamio sería entrenar una vista de diseño que el host real rechaza.
     const username = String(params.username).trim();
@@ -2698,7 +2698,7 @@ function designUnblockSender(params: Record<string, unknown>, state: State): boo
 /**
  * `profileBlock` (`:1282-1288`), que es la otra mitad del mismo hueco: la ficha ya publicaba `blocked` desde la ronda
  * BA y su botón seguía sin puente. Aquí están las tres guardas de Java en su orden —forma del chat, cuenta propia,
- * valor— y ninguna ventana de confirmar, porque la abre la pantalla (`App.tsx:709-712`) y no el puente.
+ * valor— y ninguna ventana de confirmar, porque la abre la pantalla (`App.tsx:737-712`) y no el puente.
  */
 function designProfileBlock(params: Record<string, unknown>, state: State): boolean {
   const id = String(params.id ?? '');

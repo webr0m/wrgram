@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Download, ExternalLink, FileText, Folder, LoaderCircle, Search } from 'lucide-react';
-import { mediaUrl, request } from './bridge';
+import { mediaUrl, request, snapshot } from './bridge';
 import type { Media } from './contract';
 import { Modal } from './dialogs';
 
@@ -24,6 +24,7 @@ export function DocumentViewer({ media, format, close }: { media: Media; format:
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
   const [saving, setSaving] = useState(false);
+  const desktop = snapshot().platform === 'desktop';
   const limited = (format === 'pdf' && media.size > 160 * 1024 * 1024) || (format === 'archive' && media.size > 64 * 1024 * 1024);
   useEffect(() => {
     if (format === 'pdf' || limited) return;
@@ -41,7 +42,7 @@ export function DocumentViewer({ media, format, close }: { media: Media; format:
     finally { setSaving(false); }
   }
   return <Modal title={media.name || 'Documento de Telegram'} className="document-modal" close={close}>
-    {limited ? <p role="status" className="settings-note">Este archivo supera el tamaño de vista previa. Puedes usar un visor de Android si Telegram permite abrirlo fuera de WRGram.</p>
+    {limited ? <p role="status" className="settings-note">Este archivo supera el tamaño de vista previa. Si Telegram permite guardarlo, puedes abrir la copia en un visor compatible.</p>
       : format === 'pdf' ? <Suspense fallback={<p role="status">Preparando el visor de PDF…</p>}><PdfPreview url={mediaUrl(media.id)}/></Suspense>
       : error ? <p role="alert">{error}</p>
       : !data ? <p role="status"><LoaderCircle className="spin" size={16}/> Leyendo archivo…</p>
@@ -56,7 +57,7 @@ export function DocumentViewer({ media, format, close }: { media: Media; format:
         </li>)}</ul>
       </>}
     {media.exportable !== false && <div className="document-actions">
-      <button type="button" className="secondary" disabled={saving} onClick={() => void action('media.open')}><ExternalLink size={15}/> Abrir con otra app</button>
+      {!desktop && <button type="button" className="secondary" disabled={saving} onClick={() => void action('media.open')}><ExternalLink size={15}/> Abrir con otra app</button>}
       <button type="button" className="secondary" disabled={saving} onClick={() => void action('media.export')}><Download size={15}/> Guardar</button>
     </div>}
     {actionError && <p role="status">{actionError}</p>}

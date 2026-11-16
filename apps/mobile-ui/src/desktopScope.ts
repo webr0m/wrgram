@@ -30,6 +30,7 @@ export const DESKTOP_AVAILABLE: readonly ScopeClaim[] = [
   { label: 'lectura, archivo y silencio', methods: ['chat.read', 'chat.unread', 'chat.archive', 'chat.mute'] },
   { label: 'fijar un mensaje y fijar la conversación', methods: ['chat.pin', 'message.pin', 'chat.pinned', 'message.properties'] },
   { label: 'multimedia recibida y su descarga', methods: ['media.load', 'media.retry', 'media.export', 'downloads.status', 'downloads.queue', 'downloads.pause', 'downloads.item.add', 'downloads.item.pause', 'downloads.item.cancel', 'downloads.item.remove'] },
+  { label: 'vista previa de documentos de texto y archivos ZIP', methods: ['media.text', 'media.archive'] },
   { label: 'búsqueda con filtros guardados', methods: ['chats.search', 'messages.search', 'messages.search.more', 'search.filters.list', 'search.filters.save', 'search.filters.delete'] },
   { label: 'agenda leída: ver, buscar, compartir contacto y abrir su chat', methods: ['contacts.list', 'contacts.search', 'contacts.open', 'share.contact', 'profile.contact'] },
   { label: 'agenda escribible: añadir y quitar una persona de la lista', methods: ['contacts.add', 'contacts.remove'] },

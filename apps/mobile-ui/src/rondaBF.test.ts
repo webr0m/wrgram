@@ -331,28 +331,28 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
     // las que citan `App.tsx` por número. Aquí se declara una vez lo que tiene que decir cada línea citada.
     const anchors: Record<number, string> = {
       92: 'function ContactAvatar(',
-      342: "raw.trim().replace(/^@/,'')",
-      369: 'function openSessions()',
-      701: 'const openRelated=',
+      370: "raw.trim().replace(/^@/,'')",
+      397: 'function openSessions()',
+      729: 'const openRelated=',
       // Las dos de la puerta de agenda (ronda BL): la pantalla arma la orden según el estado de la persona y, solo
       // para quitarla, confirma antes de mandar nada.
-      707: "run<boolean>(remove?'contacts.remove':'contacts.add'",
-      708: "confirm('Quitar de contactos'",
+      735: "run<boolean>(remove?'contacts.remove':'contacts.add'",
+      736: "confirm('Quitar de contactos'",
       // Las tres de la puerta de bloqueo (ronda BI): la pantalla confirma y solo entonces manda la orden.
-      709: 'changeBlock={(peer,blocked)=>{',
-      711: "confirm(label+' a '+peer.title",
-      712: "run<boolean>('profile.block'",
-      754: 'function chatInfo(chat:Chat)',
+      737: 'changeBlock={(peer,blocked)=>{',
+      739: "confirm(label+' a '+peer.title",
+      740: "run<boolean>('profile.block'",
+      782: 'function chatInfo(chat:Chat)',
       // La puerta de borrado automático de la rama de escritorio (ronda BN): la misma guarda de forma que la de
       // Android, y citada porque el andamio declara con ella que un chat secreto no se alcanza.
-      850: 'label="Borrado automático"',
-      858: 'label="Nombre y descripción"',
-      880: 'label="Añadir personas"',
-      1164: 'className="details-panel"',
-      1235: 'const MEMBER_FILTERS',
-      1326: 'Sin miembros para este filtro',
-      1369: 'disabled={contact.bot}',
-      1371: 'const GROUP_PERMISSION_FIELDS',
+      878: 'label="Borrado automático"',
+      886: 'label="Nombre y descripción"',
+      908: 'label="Añadir personas"',
+      1192: 'className="details-panel"',
+      1263: 'const MEMBER_FILTERS',
+      1354: 'Sin miembros para este filtro',
+      1397: 'disabled={contact.bot}',
+      1399: 'const GROUP_PERMISSION_FIELDS',
     };
     for (const [at, needle] of Object.entries(anchors)) expect(appLine(Number(at)), `App.tsx:${at}`).toContain(needle);
     const cited = new Set<number>();

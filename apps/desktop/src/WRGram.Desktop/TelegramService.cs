@@ -253,18 +253,18 @@ public sealed partial class TelegramService : IAsyncDisposable
                 "profile.sender" => await SenderProfileAsync(args),
                 // La quinta puerta del mismo hueco, cableada en la ronda BI junto a las dos de la lista. La ficha ya
                 // publicaba <c>blocked</c> desde la ronda BA, así que en Windows el botón de «Bloquear» se veía y al
-                // pulsar caía en el genérico. Acá no hay cuadro nativo: lo abre la pantalla (<c>App.tsx:711</c>).
+                // pulsar caía en el genérico. Acá no hay cuadro nativo: lo abre la pantalla (<c>App.tsx:739</c>).
                 // Reglas y frases, en <see cref="DesktopBlocked"/>; el cable, en <see cref="SetBlockProfileAsync"/>.
                 "profile.block" => await SetBlockProfileAsync(args),
                 // La firma de invitación, conectada en la ronda BB. El menú «Añadir personas» de la pantalla
-                // (<c>App.tsx:880</c>) nunca llevó guarda de plataforma, así que en Windows el panel se abría y su
+                // (<c>App.tsx:908</c>) nunca llevó guarda de plataforma, así que en Windows el panel se abría y su
                 // primera pregunta caía en el `_ => throw` genérico. Reglas y frases, en
                 // <see cref="DesktopMemberAdditions"/>; el cable, en <see cref="AddInfoAsync"/>.
                 "groups.add.info" => await AddInfoAsync(args),
                 "groups.member.add" => await AddMembersAsync(args),
                 // Los permisos predeterminados de la comunidad, conectados en la ronda BE. Las dos órdenes estaban en
                 // la lista del puente desde la ronda A y la pantalla las pide desde la Q por la entrada «Permisos
-                // predeterminados» del panel lateral (<c>App.tsx:1164</c>, sin guarda de plataforma), pero en Windows
+                // predeterminados» del panel lateral (<c>App.tsx:1192</c>, sin guarda de plataforma), pero en Windows
                 // caían en el genérico. Reglas, tabla de banderas y frases, en <see cref="DesktopGroupPermissions"/>;
                 // el cable, en <see cref="GroupPermissionsAsync"/>.
                 "groups.permissions.get" => await GroupPermissionsAsync(args),
@@ -355,10 +355,10 @@ public sealed partial class TelegramService : IAsyncDisposable
                 // exactamente el par que Android ya daba.
                 "poll.stop" => throw new BridgeException(DesktopPoll.NoStop),
                 "poll.voters" => await PollVotersAsync(args),
-                // Las tres escrituras de reacción se niegan con su causa nombrada en vez de caer en el
-                // «No disponible en escritorio (beta)», que no dice lo que falta: la petición no está generada.
+                // Las peticiones para escribir reacciones no están generadas.
                 "message.react" or "message.react.custom" or "message.react.paid" => throw new BridgeException(DesktopMessageReact.Refused),
                 "media.export" => await ExportMediaAsync(Long(args, "id")),
+                "media.text" or "media.archive" => await PreviewMediaAsync(Long(args, "id"), method == "media.archive"),
                 "retry" => await RetryAsync(),
                 "error.clear" => ClearError(),
                 "app.background" => true,
@@ -2548,7 +2548,7 @@ public sealed partial class TelegramService : IAsyncDisposable
     /// recorta, así que 100 espacios se niegan por largos y no por vacíos.
     /// <para>
     /// <c>bots: true</c> no es un descuido: la pantalla filtra con la marca que el DTO lleva
-    /// (<c>BatchPanels.tsx:138</c>, <c>App.tsx:1369</c>), y con los bots excluidos en el puente las dos capas
+    /// (<c>BatchPanels.tsx:138</c>, <c>App.tsx:1397</c>), y con los bots excluidos en el puente las dos capas
     /// responderían listas distintas a la misma palabra. <c>my_results</c> va delante de <c>results</c> porque lo
     /// propio pesa más, y la deduplicación es de <see cref="DesktopContact.UserIds"/>: la pantalla usa el id como
     /// clave de React y un id repetido sería un aviso encima de un resultado correcto.
@@ -2979,9 +2979,9 @@ public sealed partial class TelegramService : IAsyncDisposable
     {
         if (!_media.CanExport(id)) throw new BridgeException("Telegram protege este contenido.");
         var path = await _media.EnsureFileAsync(id);
-        if (path == null || !_media.TryGetFile(id, out var file, out _))
+        if (path == null || !_media.TryGetFile(id, out var file, out var mime))
             throw new BridgeException("El archivo todavía no está disponible. Espera a que termine la descarga.");
-        var name = _media.NameOf(id) ?? "archivo";
+        var name = DesktopDocuments.DownloadName(_media.NameOf(id) ?? "archivo", mime);
         var target = Application.Current.Dispatcher.Invoke(() =>
         {
             var dialog = new Microsoft.Win32.SaveFileDialog

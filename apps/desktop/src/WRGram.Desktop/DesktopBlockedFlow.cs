@@ -15,7 +15,7 @@ using WTelegram;
 /// techos, las frases y el cuadro de confirmar están en <see cref="DesktopBlocked"/>; aquí está el hilo, que es lo que
 /// faltaba: las tres órdenes están en la lista del puente desde hace rondas (<c>BridgePolicy.java:42</c> y <c>:30</c>),
 /// las tres pantallas las piden desde entonces (<c>BlockedSettings.tsx:25</c> y <c>:48</c>, <c>PeerProfile.tsx:98</c>
-/// a través de <c>App.tsx:712</c>) y en Windows caían en el <c>_ =&gt; throw</c> genérico. La tercera era la más
+/// a través de <c>App.tsx:740</c>) y en Windows caían en el <c>_ =&gt; throw</c> genérico. La tercera era la más
 /// callada: la ficha de una persona sí mostraba el botón de «Bloquear» porque <c>chat.profile</c> publica
 /// <c>blocked</c> desde la ronda BA, y pulsarlo devolvía la frase del beta.
 /// <para>
@@ -48,7 +48,7 @@ using WTelegram;
 /// entrada que <see cref="RequireEntry"/> reconstruye ya trae su <c>InputPeerUser</c> con hash. Lo que conserva es el
 /// orden de <c>:1282-1285</c> —forma del chat, cuenta propia, valor— y el silencio ante la cuenta: allá no hay
 /// <c>currentAccount()</c> porque no hay diálogo nativo que pueda cruzarse; aquí tampoco, por el mismo motivo, y la
-/// confirmación la hace la pantalla en su propio cuadro (<c>App.tsx:711</c>), no el host. Bloquear y desbloquear son
+/// confirmación la hace la pantalla en su propio cuadro (<c>App.tsx:739</c>), no el host. Bloquear y desbloquear son
 /// las dos peticiones medidas con el nombre simétrico, <c>Contacts_Block</c> y <c>Contacts_Unblock</c>, ambas con
 /// <c>my_stories_from</c> en falso.
 /// </para>
@@ -112,7 +112,7 @@ public sealed partial class TelegramService
     /// <summary>
     /// <c>profileBlock</c> (<c>:1280-1287</c>): las dos guardas de Java en su orden y, según el valor, una de las dos
     /// peticiones simétricas. No abre ventana ninguna porque Android tampoco: el cuadro de confirmar es el de la
-    /// pantalla (<c>App.tsx:709-712</c>) y la orden ya llega decidida. El <c>ok(true)</c> de <c>:1286</c> responde lo
+    /// pantalla (<c>App.tsx:737-712</c>) y la orden ya llega decidida. El <c>ok(true)</c> de <c>:1286</c> responde lo
     /// que TDLib aceptó sin mirar el <c>updates</c>; aquí se responde <c>true</c> cuando la librería no lanza, que es
     /// el mismo contrato.
     /// </summary>

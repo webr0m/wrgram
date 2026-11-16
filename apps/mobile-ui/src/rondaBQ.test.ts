@@ -256,7 +256,7 @@ describe('ronda BQ · crear enlace de invitación también en Windows', () => {
     // misma afirmación de enlaces, con lo que las disponibles pasan de 137 a 138 y las pendientes siguen en 122.
     const available = new Set(DESKTOP_AVAILABLE.flatMap(claim => claim.methods));
     const pending = new Set(DESKTOP_PENDING.flatMap(claim => claim.methods));
-    expect(available.size).toBe(138);
+    expect(available.size).toBe(140);
     expect(pending.size).toBe(122);
     expect([...available].filter(method => pending.has(method))).toEqual([]);
     expect(preview).toContain("if (method === 'chat.invite') {");

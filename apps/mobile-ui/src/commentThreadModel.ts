@@ -10,8 +10,7 @@ export function chronological(messages: Message[]): Message[] {
 
 /** Une una página más antigua con lo ya mostrado sin repetir mensajes. */
 export function mergeThread(current: Message[], older: Message[]): Message[] {
-  const seen = new Set(current.map(item => item.id));
-  return chronological([...current, ...older.filter(item => !seen.has(item.id))]);
+  return chronological([...new Map([...older, ...current].map(item => [item.id, item])).values()]);
 }
 
 const KIND_LABEL: Record<string, string> = { image: 'Foto', video: 'Vídeo', audio: 'Audio', file: 'Archivo', sticker: 'Sticker' };

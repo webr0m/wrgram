@@ -22,7 +22,14 @@ export function closeTopOverlay(): boolean {
     return true;
 }
 
-const FOCUSABLE = 'button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),[href],[tabindex]:not([tabindex="-1"])';
+const FOCUSABLE = 'button,input,textarea,select,a[href],summary,[tabindex]';
+
+function tabStops(section:HTMLElement):HTMLElement[] {
+    return [...section.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(element =>
+        element.tabIndex >= 0 && !element.matches(':disabled') &&
+        !element.closest('[inert]') && element.getClientRects().length > 0 &&
+        getComputedStyle(element).visibility === 'visible');
+}
 
 /** Escape, trampa de foco, foco inicial al abrir y devolución del foco al cerrar. */
 export function useDialog(ref: RefObject<HTMLElement | null>, close: () => void): void {
@@ -41,7 +48,7 @@ export function useDialog(ref: RefObject<HTMLElement | null>, close: () => void)
             if (!isTopOverlay(overlay) || event.isComposing) return;
             if (event.key === 'Escape') { event.preventDefault(); closeRef.current(); return; }
             if (event.key !== 'Tab' || !section) return;
-            const items = [...section.querySelectorAll<HTMLElement>(FOCUSABLE)];
+            const items = tabStops(section);
             if (!items.length) { event.preventDefault(); section.focus(); return; }
             const active = document.activeElement;
             const atStart = active === items[0] || active === section || !section.contains(active);

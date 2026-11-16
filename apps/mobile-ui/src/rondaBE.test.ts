@@ -265,7 +265,7 @@ describe('ronda BE · las tres capas dicen las mismas frases de los permisos', (
     // puerta del panel lateral de Android se movió seis líneas cuando la ronda BQ abrió la de crear enlace, y una
     // aguja con el índice copiado a mano habría quedado verde sobre otra línea.
     const cited = Number(/App\.tsx:(\d+)/.exec(cable)?.[1] ?? -1);
-    expect(cited).toBe(1164);
+    expect(cited).toBeGreaterThan(0);
     expect(app.split('\n')[cited - 1], `App.tsx:${cited}`).toContain('onClick={()=>openGroupPermissions(active)}');
   });
 });

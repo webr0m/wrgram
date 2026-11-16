@@ -158,8 +158,8 @@ describe('lote de encuestas, voz, stickers, proxy y almacenamiento',()=>{
     expect(settings).toContain('<StorageSettings');
   });
   it('actualiza la versión empaquetada y la agenda en segundo plano en la documentación visible',()=>{
-    expect(contract).toContain("version: '1.0.0-beta24'");
-    expect(contract).toContain('currentVersionCode:52');
+    expect(contract).toContain("version: '1.0.0-beta26'");
+    expect(contract).toContain('currentVersionCode:54');
     expect(settings).toContain('trabajo periódico de Android');
     expect(settings).not.toContain('no como servicio en segundo plano');
   });

@@ -276,8 +276,9 @@ describe('ronda AU · la foto de perfil, cruzada con las tres capas', () => {
     expect(drop).toContain('StableId("photo:" + ownerKey)');
     expect(drop).toContain('_entries.Remove(alias)');
     expect(drop).toContain('File.Delete(PathFor(raw))');
-    // Sin la guarda de la referencia, la bajada que estaba en vuelo volvería a escribir la foto vieja en la misma ruta.
-    expect(csBody('DownloadAsync', registry)).toContain('ReferenceEquals(_entries.GetValueOrDefault(id), entry)');
+    // El alias puede reutilizarse. Solo la descarga vigente puede escribir el fichero definitivo.
+    const download = csBody('DownloadAsync', registry);
+    expect(at('ReferenceEquals(_tasks.GetValueOrDefault(id), pending)', download)).toBeLessThan(at('File.Move(temp, path', download));
   });
 
   it('las dos órdenes tienen brazo, manejador y espejo; la negativa del menú ya no existe', () => {

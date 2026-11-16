@@ -23,6 +23,7 @@ export function CommentThread({ root, close, openMessage }: {
   const [busy, setBusy] = useState(true);
   const [more, setMore] = useState(false);
   const ticket = useRef(0);
+  const failedCursor = useRef('0');
 
   // `t` cambia en cada render: fuera de las dependencias para no relanzar la carga en bucle.
   const load = useCallback(async (before: string) => {
@@ -38,13 +39,17 @@ export function CommentThread({ root, close, openMessage }: {
       setMore(page.next === true);
     } catch (reason) {
       if (current !== ticket.current) return;
+      failedCursor.current = before;
       setError(reason instanceof Error && reason.message ? reason.message : 'No se pudieron cargar los comentarios.');
     } finally {
       if (current === ticket.current) setBusy(false);
     }
   }, [root.chatId, root.id]);
 
-  useEffect(() => { void load('0'); }, [load]);
+  useEffect(() => {
+    void load('0');
+    return () => { ticket.current++; };
+  }, [load]);
 
   const newest = items.length ? items[items.length - 1] : undefined;
   const total = head?.comments ?? root.thread?.comments ?? 0;
@@ -53,13 +58,14 @@ export function CommentThread({ root, close, openMessage }: {
       <strong>{root.sender}</strong>
       <p>{root.text || mediaLabel(root.media)}</p>
     </div>
-    {error ? <div className="thread-state" role="status">
+    {error && <div className="thread-state" role="status">
       <span>{error}</span>
-      <button type="button" onClick={() => void load('0')}>{t('Reintentar')}</button>
-    </div> : <div className="thread-list">
-      {more ? <button type="button" className="thread-more" onClick={() => void load(items[0]?.id ?? '0')} disabled={busy}>{t('Cargar comentarios anteriores')}</button> : null}
+      <button type="button" onClick={() => void load(failedCursor.current)}>{t('Reintentar')}</button>
+    </div>}
+    <div className="thread-list">
+      {more && !error ? <button type="button" className="thread-more" onClick={() => void load(items[0]?.id ?? '0')} disabled={busy}>{t('Cargar comentarios anteriores')}</button> : null}
       {busy && !items.length ? <p className="thread-state" role="status"><span>{t('Consultando los comentarios en Telegram…')}</span></p> : null}
-      {!busy && !items.length ? <p className="thread-state"><span>{t('Todavía no hay comentarios.')}</span></p> : null}
+      {!busy && !error && !items.length ? <p className="thread-state"><span>{t('Todavía no hay comentarios.')}</span></p> : null}
       {items.map(item => <button type="button" key={item.id} className="thread-row" onClick={() => openMessage(item.chatId, item.id)}>
         <span className="thread-author">{item.sender}</span>
         {item.reply ? <span className="thread-quote"><MessageSquareText size={12}/>{item.reply}</span> : null}
@@ -67,10 +73,10 @@ export function CommentThread({ root, close, openMessage }: {
         {item.media ? <span className="thread-media"><Icon media={item.media}/>{mediaLabel(item.media)}</span> : null}
         <time>{new Date(item.date * 1000).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</time>
       </button>)}
-      {head ? <button type="button" className="thread-open" onClick={() => openMessage(head.chatId, (newest ?? head.messages[0])?.id ?? root.id)}>
+      {head ? <button type="button" className="thread-open" onClick={() => openMessage(newest?.chatId ?? head.chatId, newest?.id ?? head.threadId)}>
         <MessageSquareText size={14}/><span>{t('Abrir la discusión')}</span>
       </button> : null}
-    </div>}
+    </div>
   </Modal>;
 }
 

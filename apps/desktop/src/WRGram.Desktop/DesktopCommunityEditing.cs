@@ -9,7 +9,7 @@ namespace WRGram.Desktop;
 /// Las dos órdenes de la ficha de una comunidad en Windows: leer su nombre y su descripción, y escribir una de las
 /// dos. Las reglas y las frases están en <see cref="DesktopCommunityInfo"/>; aquí está el cable, que es lo que
 /// faltaba —ninguna de las dos tenía brazo, así que el botón «Nombre y descripción» del menú de escritorio
-/// (<c>App.tsx:858</c>, sin guarda de plataforma) caía en el <c>_ =&gt; throw</c> genérico dando a entender que
+/// (<c>App.tsx:886</c>, sin guarda de plataforma) caía en el <c>_ =&gt; throw</c> genérico dando a entender que
 /// faltaba una petición cuando las cuatro existen en la librería—.
 /// <para>
 /// El orden es el de <c>NativeBridge.setChatInfo</c> (<c>NativeBridge.java:1919-1943</c>) palabra por palabra: forma

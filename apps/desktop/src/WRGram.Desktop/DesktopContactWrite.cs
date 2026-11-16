@@ -10,7 +10,7 @@ namespace WRGram.Desktop;
 /// los dos nombres y el orden exacto en que todo eso ocurre. El hilo está en <see cref="DesktopContactWriteFlow"/>.
 /// <para>
 /// <b>Las cuatro salidas de Android, que son cuatro y no dos.</b> La pantalla solo sabe preguntar
-/// (<c>App.tsx:707</c>) y mirar el <c>boolean</c> que vuelve (<c>PeerProfile.tsx:97</c> es el botón que lo pide), y
+/// (<c>App.tsx:735</c>) y mirar el <c>boolean</c> que vuelve (<c>PeerProfile.tsx:97</c> es el botón que lo pide), y
 /// <c>:1839</c> tiene cuatro caminos: negar con frase, decir «no hace nada» porque la persona ya está en el estado
 /// que se pedía, abrir el cuadro y escribir, o cerrarse sin escribir. Los dos del medio son los que se olvidan:
 /// <c>contacts.remove</c> sobre alguien que no es contacto responde <c>ok(false)</c> sin tocar Telegram, y
