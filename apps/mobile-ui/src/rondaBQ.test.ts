@@ -251,11 +251,12 @@ describe('ronda BQ · crear enlace de invitación también en Windows', () => {
     expect(scope).toContain("'chat.photo.pick', 'chat.invite', 'chat.invitelinks', 'chat.invitelink.create'");
     expect(desktopGapRefusal('chat.invite')).toBeUndefined();
     // Las dos cifras del aviso, contadas sobre las dos listas y no copiadas de la hoja de BP. `chat.invite` estaba
-    // entre las ochenta y dos huérfanas —las que la interfaz llama sin brazo y sin declarar—, así que el cruce suma
-    // a las disponibles y no le quita nada a las pendientes.
+    // entre las huérfanas —las que la interfaz llama sin brazo y sin declarar—, así que el cruce suma a las
+    // disponibles y no le quita nada a las pendientes. La BR volvió a mover esta primera: `message.link` se suma a la
+    // misma afirmación de enlaces, con lo que las disponibles pasan de 137 a 138 y las pendientes siguen en 122.
     const available = new Set(DESKTOP_AVAILABLE.flatMap(claim => claim.methods));
     const pending = new Set(DESKTOP_PENDING.flatMap(claim => claim.methods));
-    expect(available.size).toBe(137);
+    expect(available.size).toBe(138);
     expect(pending.size).toBe(122);
     expect([...available].filter(method => pending.has(method))).toEqual([]);
     expect(preview).toContain("if (method === 'chat.invite') {");

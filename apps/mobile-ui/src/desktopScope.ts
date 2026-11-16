@@ -39,7 +39,7 @@ export const DESKTOP_AVAILABLE: readonly ScopeClaim[] = [
   { label: 'perfil propio, foto y sesiones activas', methods: ['account.profile', 'account.name', 'account.bio', 'account.username', 'account.photo.pick', 'account.photo.delete', 'account.sessions', 'account.session.revoke'] },
   { label: 'fichas de chat y de persona', methods: ['chat.profile', 'profile.peer', 'profile.related', 'profile.sender'] },
   { label: 'traducir y transcribir', methods: ['message.translate', 'message.transcribe', 'message.transcribe.rate'] },
-  { label: 'unirse, salir y abrir enlaces de invitación', methods: ['chat.join', 'chat.leave', 'telegram.link', 'link.open'] },
+  { label: 'unirse, salir y abrir enlaces de invitación y el enlace de un mensaje', methods: ['chat.join', 'chat.leave', 'telegram.link', 'link.open', 'message.link'] },
   { label: 'cartera de Stars y sus suscripciones', methods: ['stars.options', 'stars.revenue', 'stars.transactions', 'stars.withdraw', 'stars.subscriptions', 'stars.subscription.cancel', 'stars.subscription.resume', 'stars.subscription.reuse'] },
   { label: 'respuestas rápidas de Telegram Business', methods: ['business.quick.list', 'business.quick.add', 'business.quick.edit', 'business.quick.delete', 'business.quick.name', 'business.quick.send', 'business.quick.messages'] },
   { label: 'tema, tipografía y fondo', methods: ['appearance'] },

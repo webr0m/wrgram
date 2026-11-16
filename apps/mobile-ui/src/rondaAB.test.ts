@@ -39,11 +39,11 @@ function literal(source: string, name: string): string {
   return match[1];
 }
 
-/** El `switch` de `TelegramLinkAsync`: la única parte del handler que decide qué se escribe y qué no. */
+/** El embudo de enlaces (`LinkFromUrlAsync`): la única parte del handler que decide qué se escribe y qué no. */
 function linkHandler(): string {
-  const body = csBody('TelegramLinkAsync');
+  const body = csBody('LinkFromUrlAsync');
   const start = body.indexOf('ChatInviteBase seen;');
-  if (start < 0) throw new Error('TelegramLinkAsync no empieza por la lectura');
+  if (start < 0) throw new Error('LinkFromUrlAsync no empieza por la lectura');
   return body.slice(start);
 }
 
@@ -97,7 +97,7 @@ describe('ronda AB · Windows lee antes de escribir y niega lo que no puede cump
   it('el despacho pone los dos caminos en la misma ruta', () => {
     expect(service.includes('"link.open" => await TelegramLinkAsync(args),')).toBe(true);
     expect(service.includes('"telegram.link" => await TelegramLinkAsync(args),')).toBe(true);
-    expect(csBody('TelegramLinkAsync')).toContain('return OpenLink(url) ? new { action = "link" }');
+    expect(csBody('LinkFromUrlAsync')).toContain('return OpenLink(url) ? new { action = "link" }');
   });
 
   it('la lectura es `checkChatInvite` y la escritura `importChatInvite`, en ese orden y no al revés', () => {
@@ -111,7 +111,12 @@ describe('ronda AB · Windows lee antes de escribir y niega lo que no puede cump
   it('sin `confirmed` el método sale antes de tocar Telegram', () => {
     const handler = linkHandler();
     const readPreview = handler.indexOf('DesktopInviteLinks.Preview(');
-    expect(handler).toContain('if (!Bool(args, "confirmed"))');
+    // La ronda BR subió la bandera de `args` a un parámetro del embudo, porque la confirmación ya no llega solo de
+    // la pantalla: `message.link` la trae del toque con el que se vuelve a pedir la tarjeta. La regla es la misma y
+    // se comprueba en los dos extremos: la bandera sale siempre de `args` y nada escribe antes del cuadro.
+    expect(handler).toContain('if (!confirmed)');
+    expect(service).toContain('private async Task<object?> TelegramLinkAsync(JsonElement args) => await LinkFromUrlAsync(Str(args, "url"), Bool(args, "confirmed"));');
+    expect(csBody('MessageLinkAsync')).toContain('return await LinkFromUrlAsync(DesktopLinkPreview.Url(web), Bool(args, "confirmed"));');
     expect(readPreview).toBeGreaterThan(0);
     expect(readPreview).toBeLessThan(handler.indexOf('Messages_ImportChatInvite(hash)'));
   });
@@ -205,7 +210,11 @@ describe('ronda AB · la pantalla de Windows pregunta con el nombre que dio Tele
     expect(app).toContain("confirm('Invitación a Telegram'");
     expect(app).toContain("approval?'Solicitar unirme':'Unirme'");
     expect(app).toContain("'telegram.link',{url,confirmed:true}");
-    expect(app).toContain("if(!url)return;");
+    // La ronda BR añade la otra puerta: la tarjeta de un mensaje también sabe que es una invitación, y el host no
+    // le manda la dirección a la pantalla —es la regla de `DesktopLinkPreview`—, así que la hoja no se abre por
+    // `url` sino por el `again` con el que se vuelve a pedir esa fila. Con las dos vacías, el cuadro sigue sin salir.
+    expect(app).toContain("if(!url&&!again)return;");
+    expect(app).toContain("()=>{if(again)again(true);else void run<TelegramLinkResult>('telegram.link',{url,confirmed:true})");
   });
 
   it('las dos preguntas son las mismas frases del cuadro de Android', () => {
@@ -217,7 +226,7 @@ describe('ronda AB · la pantalla de Windows pregunta con el nombre que dio Tele
 
   it('y el resultado del enlace se traduce con el aviso que ya usa el botón del menú', () => {
     expect(app).toContain("case 'membership': setToast(membershipNotice(result.state||'unknown',result.opened===true));return;");
-    expect(app).toContain("function handleTelegramLinkResult(result:TelegramLinkResult|boolean|undefined,url=''){");
+    expect(app).toContain("function handleTelegramLinkResult(result:TelegramLinkResult|boolean|undefined,url='',again?:(confirmed:boolean)=>void){");
     // Lo que Windows entrega al navegador lo dice en pantalla: sin este aviso el cuadro de enlace se
     // quedaría abierto sin explicación, porque el `true` de Android no llegaba a decir nada.
     expect(app).toContain("case 'link': setToast('Enlace abierto en el navegador.');return;");

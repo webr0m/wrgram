@@ -9,6 +9,19 @@ namespace WRGram.Desktop;
 
 public sealed class DesktopBridge
 {
+    /// <summary>
+    /// La única frase que Android deja oír cuando un brazo falla por su cuenta: el <c>catch</c> general del envoltorio
+    /// (<c>NativeBridge.java:154</c>) no distingue causas, y los brazos que lanzan un <c>throw new
+    /// IllegalArgumentException()</c> vacío —sin texto— acaban todos sonando igual delante de la persona. Aquí vive esa
+    /// cadena una sola vez por capa, y la piden por alias los brazos que copian esa forma de negarse.
+    /// <para>
+    /// No es el <c>UserMessage</c> de abajo reescrito: ese sigue diciendo la causa concreta cuando la hay, que es como
+    /// este host se comportaba ya desde la ronda A y de lo que dependen las demás claves. La diferencia de protocolo se
+    /// anota donde se usa, en <see cref="TelegramService.MessageLinkAsync"/>.
+    /// </para>
+    /// </summary>
+    public const string InvalidRequest = "Solicitud no válida o función no disponible.";
+
     private readonly CoreWebView2 _web;
     private readonly Dispatcher _dispatcher;
     private readonly DesktopState _state;

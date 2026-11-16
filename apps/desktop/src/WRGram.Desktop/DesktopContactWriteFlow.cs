@@ -8,7 +8,7 @@ using TL;
 /// las dos en <c>contactAction</c> (<c>NativeBridge.java:1839</c>) desde un mismo <c>case</c> del despacho
 /// (<c>:563</c>). Las claves estaban en la lista del puente (<c>BridgePolicy.java</c>) y la pantalla las pide desde
 /// la ficha de la persona (<c>PeerProfile.tsx:97</c> a través de <c>App.tsx:707</c>); en Windows caían en el
-/// <c>_ =&gt; throw</c> genérico de <c>TelegramService.cs:435</c>, así que el botón de «Añadir a contactos» existía y
+/// <c>_ =&gt; throw</c> genérico de <c>TelegramService.cs:440</c>, así que el botón de «Añadir a contactos» existía y
 /// devolvía la frase del beta. Las reglas, las frases y su orden están en <see cref="DesktopContactWrite"/>; aquí
 /// está el hilo.
 /// <para>

@@ -10,7 +10,7 @@ using WTelegram;
 /// <c>chatUsername</c>, <c>:1870</c>) y <c>chat.username.set</c> (<c>:583</c> → <c>setChatUsername</c>, <c>:1872</c>).
 /// Las reglas y las frases están en <see cref="DesktopChatUsernames"/>; aquí solo está el cable, que era lo que
 /// faltaba: las dos órdenes llevaban desde la ronda A cayendo en el <c>_ =&gt; throw</c> genérico del host
-/// (<c>TelegramService.cs:435</c>, «No disponible en escritorio (beta): chat.username»), mientras las dos peticiones
+/// (<c>TelegramService.cs:440</c>, «No disponible en escritorio (beta): chat.username»), mientras las dos peticiones
 /// de MTProto —<c>channels.getChannels</c> y <c>channels.updateUsername</c>— llevan todo ese tiempo existiendo en la
 /// librería. La pantalla tampoco llegaba: la entrada vive en <c>chatInfo</c> de Android (<c>App.tsx:754</c> y
 /// <c>:1146</c>) y la hoja de opciones de escritorio se corta antes, así que esta ronda añade también el botón, que

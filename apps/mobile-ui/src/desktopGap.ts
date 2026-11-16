@@ -21,7 +21,7 @@
  */
 import { DESKTOP_PENDING } from './desktopScope';
 
-/** La línea `TelegramService.cs:435`, copiada carácter a carácter: `No disponible en escritorio (beta): {method}`. */
+/** La línea `TelegramService.cs:440`, copiada carácter a carácter: `No disponible en escritorio (beta): {method}`. */
 export function desktopGenericRefusal(method: string): string {
   return `No disponible en escritorio (beta): ${method}`;
 }

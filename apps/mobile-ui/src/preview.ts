@@ -294,6 +294,37 @@ function inviteOf(raw: string): { shaped: boolean; hash: string } {
 }
 // Un código bien formado pero sin modelo en esta vista: se lo dice en vez de fingir que se abrió en el navegador.
 const INVITE_UNMODELED = 'La vista de diseño no tiene modelo para ese código de invitación; en Windows lo resuelve messages.checkChatInvite.';
+// La frase con la que Android cierra un brazo que se niega a sí mismo: el envoltorio (`NativeBridge.java:154`) no
+// distingue causas, así que sin fila, con temporizador o sin tarjeta suenan todas igual. Copiada carácter a carácter
+// de `DesktopBridge.InvalidRequest`, que es donde vive en la capa nueva.
+const INVALID_REQUEST = 'Solicitud no válida o función no disponible.';
+// El embudo que en las dos capas comparten `link.open` y `message.link` —`openLinkOrTelegram` de
+// `NativeBridge.java:868` y `LinkFromUrlAsync` del host—: si la forma es de invitación se pregunta antes de escribir,
+// y si no se va al navegador. Está fuera de las dos ramas de abajo para que las dos lo digan una sola vez.
+function openLinkedUrl(url: string, confirmed: boolean) {
+  const link = inviteOf(url);
+  // Sin invitación reconocida el enlace se va al navegador, igual que hacía este host antes de la ronda AB.
+  if (!link.shaped) return { action: 'link' };
+  if (!link.hash) throw new Error(INVITE_BAD_HASH);
+  const invite = inviteFixtures[link.hash];
+  if (!invite) throw new Error(INVITE_UNMODELED);
+  // Las negaciones se dicen antes de escribir: `messages.checkChatInvite` las ve en la lectura.
+  if (invite.refuses) throw new Error(invite.refuses);
+  if (!confirmed) return { action:'invite_preview', title: invite.title || 'este chat', members: invite.members || 0, approval: invite.approval === true };
+  // El host real relee los diálogos después de escribir, y ahí aparece la fila nueva. La bandeja de
+  // diseño tiene su lista fija, así que aquí solo se devuelve lo que Telegram contestó.
+  return { action:'membership', state: invite.state };
+}
+// Las direcciones de las tarjetas del muestrario, guardadas aparte de la fila publicada y no dentro de ella: en el
+// host tampoco viajan a la pantalla (`NativeSnapshot.java:218` escribe cuatro claves y ninguna es la URL) y el botón
+// las pide por el número del mensaje. `ephemeral` es el temporizador de la segunda guarda de `NativeBridge.java:766`;
+// viaja aquí y no en la fila por el mismo motivo que en Windows: el DTO no lo publica, y la fila que lo tiene se queda
+// además sin tarjeta, porque la proyección de Java lo mira antes de escribir las cuatro claves.
+const linkUrls: Record<string, { url: string; ephemeral?: boolean }> = {
+  '201': { url: 'https://wrgram.app' },
+  '206': { url: 'https://t.me/+Abierto92' },
+  '207': { url: 'https://wrgram.app/caduca', ephemeral: true },
+};
 /**
  * El borrado de Windows, modelado en la vista de diseño. En el host decide la clave de la conversación —`u`
  * para uno a uno y bots, `g` para básico, `c` para canal o supergrupo— y aquí decide la forma de la fila, que
@@ -2183,21 +2214,19 @@ export async function designRequest(method: string, params: Record<string, unkno
       successor: recipientFixtures[owned.heir]?.name ?? '',
     } satisfies ChatMembership;
   }
-  if (method === 'telegram.link' || method === 'link.open') {
-    const url = String(params.url || '');
-    const link = inviteOf(url);
-    // Sin invitación reconocida el enlace se va al navegador, igual que hacía este host antes de la ronda AB.
-    if (!link.shaped) return { action: 'link' };
-    if (!link.hash) throw new Error(INVITE_BAD_HASH);
-    const invite = inviteFixtures[link.hash];
-    if (!invite) throw new Error(INVITE_UNMODELED);
-    // Las negaciones se dicen antes de escribir: `messages.checkChatInvite` las ve en la lectura.
-    if (invite.refuses) throw new Error(invite.refuses);
-    if (!params.confirmed) return { action:'invite_preview', title: invite.title || 'este chat', members: invite.members || 0, approval: invite.approval === true };
-    // El host real relee los diálogos después de escribir, y ahí aparece la fila nueva. La bandeja de
-    // diseño tiene su lista fija, así que aquí solo se devuelve lo que Telegram contestó.
-    return { action:'membership', state: invite.state };
+  if (method === 'message.link') {
+    const id = String(params.id);
+    // Las tres guardas, en el orden medido de `NativeBridge.java:766`: la fila del chat abierto, el temporizador y la
+    // tarjeta. En Java son cuatro porque el tipo de contenido y la vista previa se comprueban aparte; aquí es la misma
+    // mirada a la clase del adjunto, que es lo que hace `DesktopLinkPreview.PageOf`.
+    const row = poolOf(state.active).find(item => item.id === id);
+    if (!row) throw new Error(INVALID_REQUEST);
+    const seen = linkUrls[id];
+    if (seen?.ephemeral) throw new Error(INVALID_REQUEST);
+    if (!row.preview) throw new Error(INVALID_REQUEST);
+    return openLinkedUrl(seen?.url ?? '', !!params.confirmed);
   }
+  if (method === 'telegram.link' || method === 'link.open') return openLinkedUrl(String(params.url || ''), !!params.confirmed);
   if (method === 'story.albums.list') return storyAlbums;
   if (method === 'story.albums.create') return { id: 3, name: String(params.name || 'Nuevo álbum') };
   if (method === 'story.albums.rename') return { ...storyAlbums[1], name: String(params.name || storyAlbums[1].name) };
@@ -2769,7 +2798,13 @@ const galleryItems: (Message & { filter: string })[] = [
   { ...galleryBase, id: '204', chatId: '14', filter: 'videos', text: 'Vídeo de presentación', date: serviceSeed - 2400, media: { id: 0, ready: false, kind: 'video', mime: 'video/mp4', name: 'Vídeo de presentación', size: 0, minithumbnail: '/bots/snake.jpg' } },
   { ...galleryBase, id: '203', chatId: '14', filter: 'photos', text: 'Foto del primer boceto', date: Math.floor(new Date(2024, 1, 29, 16).getTime() / 1000), media: { id: 0, ready: false, kind: 'image', mime: 'image/jpeg', name: 'Primer boceto', size: 0, minithumbnail: '/bots/snake.jpg' } },
   { ...galleryBase, id: '202', chatId: '14', filter: 'documents', text: 'Guía del proyecto', date: serviceSeed - 3600, media: { id: 0, ready: false, kind: 'file', mime: 'application/pdf', name: 'Guía del proyecto.pdf', size: 0 } },
-  { ...galleryBase, id: '201', chatId: '14', filter: 'links', text: 'Sitio del proyecto https://wrgram.app', date: serviceSeed - 3700 },
+  { ...galleryBase, id: '201', chatId: '14', filter: 'links', text: 'Sitio del proyecto https://wrgram.app', date: serviceSeed - 3700, preview: { title: 'WRGram — un espacio para construir juntos', site: 'wrgram.app', description: 'Cliente de Telegram propio para Android y Windows: conversaciones, comunidades, complementos y la misma interfaz en las dos casas.', photo: { id: 0, ready: false, kind: 'image' as const, mime: 'image/jpeg', name: 'Vista previa del enlace', size: 0, minithumbnail: '/bots/snake.jpg' } } },
+  // Las otras dos filas son los dos caminos que el botón tiene además del artículo. La de la invitación pregunta antes
+  // de escribir. La del temporizador no lleva `preview` a propósito: `NativeSnapshot.java:218` exige `!temporary` para
+  // pintar la tarjeta, y el host hace lo mismo con `DesktopSenderProfile.IsEphemeral`, así que en las dos capas esa
+  // fila se niega por el temporizador y por la ausencia de tarjeta con la misma frase.
+  { ...galleryBase, id: '206', chatId: '14', filter: 'links', text: 'Entramos por este enlace https://t.me/+Abierto92', date: serviceSeed - 3800, preview: { title: 'Telegram: Únete a un grupo', site: 't.me', description: 'Astronomía en Chile — un espacio para mirar el cielo del sur.' } },
+  { ...galleryBase, id: '207', chatId: '14', filter: 'links', text: 'Apunte que caduca https://wrgram.app/caduca', date: serviceSeed - 3900 },
 ];
 function designPage<T extends { id: string }>(items: T[], cursor: unknown) {
   const start = cursor ? items.findIndex(item => item.id === cursor) + 1 : 0;

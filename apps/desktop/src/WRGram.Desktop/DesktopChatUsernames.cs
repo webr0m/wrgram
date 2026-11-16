@@ -17,7 +17,7 @@ using TL;
 /// <c>deletable</c>=4, <c>expired</c>=8— y es lo que TDLib traduce como <c>Usernames.activeUsernames</c> y
 /// <c>Usernames.editableUsername</c> (<c>TdApi.java:106245-106257</c>). El legado es el campo suelto <c>username</c>,
 /// que solo vale con <c>flags.has_username</c> y que es justamente lo que ya usa este host al construir la fila de la
-/// bandeja (<c>TelegramService.cs:3445</c>, <c>Username = channel.MainUsername</c>). Cuando viene el vector manda el
+/// bandeja (<c>TelegramService.cs:3512</c>, <c>Username = channel.MainUsername</c>). Cuando viene el vector manda el
 /// vector; cuando no viene, no hay otro dato que el campo suelto, y <see cref="Active"/> y <see cref="Editable"/> lo
 /// dicen en lugar de responder un vacío que la pantalla leería como «sin nombre público».
 /// </para>
@@ -125,7 +125,7 @@ public static class DesktopChatUsernames
     /// Los dos campos se mueven siempre juntos, y la medida lo exige: sobre WTelegramClient 4.4.10,
     /// <c>Channel.MainUsername</c> lee el <b>legado</b> (<c>username</c> con <c>has_username</c>) haga lo que haga el
     /// vector, y es ese valor —no el del DTO— el que la bandeja ya usa para la fila
-    /// (<c>TelegramService.cs:3445</c>) y para el rótulo «@nombre» (<c>TelegramService.cs:3485</c>). Actualizar solo el vector dejaría
+    /// (<c>TelegramService.cs:3512</c>) y para el rótulo «@nombre» (<c>TelegramService.cs:3552</c>). Actualizar solo el vector dejaría
     /// la pantalla del chat con el nombre viejo mientras la pregunta de <c>chat.username</c> respondería el nuevo,
     /// que es justo la incoherencia que la ronda AE decidió no dejar nunca más en el andamio.
     /// </remarks>

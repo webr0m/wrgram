@@ -114,7 +114,7 @@ public sealed partial class TelegramService
     /// caché de la librería no se puede reemplazar, así que se vuelve a preguntar a Telegram.
     /// <para>
     /// Lo que la AT no previó es <see cref="DesktopState.ProfilePhoto"/>: se escribe una sola vez al abrir la
-    /// sesión, con la instantánea de <c>client.User</c> (<c>TelegramService.cs:527</c>), y además va cacheado en
+    /// sesión, con la instantánea de <c>client.User</c> (<c>TelegramService.cs:532</c>), y además va cacheado en
     /// disco bajo una clave que no cambia nunca (<c>photo:self:&lt;id&gt;</c> en <c>MediaRegistry.cs:76</c>). Sin
     /// borrar ese archivo, cambiar la foto desde otra parte dejaría en la pantalla la foto vieja para siempre.
     /// </para>

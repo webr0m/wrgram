@@ -363,6 +363,11 @@ public sealed partial class TelegramService : IAsyncDisposable
                 "error.clear" => ClearError(),
                 "app.background" => true,
                 "native.settings" => OpenDataFolder(),
+                // Las tres del enlace, en el orden del puente de Android: `message.link` (`:766`) antes que
+                // `link.open` (`:767`). Las dos primeras acaban en el mismo embudo; la diferencia es de dónde sale la
+                // dirección, y por eso una la trae la pantalla en el argumento y la otra la vuelve a leer en la fila.
+                // Reglas de la tarjeta, en <see cref="DesktopLinkPreview"/>.
+                "message.link" => await MessageLinkAsync(args),
                 "link.open" => await TelegramLinkAsync(args),
                 "telegram.link" => await TelegramLinkAsync(args),
                 "notifications.status" => new { configured = false, enabled = false, permission = false, registered = false, status = "No disponible en escritorio" },
@@ -1015,6 +1020,52 @@ public sealed partial class TelegramService : IAsyncDisposable
     }
 
     /// <summary>
+    /// El brazo de la tarjeta de enlace. Android lo tiene desde siempre (<c>NativeBridge.java:766</c>) y la pantalla
+    /// lo llama con solo el número del mensaje; en Windows caía en el rechazo genérico del despacho porque la fila no
+    /// llegaba a tener dónde mirar: el DTO no publicaba <c>preview</c>, así que el botón «Abrir enlace externo» no se
+    /// pintaba nunca. Desde esta ronda el DTO lo publica <see cref="ConvertMessage"/> y aquí se lee la fila otra vez
+    /// para sacarle la dirección.
+    /// <para>
+    /// La lectura es una petición nueva por clic y no un fallo de diseño, por el mismo motivo que declaró la ronda BP
+    /// en <c>DesktopSenderProfileFlow.cs</c>: este host no conserva las filas crudas, conserva los DTO que pintó, y en
+    /// el DTO no está la dirección —ni puede estar, que es la regla de <see cref="DesktopLinkPreview"/>. La otra
+    /// mitad del motivo es el orden: la guarda de la fila tiene que decirse antes que las demás, igual que en Java,
+    /// donde <c>message(p)</c> (<c>:766</c>) abre el brazo.
+    /// </para>
+    /// <para>
+    /// Tres guardas, en el orden medido en <c>NativeBridge.java:766</c> y todas con la única frase que Android deja
+    /// oír cuando un brazo se niega así (<c>DesktopBridge.InvalidRequest</c>, el envoltorio de <c>NativeBridge.java:154</c>):
+    /// sin fila en la conversación abierta, con temporizador, y sin tarjeta. La cuarta y la quinta guardas de Java
+    /// —«el contenido es texto» y «el texto trae vista previa»— son aquí una sola porque en MTProto el tipo de
+    /// contenido no es un campo aparte: es la clase de <c>media</c>. Y la segunda es el mismo predicado con el que
+    /// <c>ConvertMessage</c> decide pintar la tarjeta, igual que en Android, donde las dos mitades comparten
+    /// <c>MessageExtras.temporary</c>; la guarda se queda aunque la proyección ya la haya hecho, porque el brazo
+    /// vuelve a leer la fila y el temporizador puede haber llegado después.
+    /// </para>
+    /// </summary>
+    private async Task<object?> MessageLinkAsync(JsonElement args)
+    {
+        var client = CollectionClient();
+        // `session.chat(chatId)` de `:766` pasando por `message(p)` (`:351`): sin conversación abierta o sin fila no
+        // hay dirección que abrir, y Android lo dice con la frase del envoltorio, no con la de «conversación no
+        // cargada». La comparación de `message.chatId!=session.activeChat` se cumple por construcción, porque la
+        // petición va dirigida al peer activo.
+        var entry = FindEntry(_active);
+        if (entry == null) throw new BridgeException(DesktopBridge.InvalidRequest);
+        var id = Long(args, "id");
+        var page = await client.GetMessages(entry.Input, new InputMessageID { id = (int)id });
+        var row = DesktopSenderProfile.Row(page.Messages, id);
+        if (row == null) throw new BridgeException(DesktopBridge.InvalidRequest);
+        if (DesktopSenderProfile.IsEphemeral(row)) throw new BridgeException(DesktopBridge.InvalidRequest);
+        var web = DesktopLinkPreview.PageOf(row);
+        if (web == null) throw new BridgeException(DesktopBridge.InvalidRequest);
+        // El mismo embudo de `link.open` (`:767`), con la dirección sacada de la fila y no del argumento.
+        return await LinkFromUrlAsync(DesktopLinkPreview.Url(web), Bool(args, "confirmed"));
+    }
+
+    private async Task<object?> TelegramLinkAsync(JsonElement args) => await LinkFromUrlAsync(Str(args, "url"), Bool(args, "confirmed"));
+
+    /// <summary>
     /// El router de enlaces de Telegram del host. TDLib lo trae hecho —`getInternalLinkType` dice qué forma
     /// es y `joinChatByInviteLink` entra— y por eso Android resuelve cualquier `t.me/…`. En MTProto ese
     /// router no existe: Windows reconoce la única forma que sí puede cumplir aquí, la invitación a una
@@ -1023,13 +1074,12 @@ public sealed partial class TelegramService : IAsyncDisposable
     /// <para>
     /// La invitación se hace en dos tiempos, igual que en Telegram: primero `messages.checkChatInvite`, que
     /// es de lectura y devuelve el nombre y si hace falta aprobación; la pantalla lo confirma con la
-    /// persona; y solo entonces `messages.importChatInvite` escribe el ingreso. Sin el segundo parámetro
-    /// en verdadero nada toca Telegram.
+    /// persona; y solo entonces `messages.importChatInvite` escribe el ingreso. Sin la confirmación por
+    /// delante nada toca Telegram.
     /// </para>
     /// </summary>
-    private async Task<object?> TelegramLinkAsync(JsonElement args)
+    private async Task<object?> LinkFromUrlAsync(string url, bool confirmed)
     {
-        var url = Str(args, "url");
         if (!DesktopInviteLinks.IsInviteLink(url)) return OpenLink(url) ? new { action = "link" } : throw new BridgeException("El navegador no pudo abrir ese enlace.");
         if (_client == null) throw new BridgeException("La cuenta no está conectada.");
         var hash = DesktopInviteLinks.HashOf(url) ?? throw new BridgeException(DesktopInviteLinks.BadLink);
@@ -1048,7 +1098,7 @@ public sealed partial class TelegramService : IAsyncDisposable
         if ((flags & ChatInvite.Flags.has_subscription_pricing) != 0 && (flags & ChatInvite.Flags.can_refulfill_subscription) == 0)
             throw new BridgeException(DesktopInviteLinks.Paid);
         if ((flags & ChatInvite.Flags.has_bot_verification) != 0) throw new BridgeException(DesktopInviteLinks.WebGuard);
-        if (!Bool(args, "confirmed"))
+        if (!confirmed)
             return DesktopInviteLinks.Preview(
                 DesktopInviteLinks.TitleOf(invite.title),
                 invite.participants_count,
@@ -3203,6 +3253,23 @@ public sealed partial class TelegramService : IAsyncDisposable
                         Longitude = visible ? venue.geo!.lon : null,
                         CanOpen = exportable
                     };
+                    break;
+                }
+                case MessageMediaWebPage { webpage: WebPage page }:
+                {
+                    // La tarjeta del enlace, que es el adjunto con el que MTProto dice lo que TDLib guarda dentro del
+                    // texto (`MessageText.linkPreview`, proyectado en `NativeSnapshot.java:218`). No escribe
+                    // `dto.Text`: el texto ya viene arriba, en `message.message`, y la pantalla pinta la tarjeta debajo.
+                    // La foto se registra con la `exportable` de la fila porque Android hace lo mismo con la suya
+                    // cuando el chat está protegido, y sin dirección: ver <see cref="DesktopLinkPreview"/>.
+                    // La guarda de arriba es la misma `!temporary` de esa línea de Java, leída con el espejo que
+                    // BP dejó en `DesktopSenderProfile.IsEphemeral`: una fila con temporizador no pinta tarjeta.
+                    if (!DesktopSenderProfile.IsEphemeral(message))
+                    {
+                        var shot = DesktopLinkPreview.PhotoOf(page);
+                        dto.Preview = DesktopLinkPreview.Card(
+                            page, shot == null ? null : _media.RegisterPhoto(shot, DesktopLinkPreview.PhotoName, exportable: exportable));
+                    }
                     break;
                 }
                 case null:

@@ -171,6 +171,26 @@ public sealed class MessageDto
     /// La encuesta cuando la fila es una. Se pone a null en el resto, que es lo que la pantalla mira para
     /// pintar o no la tarjeta: en Android el campo también es opcional (`contract.ts:135`).
     public PollDto? Poll { get; set; }
+
+    /// La tarjeta del enlace que va en el texto, o `null`. Es la norma no tenerla: solo la trae una fila cuyo
+    /// adjunto es una página que Telegram ya resolvió (`MessageMediaWebPage` con `WebPage`), que es lo que en TDLib
+    /// es `MessageText.linkPreview`. Reglas y recortes, en <see cref="DesktopLinkPreview"/>; y sin `url`, porque
+    /// Android tampoco la publica y el botón la pide por el número del mensaje.
+    public LinkPreviewDto? Preview { get; set; }
+}
+
+/// <summary>
+/// La tarjeta de vista previa tal y como la ve la pantalla. Las cuatro claves copian campo a campo
+/// `preview` de `contract.ts:83` y la escritura de `NativeSnapshot.java:218`, y salen en camelCase por la
+/// política de `DesktopBridge.cs:18`. La quinta clave que Android tiene en mano —la dirección de la página— no
+/// está aquí a propósito: ver <see cref="DesktopLinkPreview"/>.
+/// </summary>
+public sealed class LinkPreviewDto
+{
+    public string Title { get; set; } = "";
+    public string Site { get; set; } = "";
+    public string Description { get; set; } = "";
+    public MediaDto? Photo { get; set; }
 }
 
 /// <summary>

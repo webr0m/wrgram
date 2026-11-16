@@ -373,7 +373,7 @@ function openUserMenu(){setDialog({title:state.name||'Cuenta de Telegram',body:n
 function openTelegramLinkDialog(){
   setDialog({title:'Abrir enlace de Telegram',body:<><p>Abre chats, mensajes, invitaciones, historias y otros enlaces de Telegram dentro de WRGram.</p><TextEntry label="Enlace" placeholder="https://t.me/… o tg://…" maximum={2048} action="Abrir enlace" submit={url=>{void run<TelegramLinkResult>('telegram.link',{url}).then(result=>handleTelegramLinkResult(result,url));}}/></>});
 }
-function handleTelegramLinkResult(result:TelegramLinkResult|boolean|undefined,url=''){
+function handleTelegramLinkResult(result:TelegramLinkResult|boolean|undefined,url='',again?:(confirmed:boolean)=>void){
   if(!result||typeof result!=='object'||!result.action)return;
   setDialog(undefined);
   switch(result.action){
@@ -399,12 +399,12 @@ function handleTelegramLinkResult(result:TelegramLinkResult|boolean|undefined,ur
       break;
     case 'link': setToast('Enlace abierto en el navegador.');return;
     case 'membership': setToast(membershipNotice(result.state||'unknown',result.opened===true));return;
-    // Windows no tiene el cuadro nativo de Android, así que la invitación se enseña antes de escribir y
-    // se vuelve a pedir el enlace con `confirmed`, igual que hace el menú del chat al salir.
+    // Windows no tiene el cuadro nativo de Android, así que la invitación se enseña antes de escribir y se vuelve a
+    // pedir con `confirmed`: con `url`, `telegram.link`; con `again`, la tarjeta de un mensaje por su número.
     case 'invite_preview': {
-      if(!url)return;
+      if(!url&&!again)return;
       const approval=result.approval===true;
-      confirm('Invitación a Telegram',`${result.title||'este chat'}${result.members?` · ${result.members} miembros`:''}. ${approval?'Se enviará una solicitud de ingreso; los administradores deben aprobarla.':'Telegram registrará tu ingreso al confirmar.'}`,approval?'Solicitar unirme':'Unirme',()=>{void run<TelegramLinkResult>('telegram.link',{url,confirmed:true}).then(answer=>handleTelegramLinkResult(answer));});
+      confirm('Invitación a Telegram',`${result.title||'este chat'}${result.members?` · ${result.members} miembros`:''}. ${approval?'Se enviará una solicitud de ingreso; los administradores deben aprobarla.':'Telegram registrará tu ingreso al confirmar.'}`,approval?'Solicitar unirme':'Unirme',()=>{if(again)again(true);else void run<TelegramLinkResult>('telegram.link',{url,confirmed:true}).then(answer=>handleTelegramLinkResult(answer));});
       return;
     }
     default: setToast(result.title?'Abriendo '+result.title+'…':'Enlace de Telegram abierto.');
@@ -631,7 +631,7 @@ function navigate(next:Page){setPage(next);setMenu(false);setPicker(false);setMo
       return openSearchResult({id,chatId:chat.id});
     }}/>});
   }
- function openMessageLink(message:Message){void run<TelegramLinkResult|boolean>('message.link',{id:message.id}).then(handleTelegramLinkResult);}
+ function openMessageLink(message:Message){const ask=(confirmed:boolean)=>run<TelegramLinkResult|boolean>('message.link',{id:message.id,confirmed});void ask(false).then(answer=>handleTelegramLinkResult(answer,'',confirmed=>{void ask(confirmed).then(reply=>handleTelegramLinkResult(reply));}));}
  function refreshPinned(){void run<Message|null>('chat.pinned').then(message=>setPinned(message||undefined));}
  function openPinned(){if(!active)return;setDialog({title:'Mensajes fijados',body:<PinnedList run={run} close={()=>setDialog(undefined)} jump={message=>{setDialog(undefined);openSearchResult(message);}} changed={refreshPinned}/>});}
  function openUrl(url:string){void run<TelegramLinkResult|boolean>('link.open',{url}).then(result=>handleTelegramLinkResult(result,url));}
