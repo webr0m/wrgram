@@ -2,6 +2,7 @@ package cc.webrom.wrgram;
 
 import java.util.LinkedHashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -12,10 +13,11 @@ import org.json.JSONObject;
 /** Real TDLib selectors. Only native-registered results can become a send operation. */
 final class NativeCatalog {
     final TdSession session;final NativeSnapshot dto;
+    private final GiphySource gifs;
     private final LinkedHashMap<String,Selection> selections=new LinkedHashMap<>();
-    static final class Selection { TdApi.InputMessageContent content;long chat,query;int topic;String result;boolean premium; }
-    NativeCatalog(TdSession session,NativeSnapshot dto){this.session=session;this.dto=dto;}
-    void list(String tab,String query,String set,Consumer<JSONObject> success,Consumer<String> failure){
+    static final class Selection { TdApi.InputMessageContent content;long chat,query;int topic;String result;boolean premium;GiphySource.Gif gif; }
+    NativeCatalog(TdSession session,NativeSnapshot dto){this.session=session;this.dto=dto;gifs=new GiphySource(new java.io.File(session.context().getCacheDir(),"gifs"));}
+    void list(String tab,String query,String set,String source,Consumer<JSONObject> success,Consumer<String> failure){
         if(!session.ready()){failure.accept("Conecta tu cuenta para cargar el catálogo real.");return;}
         final long account=session.selfId,chat=session.activeChat;
         final int topic=session.activeTopic;
@@ -38,6 +40,7 @@ final class NativeCatalog {
                 loadStickers(query,set,installed,stickers->stickerResults(stickers,account,chat,topic,packs,success,failure),failure);
             },error->loadStickers(query,set,java.util.Collections.emptySet(),stickers->stickerResults(stickers,account,chat,topic,new JSONArray(),success,failure),failure));
         }else if(tab.equals("gif")){
+            if(source.equals("giphy")){giphy(query,account,chat,topic,success,failure);return;}
             if(query.isEmpty())session.perform(new TdApi.GetSavedAnimations(),value->{if(session.selfId!=account)return;try{JSONArray items=new JSONArray();for(TdApi.Animation animation:value.animations){if(items.length()>=100)break;Selection selection=new Selection();selection.chat=chat;selection.topic=topic;TdApi.InputAnimation input=new TdApi.InputAnimation();input.animation=new TdApi.InputFileId(animation.animation.id);input.width=animation.width;input.height=animation.height;input.duration=animation.duration;selection.content=new TdApi.InputMessageAnimation(input,new TdApi.FormattedText("",new TdApi.TextEntity[0]),false,false);items.put(item(selection,"GIF",dto.animation(animation)));}success.accept(new JSONObject().put("items",items));}catch(Exception ignored){failure.accept("No se pudieron preparar tus GIF.");}},failure);
             else session.perform(new TdApi.GetOption("animation_search_bot_username"),option->{
                 if(!(option instanceof TdApi.OptionValueString)){failure.accept("Telegram no ha configurado un bot de GIF.");return;}
@@ -85,14 +88,49 @@ final class NativeCatalog {
             session.perform(new TdApi.GetStickerSet(id),value->{TdApi.Stickers result=new TdApi.Stickers();result.stickers=value.stickers;stickers.accept(result);},failure);
         }
     }
-    private JSONObject item(Selection selection,String label,JSONObject media)throws Exception{String key=UUID.randomUUID().toString();selections.put(key,selection);while(selections.size()>500)selections.remove(selections.keySet().iterator().next());return new JSONObject().put("key",key).put("label",label).put("media",media);}
+    private void giphy(String query,long account,long chat,int topic,Consumer<JSONObject> success,Consumer<String> failure){
+        gifs.search(query,new GiphySource.Found(){
+            public void ok(List<GiphySource.Gif> found){
+                if(session.selfId!=account)return;
+                try{
+                    JSONArray items=new JSONArray();
+                    for(GiphySource.Gif gif:found){
+                        Selection selection=new Selection();
+                        selection.chat=chat;
+                        selection.topic=topic;
+                        selection.gif=gif;
+                        items.put(new JSONObject().put("key",mint(selection)).put("label","GIF").put("preview",gif.preview));
+                    }
+                    success.accept(new JSONObject().put("items",items));
+                }catch(Exception ignored){failure.accept("No se pudo preparar la búsqueda de Giphy.");}
+            }
+            public void error(String message){failure.accept(message);}
+        });
+    }
+    private JSONObject item(Selection selection,String label,JSONObject media)throws Exception{return new JSONObject().put("key",mint(selection)).put("label",label).put("media",media);}
+    private synchronized String mint(Selection selection){String key=UUID.randomUUID().toString();selections.put(key,selection);while(selections.size()>500)selections.remove(selections.keySet().iterator().next());return key;}
+    private synchronized Selection find(String key){return selections.get(key);}
     void send(String key,long reply,Consumer<Boolean> completed,Consumer<String> failure){
-        Selection selected=selections.get(key);TdApi.Chat chat=session.chat(session.activeChat);
+        Selection selected=find(key);TdApi.Chat chat=session.chat(session.activeChat);
         if(selected==null||selected.chat!=session.activeChat||selected.topic!=session.activeTopic||chat==null||!session.canSend()||!session.canSendExpressions(chat)){failure.accept("Selección caducada o envío no permitido en este chat.");return;}
         if(selected.premium&&!hasPremium()){failure.accept("Este sticker requiere Telegram Premium.");return;}
         if(session.uncertain(session.activeChat)){failure.accept("Comprueba el envío anterior en el historial antes de volver a enviar.");return;}
+        if(selected.gif!=null){
+            gifs.save(selected.gif,new GiphySource.Saved(){
+                public void ok(java.io.File file){
+                    TdApi.InputAnimation input=new TdApi.InputAnimation();
+                    input.animation=new TdApi.InputFileLocal(file.getAbsolutePath());
+                    input.width=selected.gif.width;
+                    input.height=selected.gif.height;
+                    input.duration=selected.gif.duration;
+                    session.sendContent(new TdApi.InputMessageAnimation(input,new TdApi.FormattedText("",new TdApi.TextEntity[0]),false,false),reply,completed);
+                }
+                public void error(String message){failure.accept(message);}
+            });
+            return;
+        }
         if(selected.content!=null)session.sendContent(selected.content,reply,completed);else session.sendInline(selected.query,selected.result,reply,completed);
     }
     private boolean hasPremium(){TdApi.User user=session.user(session.selfId);return user!=null&&user.isPremium;}
-    void clear(){selections.clear();}
+    synchronized void clear(){selections.clear();}
 }

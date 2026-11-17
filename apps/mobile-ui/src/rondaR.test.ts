@@ -93,7 +93,7 @@ describe('ronda L (M01): el borrador se guarda con su respuesta y su formato', (
     expect(app).not.toContain('setReply(');
     expect(app).not.toMatch(/const \[reply,setReply\]=useState<Message>\(\)/);
     for (const site of ['chooseReply(message)', 'consumeReply()', 'chooseReply(undefined)']) expect(app, site).toContain(site);
-    expect(app).toContain('draftTimers.current.clear();drafts.current.clear();draftEmojis.current.clear();draftReplies.current.clear();');
+    expect(app).toContain('draftTimers.current.clear();drafts.current.clear();draftFormats.current.clear();draftReplies.current.clear();');
   });
 
   it('la copia local solo se descarta cuando Telegram confirma las tres partes', () => {

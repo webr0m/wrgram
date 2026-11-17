@@ -46,6 +46,14 @@ Backend WRGram (independiente): catálogo, suscripciones, datos propios opcional
 
 La prueba técnica de ambos motores debe preceder a una inversión grande en pantallas. Compartir lenguaje no significa compartir todas las vistas ni todos los detalles de sincronización.
 
+### El compositor de mensajes: el estado es el cable, no el DOM
+
+Escribir con formato y enviar a Telegram son el mismo problema, así que en el compositor se resuelve una sola vez. El estado del campo es **exactamente** lo que viaja por el puente: una cadena y sus entidades con `offset`/`length` en unidades UTF-16 (`apps/mobile-ui/src/richDraft.ts`), que son las mismas unidades que mide `String.length` y las que devuelven los `Range` del navegador. `RichComposer.tsx` pinta el DOM desde ese modelo y devuelve del DOM **solo el texto**; las marcas se reanclan por diferencia entre la cadena vieja y la nueva, con el caret como desempate. El HTML no es estado en ninguna capa: no se usa `execCommand`, no se lee `innerHTML`, y por eso no hay que descifrar qué quiso decir el navegador con un `<span style="font-weight:bold">` pegado desde otra app.
+
+Cuesta más código y da menos sorpresas. Cuesta: hay que escribir el reanclaje (`applyEdit`), la comparación de forma contra modelo para no repintar sobre un caret vivo, el canal del caret pendiente y el tratamiento del IME, y un `<div contentEditable>` no tiene `::placeholder` ni `field-sizing`, así que el hueco se rellena con `data-empty` y `overflow-y` en el CSS. A cambio, lo que se ve en el campo es lo que Telegram va a renderizar: la misma entidad, el mismo tramo, sin un analizador de markdown compitiendo con un cursor que hay que conservar. Y las dos cosas que más se rompen en un editor de este tipo quedan medibles en el modelo: que aplicar una marca dos veces la quite, y que al teclear `**hola**` desaparezcan los asteriscos dejando `hola` en negrita.
+
+**El alcance es el compositor, y es deliberado.** Editar el texto de un mensaje, editar un pie de foto, la multimedia de pago y publicar con un bot siguen aceptando markdown escrito a mano y pasándolo por `parseFormatting`, porque ahí lo que se teclea es el borrador de un mensaje ya enviado y no hay caret que conservar. La superficie nueva no añade métodos al puente: el contrato ya llevaba `text` y `entities`, así que `BridgePolicy` no creció y la paridad Android/Windows que vigila `architecture.test.ts` se mide igual que antes. El único hueco entre orillas sigue siendo `customEmoji`, que solo tiene brazo en Android; la prueba de la ronda lo afirma contando las apariciones en el host de Windows, no olvidándolo.
+
 ## Complementos
 
 ### Implementado
@@ -80,6 +88,10 @@ Mini Apps, bots inline y bots conectados a cuentas Business son integraciones of
 Fastify expone salud, catálogo y los endpoints de WR IA. La web usa un catálogo empaquetado, por lo que **la demo de mensajería y complementos no necesita el backend para funcionar**. WR IA sí necesita la API y un proveedor configurado. En Cloudflare, el Worker reutiliza Groq desde `@wrgram/ai-providers`; la generación permanece deshabilitada. Ollama sigue en la API local.
 
 En el futuro alojará cuentas del producto, catálogo, suscripciones, webhooks de pago verificados y sincronización opcional de datos propios. No será el proxy universal de las sesiones personales de Telegram.
+
+### Un caso de fuente ajena: los GIF de Giphy
+
+La pestaña de GIF puede alternarse a Giphy sin que el teléfono hable con Giphy. La capa nativa (`GiphySource.java`) pide `https://wrgram.webrom.cc/api/v1/gifs/search`; el Worker pone la clave, pide `rating=pg-13` y devuelve seis claves por GIF con las dos direcciones reescritas bajo su propio origen, de modo que fuera del borde no hay ni host de Giphy ni credencial. Al enviar, la app descarga el archivo a su caché privada y lo entrega a TDLib como `InputFileLocal`: es la única forma que tiene TDLib de aceptar un archivo que no conoce, porque `InputFileRemote` no recibe una URL sino un identificador remoto suyo. Las miniaturas entran al WebView por `img-src` de nuestro dominio y `connect-src` no cambió, así que la página no gana ninguna salida nueva. El estado del despliegue, en [deployment.md](deployment.md).
 
 ## Distribución
 

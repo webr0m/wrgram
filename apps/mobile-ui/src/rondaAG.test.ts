@@ -149,11 +149,14 @@ describe('ronda AG · el espejo dice lo mismo que el puente', () => {
   it('y el menú de Android por fin contesta algo: sin properties, el andamio no abría ni la banda', () => {
     expect(preview).toContain("if (method === 'message.properties') return designProperties(String(params.id), state);");
     expect(preview).toContain('reactions: DESIGN_REACTIONS, paid: false, allowCustom: false,');
-    // Los ocho no son un capricho: `rowSize=8` es lo que el puente pide, y `emojis()` corta en 16.
+    // Los ocho de la banda no son un capricho: `rowSize=8` es lo que el puente pide. Desde la ronda BV el
+    // muestrario del andamio ya no cabe en ocho: dieciséis libres más dos de Premium, que es lo que se ve al
+    // abrir «Ver todas», y la pantalla recorta la banda a los ocho de arriba con `slice(0,8)`.
     expect(java).toContain('reactions.rowSize=8');
-    expect(preview).toMatch(/const DESIGN_REACTIONS = \[[^\]]*\];/);
-    const list = /const DESIGN_REACTIONS = \[([^\]]*)\];/.exec(preview)![1];
-    expect(list.split(',').length).toBe(8);
+    expect(preview).toMatch(/const DESIGN_REACTIONS: ReactionOption\[\] = \[[^\]]*\]/);
+    const list = /const DESIGN_REACTIONS: ReactionOption\[\] = \[([^\]]*)\]/.exec(preview)![1];
+    expect(list.split(',').length).toBe(14);
+    expect(app).toContain('props.reactions.slice(0,8)');
   });
 
   it('y tocar una ficha manda la orden que el puente ya conoce', () => {
@@ -216,8 +219,10 @@ describe('ronda AG · medido con las manos, no con agujas', () => {
     const { fixture } = await import('./preview');
     transport.acceptState({ ...fixture, platform: 'android' });
     // La banda existe y trae fichas: eso es lo que en Windows no se pinta, y es la diferencia que la ronda
-    // AG quería poder señalar con el ratón en las dos capas.
-    expect(await call('message.properties', { id: '101' })).toMatchObject({ reactions: ['👍', '❤️', '🔥', '👏', '🎉', '✅', '👀', '🙏'], paid: false, allowCustom: false });
+    // AG quería poder señalar con el ratón en las dos capas. Desde la BV la lista del chat sigue después de
+    // las ocho de la banda, así que se compara lo que la pantalla pinta sin tocar el «+».
+    const props = await call('message.properties', { id: '101' }) as { reactions: { kind: string; emoji?: string }[]; paid: boolean; allowCustom: boolean };
+    expect({ ...props, reactions: props.reactions.slice(0, 8) }).toMatchObject({ reactions: ['👍', '❤️', '🔥', '👏', '🎉', '✅', '👀', '🙏'].map(emoji => ({ kind: 'emoji', emoji })), paid: false, allowCustom: false });
     await expect(call('message.react', { id: '101', emoji: '👍' })).rejects.toThrow(
       'Vista sintética: esta acción requiere una cuenta real en Android. No se ha enviado nada.',
     );

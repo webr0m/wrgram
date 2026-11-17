@@ -8,9 +8,11 @@ import { MediaView } from './MediaView';
 import './expression-picker.css';
 
 type Tab = 'emoji' | 'gif' | 'sticker';
+type GifSource = 'telegram' | 'giphy';
 const tabs = [
   ['emoji', 'Emojis', Smile], ['gif', 'GIF', Film], ['sticker', 'Stickers', Sticker],
 ] as const;
+const gifSources = [['telegram', 'Telegram'], ['giphy', 'Giphy']] as const;
 const placeholders = {emoji:'Buscar emoji o categoría…',gif:'Buscar GIF en Telegram…',sticker:'Buscar stickers…'};
 const gifSuggestions=[['😂','Risa'],['❤️','Amor'],['👏','Aplausos'],['🥳','Fiesta'],['😮','Sorpresa'],['👋','Hola']] as const;
 
@@ -113,17 +115,24 @@ function PremiumEmojis({query,choose}:{query:string;choose(item:EmojiStatusOptio
   </>;
 }
 
+function TileArt({item,fallback}:{item:CatalogItem;fallback:string}) {
+  return item.preview?<img className="gif-preview" src={item.preview} alt="" loading="lazy" decoding="async"/>:<PackArt media={item.media} emoji={fallback}/>;
+}
+
 export default function ExpressionPicker({ready,premium,canSendMedia,close,selectEmoji,select}:{ready:boolean;premium:boolean;canSendMedia:boolean;close():void;selectEmoji(emoji:string,customId?:string):void;select(item:CatalogItem):void}) {
   const [tab,setTab]=useState<Tab>('emoji');
   const [group,setGroup]=useState(0);
   const [premiumEmoji,setPremiumEmoji]=useState(false);
   const [query,setQuery]=useState('');
   const [setId,setSetId]=useState('');
+  const [gifSource,setGifSource]=useState<GifSource>('telegram');
   const [consent,setConsent]=useState(false);
+  const [giphyConsent,setGiphyConsent]=useState(false);
   const [stickerSets,setStickerSets]=useState<Catalog['sets']>();
   const search=query.trim();
-  const gifNeedsConsent=tab==='gif'&&!!search&&!consent;
-  const catalog=useResults<Catalog>('catalog',{tab,query:search,setId},tab!=='emoji'&&ready&&native&&canSendMedia&&!gifNeedsConsent,search?300:0);
+  const giphy=tab==='gif'&&gifSource==='giphy';
+  const gifNeedsConsent=tab==='gif'&&!!search&&!(giphy?giphyConsent:consent);
+  const catalog=useResults<Catalog>('catalog',{tab,query:search,setId,source:tab==='gif'?gifSource:''},tab!=='emoji'&&ready&&native&&canSendMedia&&!gifNeedsConsent,search?300:0);
   useEffect(()=>{if(tab==='sticker'&&catalog.value?.sets)setStickerSets(catalog.value.sets);},[tab,catalog.value]);
 
   function switchTab(next:Tab) {
@@ -143,7 +152,10 @@ export default function ExpressionPicker({ready,premium,canSendMedia,close,selec
       <div role="tablist" aria-label="Tipo de expresión">{tabs.map(([id,label,Icon])=><button type="button" role="tab" aria-selected={tab===id} className={tab===id?'selected':''} key={id} onClick={()=>switchTab(id)}><Icon size={16}/><span>{label}</span></button>)}</div>
       <button type="button" className="icon-button" aria-label="Cerrar selector" onClick={close}><X size={18}/></button>
     </header>
-    <label className="picker-search"><Search size={16}/><input aria-label={placeholders[tab]} placeholder={placeholders[tab]} value={query} maxLength={tab==='emoji'?64:100} onChange={event=>setQuery(event.target.value)}/>{query&&<button type="button" aria-label="Borrar búsqueda" onClick={()=>setQuery('')}><X size={16}/></button>}</label>
+    <label className="picker-search"><Search size={16}/><input aria-label={placeholders[tab]} placeholder={giphy?'Buscar GIF en Giphy…':placeholders[tab]} value={query} maxLength={tab==='emoji'?64:100} onChange={event=>setQuery(event.target.value)}/>{query&&<button type="button" aria-label="Borrar búsqueda" onClick={()=>setQuery('')}><X size={16}/></button>}</label>
+    {tab==='gif'&&<div className="expression-sections" aria-label="Fuente de GIF">
+      {gifSources.map(([id,label])=><button type="button" key={id} aria-pressed={gifSource===id} onClick={()=>setGifSource(id)}>{label}</button>)}
+    </div>}
     {tab==='emoji'?<>
       <div className="emoji-categories expression-packs" aria-label="Categorías de emojis">
         {premium&&<PackButton title="Emojis Premium" selected={premiumEmoji} onClick={()=>setPremiumEmoji(value=>!value)}><Sparkles size={20}/></PackButton>}
@@ -152,8 +164,8 @@ export default function ExpressionPicker({ready,premium,canSendMedia,close,selec
       {premium&&premiumEmoji
         ? <PremiumEmojis key={search} query={search} choose={item=>selectEmoji(item.emoji||'✨',item.id)}/>
         : unicode.length?<div className="emoji-grid" aria-label={search?'Resultados de emojis':EMOJI_GROUPS[group].name} key={group}>{unicode.map(emoji=><button type="button" key={emoji} aria-label={`Insertar ${emoji}`} onClick={()=>selectEmoji(emoji)}>{emoji}</button>)}</div>:<PickerStatus>No hay emojis que coincidan con la búsqueda.</PickerStatus>}
-    </>:gifNeedsConsent?<div className="picker-empty"><ShieldCheck/><p>La búsqueda envía el término al bot de GIF configurado por Telegram.</p><button type="button" className="secondary" onClick={()=>setConsent(true)}>Permitir búsqueda de GIF</button></div>:<>
-      {tab==='gif'&&canSendMedia&&<div className="sticker-sets expression-packs" aria-label="Colecciones de GIF">
+    </>:gifNeedsConsent?<div className="picker-empty"><ShieldCheck/><p>{giphy?'La búsqueda llega a los servidores de WRGram y de ahí a Giphy con calificación pg-13. Ni tu IP ni tu cuenta de Telegram viajan hasta Giphy.':'La búsqueda envía el término al bot de GIF configurado por Telegram.'}</p><button type="button" className="secondary" onClick={()=>{if(giphy)setGiphyConsent(true);else setConsent(true);}}>{giphy?'Permitir búsqueda en Giphy':'Permitir búsqueda de GIF'}</button></div>:<>
+      {tab==='gif'&&gifSource==='telegram'&&canSendMedia&&<div className="sticker-sets expression-packs" aria-label="Colecciones de GIF">
         <PackButton title="GIF guardados" selected={!search} onClick={()=>setQuery('')}><Bookmark size={20}/></PackButton>
         {gifSuggestions.map(([emoji,label])=><PackButton key={label} title={label} selected={search===label} onClick={()=>setQuery(label)}>{emoji}</PackButton>)}
       </div>}
@@ -163,16 +175,16 @@ export default function ExpressionPicker({ready,premium,canSendMedia,close,selec
         {premium&&<PackButton title="Stickers Premium" selected={!search&&setId==='premium'} onClick={()=>showStickers('premium')}><Sparkles size={20}/></PackButton>}
         {stickerSets?.map(item=><PackButton key={item.id} title={item.title} selected={!search&&setId===item.id} onClick={()=>showStickers(item.id)}><PackArt media={item.thumbnail} emoji={item.emoji||'🖼️'}/></PackButton>)}
       </div>}
-      {catalog.value?.items.length?<div className={`catalog-grid ${tab}`} aria-label={tab==='gif'?(search?'Resultados de GIF':'GIF guardados'):'Stickers disponibles'} key={tab+setId+search}>
+      {catalog.value?.items.length?<div className={`catalog-grid ${tab}`} aria-label={tab==='gif'?(search?(giphy?'Resultados de Giphy':'Resultados de GIF'):(giphy?'GIF destacados de Giphy':'GIF guardados')):'Stickers disponibles'} key={tab+setId+search+gifSource}>
         {catalog.value.items.map((item,index)=>{
           const locked=item.premium&&!premium;
           const label=tab==='gif'?`GIF ${index+1}`:item.label;
           return <button type="button" key={item.key} title={locked?`${label} · Requiere Premium`:label} aria-label={locked?`${label} · Requiere Premium`:label} disabled={locked} onClick={()=>select(item)}>
-            <PackArt media={item.media} emoji={item.emoji||(tab==='gif'?'🎞️':'🙂')}/>
+            <TileArt item={item} fallback={item.emoji||(tab==='gif'?'🎞️':'🙂')}/>
             {item.premium&&<span className="expression-premium" aria-hidden="true"><Sparkles size={12}/></span>}
           </button>;
         })}
-      </div>:<PickerStatus {...catalog}>{!canSendMedia?'Este chat no permite enviar GIF o stickers.':!native?'Conecta tu cuenta en Android para ver tus GIF y stickers.':search?'No hay resultados para esta búsqueda.':tab==='gif'?'Aquí aparecerán tus GIF guardados.':'No hay stickers en esta colección.'}</PickerStatus>}
+      </div>:<PickerStatus {...catalog}>{!canSendMedia?'Este chat no permite enviar GIF o stickers.':!native?'Conecta tu cuenta en Android para ver tus GIF y stickers.':search?'No hay resultados para esta búsqueda.':giphy?'Giphy no devolvió GIF destacados.':'Aquí aparecerán tus GIF guardados.'}</PickerStatus>}
     </>}
   </section>;
 }

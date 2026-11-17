@@ -48,6 +48,21 @@ describe('política pública de Android aprobada', () => {
     expect(policy).toContain('Mini Apps y reproductor de vídeo');
     expect(policy).not.toContain('Limitación conocida de esta versión');
   });
+  it('describe la fuente Giphy de la pestaña de GIF: nuestro proxy, consentimiento y tope de archivo', () => {
+    expect(policy).toContain('<strong>GIF de Giphy.</strong>');
+    expect(policy).toContain('El término de búsqueda viaja por HTTPS hasta <code>wrgram.webrom.cc</code>');
+    expect(policy).toContain('calificación pg-13');
+    expect(policy).toContain('la IP del teléfono y tu cuenta de Telegram no llegan a Giphy');
+    expect(policy).toContain('requiere un consentimiento explícito en pantalla la primera vez que se busca');
+    expect(policy).toContain('no funciona si el servidor no tiene configurada la clave de Giphy');
+    expect(policy).toContain('El límite por descarga es 12 MB.');
+    expect(policy).toContain('la app descarga el GIF a su almacenamiento privado y lo sube a Telegram');
+    // La fuente vieja sigue descrita con sus palabras de siempre: Giphy se suma, no sustituye.
+    expect(policy).toContain('Buscar GIF en línea transmite el término al bot de GIF configurado por Telegram.');
+    // Y el único enlace saliente son las condiciones y la política de Giphy, sin scripts ni formularios.
+    expect(policy.split('href="https://giphy.com').length - 1).toBe(2);
+    expect(policy).not.toMatch(/giphy\.com\/(?!terms|privacy)/);
+  });
   it('cubre el transporte nuevo de la Bot API: host directo, token local y guarda previa', () => {
     expect(policy).toContain('Bot API de Telegram');
     expect(policy).toContain('api.telegram.org');

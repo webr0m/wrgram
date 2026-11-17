@@ -286,7 +286,7 @@ public sealed class PollVoterDto
 /// <para>
 /// Falta el quinto campo de Android, <c>photo</c>, y falta a propósito: la orden de TDLib ya traía las miniaturas
 /// descargadas y esta capa tendría que pedir cada una por su cuenta para una lista de hasta 50 personas. La
-/// pantalla tiene respaldo con iniciales (<c>ContactAvatar</c>, <c>App.tsx:92</c>), así que lo que se pierde es un
+/// pantalla tiene respaldo con iniciales (<c>ContactAvatar</c>, <c>App.tsx:93</c>), así que lo que se pierde es un
 /// retrato y no información.
 /// </para>
 /// </summary>

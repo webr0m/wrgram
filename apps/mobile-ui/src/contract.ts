@@ -205,15 +205,16 @@ export interface ContactSync {enabled:boolean;running:boolean;last:number;matche
 export interface State { contactsSync?: ContactSync; authEmailPattern?: string; authCodeLength?: number; authHint?: string; authRecoveryAvailable?: boolean; authRecoveryPattern?: string; authTerms?: string; authMinAge?: number }
 export interface State { voiceAutoStopped?: boolean }
 export interface State { ready: boolean; auth: string; consent: boolean; busy: boolean; connection: string; online: boolean; error: string; notice: string; version: string; selfId: string; name: string; active: string; canSend: boolean; sending: boolean; uncertain: boolean; chatsBusy: boolean; chatsEnd?:boolean; chats: Chat[]; messages: Message[]; folders: { id: number; title: string }[]; history: { loading: boolean; initialRetry?:boolean; error: string; end: boolean; latest: boolean; anchor?:string }; typing: string; appearance: { theme: string; font: number; compact: boolean; typing: boolean; enter: boolean; fontFamily: string; wallpaper: string; auto?: boolean; custom?: CustomTheme; customThemes?: CustomTheme[]; chatThemes?: Record<string, string>; gestures?: { left:string; right:string }; navigation?: 'bar'|'side'; systemDark?: boolean }; permissions: { notes: boolean; replies: boolean }; security: SecurityStatus; assistant: { state: string; ready: boolean; busy: boolean; consent: boolean; error: string; turns: { role: string; content: string }[] }; platform?: 'android' | 'web' | 'desktop' }
-export interface CatalogItem { key: string; label: string; media?: Media; emoji?:string; premium?:boolean }
+export interface CatalogItem { key: string; label: string; media?: Media; preview?: string; emoji?:string; premium?:boolean }
 export interface Catalog { items: CatalogItem[]; sets?: { id: string; title: string; thumbnail?:Media; emoji?:string }[] }
-export interface Properties { reply: boolean; copy: boolean; copyContent: boolean; edit: boolean; editChecklist: boolean; deleteSelf: boolean; deleteAll: boolean; forward: boolean; pin: boolean; editCaption: boolean; caption: string; reactions: string[]; paid?: boolean; allowCustom?: boolean; transcribe?: boolean; canBePaid?: boolean }
+export interface Properties { reply: boolean; copy: boolean; copyContent: boolean; edit: boolean; editChecklist: boolean; deleteSelf: boolean; deleteAll: boolean; forward: boolean; pin: boolean; editCaption: boolean; caption: string; reactions: ReactionOption[]; paid?: boolean; allowCustom?: boolean; transcribe?: boolean; canBePaid?: boolean }
 export interface PasswordState { hasPassword: boolean; hint: string; hasRecoveryEmail: boolean; hasPassport: boolean; pendingReset: number; recoveryEmailPattern?:string; recoveryCodeLength?:number }
 export interface AutoDeleteSettings { seconds:number; canChange:boolean }
 export interface PrivacySetting { key: string; value: string; allowUsers: string[]; restrictUsers: string[]; preserved?: string[] }
 export interface BlockedSender { kind:'user'|'chat'; id:string; name:string; photo?:Media }
 export interface BlockedSenders { items:BlockedSender[]; total:number; nextOffset:number; hasMore:boolean }
-export interface StoryReactionOption { kind: 'emoji' | 'custom'; emoji?: string; customEmojiId?: string; needsPremium?: boolean }
+export interface ReactionOption { kind: 'emoji' | 'custom'; emoji?: string; customEmojiId?: string; needsPremium?: boolean }
+export type StoryReactionOption = ReactionOption;
 export interface StoryReactions { top: StoryReactionOption[]; recent: StoryReactionOption[]; allowCustom: boolean; restriction?: string }
 export interface StoryInteraction { name: string; date: number; type: 'view' | 'forward' | 'repost'; emoji?: string; customEmojiId?: string }
 export interface StoryInteractions { total: number; forwards: number; reactions: number; next: string; items: StoryInteraction[] }

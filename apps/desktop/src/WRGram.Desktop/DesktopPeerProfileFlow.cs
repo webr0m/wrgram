@@ -11,7 +11,7 @@ using WTelegram;
 /// El cable de la ficha de perfil: <c>chat.profile</c>, <c>profile.related</c>, <c>profile.peer</c> y
 /// <c>profile.contact</c>. Las reglas y las frases están en <see cref="DesktopPeerProfile"/>; aquí solo se pide, se
 /// funda la caché de personas y se responde con las claves que la pantalla lee
-/// (<c>PeerProfile.tsx:52</c>, <c>:141</c> y <c>App.tsx:729</c>).
+/// (<c>PeerProfile.tsx:52</c>, <c>:141</c> y <c>App.tsx:739</c>).
 /// <para>
 /// Hasta esta ronda las cuatro caían en el <c>_ =&gt; throw</c> genérico del host, y la consecuencia se veía en
 /// pantalla: la ficha de una persona no se abría desde Windows y la pestaña «Miembros»/«En común» —que Android sí

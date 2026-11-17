@@ -814,7 +814,7 @@ final class NativeBridge implements TdSession.Listener {
             case "message.retry":retryUnsent(p,a);break;
             case "message.unsent.delete":deleteUnsent(p,a);break;
             case "message.pin":if(p.has("value")&&!p.getBoolean("value"))unpin(BridgePolicy.id(p,"id"),a);else messageAction(method,p,a);break;
-            case "catalog":catalog.list(BridgePolicy.text(p,"tab",10),BridgePolicy.text(p,"query",100),BridgePolicy.text(p,"setId",40),a::ok,a::fail);break;
+            case "catalog":catalog.list(BridgePolicy.text(p,"tab",10),BridgePolicy.text(p,"query",100),BridgePolicy.text(p,"setId",40),BridgePolicy.text(p,"source",20),a::ok,a::fail);break;
             case "send.catalog":catalog.send(BridgePolicy.text(p,"key",80),BridgePolicy.id(p,"reply"),a::ok,a::fail);break;
             case "media.load":requireAccount();media.load(p.getInt("id"),value->{schedule();a.ok(value);},failure->{schedule();a.fail(failure);});break;
             case "media.open":openDownloadedMedia(p.getInt("id"),a);break;
@@ -823,7 +823,7 @@ final class NativeBridge implements TdSession.Listener {
             case "media.play":playDownloadedMedia(p,a);break;
             case "media.retry":requireAccount();JSONArray failedMedia=media.failedIds();int retriedMedia=0;for(int i=0;i<failedMedia.length();i++){int mediaId=failedMedia.getInt(i);media.load(mediaId,ignored->{},ignored->{});retriedMedia++;}schedule();a.ok(retriedMedia);break;
             case "media.export":requireAccount();if(exporting!=null)throw new IllegalArgumentException();if(media.protectedFile(p.getInt("id"))){a.fail("Telegram protege este contenido. No se puede guardar fuera del chat.");break;}exportFile=media.exportFile(p.getInt("id"));if(exportFile==null){a.fail("Descarga primero el archivo.");break;}exporting=a;activity.export.launch(exportFile.getName());break;
-            case "attachment.pick":requireAccount();if(picking!=null)throw new IllegalArgumentException();clearUnsent();picking=a;try{activity.picker.launch(new String[]{"*/*"});}catch(RuntimeException error){picking=null;throw new IllegalArgumentException("No hay un selector de archivos disponible.");}break;
+            case "attachment.pick":requireAccount();if(picking!=null)throw new IllegalArgumentException();clearUnsent();picking=a;try{activity.picker.launch("gif".equals(p.optString("kind"))?new String[]{"image/gif"}:new String[]{"*/*"});}catch(RuntimeException error){picking=null;throw new IllegalArgumentException("No hay un selector de archivos disponible.");}break;
             case "attachment.camera":requireAccount();if(picking!=null)throw new IllegalArgumentException();clearUnsent();picking=a;if(!activity.capturePhoto()){picking=null;throw new IllegalArgumentException("No hay una aplicación de cámara disponible.");}break;
             case "attachment.discard":{Attachment item=attachments.remove(BridgePolicy.text(p,"token",80));if(item!=null)Files.deleteIfExists(item.path.toPath());a.ok(true);break;}
             case "send.attachment":sendAttachment(p,a);break;
@@ -4307,12 +4307,12 @@ final class NativeBridge implements TdSession.Listener {
             JSONObject result=object("reply",props.canBeReplied,"copy",props.canBeCopied&&message.content instanceof TdApi.MessageText&&message.selfDestructType==null&&message.ephemeralContent==null,"copyContent",props.canBeCopied,"edit",props.canBeEdited&&message.content instanceof TdApi.MessageText,"editChecklist",props.canBeEdited&&message.content instanceof TdApi.MessageChecklist,"deleteSelf",props.canBeDeletedOnlyForSelf||props.canBeDeletedForAllUsers,"deleteAll",props.canBeDeletedForAllUsers,"forward",props.canBeForwarded,"pin",props.canBePinned,"editCaption",props.canBeEdited&&hasCaption(message),"caption",dto.caption(message),"canBePaid",props.canBePaid,"transcribe",props.canRecognizeSpeech&&(message.content instanceof TdApi.MessageVoiceNote||message.content instanceof TdApi.MessageVideoNote));
             TdApi.GetMessageAvailableReactions reactions=new TdApi.GetMessageAvailableReactions();reactions.chatId=message.chatId;reactions.messageId=message.id;reactions.rowSize=8;
             try{result.put("report",props.canReportChat);}catch(Exception invalid){a.fail("No se pudieron leer los permisos de denuncia.");return;}
-            session.perform(reactions,value->{try{result.put("reactions",emojis(value));result.put("paid",hasPaidReaction(value));result.put("allowCustom",value.allowCustomEmoji);a.ok(result);}catch(Exception ignored){a.fail("No se pudieron preparar las reacciones.");}},failure->{try{result.put("reactions",new JSONArray());a.ok(result);}catch(Exception ignored){a.fail("No se pudo preparar el menú.");}});
+            session.perform(reactions,value->{try{result.put("reactions",reactionOptions(value));result.put("paid",hasPaidReaction(value));result.put("allowCustom",value.allowCustomEmoji);a.ok(result);}catch(Exception ignored){a.fail("No se pudieron preparar las reacciones.");}},failure->{try{result.put("reactions",new JSONArray());a.ok(result);}catch(Exception ignored){a.fail("No se pudo preparar el menú.");}});
         });
     }
     private static boolean hasPaidReaction(TdApi.AvailableReactions available){for(TdApi.AvailableReaction[] group:new TdApi.AvailableReaction[][]{available.topReactions,available.recentReactions,available.popularReactions})if(group!=null)for(TdApi.AvailableReaction reaction:group)if(reaction.type instanceof TdApi.ReactionTypePaid)return true;return false;}
-    private JSONArray emojis(TdApi.AvailableReactions available){JSONArray result=new JSONArray();Set<String> seen=new HashSet<>();for(TdApi.AvailableReaction[] group:new TdApi.AvailableReaction[][]{available.topReactions,available.recentReactions,available.popularReactions})if(group!=null)for(TdApi.AvailableReaction reaction:group)if(!reaction.needsPremium&&reaction.type instanceof TdApi.ReactionTypeEmoji){String emoji=((TdApi.ReactionTypeEmoji)reaction.type).emoji;if(seen.add(emoji)&&result.length()<16)result.put(emoji);}return result;}
-    private void react(JSONObject p,Answer a){TdApi.Message message=message(p);String emoji=BridgePolicy.text(p,"emoji",32).trim();if(emoji.isEmpty())throw new IllegalArgumentException("Elige un emoji para reaccionar.");TdApi.ReactionTypeEmoji reaction=new TdApi.ReactionTypeEmoji(emoji);if(p.optBoolean("remove"))perform(new TdApi.RemoveMessageReaction(message.chatId,message.id,reaction),a,value->a.ok(true));else perform(new TdApi.AddMessageReaction(message.chatId,message.id,reaction,false,true),a,value->a.ok(true));}
+    private JSONArray reactionOptions(TdApi.AvailableReactions available)throws Exception{JSONArray result=new JSONArray();Set<String> seen=new HashSet<>();for(TdApi.AvailableReaction[] group:new TdApi.AvailableReaction[][]{available.topReactions,available.recentReactions,available.popularReactions})if(group!=null)for(TdApi.AvailableReaction reaction:group){if(reaction==null)continue;JSONObject item=reactionDto(reaction.type);if(item==null)continue;if(!seen.add(item.optString("emoji")+item.optString("customEmojiId")))continue;item.put("needsPremium",reaction.needsPremium);result.put(item);}return result;}
+    private void react(JSONObject p,Answer a){TdApi.Message message=message(p);String emoji=BridgePolicy.text(p,"emoji",32).trim();if(emoji.isEmpty())throw new IllegalArgumentException("Elige un emoji para reaccionar.");TdApi.ReactionTypeEmoji reaction=new TdApi.ReactionTypeEmoji(emoji);if(p.optBoolean("remove")){perform(new TdApi.RemoveMessageReaction(message.chatId,message.id,reaction),a,value->a.ok(true));return;}reactOffered(message,reaction,a);}
     private void reactPaid(JSONObject p,Answer a)throws Exception{TdApi.Message message=message(p);long count=BridgePolicy.id(p,"count");long ownerId=session.selfId;if(count<1||count>100000)throw new IllegalArgumentException("Cantidad de Stars no válida.");perform(new TdApi.GetOption("paid_reaction_star_count_max"),a,option->{long max=option instanceof TdApi.OptionValueInteger?((TdApi.OptionValueInteger)option).value:100;if(count>max){a.fail("Telegram permite hasta "+max+" Stars por reacción.");return;}Dialogs.builder(activity).setTitle("Reacción de pago").setMessage("Se usarán "+count+" Stars de tu saldo de Telegram para reaccionar a este mensaje. El cargo lo procesa Telegram y no se puede deshacer.").setNegativeButton("Cancelar",(d,w)->a.ok(false)).setPositiveButton("Enviar "+count+" ⭐",(d,w)->{
             if(!currentAccount()||session.selfId!=ownerId){a.fail("La cuenta cambió. No se gastaron Stars.");return;}
             perform(new TdApi.AddPendingPaidMessageReaction(message.chatId,message.id,count,null),a,ok->perform(new TdApi.CommitPendingPaidMessageReactions(message.chatId,message.id),a,ignored->{schedule();a.ok(true);}));
@@ -4782,7 +4782,7 @@ final class NativeBridge implements TdSession.Listener {
         if(item.voice){if(permissions!=null&&!permissions.canSendVoiceNotes)throw new IllegalArgumentException("Este chat no permite notas de voz.");content=new TdApi.InputMessageVoiceNote(new TdApi.InputVoiceNote(new TdApi.InputFileLocal(item.path.getPath()),item.voiceDuration,item.waveform),new TdApi.FormattedText("",new TdApi.TextEntity[0]),null);}
         else if(item.videoNote){if(permissions!=null&&!permissions.canSendVideoNotes)throw new IllegalArgumentException("Este chat no permite videomensajes.");content=new TdApi.InputMessageVideoNote(new TdApi.InputVideoNote(new TdApi.InputFileLocal(item.path.getPath()),null,item.voiceDuration,item.videoLength),null);}
         else if(item.mime!=null&&(item.mime.equals("image/jpeg")||item.mime.equals("image/png")||item.mime.equals("image/webp"))){if(permissions!=null&&!permissions.canSendPhotos)throw new IllegalArgumentException();content=photoContent(item);}
-        else {if(permissions!=null&&!permissions.canSendDocuments)throw new IllegalArgumentException();TdApi.InputDocument document=new TdApi.InputDocument();document.document=new TdApi.InputFileLocal(item.path.getPath());content=new TdApi.InputMessageDocument(document,new TdApi.FormattedText("",new TdApi.TextEntity[0]));}
+        else if("image/gif".equals(item.mime)){if(permissions!=null&&!permissions.canSendOtherMessages)throw new IllegalArgumentException("Este chat no permite enviar GIF o stickers.");content=animationContent(item);}else{if(permissions!=null&&!permissions.canSendDocuments)throw new IllegalArgumentException();TdApi.InputDocument document=new TdApi.InputDocument();document.document=new TdApi.InputFileLocal(item.path.getPath());content=new TdApi.InputMessageDocument(document,new TdApi.FormattedText("",new TdApi.TextEntity[0]));}
         session.sendContent(content,BridgePolicy.id(p,"reply"),p.optBoolean("silent"),sent->{if(sent){attachments.remove(token);try{Files.deleteIfExists(item.path.toPath());}catch(Exception ignored){}}a.ok(sent);});
     }
     private void sendAlbum(JSONObject p,Answer a)throws Exception{requireAccount();JSONArray values=p.getJSONArray("tokens");if(values.length()<2||values.length()>10)throw new IllegalArgumentException("Elige entre 2 y 10 fotos.");if(session.uncertain(session.activeChat)){a.fail("Revisa el envío anterior en el historial antes de enviar un álbum.");return;}TdApi.ChatPermissions permissions=session.chat(session.activeChat).permissions;if(permissions!=null&&!permissions.canSendPhotos)throw new IllegalArgumentException();ArrayList<Attachment> items=new ArrayList<>();ArrayList<TdApi.InputMessageContent> contents=new ArrayList<>();
@@ -4973,4 +4973,61 @@ final class NativeBridge implements TdSession.Listener {
     private void clearUnsent(){for(Attachment item:attachments.values())try{Files.deleteIfExists(item.path.toPath());}catch(Exception ignored){}attachments.clear();}
     WebResourceResponse mediaResponse(String path){return mediaResponse(path,null);}
     WebResourceResponse mediaResponse(String path,String range){return currentAccount()&&((WrgramApplication)activity.getApplication()).ageAccess().allowed()?media.response(path,range):ShellActivity.blocked();}
+    /**
+     * Un GIF que ya está en el teléfono sale por el cable como animación, la misma vía que el GIF del catálogo.
+     * Por la de documento Telegram lo guarda como archivo y no lo reproduce dentro de la burbuja.
+     * Las medidas las pide TDLib antes de subir; un `.gif` no es un contenedor de vídeo, así que lo que no se
+     * saca del contenedor se lee del primer fotograma y la duración queda a cero, que es lo que el servidor lee
+     * como «recalculala tú».
+     */
+    private TdApi.InputMessageContent animationContent(Attachment item){
+        TdApi.InputAnimation animation=new TdApi.InputAnimation();
+        animation.animation=new TdApi.InputFileLocal(item.path.getPath());
+        int[] box=animationBox(item.path.getPath());
+        animation.width=box[0];animation.height=box[1];animation.duration=box[2];
+        return new TdApi.InputMessageAnimation(animation,new TdApi.FormattedText("",new TdApi.TextEntity[0]),false,false);
+    }
+    /** Ancho, alto y segundos: primero el contenedor, después el mapa de bits. Cero lo que no se puede medir. */
+    private static int[] animationBox(String path){
+        int width=0,height=0,duration=0;
+        android.media.MediaMetadataRetriever probe=new android.media.MediaMetadataRetriever();
+        try{
+            probe.setDataSource(path);
+            width=Integer.parseInt(zero(probe.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)));
+            height=Integer.parseInt(zero(probe.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)));
+            duration=(int)Math.round(Integer.parseInt(zero(probe.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)))/1000.0);
+        }catch(Exception ignored){width=0;height=0;duration=0;}
+        finally{try{probe.release();}catch(Exception ignored){}}
+        if(width<=0||height<=0){
+            BitmapFactory.Options bounds=new BitmapFactory.Options();bounds.inJustDecodeBounds=true;
+            BitmapFactory.decodeFile(path,bounds);
+            if(bounds.outWidth>0&&bounds.outHeight>0){width=bounds.outWidth;height=bounds.outHeight;}
+        }
+        return new int[]{width,height,duration};
+    }
+    private static String zero(String value){return value==null||value.isEmpty()?"0":value;}
+    /**
+     * Antes de añadir se pregunta a Telegram qué reacciones admite este mensaje. Una pantalla abierta hace rato,
+     * un emoji escrito a mano o una reacción que el chat retiró mientras se elegía se responden con una frase;
+     * si la consulta falla se envía igual, porque quien tiene que negar la reacción es el servidor.
+     */
+    private void reactOffered(TdApi.Message message,TdApi.ReactionTypeEmoji reaction,Answer a){
+        TdApi.GetMessageAvailableReactions query=new TdApi.GetMessageAvailableReactions();query.chatId=message.chatId;query.messageId=message.id;query.rowSize=8;
+        session.perform(query,available->{
+            int offered=offeredReaction(available,reaction.emoji);
+            if(offered==0){a.fail("Telegram no ofrece esa reacción en este chat.");return;}
+            if(offered==1){sendReaction(message,reaction,a);return;}
+            perform(new TdApi.GetUser(session.selfId),a,user->{if(!user.isPremium){a.fail("Esa reacción necesita Telegram Premium.");return;}sendReaction(message,reaction,a);});
+        },failure->sendReaction(message,reaction,a));
+    }
+    /** Cero si Telegram no la ofrece, uno si es libre y dos si solo la admite una cuenta con Premium. */
+    private static int offeredReaction(TdApi.AvailableReactions available,String emoji){
+        for(TdApi.AvailableReaction[] group:new TdApi.AvailableReaction[][]{available.topReactions,available.recentReactions,available.popularReactions})if(group!=null)for(TdApi.AvailableReaction reaction:group){
+            if(reaction==null||!(reaction.type instanceof TdApi.ReactionTypeEmoji))continue;
+            if(!((TdApi.ReactionTypeEmoji)reaction.type).emoji.equals(emoji))continue;
+            return reaction.needsPremium?2:1;
+        }
+        return 0;
+    }
+    private void sendReaction(TdApi.Message message,TdApi.ReactionType reaction,Answer a){perform(new TdApi.AddMessageReaction(message.chatId,message.id,reaction,false,true),a,value->a.ok(true));}
 }

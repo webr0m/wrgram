@@ -1,4 +1,4 @@
-import { EMPTY, type AddResult, type BlockedSender, type Chat, type ChatMembership, type Contact, type ForumTopicInfo, type GlobalSearch, type GroupAdminRights, type GroupMember, type GroupPermissions, type InviteLink, type JoinRequest, type Media, type Message, type Poll, type RosterMember, type SafetyNotice, type SafetySignal, type SavedFilter, type ScopePatch, type ScopeSettings, type State, type StoryAlbum, type TextEntity } from './contract';
+import { EMPTY, type AddResult, type BlockedSender, type Chat, type ChatMembership, type Contact, type ForumTopicInfo, type GlobalSearch, type GroupAdminRights, type GroupMember, type GroupPermissions, type InviteLink, type JoinRequest, type Media, type Message, type Poll, type ReactionOption, type RosterMember, type SafetyNotice, type SafetySignal, type SavedFilter, type ScopePatch, type ScopeSettings, type State, type StoryAlbum, type TextEntity } from './contract';
 import { acceptState, snapshot } from './bridge';
 import { normalizeSearch } from './inboxModel';
 import { CHAT_SENDER, REJECTIONS, hasBand, problem } from './messageSearch';
@@ -128,7 +128,7 @@ function applyChatUsername(entry:ChatUsernameFixture, username:string) {
  * en la tabla se arranca en cero, igual que un chat recién creado.
  *
  * Los chats secretos no tienen fila aquí, y no hace falta: la pantalla no abre el ajuste sobre uno en ninguna de las
- * dos capas (`App.tsx:878` y `:916`), así que las dos frases con las que Android los niega (`:1343` y `:1367`) no
+ * dos capas (`App.tsx:886` y `:916`), así que las dos frases con las que Android los niega (`:1343` y `:1367`) no
  * tienen por dónde alcanzarse. Es el mismo motivo por el que la ronda AN dejó fuera del andamio la de las encuestas.
  */
 const autoDeleteFixtures: Record<string, number> = { '12': AUTO_DELETE_DAY, '14': 7 * AUTO_DELETE_DAY, '18': 30 * AUTO_DELETE_DAY };
@@ -369,12 +369,12 @@ function desktopProperties(id: string, state: State) {
   };
 }
 /**
- * Las ocho fichas que el andamio ofrece en la banda de Android. `rowSize=8` es lo que `NativeBridge.java`
- * pide a `GetMessageAvailableReactions`, y el tope de `emojis()` son 16; aquí no se transcribe la lista de
- * Telegram —esa la decide la cuenta real—, se pinta un muestrario del mismo tamaño para que la banda exista
- * con el ratón. Lo importante es el contraste: en Windows esta banda no se pinta y arriba está la razón.
+ * Las dieciséis fichas que el andamio ofrece para reaccionar en Android. `rowSize=8` es lo que `NativeBridge.java`
+ * pide a `GetMessageAvailableReactions`, y esa es la banda; «Ver todas» muestra el resto del muestrario, que desde
+ * la ronda BV viaja con su `kind` y su marca de Premium igual que lo devuelve TDLib. Aquí no se transcribe la lista
+ * de Telegram —esa la decide la cuenta real—; en Windows la banda no se pinta y más arriba está la razón.
  */
-const DESIGN_REACTIONS = ['👍', '❤️', '🔥', '👏', '🎉', '✅', '👀', '🙏'];
+const DESIGN_REACTIONS: ReactionOption[] = ['👍', '❤️', '🔥', '👏', '🎉', '✅', '👀', '🙏', '🤔', '🤯', '😍', '😂', '😢', '🙌'].map<ReactionOption>(emoji => ({ kind: 'emoji', emoji })).concat([{ kind: 'emoji', emoji: '🫶', needsPremium: true }, { kind: 'custom', customEmojiId: '544028896108879570', needsPremium: true }]);
 /**
  * Lo que responde el puente de Android, que en un teléfono real sale de `GetMessageProperties` y de
  * `GetMessageAvailableReactions` y no de estas líneas. Hasta la ronda AG el espejo no contestaba fuera de
@@ -774,7 +774,12 @@ let desktopAttachSeq = 0;
  * `null` y la pantalla no abre la confirmación.
  */
 function desktopAttachmentPick(params: Record<string, unknown>, state: State) {
-  const raw = typeof params.name === 'string' ? params.name : 'Informe mensual de la barra.pdf';
+  // `kind` llegó con la ronda BU: en Windows el diálogo se filtra por GIF y en Android el selector recibe
+  // `image/gif`, así que un nombre que no lo es no lo habría devuelto el selector. Se descarta y se usa el
+  // sustituto de la fila, que es lo que la persona vería en el diálogo real.
+  const gif = String(params.kind ?? '') === 'gif';
+  const named = typeof params.name === 'string' && (!gif || params.name.toLowerCase().endsWith('.gif'));
+  const raw = named ? String(params.name) : (gif ? 'Animacion de la barra.gif' : 'Informe mensual de la barra.pdf');
   const size = Number(params.size ?? 512 * 1024);
   // El nombre se sana antes de mirar el tamaño, que es el orden del puente: la copia se hace con el nombre ya
   // decidido y el tope se comprueba mientras se escribe, no después.
@@ -1158,7 +1163,7 @@ const CONTACT_WRITE_REFUSALS = {
  * son: tres guardas y un cambio de marca. El orden es el del brazo de Windows, que a su vez es el de Java —la
  * conversación cargada, la forma del chat, la persona con su bot y su cuenta propia— y detrás los dos «no hace nada»
  * que la pantalla ya sabe leer: quitar a quien no está y añadir a quien ya está devuelven `false` sin tocar el
- * estado, y `App.tsx:735` no repinta la ficha con un `false`. El cuadro de confirmar no está aquí porque el andamio
+ * estado, y `App.tsx:745` no repinta la ficha con un `false`. El cuadro de confirmar no está aquí porque el andamio
  * no abre ventanas, igual que `designUnblockSender` declaró lo mismo para el desbloqueo: cancelar responde `false`,
  * así que la vista queda idéntica al camino corto.
  */
@@ -1959,7 +1964,7 @@ export async function designRequest(method: string, params: Record<string, unkno
   if (method === 'message.location.open' && state.platform === 'desktop') return desktopOpenLocation(params, state);
   // Las tres escrituras de reacción se niegan con la causa real. No es el «requiere una cuenta real» del final:
   // en Windows la cuenta está y el chip se ve, lo que no existe es la petición dentro de la biblioteca.
-  if (method === 'message.react' && state.platform === 'desktop') throw new Error(REACT_REFUSAL);
+  if (method === 'message.react' && state.platform === 'desktop') throw new Error(REACT_REFUSAL); if (method === 'message.react' && !params.remove && !DESIGN_REACTIONS.some(option => option.kind === 'emoji' && option.emoji === String(params.emoji ?? ''))) throw new Error('Telegram no ofrece esa reacción en este chat.');
   if (method === 'message.react.custom' && state.platform === 'desktop') throw new Error(REACT_REFUSAL);
   if (method === 'message.react.paid' && state.platform === 'desktop') throw new Error(REACT_REFUSAL);
   // El borrador se guarda como en el puente: texto, formato y cita en el mismo objeto. Si el fixture
@@ -2123,7 +2128,7 @@ export async function designRequest(method: string, params: Record<string, unkno
     if (!isSupergroupOrChannel(chat)) throw new Error(CHAT_USERNAME_REFUSALS.unsupported);
     const malformed = profileUsernameProblem(params.username);
     if (malformed) throw new Error(malformed);
-    // Solo el `trim()` del puente: la `@` la quita la pantalla antes de llamar (`App.tsx:370`), así que un
+    // Solo el `trim()` del puente: la `@` la quita la pantalla antes de llamar (`App.tsx:371`), así que un
     // «@nombre» que llega hasta aquí —una llamada hecha a mano, otra pantalla— es el nombre malo, igual que en
     // Windows. Aflojarlo en el andamio sería entrenar una vista de diseño que el host real rechaza.
     const username = String(params.username).trim();
@@ -2698,7 +2703,7 @@ function designUnblockSender(params: Record<string, unknown>, state: State): boo
 /**
  * `profileBlock` (`:1282-1288`), que es la otra mitad del mismo hueco: la ficha ya publicaba `blocked` desde la ronda
  * BA y su botón seguía sin puente. Aquí están las tres guardas de Java en su orden —forma del chat, cuenta propia,
- * valor— y ninguna ventana de confirmar, porque la abre la pantalla (`App.tsx:737-712`) y no el puente.
+ * valor— y ninguna ventana de confirmar, porque la abre la pantalla (`App.tsx:747-724`) y no el puente.
  */
 function designProfileBlock(params: Record<string, unknown>, state: State): boolean {
   const id = String(params.id ?? '');

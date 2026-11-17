@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using TL;
 
 namespace WRGram.Desktop;
 
@@ -64,9 +65,32 @@ public static class DesktopAttachment
     }
 
     /// La terna exacta de <c>NativeBridge.sendAttachment</c> ("image/jpeg", "image/png", "image/webp") que decide
-    /// si el contenido sale como foto o como archivo. GIF y HEIC están fuera a propósito: Telegram los trata como
-    /// documentos y enviarlos por la vía de foto daría un error de servidor.
+    /// si el contenido sale como foto o como archivo. GIF y HEIC están fuera a propósito: enviarlos por la vía de
+    /// foto daría un error de servidor. Los dos se van por la de documento, pero el GIF además lleva la marca de
+    /// animación de <see cref="AttributesFor"/>, que es lo que hace que Telegram lo reproduzca en la burbuja en
+    /// lugar de guardarlo como un archivo suelto.
     public static bool IsPhoto(string? mime) => mime is "image/jpeg" or "image/png" or "image/webp";
+
+    /// El <c>kind</c> que la pantalla manda en <c>attachment.pick</c>. Solo «gif» cambia algo, y solo el diálogo:
+    /// cualquier otro valor —incluido el que no envía «Archivo o foto»— deja el selector abierto de par en par.
+    /// Lo que sale por el cable no depende de esta palabra sino del MIME del archivo elegido, igual que en Android.
+    public static string PickerTitle(string? kind) => Gif(kind) ? "Enviar un GIF" : "Enviar un archivo";
+
+    /// El filtro escrito como lo pide <c>OpenFileDialog</c>. Android pasa su propia lista al selector del sistema
+    /// (<c>OpenDocument</c>); aquí el diálogo es de Win32 y la sintaxis es otra, pero el criterio es el mismo.
+    public static string PickerFilter(string? kind) => Gif(kind) ? "GIF|*.gif" : "Todos los archivos|*.*";
+
+    private static bool Gif(string? kind) => string.Equals(kind, "gif", StringComparison.Ordinal);
+
+    /// La norma del cable, la misma de <c>NativeBridge.sendAttachment</c>: un <c>image/gif</c> que ya estaba en el
+    /// dispositivo sale como animación, no como documento mudo.
+    public static bool IsAnimation(string? mime) => string.Equals(mime, "image/gif", StringComparison.Ordinal);
+
+    /// El nombre siempre; la marca de animación solo cuando el MIME lo pide. Sin esa marca Telegram guarda el
+    /// archivo y lo muestra como lo que es para él: una ficha más del chat.
+    public static DocumentAttribute[] AttributesFor(string name, string? mime) => IsAnimation(mime)
+        ? [new DocumentAttributeFilename { file_name = name }, new DocumentAttributeAnimated()]
+        : [new DocumentAttributeFilename { file_name = name }];
 
     /// Lo que se envía cuando la extensión no está en la tabla: un archivo con su nombre, sin prometer nada.
     public const string Fallback = "application/octet-stream";

@@ -79,4 +79,14 @@ describe('parseFormatting: texto e entidades para Telegram', () => {
     expect(parseFormatting('**`a __b__`**')).toEqual({ text: 'a __b__', entities: [{ type: 'bold', offset: 0, length: 7 }, { type: 'code', offset: 0, length: 7 }] });
     expect(parseFormatting('```\n**x**\n```')).toEqual({ text: '\n**x**\n', entities: [{ type: 'pre', offset: 0, length: 7 }] });
   });
+
+  it('los emojis personalizados viajan con su id en la posición UTF-16 exacta', () => {
+    const id='8765432109876543210';
+    const emoji=(offset:number)=>({type:'customEmoji' as const,offset,length:2,customEmojiId:id});
+    expect(parseFormatting('**Hola 🦆**',[emoji(7)])).toEqual({ text: 'Hola 🦆', entities: [{ type: 'bold', offset: 0, length: 7 }, emoji(5)] });
+    expect(parseFormatting('[🦆](https://t.me) `🦆`',[emoji(1),emoji(20)])).toEqual({
+      text: '🦆 🦆',
+      entities: [{ type: 'link', offset: 0, length: 2, url: 'https://t.me' }, emoji(0), { type: 'code', offset: 3, length: 2 }],
+    });
+  });
 });

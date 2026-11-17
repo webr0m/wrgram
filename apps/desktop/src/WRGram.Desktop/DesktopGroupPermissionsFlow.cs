@@ -12,7 +12,7 @@ using WTelegram;
 /// (<c>:577</c> → <c>setGroupPermissions</c>, <c>:2376</c>). Las reglas, la tabla de banderas y las frases están en
 /// <see cref="DesktopGroupPermissions"/>; aquí está el cable, que era lo que faltaba: las dos órdenes llevan desde la
 /// ronda A en la lista del puente (<c>BridgePolicy.java:25</c>) y la pantalla las pide desde la ronda Q —la entrada
-/// «Permisos predeterminados» del panel lateral (<c>App.tsx:1192</c>, sin guarda de plataforma)—, pero en Windows
+/// «Permisos predeterminados» del panel lateral (<c>App.tsx:1200</c>, sin guarda de plataforma)—, pero en Windows
 /// caían en el <c>_ =&gt; throw</c> genérico dando a entender que faltaba una petición cuando las dos existen.
 /// <para>
 /// El orden de la escritura es el de <c>:2376</c> línea por línea: la forma, las dieciséis casillas, la pregunta por

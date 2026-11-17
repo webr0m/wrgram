@@ -311,7 +311,10 @@ describe('ronda AH · medido con las manos, no con agujas', () => {
     // TDLib pide `content instanceof MessageText` para la cara de texto y `hasCaption` para la del pie: sobre la
     // fila con foto solo existe la segunda, aquí y en un teléfono.
     expect(await call('message.properties', { id: '104' })).toMatchObject({ edit: false, editCaption: true });
-    expect(await call('message.properties', { id: '101' })).toMatchObject({ editCaption: false, reactions: ['👍', '❤️', '🔥', '👏', '🎉', '✅', '👀', '🙏'] });
+    // Las ocho fichas de la banda son las mismas desde la BV; lo que cambió es que la lista del chat continúa
+    // después de ellas, así que se compara el corte que la pantalla hace por defecto.
+    const props = await call('message.properties', { id: '101' }) as { reactions: { kind: string; emoji?: string }[] };
+    expect({ ...props, reactions: props.reactions.slice(0, 8) }).toMatchObject({ editCaption: false, reactions: ['👍', '❤️', '🔥', '👏', '🎉', '✅', '👀', '🙏'].map(emoji => ({ kind: 'emoji', emoji })) });
     await expect(call('message.edit', { id: '102', text: 'Cualquier cosa' })).rejects.toThrow(
       'Vista sintética: esta acción requiere una cuenta real en Android. No se ha enviado nada.',
     );

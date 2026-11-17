@@ -134,7 +134,9 @@ describe('ronda AK · elegir un archivo deja de ser cosa de un teléfono', () =>
   it('los tres brazos entran antes que la negativa genérica', () => {
     const generic = at('_ => throw new BridgeException($"No disponible en escritorio (beta)', service);
     for (const arm of [
-      '"attachment.pick" => await AttachmentPickAsync(),',
+      // La ronda BU añadió el `kind` con el que la fila «GIF del dispositivo» filtra el selector; el brazo sigue
+      // siendo el mismo que ya existía.
+      '"attachment.pick" => await AttachmentPickAsync(Str(args, "kind")),',
       '"attachment.discard" => AttachmentDiscardAsync(args),',
       '"send.attachment" => await SendAttachmentAsync(args),',
     ]) {
@@ -154,7 +156,10 @@ describe('ronda AK · elegir un archivo deja de ser cosa de un teléfono', () =>
     expect(csBody('SendAttachmentAsync')).toContain('client.UploadFileAsync(file.Path, null)');
     expect(csBody('SendAttachmentAsync')).toContain('client.Messages_SendMedia(entry.Input, media, "",');
     expect(csBody('SendAttachmentAsync')).toContain('new InputMediaUploadedPhoto { file = uploaded }');
-    expect(csBody('SendAttachmentAsync')).toContain('new DocumentAttributeFilename { file_name = file.Name }');
+    // Desde la ronda BU la atribución ya no se escribe en el método: la manda la regla, que es la que decide
+    // si el GIF lleva además la marca de animación. La pareja ficha-nombre sigue yendo al cable.
+    expect(csBody('SendAttachmentAsync')).toContain('attributes = DesktopAttachment.AttributesFor(file.Name, file.Mime)');
+    expect(rules).toContain('new DocumentAttributeFilename { file_name = name }');
     // La miniatura no va: el puente no la genera, y prometerla en el `flags` sería mandar un archivo roto.
     expect(csBody('SendAttachmentAsync')).not.toContain('thumb =');
   });
@@ -288,7 +293,9 @@ describe('ronda AK · el acceso de Windows y lo que hay detrás', () => {
   it('el botón de archivo sigue siendo el mismo que siempre pidió el puente', () => {
     const menu = app.slice(at('function openAttachments', app), at('function openAttachments', app) + 1200);
     expect(menu).toContain('label="Archivo o foto"');
-    expect(app).toContain("run<{token:string;name:string;size:number}>(method)");
+    // La misma petición con el argumento opcional que la ronda BU añadió para la fila de GIF: sin `kind` sigue
+    // siendo la llamada de siempre.
+    expect(app).toContain("run<{token:string;name:string;size:number}>(method,kind?{kind}:{})");
     // La pantalla ya avisaba del tope que ahora cumple el host.
     expect(app).toContain('Límite de esta versión: 32 MB.');
   });

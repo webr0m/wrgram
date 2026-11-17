@@ -14,7 +14,7 @@ using WTelegram;
 /// aquí está el cable, que es lo que faltaba: las dos llevan desde la ronda F en la lista del puente
 /// (`BridgePolicy.java:48`, donde `chat.request.answer` está además en la de las que esperan a la persona,
 /// `bridge.ts:31`) y la pantalla las pide desde esa misma ronda. Pero en Windows la hoja de opciones no tenía
-/// ninguna entrada —la única puerta era el panel lateral, tapado con `!desktop` en `App.tsx:1192`— y, de
+/// ninguna entrada —la única puerta era el panel lateral, tapado con `!desktop` en `App.tsx:1200`— y, de
 /// haberse abierto, la primera pregunta habría caído en el `_ =&gt; throw` genérico dando a entender que faltaba
 /// una petición cuando las dos existen.
 /// <para>

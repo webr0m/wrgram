@@ -106,7 +106,7 @@ button:not(:disabled):active{transform:scale(.975)}
 .compose-area{background:color-mix(in srgb,var(--chat) 88%,transparent);backdrop-filter:blur(18px)}
 .composer{border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--elevated);box-shadow:var(--shadow-soft),inset 0 1px 0 #ffffff08;padding:7px;transition:border-color .18s,box-shadow .18s}
 .composer:focus-within{border-color:var(--gold-line);box-shadow:0 0 0 3px var(--soft),var(--shadow-soft)}
-.composer textarea{padding:8px 4px;line-height:1.45;background:transparent}
+.composer textarea,.composer .rich-field{padding:8px 4px;line-height:1.45;background:transparent}
 .send-button{border-radius:13px;background:linear-gradient(145deg,#efd293,var(--accent));color:var(--on-accent);box-shadow:0 7px 16px #00000024;transition:filter .18s,transform .18s,box-shadow .18s}
 .send-button:not(:disabled):hover{filter:brightness(1.06);box-shadow:0 9px 20px #00000030}
 .compose-footnote{padding-bottom:4px;color:var(--faint)}
@@ -211,10 +211,10 @@ button:not(:disabled):active{transform:scale(.975)}
 .auth-recovery .field-label{margin:12px 0}
 
 /* Compositor: el texto de ayuda no desborda el cajón */
-.composer textarea{min-width:0}
+.composer textarea,.composer .rich-field{min-width:0}
 .composer textarea::placeholder{font-size:calc(13px * var(--ui-scale,1));line-height:1.45}
 @media(max-width:700px){
-  .composer textarea{flex:1 1 auto;min-width:0}
+  .composer textarea,.composer .rich-field{flex:1 1 auto;min-width:0}
   .composer textarea::placeholder{font-size:calc(12px * var(--ui-scale,1))}
   .composer .composer-format,.composer .composer-option{display:none}
 }
@@ -264,3 +264,8 @@ button:not(:disabled):active{transform:scale(.975)}
 .paid-media-pick span{flex:1;min-width:0;display:grid}
 .paid-media-pick strong{font-size:calc(12px * var(--ui-scale,1));overflow-wrap:anywhere}
 .paid-media-pick small{font-size:calc(11px * var(--ui-scale,1));color:var(--muted)}
+.reaction-suite{max-height:min(52vh,420px);overflow:auto}
+.reaction-suite .reaction-picker{margin:0}
+.reaction-suite .settings-note{margin:10px 0 0}
+.reaction-picker .reaction-premium{position:relative}
+.reaction-picker .reaction-premium::after{content:'';position:absolute;right:5px;bottom:5px;width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--input)}
