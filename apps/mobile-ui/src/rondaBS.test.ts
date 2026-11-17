@@ -189,7 +189,7 @@ describe('ronda BS · Giphy como fuente aparte, servida por nuestro borde', () =
     expect(SAVE_BLOCK).toContain('File target=new File(directory,gif.id+".gif");');
     expect(SAVE_BLOCK).toContain('if(target.isFile()&&target.length()>0&&target.length()<=MAX_BYTES){saved.ok(target);return;}');
     expect(SAVE_BLOCK).toContain('File temp=new File(directory,gif.id+".part");');
-    expect(SAVE_BLOCK).toContain('if(type==null||!type.toLowerCase().startsWith("image/"))');
+    expect(SAVE_BLOCK).toContain('if(type==null||!type.toLowerCase(java.util.Locale.ROOT).startsWith("image/"))');
     expect(SAVE_BLOCK).toContain('if(request.getContentLengthLong()>MAX_BYTES)');
     expect(count('throw new Unavailable("El GIF supera el tamaño admitido.");', SAVE_BLOCK)).toBe(2);
     expect(SAVE_BLOCK).toContain('if(!temp.renameTo(target))');

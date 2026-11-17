@@ -94,7 +94,7 @@ final class GiphySource {
             try{
                 request=open(gif.animation);
                 String type=request.getContentType();
-                if(type==null||!type.toLowerCase().startsWith("image/"))throw new Unavailable("El archivo recibido no es un GIF.");
+                if(type==null||!type.toLowerCase(java.util.Locale.ROOT).startsWith("image/"))throw new Unavailable("El archivo recibido no es un GIF.");
                 if(request.getContentLengthLong()>MAX_BYTES)throw new Unavailable("El GIF supera el tamaño admitido.");
                 try(InputStream input=request.getInputStream();OutputStream output=new FileOutputStream(temp)){
                     byte[] buffer=new byte[8192];int count;long total=0;
