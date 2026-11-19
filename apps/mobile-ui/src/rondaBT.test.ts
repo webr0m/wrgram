@@ -135,7 +135,7 @@ describe('ronda BT · el pegamento DOM', () => {
 
   it('la escucha del caret no se rehace en cada escritura y lee siempre el último estado', () => {
     expect(glue).toContain("document.addEventListener('selectionchange',onMove);");
-    expect(glue).toContain('return()=>document.removeEventListener(\'selectionchange\',onMove);');
+    expect(glue).toContain('return()=>{document.removeEventListener(\'selectionchange\',onMove);');
     expect(glue).toContain('latest.current.onSelection(activeMarks(latest.current.entities,start,end));');
     expect(glue).toContain('},[]);');
     expect(glue).toContain('const latest=useRef(props);\n  latest.current=props;');

@@ -1,0 +1,23 @@
+.modal.attachment-modal{width:min(540px,calc(100vw - 20px));min-width:0}
+.attachment-confirm-photo{max-width:100%;width:180px;max-height:220px;object-fit:contain;border-radius:12px}
+.attachment-panel{min-width:0;display:flex;flex-direction:column;gap:18px}
+.attachment-panel>section{min-width:0}
+.attachment-gallery-heading{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:0 0 12px}
+.attachment-gallery-heading h3{display:flex;align-items:center;gap:5px;margin-inline-end:auto}
+.attachment-gallery-heading button{display:inline-flex;align-items:center;gap:5px;min-height:44px}
+.attachment-gallery-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;max-height: min(42dvh,360px);overflow:auto;border-radius:15px}
+.attachment-gallery-grid>button{min-width:0;aspect-ratio:1;border-radius:9px;overflow:hidden;position:relative}
+.attachment-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.attachment-camera{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;background:var(--soft);color:var(--accent);padding:8px}
+.attachment-camera strong{font-size:calc(12px * var(--ui-scale,1));overflow-wrap:anywhere}
+.attachment-gallery-grid button:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.attachment-panel small{display:block;color:var(--muted);font-size:calc(11px * var(--ui-scale,1));line-height:1.5;margin-top:10px}
+.attachment-access{padding:12px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.attachment-access p{flex:1 1 180px;font-size:calc(12px * var(--ui-scale,1));color:var(--muted)}
+.attachment-banner{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;border-top:1px solid var(--line);padding-top:14px}
+.attachment-banner>button{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:11px 5px;min-height:84px;border:1px solid var(--line);border-radius:15px;background:var(--surface)}
+.attachment-banner>button[aria-pressed=true]{background:var(--soft);border-color:var(--accent)}
+.attachment-banner>button>span{color:var(--accent);display:grid;place-items:center}
+.attachment-banner strong{font-weight:600;font-size:calc(11px * var(--ui-scale,1));line-height:1.4;overflow-wrap:anywhere;text-align:center}
+.attachment-banner svg{width:23px;height:23px}
+@media(max-width:360px){.attachment-banner{gap:5px}.attachment-banner>button{padding:9px 3px}.attachment-gallery-grid{max-height:32dvh}}

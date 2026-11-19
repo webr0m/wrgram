@@ -52,7 +52,7 @@ namespace WRGram.Desktop;
 /// su firma). Ninguna pantalla de WRGram ofrece la lista de historias, así que el cable manda <c>false</c> siempre
 /// y la otra lista no se lee ni se escribe. El <b>bloqueo</b>, en cambio, sí vive aquí aunque la orden sea de otra
 /// puerta: Android lo atiende desde la ficha de la persona (<c>profile.block</c>, <c>:527</c> → <c>:1280</c>) y la
-/// pantalla lo pide con su propio cuadro de confirmar dentro de la interfaz (<c>App.tsx:747-724</c>), por eso
+/// pantalla lo pide con su propio cuadro de confirmar dentro de la interfaz (<c>App.tsx:744-747</c>), por eso
 /// <c>profile.block</c> no está en las órdenes que esperan a un diálogo nativo (<c>bridge.ts</c>) y por eso el cable
 /// de Windows no abre ventana ninguna: confirma la pantalla, escribe el host.
 /// </para>

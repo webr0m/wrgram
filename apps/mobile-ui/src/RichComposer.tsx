@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import type { TextEntity, TextEntityType } from './contract';
-import { activeMarks, MAX_LENGTH, segments } from './richDraft';
+import { activeMarks, MAX_LENGTH, segments } from './richDraft'; import { native, request } from './bridge';
 
 /**
  * Compositor WYSIWYG. El estado vive fuera: `text` y `entities` son las entidades de Telegram, y este
@@ -224,7 +224,7 @@ export const RichComposer=forwardRef<RichEditor,Props>((props,ref)=>{
       latest.current.onSelection(activeMarks(latest.current.entities,start,end));
     };
     document.addEventListener('selectionchange',onMove);
-    return()=>document.removeEventListener('selectionchange',onMove);
+    return()=>{document.removeEventListener('selectionchange',onMove);if(native)void request('composer.focus',{active:false}).catch(()=>{});};
   },[]);
 
   return <div
@@ -265,5 +265,5 @@ export const RichComposer=forwardRef<RichEditor,Props>((props,ref)=>{
       const {start,end}=selection();
       submit(props.text.slice(0,start)+'\n'+props.text.slice(end),start+1);
     }}
-    onBlur={props.onBlur}/>;
+    onFocus={()=>{if(native)void request('composer.focus',{active:true}).catch(()=>{});}} onBlur={()=>{if(native)void request('composer.focus',{active:false}).catch(()=>{});props.onBlur();}}/>;
 });

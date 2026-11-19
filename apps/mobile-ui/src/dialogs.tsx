@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 
 // Pila de diálogos: solo el último responde a Escape ni al botón atrás de Android, así un panel
 // abierto sobre otro no se cierra con las dos capas a la vez.
-type Overlay = { close(): void };
+type Overlay = { close(): void; navigation?:boolean };
 const stack: Overlay[] = [];
 
 export const overlayCount = () => stack.length;
@@ -20,6 +20,21 @@ export function closeTopOverlay(): boolean {
     if (!top) return false;
     top.close();
     return true;
+}
+
+/** A submenu consumes Back/Escape but keeps the enclosing dialog's focus trap. */
+export function useDialogNavigation(active:boolean,back:()=>void):void {
+    const backRef=useRef(back);backRef.current=back;
+    useEffect(()=>{
+        if(!active)return;
+        const overlay:Overlay={close:()=>backRef.current(),navigation:true};
+        const unregister=registerOverlay(overlay);
+        const key=(event:KeyboardEvent)=>{
+            if(event.key==='Escape'&&!event.isComposing&&isTopOverlay(overlay)){event.preventDefault();overlay.close();}
+        };
+        document.addEventListener('keydown',key);
+        return()=>{document.removeEventListener('keydown',key);unregister();};
+    },[active]);
 }
 
 const FOCUSABLE = 'button,input,textarea,select,a[href],summary,[tabindex]';
@@ -45,7 +60,8 @@ export function useDialog(ref: RefObject<HTMLElement | null>, close: () => void)
             (section.querySelector<HTMLElement>('[data-dialog-autofocus]') ?? section).focus();
         }
         const key = (event: KeyboardEvent) => {
-            if (!isTopOverlay(overlay) || event.isComposing) return;
+            if (event.isComposing) return;
+            if (!isTopOverlay(overlay) && !(stack[stack.length-1]?.navigation && event.key==='Tab' && section?.contains(document.activeElement))) return;
             if (event.key === 'Escape') { event.preventDefault(); closeRef.current(); return; }
             if (event.key !== 'Tab' || !section) return;
             const items = tabStops(section);

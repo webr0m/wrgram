@@ -1,5 +1,5 @@
 import { EMPTY, type AddResult, type BlockedSender, type Chat, type ChatMembership, type Contact, type ForumTopicInfo, type GlobalSearch, type GroupAdminRights, type GroupMember, type GroupPermissions, type InviteLink, type JoinRequest, type Media, type Message, type Poll, type ReactionOption, type RosterMember, type SafetyNotice, type SafetySignal, type SavedFilter, type ScopePatch, type ScopeSettings, type State, type StoryAlbum, type TextEntity } from './contract';
-import { acceptState, snapshot } from './bridge';
+import { acceptState, snapshot } from './bridge'; import { previewDeviceGallery } from './previewDeviceGallery';
 import { normalizeSearch } from './inboxModel';
 import { CHAT_SENDER, REJECTIONS, hasBand, problem } from './messageSearch';
 import { effective, patchProblem, pendingChanges } from './scopeSettings';
@@ -128,7 +128,7 @@ function applyChatUsername(entry:ChatUsernameFixture, username:string) {
  * en la tabla se arranca en cero, igual que un chat recién creado.
  *
  * Los chats secretos no tienen fila aquí, y no hace falta: la pantalla no abre el ajuste sobre uno en ninguna de las
- * dos capas (`App.tsx:886` y `:916`), así que las dos frases con las que Android los niega (`:1343` y `:1367`) no
+ * dos capas (`App.tsx:885` y `:970`), así que las dos frases con las que Android los niega (`:1343` y `:1367`) no
  * tienen por dónde alcanzarse. Es el mismo motivo por el que la ronda AN dejó fuera del andamio la de las encuestas.
  */
 const autoDeleteFixtures: Record<string, number> = { '12': AUTO_DELETE_DAY, '14': 7 * AUTO_DELETE_DAY, '18': 30 * AUTO_DELETE_DAY };
@@ -1163,7 +1163,7 @@ const CONTACT_WRITE_REFUSALS = {
  * son: tres guardas y un cambio de marca. El orden es el del brazo de Windows, que a su vez es el de Java —la
  * conversación cargada, la forma del chat, la persona con su bot y su cuenta propia— y detrás los dos «no hace nada»
  * que la pantalla ya sabe leer: quitar a quien no está y añadir a quien ya está devuelven `false` sin tocar el
- * estado, y `App.tsx:745` no repinta la ficha con un `false`. El cuadro de confirmar no está aquí porque el andamio
+ * estado, y `App.tsx:742` no repinta la ficha con un `false`. El cuadro de confirmar no está aquí porque el andamio
  * no abre ventanas, igual que `designUnblockSender` declaró lo mismo para el desbloqueo: cancelar responde `false`,
  * así que la vista queda idéntica al camino corto.
  */
@@ -1591,7 +1591,7 @@ function joinCursorProblem(marker: string): boolean {
   return date < 1 || date > JOIN_DATE_MAX;
 }
 // Development only; Vite removes this branch and module from the Android production assets.
-export async function designRequest(method: string, params: Record<string, unknown>) {
+export async function designRequest(method: string, params: Record<string, unknown>) { if(['attachment.recents','attachment.recents.close','attachment.photos.permission','attachment.photo','composer.focus'].includes(method))return previewDeviceGallery(method,params,snapshot(),p=>desktopAttachmentPick(p,snapshot()));
   const state = snapshot();
   // La puerta de la ronda BK, delante de todo lo demás: en `platform=desktop` el andamio no modela una clave que el
   // host de Windows no atiende, porque un dato sintético encima de una pantalla de escritorio es exactamente la
@@ -2128,7 +2128,7 @@ export async function designRequest(method: string, params: Record<string, unkno
     if (!isSupergroupOrChannel(chat)) throw new Error(CHAT_USERNAME_REFUSALS.unsupported);
     const malformed = profileUsernameProblem(params.username);
     if (malformed) throw new Error(malformed);
-    // Solo el `trim()` del puente: la `@` la quita la pantalla antes de llamar (`App.tsx:371`), así que un
+    // Solo el `trim()` del puente: la `@` la quita la pantalla antes de llamar (`App.tsx:368`), así que un
     // «@nombre» que llega hasta aquí —una llamada hecha a mano, otra pantalla— es el nombre malo, igual que en
     // Windows. Aflojarlo en el andamio sería entrenar una vista de diseño que el host real rechaza.
     const username = String(params.username).trim();
@@ -2703,7 +2703,7 @@ function designUnblockSender(params: Record<string, unknown>, state: State): boo
 /**
  * `profileBlock` (`:1282-1288`), que es la otra mitad del mismo hueco: la ficha ya publicaba `blocked` desde la ronda
  * BA y su botón seguía sin puente. Aquí están las tres guardas de Java en su orden —forma del chat, cuenta propia,
- * valor— y ninguna ventana de confirmar, porque la abre la pantalla (`App.tsx:747-724`) y no el puente.
+ * valor— y ninguna ventana de confirmar, porque la abre la pantalla (`App.tsx:744-747`) y no el puente.
  */
 function designProfileBlock(params: Record<string, unknown>, state: State): boolean {
   const id = String(params.id ?? '');
@@ -2934,4 +2934,3 @@ export const fixture: State = { ...EMPTY, contactsSync: syncState, ready: true, 
     ['101',false,'Hola 👋 ¿Cómo va la nueva versión de WRGram? @rodrigo #WRGram',-90000],['102',true,'¡Mucho mejor! Estamos cuidando cada detalle. Que se sienta sencillo, pero que tenga todo a mano.',-3400],['103',false,'Justo eso. Una interfaz que te deje conversar sin distraerte.',-3200],['104',true,'Un espacio más limpio. Y los complementos tendrán su propio lugar, sin mezclarse con tus chats.',-3000],['105',false,'Me encanta cómo está quedando ✨',-2800],
   ].map(([id,outgoing,text,time]):Message=>({id:String(id),chatId:'11',sender:outgoing?'Tú':'María Fernández',authorKind:'user' as const,authorId:outgoing?'1':'502',text:String(text),date:Math.floor(Date.now()/1000)+Number(time),outgoing:Boolean(outgoing),status:outgoing?'read':'',edited:false,reactions:[],...designProvenance[String(id)],...(String(id)==='101'?{entities:[{type:'bold' as const,offset:0,length:4},{type:'mention' as const,offset:45,length:8},{type:'hashtag' as const,offset:54,length:7}],reactions:BOOT_REACTIONS}:{}),...(String(id)==='104'?{media:BOOT_PHOTO}:{})})).concat(serviceMessages, unsentFixtures),
 };
-

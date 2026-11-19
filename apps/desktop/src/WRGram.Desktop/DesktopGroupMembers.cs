@@ -88,7 +88,7 @@ public static class DesktopGroupMembers
     /// debería seguirle; la corrección de aquella fila es una ronda de Android con la pantalla delante.
     public const string StatusLeft = "Salió";
 
-    /// Las seis teclas que la pantalla manda (<c>App.tsx:1271</c>, <c>MEMBER_FILTERS</c>).
+    /// Las seis teclas que la pantalla manda (<c>App.tsx:1288</c>, <c>MEMBER_FILTERS</c>).
     public static readonly string[] FilterKeys =
         { "recent", "administrators", "restricted", "banned", "bots", "contacts" };
 

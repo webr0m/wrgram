@@ -1,0 +1,14 @@
+/* A long author or an unbroken URL must not impose a min-content width on a bubble. */
+.message-row>.bubble{min-width:0}
+.bubble .reply-preview{display:grid;grid-template-columns:13px minmax(0,1fr);align-items:start;gap:7px;min-width:0;max-width:100%;width:100%;text-align:start;box-sizing:border-box}
+.bubble .reply-preview>svg{margin-top:3px;flex:none}
+.bubble .reply-preview .reply-preview-copy{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;min-width:0;max-width:100%;white-space:normal}
+.bubble .reply-preview .reply-preview-author,.bubble .reply-preview .reply-preview-text{display:block;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.5}
+.bubble .reply-preview .reply-preview-author{color:var(--accent)}
+.compose-reply{min-width:0;max-width:100%}
+.compose-reply>span{min-width:0;overflow:hidden}
+.compose-reply strong{min-width:0;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.compose-reply>.icon-button,.compose-reply>svg{flex:none}
+.bubble .text-blockquote,.bubble .text-expandableBlockquote{min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;word-break:normal;white-space:pre-wrap;vertical-align:top}
+.bubble .rich-quote{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.bubble .rich-quote>*{min-width:0;max-width:100%}

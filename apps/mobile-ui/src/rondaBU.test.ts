@@ -55,11 +55,11 @@ describe('ronda BU · Android: el GIF del teléfono sale por la vía de animaci�
   const gifBranch = 'else if("image/gif".equals(item.mime)){if(permissions!=null&&!permissions.canSendOtherMessages)throw new IllegalArgumentException("Este chat no permite enviar GIF o stickers.");content=animationContent(item);}';
 
   it('el selector se filtra solo cuando la pantalla pide un GIF', () => {
-    expect(count('activity.picker.launch("gif".equals(p.optString("kind"))?new String[]{"image/gif"}:new String[]{"*/*"});', java)).toBe(1);
+    expect(count('activity.picker.launch("gif".equals(p.optString("kind"))?new String[]{"image/gif"}:"photo".equals(p.optString("kind"))?new String[]{"image/*"}:new String[]{"*/*"});', java)).toBe(1);
     // La negativa del selector sigue siendo la misma frase que la constante de Windows.
     expect(java).toContain('picking=null;throw new IllegalArgumentException("No hay un selector de archivos disponible.");');
     // Lo que se lee del parámetro es la palabra del botón, no el MIME: el MIME manda al enviar, como en Windows.
-    expect(count('p.optString("kind")', java)).toBe(1);
+    expect(count('p.optString("kind")', java)).toBe(2);
   });
 
   it('la rama de GIF va entre la foto y el documento, que es el orden que decide el resultado', () => {
@@ -112,7 +112,7 @@ describe('ronda BU · Android: el GIF del teléfono sale por la vía de animaci�
     expect(count('"video/mp4".equals(item.mime)', java)).toBe(0);
     expect(tsRegion('private void sendAttachment(JSONObject p,Answer a)').includes('animationContent')).toBe(true);
     // La única MIME que abre la rama es la del GIF.
-    expect(count('"image/gif".equals(item.mime)', java)).toBe(1);
+    expect(count('"image/gif".equals(item.mime)', tsRegion('private void sendAttachment(JSONObject p,Answer a)'))).toBe(1);
   });
 });
 
@@ -167,16 +167,16 @@ describe('ronda BU · la pantalla', () => {
 
   it('el botón manda el kind y la clasificación mira el kind o la extensión', () => {
     expect(count('function attach(method:\'attachment.pick\'|\'attachment.camera\'=\'attachment.pick\',kind=\'\'){', app)).toBe(1);
-    expect(count('run<{token:string;name:string;size:number}>(method,kind?{kind}:{})', app)).toBe(1);
-    expect(count('const gif=kind===\'gif\'||item.name.toLowerCase().endsWith(\'.gif\');', app)).toBe(1);
+    expect(count('run<PickedAttachment>(method,kind?{kind}:{})', app)).toBe(1);
+    expect(app).toContain("const gif=kind==='gif'||item.mime==='image/gif'||item.name.toLowerCase().endsWith('.gif');");
     // Sin kind la llamada es la de siempre: «Archivo o foto» no puede volverse GIF por accidente.
     expect(count('onClick={()=>{setDialog(undefined);attach();}}/>', app)).toBe(1);
   });
 
   it('la confirmación dice GIF cuando lo es, y lo que eso significa en Telegram', () => {
-    expect(count('gif?\'Enviar GIF\':\'Enviar archivo\'', app)).toBe(1);
+    expect(count('gif?\'Enviar GIF\':photo?\'Enviar foto\':\'Enviar archivo\'', app)).toBe(1);
     expect(count('Telegram lo guarda como animación y lo reproduce dentro de la burbuja, no como un archivo que hay que abrir.', app)).toBe(1);
-    expect(count('>Enviar {method===\'attachment.camera\'?\'foto\':gif?\'GIF\':\'archivo\'}<Send size={18}/>', app)).toBe(1);
+    expect(count('>Enviar {gif?\'GIF\':photo?\'foto\':\'archivo\'}<Send size={18}/>', app)).toBe(1);
     expect(count('Límite de esta versión: 32 MB.', app)).toBe(1);
   });
 

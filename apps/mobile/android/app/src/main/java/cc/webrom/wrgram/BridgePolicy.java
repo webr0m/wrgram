@@ -10,7 +10,7 @@ import org.json.JSONObject;
 final class BridgePolicy {
     static final int MAX_BYTES=65536;
     static final Set<String> METHODS=new HashSet<>(Arrays.asList("state","connect","authenticate","logout","retry","error.clear","appearance","chat.open","chat.close","chat.saved","chat.find","chats.list","chats.more","chats.search","saved.sources","saved.history","gallery.list","chat.pin","chat.mute","chat.archive","chat.unread","chat.read","history.older","history.refresh","history.byDate","typing","send.text","message.properties","messages.search","message.edit","message.delete","message.copy","message.pin","message.forward","message.react","catalog","send.catalog","media.load","media.play","media.export","media.retry","attachment.pick","attachment.camera","attachment.discard","send.attachment","security.lock","telegram.link","plugin.permission","notes.read","notes.write","notes.clear","assistant.status","assistant.consent","assistant.send","native.settings","native.assistant"));
-    static { METHODS.add("app.background"); }
+    static { METHODS.add("app.background"); METHODS.addAll(Arrays.asList("attachment.recents","attachment.photos.permission","attachment.photo","attachment.recents.close","composer.focus")); }
     static { METHODS.addAll(Arrays.asList("accounts.list","accounts.add","accounts.remove","accounts.switch","chat.secret","apps.list","apps.open","apps.chat","sponsored.view","sponsored.open","sponsored.retry","notifications.enable","notifications.status")); }
     static { METHODS.add("apps.profile"); }
     static { METHODS.add("notifications.disable"); }

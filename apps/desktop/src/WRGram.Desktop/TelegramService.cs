@@ -253,18 +253,18 @@ public sealed partial class TelegramService : IAsyncDisposable
                 "profile.sender" => await SenderProfileAsync(args),
                 // La quinta puerta del mismo hueco, cableada en la ronda BI junto a las dos de la lista. La ficha ya
                 // publicaba <c>blocked</c> desde la ronda BA, así que en Windows el botón de «Bloquear» se veía y al
-                // pulsar caía en el genérico. Acá no hay cuadro nativo: lo abre la pantalla (<c>App.tsx:749</c>).
+                // pulsar caía en el genérico. Acá no hay cuadro nativo: lo abre la pantalla (<c>App.tsx:746</c>).
                 // Reglas y frases, en <see cref="DesktopBlocked"/>; el cable, en <see cref="SetBlockProfileAsync"/>.
                 "profile.block" => await SetBlockProfileAsync(args),
                 // La firma de invitación, conectada en la ronda BB. El menú «Añadir personas» de la pantalla
-                // (<c>App.tsx:916</c>) nunca llevó guarda de plataforma, así que en Windows el panel se abría y su
+                // (<c>App.tsx:920</c>) nunca llevó guarda de plataforma, así que en Windows el panel se abría y su
                 // primera pregunta caía en el `_ => throw` genérico. Reglas y frases, en
                 // <see cref="DesktopMemberAdditions"/>; el cable, en <see cref="AddInfoAsync"/>.
                 "groups.add.info" => await AddInfoAsync(args),
                 "groups.member.add" => await AddMembersAsync(args),
                 // Los permisos predeterminados de la comunidad, conectados en la ronda BE. Las dos órdenes estaban en
                 // la lista del puente desde la ronda A y la pantalla las pide desde la Q por la entrada «Permisos
-                // predeterminados» del panel lateral (<c>App.tsx:1200</c>, sin guarda de plataforma), pero en Windows
+                // predeterminados» del panel lateral (<c>App.tsx:1217</c>, sin guarda de plataforma), pero en Windows
                 // caían en el genérico. Reglas, tabla de banderas y frases, en <see cref="DesktopGroupPermissions"/>;
                 // el cable, en <see cref="GroupPermissionsAsync"/>.
                 "groups.permissions.get" => await GroupPermissionsAsync(args),
@@ -2548,7 +2548,7 @@ public sealed partial class TelegramService : IAsyncDisposable
     /// recorta, así que 100 espacios se niegan por largos y no por vacíos.
     /// <para>
     /// <c>bots: true</c> no es un descuido: la pantalla filtra con la marca que el DTO lleva
-    /// (<c>BatchPanels.tsx:138</c>, <c>App.tsx:1405</c>), y con los bots excluidos en el puente las dos capas
+    /// (<c>BatchPanels.tsx:138</c>, <c>App.tsx:1422</c>), y con los bots excluidos en el puente las dos capas
     /// responderían listas distintas a la misma palabra. <c>my_results</c> va delante de <c>results</c> porque lo
     /// propio pesa más, y la deduplicación es de <see cref="DesktopContact.UserIds"/>: la pantalla usa el id como
     /// clave de React y un id repetido sería un aviso encima de un resultado correcto.
@@ -2576,7 +2576,7 @@ public sealed partial class TelegramService : IAsyncDisposable
 
     /// Las cuatro columnas del DTO, sin petición extra. El retrato de Android no viaja en esta ronda —la lista de
     /// hasta 50 personas costaría una descarga por fila— y la pantalla lo sustituye con iniciales
-    /// (<c>ContactAvatar</c>, <c>App.tsx:93</c>), así que lo que falta es un dibujo y no un dato.
+    /// (<c>ContactAvatar</c>, <c>App.tsx:95</c>), así que lo que falta es un dibujo y no un dato.
     private static ContactDto ContactRow(User person) => new()
     {
         Id = person.id.ToString(),

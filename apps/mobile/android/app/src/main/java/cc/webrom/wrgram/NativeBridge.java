@@ -823,7 +823,7 @@ final class NativeBridge implements TdSession.Listener {
             case "media.play":playDownloadedMedia(p,a);break;
             case "media.retry":requireAccount();JSONArray failedMedia=media.failedIds();int retriedMedia=0;for(int i=0;i<failedMedia.length();i++){int mediaId=failedMedia.getInt(i);media.load(mediaId,ignored->{},ignored->{});retriedMedia++;}schedule();a.ok(retriedMedia);break;
             case "media.export":requireAccount();if(exporting!=null)throw new IllegalArgumentException();if(media.protectedFile(p.getInt("id"))){a.fail("Telegram protege este contenido. No se puede guardar fuera del chat.");break;}exportFile=media.exportFile(p.getInt("id"));if(exportFile==null){a.fail("Descarga primero el archivo.");break;}exporting=a;activity.export.launch(exportFile.getName());break;
-            case "attachment.pick":requireAccount();if(picking!=null)throw new IllegalArgumentException();clearUnsent();picking=a;try{activity.picker.launch("gif".equals(p.optString("kind"))?new String[]{"image/gif"}:new String[]{"*/*"});}catch(RuntimeException error){picking=null;throw new IllegalArgumentException("No hay un selector de archivos disponible.");}break;
+            case "attachment.pick":requireAccount();if(picking!=null)throw new IllegalArgumentException();clearUnsent();picking=a;try{activity.picker.launch("gif".equals(p.optString("kind"))?new String[]{"image/gif"}:"photo".equals(p.optString("kind"))?new String[]{"image/*"}:new String[]{"*/*"});}catch(RuntimeException error){picking=null;throw new IllegalArgumentException("No hay un selector de archivos disponible.");}break;
             case "attachment.camera":requireAccount();if(picking!=null)throw new IllegalArgumentException();clearUnsent();picking=a;if(!activity.capturePhoto()){picking=null;throw new IllegalArgumentException("No hay una aplicación de cámara disponible.");}break;
             case "attachment.discard":{Attachment item=attachments.remove(BridgePolicy.text(p,"token",80));if(item!=null)Files.deleteIfExists(item.path.toPath());a.ok(true);break;}
             case "send.attachment":sendAttachment(p,a);break;
@@ -860,7 +860,7 @@ final class NativeBridge implements TdSession.Listener {
             case "assistant.send":a.ok(assistant.send(BridgePolicy.text(p,"text",4000)));break;
              case "native.settings":activity.showSettingsSupport();a.ok(true);break;
              case "native.assistant":activity.startActivity(new Intent(activity,MainActivity.class).putExtra("page","assistant"));a.ok(true);break;
-            default:throw new IllegalArgumentException();
+            case "attachment.recents":case "attachment.photos.permission":case "attachment.photo":case "attachment.recents.close":deviceGallery(method,p,a);break; case "composer.focus":composerFocus(p.optBoolean("active"));a.ok(true);break; default:throw new IllegalArgumentException();
         }
     }
     private void changeAccount(String slot,Answer answer){WrgramApplication app=(WrgramApplication)activity.getApplication();if(app.account(slot)==null)throw new IllegalArgumentException();session.closeChat();clearUnsent();discardStoryDraft();if(storyPicking!=null)storyPicking.fail("La cuenta cambió. No se publicó ninguna historia.");storyPicking=null;media.clear();catalog.clear();searchResults.clear();MiniAppLaunch.clear();answer.ok(true);app.switchAccount(slot);main.post(activity::recreate);}
@@ -5006,6 +5006,78 @@ final class NativeBridge implements TdSession.Listener {
         return new int[]{width,height,duration};
     }
     private static String zero(String value){return value==null||value.isEmpty()?"0":value;}
+    private DeviceGallery recentPhotos;
+    private String galleryScope="";
+    private int galleryRevision;
+    private Answer galleryPermissionAnswer;
+    private long galleryChat;
+    private int galleryTopic,keyboardTopic;
+    private boolean keyboardFocused,keyboardImporting;
+    private long keyboardOwner,keyboardChat;
+    private void composerFocus(boolean active){
+        keyboardFocused=active&&currentAccount()&&session.ready()&&session.canSend();keyboardOwner=session.selfId;keyboardChat=session.activeChat;keyboardTopic=session.activeTopic;activity.composerRichInput(keyboardFocused);
+    }
+    boolean keyboardContent(androidx.core.view.inputmethod.InputContentInfoCompat content,int flags){
+        if(destroyed||!attached||!keyboardFocused||keyboardImporting||!currentAccount()||session.selfId!=keyboardOwner||session.activeChat!=keyboardChat||session.activeTopic!=keyboardTopic||!session.canSend()||events==null||!activity.requireAccess())return false;
+        Uri uri=content.getContentUri();if(uri==null||!"content".equals(uri.getScheme()))return false;
+        boolean supported=false;for(String mime:new String[]{"image/gif","image/png","image/jpeg","image/webp"})supported|=content.getDescription().hasMimeType(mime);if(!supported)return false;
+        boolean grant=(flags&androidx.core.view.inputmethod.InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION)!=0;
+        try{if(grant)content.requestPermission();}catch(Exception denied){return false;}
+        long owner=keyboardOwner,chat=keyboardChat;int topic=keyboardTopic;keyboardImporting=true;
+        ((WrgramApplication)activity.getApplication()).storage().execute(()->{
+            Attachment item=null;File folder=null;
+            try{
+                folder=new File(activity.getNoBackupFilesDir(),"outbox/"+UUID.randomUUID());if(!folder.mkdirs())throw new IllegalStateException();
+                item=importPhoto(uri,owner,chat,folder);
+                if("image/gif".equals(item.mime)&&!item.name.toLowerCase(java.util.Locale.ROOT).endsWith(".gif"))item.name+=".gif";
+                Attachment ready=item;
+                main.post(()->{
+                    keyboardImporting=false;
+                    if(destroyed||!currentAccount()||session.selfId!=owner||session.activeChat!=chat||session.activeTopic!=topic||!session.canSend()||events==null){ready.path.delete();return;}
+                    String token=UUID.randomUUID().toString();attachments.put(token,ready);
+                    try{post(events,object("event","keyboard.attachment","owner",Long.toString(owner),"chat",Long.toString(chat),"topic",topic,"item",object("token",token,"name",ready.name,"size",ready.size,"mime",ready.mime)).toString());}
+                    catch(Exception unavailable){attachments.remove(token);ready.path.delete();}
+                });
+            }catch(Exception invalid){
+                if(item!=null)item.path.delete();if(folder!=null){File[] files=folder.listFiles();if(files!=null)for(File file:files)file.delete();folder.delete();}
+                main.post(()->{keyboardImporting=false;if(!destroyed&&currentAccount()&&session.selfId==owner&&session.activeChat==chat&&events!=null)try{post(events,object("event","keyboard.attachment","owner",Long.toString(owner),"chat",Long.toString(chat),"error","No se pudo importar el GIF o imagen del teclado. Límite: 32 MB.").toString());}catch(Exception ignored){}});
+            }finally{if(grant)try{content.releasePermission();}catch(Exception ignored){}}
+        });
+        return true;
+    }
+    private void deviceGallery(String method,JSONObject params,Answer answer){
+        requireAccount();String scope=BridgePolicy.text(params,"scope",80);
+        if(method.equals("attachment.recents.close")){
+            if(scope.equals(galleryScope)){recentPhotos=null;galleryScope="";galleryRevision++;if(galleryPermissionAnswer!=null)galleryPermissionAnswer.ok(null);galleryPermissionAnswer=null;}
+            answer.ok(true);return;
+        }
+        if(!session.canSend())throw new IllegalArgumentException("No puedes adjuntar en esta conversación.");
+        if(method.equals("attachment.photo")){
+            if(!scope.equals(galleryScope)||recentPhotos==null||picking!=null||galleryTopic!=session.activeTopic)throw new IllegalArgumentException("Vuelve a abrir la galería.");
+            Uri uri=recentPhotos.selected(params.optString("batch"),params.optString("id"),answer.owner,session.activeChat);
+            clearUnsent();picking=answer;picked(uri);return;
+        }
+        if(galleryPermissionAnswer!=null)throw new IllegalArgumentException("Espera al permiso de fotos.");
+        galleryScope=scope;galleryChat=session.activeChat;galleryTopic=session.activeTopic;
+        if(method.equals("attachment.photos.permission")){
+            galleryPermissionAnswer=answer;
+            try{activity.requestGalleryPermission();}catch(Exception unavailable){galleryPermissionAnswer=null;answer.fail("No se pudo solicitar acceso a las fotos. Usa el selector del sistema.");}
+        }else loadRecentPhotos(answer);
+    }
+    void galleryPermissionResult(){Answer answer=galleryPermissionAnswer;galleryPermissionAnswer=null;if(answer!=null)loadRecentPhotos(answer);}
+    private void loadRecentPhotos(Answer answer){
+        long chat=galleryChat;int topic=galleryTopic,revision=++galleryRevision;
+        ((WrgramApplication)activity.getApplication()).storage().execute(()->{
+            DeviceGallery photos=new DeviceGallery();
+            try{
+                JSONObject result=photos.list(activity,answer.owner,chat);
+                main.post(()->{
+                    if(destroyed||!currentAccount()||session.selfId!=answer.owner||session.activeChat!=chat||session.activeTopic!=topic||revision!=galleryRevision){photos.clear();answer.ok(null);return;}
+                    recentPhotos=photos;answer.ok(result);
+                });
+            }catch(Exception revoked){photos.clear();main.post(()->answer.fail("No se pudieron leer las fotos. Revisa el permiso o usa el selector del sistema."));}
+        });
+    }
     /**
      * Antes de añadir se pregunta a Telegram qué reacciones admite este mensaje. Una pantalla abierta hace rato,
      * un emoji escrito a mano o una reacción que el chat retiró mientras se elegía se responden con una frase;

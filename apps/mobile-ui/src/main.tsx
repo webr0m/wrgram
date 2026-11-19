@@ -7,6 +7,8 @@ import './visual-polish.css';
 import './inbox.css';
 import './chat-customization.css';
 import './mobile-navigation.css';
+import './chat-options.css';
+import './message-quotes.css';
 import { acceptState, installDesignTransport } from './bridge';
 if (import.meta.env.DEV && new URLSearchParams(location.search).get('preview') === '1') {
   const { fixture, designRequest } = await import('./preview');

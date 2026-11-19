@@ -16,7 +16,7 @@ export const snapshot = () => state;
 // El nativo deja la respuesta pendiente mientras la persona está en un selector del sistema,
 // la cámara, un permiso de Android o un diálogo de confirmación: 35 s no es un plazo real.
 const USER_DRIVEN = new Set([
-  'attachment.pick', 'attachment.camera', 'attachment.album', 'attachment.videoNote', 'attachment.videoNote.record',
+  'attachment.pick', 'attachment.camera', 'attachment.album', 'attachment.videoNote', 'attachment.videoNote.record', 'attachment.photos.permission',
   'account.photo.pick', 'account.photo.delete', 'chat.photo.pick', 'chat.photo.delete', 'media.export',
   'story.create.photo', 'story.create.video',
   'contacts.import', 'contacts.add', 'contacts.sync.set', 'contacts.sync.now',
@@ -108,7 +108,7 @@ if (window.WRGramNative) {
   window.WRGramNative.onmessage = event => {
     try {
       const data = JSON.parse(event.data);
-      if (data.event === 'state' && data.state && typeof data.state === 'object') { applyNativeState(data.state); return; }
+      if (data.event === 'state' && data.state && typeof data.state === 'object') { applyNativeState(data.state); return; } if(data.event==='keyboard.attachment'){deliverKeyboardContent(data);return;}
       const item = pending.get(data.id); if (!item) return;
       clearTimeout(item.timer); pending.delete(data.id);
       if (data.error) item.reject(new Error(data.error)); else item.resolve(data.result);
@@ -117,3 +117,12 @@ if (window.WRGramNative) {
   void refreshInitialState();
 }
 export const mediaUrl = (id: number) => `${window.WRGRAM_MEDIA_BASE || 'https://appassets.androidplatform.net'}/media/${id}`;
+export interface KeyboardContent {owner:string;chat:string;topic?:number;item?:{token:string;name:string;size:number;mime?:string};error?:string}
+const keyboardListeners=new Set<(content:KeyboardContent)=>void>();
+export function subscribeKeyboardContent(listener:(content:KeyboardContent)=>void){keyboardListeners.add(listener);return()=>{keyboardListeners.delete(listener);};}
+function deliverKeyboardContent(value:KeyboardContent){
+  if(typeof value.owner!=='string'||typeof value.chat!=='string')return;
+  if(value.item&&(typeof value.item.token!=='string'||typeof value.item.name!=='string'||typeof value.item.size!=='number'))return;
+  if(!keyboardListeners.size&&value.item){void request('attachment.discard',{token:value.item.token}).catch(()=>{});return;}
+  for(const listener of keyboardListeners)listener(value);
+}

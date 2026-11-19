@@ -44,7 +44,7 @@ public final class ShellActivity extends AccessActivity {
     static final String EXTRA_INLINE_USERNAME = "username";
     static final String EXTRA_INLINE_QUERY = "query";
     static final String EXTRA_MINIAPP_SHORTCUT = "shortcut";
-    private WebView web;
+    private WebView web; private final ActivityResultLauncher<String[]> galleryPermission=registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(),result->{if(this.bridge!=null)this.bridge.galleryPermissionResult();}); void requestGalleryPermission(){galleryPermission.launch(DeviceGallery.permissions());} void composerRichInput(boolean active){if(web instanceof RichInputWebView)((RichInputWebView)web).composer(active);}
     private NativeBridge bridge;
     private PlayUpdateController updateController;
     private FrameLayout root;
@@ -217,7 +217,7 @@ public final class ShellActivity extends AccessActivity {
             } else view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
             return insets;
         });
-        web = new WebView(this); web.setBackgroundColor(Palette.get(this).canvas); web.setSaveEnabled(false);
+        web = new RichInputWebView(this,(content,flags,options)->bridge!=null&&bridge.keyboardContent(content,flags)); web.setBackgroundColor(Palette.get(this).canvas); web.setSaveEnabled(false);
         WebSettings settings = web.getSettings(); settings.setJavaScriptEnabled(true); settings.setDomStorageEnabled(true);
         // The bundled UI sizes its own text. Keeping system font scaling out of the
         // WebView prevents clipped rows and horizontal overflow on large-font devices.

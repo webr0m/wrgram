@@ -380,8 +380,9 @@ describe('ronda AN · el contrato y la lectura', () => {
 describe('ronda AN · la pantalla deja de esconderla en Windows', () => {
   it('«Crear encuesta» ya no está detrás de !desktop', () => {
     const start = at('<MenuItem icon={<ListChecks/>} label="Crear encuesta"', app);
-    // Lo único que la precede es el cierre de la entrada anterior: «/>}», y no el «&&» de un guardia.
-    expect(app.slice(start - 3, start)).toBe('/>}');
+    // Ahora encabeza la categoría Organizar, sin guarda de plataforma.
+    expect(app.slice(start - 120, start)).toContain('title="Organizar"');
+    expect(app.slice(start - 3, start)).not.toBe('&&<');
     const closing = 'openPoll();}}/>';
     const end = app.indexOf(closing, start) + closing.length;
     expect(app.slice(start, end)).toContain('onClick={()=>{setDialog(undefined);openPoll();}}/>');
@@ -390,8 +391,9 @@ describe('ronda AN · la pantalla deja de esconderla en Windows', () => {
   it('las otras siete entradas del adjuntar siguen escondidas, cada una con su motivo', () => {
     // La lista de tareas no tiene tipos en la librería; el resto necesita hardware o permisos de Android.
     // «Compartir contacto» se salió de esta cuenta con la ronda AP, que le armó el puente en Windows.
-    const menu = app.slice(at('function openAttachments', app), at('function openAttachments', app) + 3000);
-    expect(count('{!desktop&&<MenuItem', menu)).toBe(6);
+    const menu = app.slice(at('function openAttachments', app), at('function toggleFormat', app));
+    expect(count('{!desktop&&<MenuItem', menu)).toBe(2);
+    expect(menu).toContain('id="record" title="Grabar" description="Voz, cámara y videomensajes" icon={<Mic/>}>{!desktop&&<>');
     // El contenido de pago va un poco más lejos: se esconde además fuera de los canales.
     expect(count("{!desktop&&active?.type==='channel'", menu)).toBe(1);
   });

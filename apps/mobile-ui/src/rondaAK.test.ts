@@ -266,18 +266,18 @@ describe('ronda AK · el acceso de Windows y lo que hay detrás', () => {
   });
 
   it('el menú de Windows solo deja lo que el puente atiende', () => {
-    const menu = app.slice(at('function openAttachments', app), at('function openAttachments', app) + 2400);
+    const menu = app.slice(at('function openAttachments', app), at('function toggleFormat', app));
     // Ninguna de estas órdenes tiene brazo en el host: `attachment.camera`, `send.paidMedia`, `voice.start`,
     // `attachment.videoNote*`, `checklist.send`, `share.location`. El álbum estaba en esta lista hasta la ronda AL,
     // que lo conectó y lo sacó; `rondaAL.test.ts` responde de él. La encuesta corrió igual en la ronda AN, y
     // `rondaAN.test.ts` es la que vigila que su entrada no vuelva a esconderse. Compartir un contacto se fue con la
     // ronda AP, que le puso brazo al puente y aguja nueva a `rondaAP.test.ts`.
     for (const needle of [
-      '{!desktop&&<MenuItem icon={<Camera/>} label="Tomar foto"',
+      '<MenuItem icon={<Camera/>} label="Tomar foto"',
       `{!desktop&&active?.type==='channel'&&<MenuItem icon={<LockKeyhole/>} label="Publicar contenido de pago"`,
-      '{!desktop&&<MenuItem icon={<Mic/>} label="Nota de voz"',
-      '{!desktop&&<MenuItem icon={<Camera/>} label="Grabar videomensaje"',
-      '{!desktop&&<MenuItem icon={<Camera/>} label="Videomensaje desde archivo"',
+      '<MenuItem icon={<Mic/>} label="Nota de voz"',
+      '<MenuItem icon={<Camera/>} label="Grabar videomensaje"',
+      '<MenuItem icon={<Camera/>} label="Videomensaje desde archivo"',
       '{!desktop&&<MenuItem icon={<ListChecks/>} label="Crear lista de tareas"',
       '{!desktop&&<MenuItem icon={<MapPin/>} label="Compartir ubicación"',
     ]) {
@@ -295,7 +295,7 @@ describe('ronda AK · el acceso de Windows y lo que hay detrás', () => {
     expect(menu).toContain('label="Archivo o foto"');
     // La misma petición con el argumento opcional que la ronda BU añadió para la fila de GIF: sin `kind` sigue
     // siendo la llamada de siempre.
-    expect(app).toContain("run<{token:string;name:string;size:number}>(method,kind?{kind}:{})");
+    expect(app).toContain("run<PickedAttachment>(method,kind?{kind}:{})");
     // La pantalla ya avisaba del tope que ahora cumple el host.
     expect(app).toContain('Límite de esta versión: 32 MB.');
   });

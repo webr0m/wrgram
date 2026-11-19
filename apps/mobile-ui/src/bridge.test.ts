@@ -72,6 +72,23 @@ describe('recuperación del estado inicial', () => {
 });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
+describe('contenido del teclado',()=>{
+  it('hands GIFs to the confirmation subscriber without sending a message',async()=>{
+    const bridge=await loadBridge(),listener=vi.fn();const off=bridge.subscribeKeyboardContent(listener);
+    const value={owner:'42',chat:'11',topic:0,item:{token:'gif-token',name:'teclado.gif',size:1024,mime:'image/gif'}};
+    reply({event:'keyboard.attachment',...value});expect(listener).toHaveBeenCalledExactlyOnceWith({event:'keyboard.attachment',...value});
+    expect(post.mock.calls.some(([raw])=>JSON.parse(raw).method.startsWith('send.'))).toBe(false);off();
+  });
+  it('discards an incoming attachment when its UI has unmounted',async()=>{
+    await loadBridge();reply({event:'keyboard.attachment',owner:'42',chat:'11',item:{token:'late',name:'emoji.webp',size:300}});
+    expect(JSON.parse(post.mock.calls.at(-1)![0])).toMatchObject({method:'attachment.discard',params:{token:'late'}});
+  });
+  it('ignores malformed attachment events',async()=>{
+    const bridge=await loadBridge(),listener=vi.fn();bridge.subscribeKeyboardContent(listener);
+    reply({event:'keyboard.attachment',owner:'42',chat:'11',item:{token:10,name:'bad',size:300}});expect(listener).not.toHaveBeenCalled();
+  });
+});
+
 describe('plazos del puente con la interfaz nativa', () => {
   it('da cinco minutos a quien está en un selector, la cámara o un diálogo, y 35 s al resto', async () => {
     const { requestTimeoutMs } = await loadBridge();

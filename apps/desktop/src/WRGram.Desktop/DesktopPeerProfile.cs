@@ -135,7 +135,7 @@ public static class DesktopPeerProfile
     public static object MemberRow(long id, string name, string role) => new { id = id.ToString(), name, role };
 
     /// La fila de <c>chat</c> que <c>respondProfilePeer</c> devuelve por tres caminos distintos
-    /// (<c>:1609-1612</c>, y las dos pestañas saltan aquí desde <c>App.tsx:739</c>). <c>type</c> manda en la
+    /// (<c>:1609-1612</c>, y las dos pestañas saltan aquí desde <c>App.tsx:736</c>). <c>type</c> manda en la
     /// pantalla: <c>private</c> abre ficha de persona, <c>group</c> y <c>channel</c> abren ficha de comunidad.
     public static object PeerRow(string id, string title, string type, string username, bool bot) =>
         new { id, title, type, username, bot, supported = true };

@@ -18,9 +18,9 @@ using WTelegram;
 /// <para>
 /// Antes de esta ronda, ninguna de las cuatro existía en Windows: <c>grep groups\. apps/desktop</c> no devolvía ni
 /// una línea, así que las tres lecturas caían en el <c>_ =&gt; throw</c> genérico. Las dos entradas del panel de
-/// detalles («Ver miembros» y «Administrar miembros», <c>App.tsx:1200</c>) no llevan guarda de plataforma, de modo
+/// detalles («Ver miembros» y «Administrar miembros», <c>App.tsx:1217</c>) no llevan guarda de plataforma, de modo
 /// que en Windows «Ver miembros» enseñaba la frase genérica y «Administrar miembros» no decía nada —el panel
-/// (<c>App.tsx:1362</c>) no captura el rechazo y se quedaba en «Sin miembros para este filtro o búsqueda»—. Dos
+/// (<c>App.tsx:1379</c>) no captura el rechazo y se quedaba en «Sin miembros para este filtro o búsqueda»—. Dos
 /// huecos distintos con la misma causa.
 /// </para>
 /// <para>

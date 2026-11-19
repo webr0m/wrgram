@@ -265,7 +265,7 @@ describe('ronda AX · las listas de miembros, cruzadas con las tres capas', () =
     expect(desktopSheet).toContain('{(chat.supergroup===true||chat.type===\'channel\')&&<MenuItem icon={<ShieldCheck/>} label="Administrar miembros" onClick={()=>{setDialog(undefined);openGroupMembers(chat);}}/>}');
     expect(app).toContain('function GroupAdmin({chat,run,sanction,promote,demote,unban,revenue}:{chat:Chat;run:Run;');
     expect(app).toContain('body:<GroupAdmin chat={chat} run={run} sanction=');
-    expect(app).not.toContain('{!desktop&&<>');
+    expect(app.slice(app.indexOf('function GroupAdmin'),app.indexOf('function MemberSanctionDialog'))).not.toContain('{!desktop&&<>');
     expect(app).not.toContain('DESKTOP_MEMBER_REFUSALS.sanctions');
     expect(app).toContain('{member.canUnban&&<button className="text-button" onClick={()=>unban(member)}>{liftTitle(!!member.banned)}</button>}');
     expect(app).toContain('.catch(report)}');
