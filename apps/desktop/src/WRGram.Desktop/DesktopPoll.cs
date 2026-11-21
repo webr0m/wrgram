@@ -21,18 +21,33 @@ using TL;
 /// leer—, porque las claves están en la fila de Telegram, no en el índice que tocó la persona.
 /// </para>
 /// <para>
-/// Dos cosas que este esquema no puede hacer y se dicen con su nombre en vez de taparse con el «No disponible en
+/// Tres cosas que este esquema no puede hacer y se dicen con su nombre en vez de taparse con el «No disponible en
 /// escritorio (beta)» de siempre. <see cref="NoStop"/>: <b>no existe petición para cerrar una encuesta</b> —no está
 /// <c>TL.Methods.Messages_StopPoll</c> ni su extensión, y el puente no tiene manera de escribirla a mano—, así que
 /// <c>canStop</c> sale en <c>false</c> y la pantalla no pinta el botón: es un hueco de la librería, no una plaza sin
-/// ocupar. Lo contrario pasó con la lista de votantes: <c>messages.getPollVotes</c> siempre existió y desde la ronda
-/// AO está conectada, de modo que <see cref="CanGetVoters"/> manda sola y el botón de la pantalla funciona. Las tres
-/// frases que quedan por debajo son reglas de Telegram y no huecos: <see cref="NoOption"/> es el
+/// ocupar. Lo mismo le pasa a la descripción de la encuesta, <see cref="NoDescription"/>: contados sobre el
+/// ensamblado empaquetado, ni <c>TL.Poll</c> ni <c>TL.InputMediaPoll</c> traen dónde ponerla, de modo que una encuesta
+/// con descripción solo se puede enviar desde Android. Lo contrario pasó con la lista de votantes:
+/// <c>messages.getPollVotes</c> siempre existió y desde la ronda AO está conectada, de modo que
+/// <see cref="CanGetVoters"/> manda sola y el botón de la pantalla funciona. Las tres frases que quedan por debajo
+/// son reglas de Telegram y no huecos: <see cref="NoOption"/> es el
 /// <c>IllegalArgumentException()</c> sin mensaje con el que Android despacha un índice ausente o negativo,
 /// <see cref="AnonymousVoters"/> es el anonimato, y <see cref="OnlyFirstPage"/> la única divergencia de protocolo que
 /// hay aquí dentro —TDLib pagina saltando un número de votantes; MTProto espera el cursor opaco que él mismo devolvió
 /// en <c>next_offset</c>, y este puente no le entrega ese cursor a nadie: lo honesto es negarse antes que devolver la
 /// primera página haciéndola pasar por otra—.
+/// </para>
+/// <para>
+/// Las opciones admiten foto desde la ronda CN, y desde la CN-B también aquí. La subida no es la del archivo
+/// suelto: <c>inputMediaPoll</c> pide un medio <b>ya subido y nombrable</b> en cada opción, así que cada foto pasa
+/// dos peticiones —<c>upload.saveFilePart</c> dentro de <c>Client.UploadFileAsync</c> y <c>messages.uploadMedia</c>
+/// sobre la conversación abierta— y la segunda es la que devuelve el <c>inputMediaPhoto</c> con su <c>id</c>, su
+/// <c>access_hash</c> y su <c>file_reference</c> que viaja dentro de la encuesta. Por eso la opción con foto se
+/// manda como <c>InputPollAnswer</c> y no como <c>PollAnswer</c>: es la única de las dos formas del cable que tiene
+/// campo de medio, y a cambio la clave opaca la pone Telegram. Al leer, solo se pinta la foto
+/// (<see cref="PhotoOf"/>); los otros medios que la librería puede devolver se quedan sin fila, igual que en
+/// Android cuando <c>NativeSnapshot.pollMedia</c> no tiene camino para el tipo que llega
+/// (<c>NativeSnapshot.java:441</c>).
 /// </para>
 /// <para>
 /// Y tres palabras que no son de esta capa. <c>pollVoters</c> no formatea nombres: llama a
@@ -67,18 +82,30 @@ using TL;
 public static class DesktopPoll
 {
     /// Las cuatro cifras de <c>BridgePolicy.text(p,"question",255)</c> y de <c>sendPoll</c>: la pregunta corta en
-    /// 255, las opciones son dos orillas —2 y 10— y cada una mide entre 1 y 100. La explicación del cuestionario
-    /// son los 200 de <c>NativeSnapshot.limit(explanation,200)</c>.
+    /// 255, las opciones son dos orillas —2 y 12— y cada una mide entre 1 y 100. La explicación del cuestionario
+    /// son los 200 de <c>NativeSnapshot.limit(explanation,200)</c>. El doce es la ronda CF: Telegram publica
+    /// «A poll can have up to 12 options» en su FAQ y «a JSON-serialized list of 1-12 answer options» en la Bot API,
+    /// y TDLib deja poner tantas como su opción de runtime <c>poll_answer_count_max</c> permita.
     public const int MaxQuestion = 255;
     public const int MinOptions = 2;
-    public const int MaxOptions = 10;
+    public const int MaxOptions = 12;
     public const int MaxOption = 100;
     public const int MaxExplanation = 200;
 
-    /// Lo que <c>answerPoll</c> admite en su lista: de una a diez opciones, y un índice negativo es un error de
-    /// pantalla, no una voto.
+    /// Lo que <c>answerPoll</c> admite en su lista: de una a doce opciones —la misma orilla alta que las opciones
+    /// de la encuesta, porque en una de respuestas múltiples se pueden marcar todas—, y un índice negativo es un
+    /// error de pantalla, no una voto.
     public const int MinVotes = 1;
-    public const int MaxVotes = 10;
+    public const int MaxVotes = 12;
+
+    /// La franja del cierre temporizado que añade la ronda CF. Android la escribe en <c>poll.openPeriod</c>
+    /// (<c>TdApi.InputMessagePoll</c>: «Amount of time the poll will be active after creation, in seconds;
+    /// 0-getOption("poll_open_period_max")» —TDLib no publica el número, es una opción de runtime—) y aquí viaja
+    /// como <c>TL.Poll.close_date</c>. Los dos topes son los que Telegram publica para su Bot API:
+    /// «open_period … 5-2628000» y «close_date … at least 5 and no more than 2628000 seconds in the future».
+    /// Cero significa «sin cierre», que es el valor con el que la pantalla no pide ninguna fecha.
+    public const int MinClose = 5;
+    public const int MaxClose = 2628000;
 
     /// Cuántos votantes caben en una página. Es literal de <c>pollVoters</c> —<c>Math.max(1,Math.min(50,…))</c>— y no
     /// un tope inventado aquí: TDLib no devuelve más de cincuenta, y la pantalla lo sabe porque manda
@@ -121,10 +148,31 @@ public static class DesktopPoll
     /// nada es mejor que responder en inglés.
     public const string TooLong = "La pregunta admite hasta 255 caracteres.";
 
-    /// Literal de <c>sendPoll</c> para el tamaño del lote de opciones. La pantalla avisa con otra frase más
-    /// amable («Añade entre 2 y 10 opciones.») antes de llegar al puente; esta es la que queda cuando el lote llega
-    /// mal formado desde cualquier otra parte.
-    public const string Batch = "Escribe entre 2 y 10 opciones.";
+    /// Literal de <c>sendPoll</c> para el tamaño del lote de opciones. La pantalla la tiene escrita desde siempre
+    /// —<c>PollComposer</c>— con otra frase más amable («Añade entre 2 y 12 opciones.») antes de llegar al puente;
+    /// esta es la que queda cuando el lote llega mal formado desde cualquier otra parte.
+    public const string Batch = "Escribe entre 2 y 12 opciones.";
+
+    /// Literal de <c>sendPoll</c> cuando el vale de una foto ya no es de esta cuenta o de esta conversación —Android
+    /// compara las dos cosas en la misma condición en la que mira si el vale existe (<c>NativeBridge.java:4693</c>),
+    /// así que las tres salen con una sola frase—. Es distinta de la del álbum
+    /// (<see cref="DesktopAlbum.ChangedPieces"/>) y del archivo suelto (<see cref="DesktopAttachment.ChangedChat"/>):
+    /// las tres nombran lo que se perdió, y aquí se pierden las imágenes de las opciones.
+    public const string ChangedPhotos = "La conversación cambió. Vuelve a elegir las imágenes de las opciones.";
+
+    /// Literal de <c>sendPoll</c> para un MIME que no está en la terna de foto. Es la misma terna que
+    /// <see cref="DesktopAttachment.IsPhoto"/>, dicha con la frase que Android escribió para la encuesta.
+    public const string NotPhoto = "Cada opción admite una foto JPG, PNG o WebP.";
+
+    /// Literal de <c>sendPoll</c> cuando las fotos no cubren todas las opciones. Android lo corta con esa guarda
+    /// (<c>NativeBridge.java:4694</c>) porque en el cable cada opción lleva la suya por posición
+    /// (<c>NativeBridge.java:4696</c>) y una lista más corta desalinearía todas las que vienen después.
+    public const string UnevenPhotos = "Una encuesta con imágenes lleva una imagen en cada opción.";
+
+    /// El nombre con el que Android registra la foto leída de una opción (<c>NativeSnapshot.java:435</c>); de ahí lo
+    /// que la burbuja muestra en el visor cuando aún no se descargó nada. Se copia para que la misma foto tenga el
+    /// mismo nombre desde los dos dispositivos.
+    public const string OptionPhotoName = "Foto de la opción";
 
     /// Literal de <c>sendPoll</c> para una opción vacía o de más de cien caracteres: Android mete las dos
     /// condiciones en una sola frase y aquí se conserva esa forma.
@@ -137,6 +185,12 @@ public static class DesktopPoll
     /// Literal de <c>sendPoll</c> cuando se marca cuestionario sin respuesta correcta o con una que se sale.
     public const string NoCorrect = "Elige una respuesta correcta.";
 
+    /// La última de las negaciones del envío y la única que no estaba en Android antes de la ronda CF, así que la
+    /// frase es de aquí: el puente de Android no tenía con qué negar un cierre mal pedido porque no podía pedirlo.
+    /// Dice la franja que Telegram publica para <c>open_period</c> y <c>close_date</c> —de 5 segundos a
+    /// 2.628.000, o sea treinta días y una hora— y el cero se acepta aparte porque significa «sin cierre».
+    public const string CloseRange = "La encuesta debe cerrarse entre 5 segundos y 30 días y 1 hora después de enviarse.";
+
     /// Literal que <c>answerPoll</c>, <c>stopPoll</c> y <c>pollVoters</c> comparten en Android cuando la fila no
     /// es una encuesta.
     public const string NoPoll = "Este mensaje no contiene una encuesta.";
@@ -146,9 +200,9 @@ public static class DesktopPoll
     public const string Gone = "El mensaje ya no está disponible.";
 
     /// Android no tiene frase para esto: su <c>answerPoll</c> lanza <c>IllegalArgumentException()</c> sin mensaje
-    /// si la lista se sale de 1..10 o trae un índice negativo. Como en español no había nada que copiar, la frase
+    /// si la lista se sale de 1..12 o trae un índice negativo. Como en español no había nada que copiar, la frase
     /// es de esta capa.
-    public const string NoVote = "Marca entre una y diez opciones de esta encuesta.";
+    public const string NoVote = "Marca entre una y doce opciones de esta encuesta.";
 
     /// También propia. Android deja que sea TDLib quien responda con su error cuando el índice no corresponde a
     /// ninguna opción; aquí la lista de claves se arma contra la encuesta recién leída y se puede nombrar la causa
@@ -163,6 +217,13 @@ public static class DesktopPoll
     /// petición. Es el mismo caso de <see cref="DesktopMessageReact.Refused"/>.
     public const string NoStop =
         "La biblioteca de escritorio no tiene petición para cerrar una encuesta, así que aquí se puede enviar y votar, pero no cerrarla.";
+
+    /// Otro hueco de la librería, medido sobre el ensamblado empaquetado: ni <c>TL.Poll</c> ni
+    /// <c>TL.InputMediaPoll</c> traen campo de descripción, así que la que Android escribe en
+    /// <c>TdApi.InputMessagePoll.description</c> no tiene aquí dónde ir. Negarla por su nombre es la única manera de
+    /// no mandar una encuesta distinta de la que se pidió —callarla y enviarla sin más sería fingir—.
+    public const string NoDescription =
+        "La biblioteca de escritorio no tiene campo para la descripción de la encuesta, así que aquí la encuesta se envía y se vota sin descripción.";
 
     /// <c>pollVoters</c> lanza <c>IllegalArgumentException()</c> sin mensaje cuando el índice de la opción no viene o
     /// es negativo. Es el mismo caso de <see cref="NoVote"/> en el voto: en Android no había literal que copiar, así
@@ -253,11 +314,34 @@ public static class DesktopPoll
     public static bool Repeats(string[] options) =>
         options.Select(option => option.ToLowerInvariant()).Distinct().Count() != options.Length;
 
+    /// Los vales de foto que manda la pantalla, sin los huecos: la caja escribe una cadena vacía por cada opción sin
+    /// imagen (<c>BatchPanels.tsx:94</c>) y <c>sendPoll</c> las salta con <c>media.optString(i,"")</c> antes de
+    /// mirar cualquiera de las dos reglas de arriba.
+    public static string[] Photos(string[] raw) => raw.Where(token => token.Length > 0).ToArray();
+
+    /// Cero fotos o exactamente una por opción —<c>NativeBridge.java:4693</c>—.
+    public static bool PhotosMatch(int photos, int options) => photos == 0 || photos == options;
+
     /// La misma doble orilla de <c>sendPoll</c>: <c>correct &lt; 0 || correct &gt;= options.length</c>.
     public static bool AllowsCorrect(int correct, int count) => correct >= 0 && correct < count;
 
+    /// El cierre temporizado que pide la pantalla, en segundos: el cero es «sin cierre» y lo demás tiene que caer
+    /// dentro de la franja que Telegram publica. Fuera de ella no se manda nada, que es lo que hace también
+    /// <c>sendPoll</c> antes de escribir <c>poll.openPeriod</c>.
+    public static bool ClosesInRange(int seconds) => seconds == 0 || seconds is >= MinClose and <= MaxClose;
+
+    /// La fecha absoluta con la que Telegram cierra la encuesta: el instante del envío más el periodo pedido. El
+    /// reloj entra como entero de época —<see cref="DesktopSchedule.Date"/> hace lo mismo con lo programado— para
+    /// que la cuenta no dependa de la zona horaria de esta máquina, y sale en UTC porque así lo seriea la librería.
+    public static DateTime CloseDate(long nowEpoch, int seconds) =>
+        DateTimeOffset.FromUnixTimeSeconds(nowEpoch + seconds).UtcDateTime;
+
     /// El explicación del cuestionario viaja en <c>solution</c>, y TDLib solo pone <c>has_solution</c> si hay texto.
     public static bool HasSolution(string explanation) => explanation.Length > 0;
+
+    /// Si la pantalla pidió descripción. No es un adorno: como no hay campo donde escribirla, esta es la guarda que
+    /// decide si la petición se manda o se niega con <see cref="NoDescription"/>.
+    public static bool HasDescription(string? raw) => Trim(raw).Length > 0;
 
     /// Las cinco banderas del borrador traducidas a las de <c>TL.Poll</c>. Dos cosas hay que mirar:
     /// <c>public_voters</c> es la <b>invertida</b> de «Votos anónimos» y <c>revoting_disabled</c> la invertida de
@@ -296,6 +380,20 @@ public static class DesktopPoll
         return keys;
     }
 
+    /// <summary>
+    /// La pieza de la encuesta que viaja al servidor son dos constructores de <c>PollAnswerBase</c>, y la
+    /// diferencia no la inventa esta capa: <c>pollAnswer</c> trae la <c>option</c> opaca que
+    /// <c>messages.sendVote</c> pedirá de vuelta y no tiene dónde escribir un medio de entrada;
+    /// <c>inputPollAnswer</c> es el único que lleva ese <c>InputMedia</c> y, a cambio, no declara
+    /// <c>option</c> en la librería. Por eso una encuesta con fotos no puede llevar las claves que se sortearon aquí
+    /// y tiene que leerlas de la fila que devuelve Telegram —que es justo de donde las lee
+    /// <see cref="KeysFor"/>—, mientras que una sin fotos sigue viajando con las suyas, como desde la ronda AN.
+    /// El <c>null</c> en la clave es la señal de las dos cosas a la vez: que hay fotos y que no hay clave.
+    /// </summary>
+    public static PollAnswerBase Answer(string option, string? key) => key == null
+        ? new InputPollAnswer { text = new TextWithEntities { text = option, entities = new MessageEntity[0] } }
+        : new PollAnswer { option = key, text = new TextWithEntities { text = option, entities = new MessageEntity[0] } };
+
     /// Los índices que llegan de la pantalla, ya como enteros. El puente Android acepta el array tal cual porque
     /// JSON se lo da numérico; aquí <c>Arr</c> convierte lo que sea a texto, así que hay que volver a leerlos y
     /// negar lo que no sea un índice válido.
@@ -324,11 +422,33 @@ public static class DesktopPoll
     /// lección que la ronda AM aprendió con <c>MessageBase[]</c>.
     public static PollAnswer[] Options(TL.Poll poll) => poll.answers.OfType<PollAnswer>().ToArray();
 
+    /// Si la opción trae medio. La bandera manda: <c>TL.PollAnswer.media</c> sin <c>has_media</c> vale <c>null</c>,
+    /// y tratar un nulo como foto sería pintar una imagen que la fila no tiene.
+    public static bool HasPhoto(PollAnswer answer) => (answer.flags & PollAnswer.Flags.has_media) != 0;
+
+    /// <summary>
+    /// La foto de una opción leída, o <c>null</c>. <c>TL.PollAnswer.media</c> es un <c>MessageMedia</c> genérico y
+    /// Telegram puede devolver vídeo, animación, documento, sticker o audio —cinco de los siete tipos que TDLib
+    /// declara para su <c>PollMedia</c>—; este puente solo tiene camino para la foto, que además es lo único que su
+    /// propia capa de escritura sabe subir. Lo demás se queda sin pintar y no se disfraza: la pantalla simplemente
+    /// no recibe <c>media</c> en esa opción, igual que no lo recibe en Android cuando
+    /// <c>NativeSnapshot.pollMedia</c> devuelve <c>null</c> (<c>NativeSnapshot.java:441</c>).
+    /// </summary>
+    public static Photo? PhotoOf(PollAnswer answer) =>
+        HasPhoto(answer) && answer.media is MessageMediaPhoto { photo: Photo photo } ? photo : null;
+
     public static bool IsQuiz(TL.Poll poll) => Has(poll.flags, TL.Poll.Flags.quiz);
     public static bool IsAnonymous(TL.Poll poll) => !Has(poll.flags, TL.Poll.Flags.public_voters);
     public static bool AllowsMultiple(TL.Poll poll) => Has(poll.flags, TL.Poll.Flags.multiple_choice);
     public static bool AllowsRevoting(TL.Poll poll) => !Has(poll.flags, TL.Poll.Flags.revoting_disabled);
     public static bool IsClosed(TL.Poll poll) => Has(poll.flags, TL.Poll.Flags.closed);
+
+    /// Si la encuesta trae una fecha de cierre. <c>TL.Poll</c> publica dos formas de decir lo mismo —un periodo en
+    /// segundos desde el envío y una fecha absoluta— y solo la segunda se puede pintar sin saber cuándo se mandó el
+    /// mensaje, que es el dato que <c>ConvertPoll</c> no recibe. Una encuesta creada por otro cliente con
+    /// <c>close_period</c> y sin <c>close_date</c> se queda sin aviso en Windows; en Android TDLib siempre entrega
+    /// <c>Poll.closeDate</c>, así que ahí la franja sí está dicha.
+    public static bool HasCloseDate(TL.Poll poll) => Has(poll.flags, TL.Poll.Flags.has_close_date);
     public static bool HidesResults(TL.Poll poll) => Has(poll.flags, TL.Poll.Flags.hide_results_until_close);
 
     private static bool Has(TL.Poll.Flags flags, TL.Poll.Flags bit) => (flags & bit) != 0;

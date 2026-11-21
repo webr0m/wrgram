@@ -52,7 +52,7 @@ namespace WRGram.Desktop;
 /// su firma). Ninguna pantalla de WRGram ofrece la lista de historias, así que el cable manda <c>false</c> siempre
 /// y la otra lista no se lee ni se escribe. El <b>bloqueo</b>, en cambio, sí vive aquí aunque la orden sea de otra
 /// puerta: Android lo atiende desde la ficha de la persona (<c>profile.block</c>, <c>:527</c> → <c>:1280</c>) y la
-/// pantalla lo pide con su propio cuadro de confirmar dentro de la interfaz (<c>App.tsx:744-747</c>), por eso
+/// pantalla lo pide con su propio cuadro de confirmar dentro de la interfaz (<c>App.tsx:748-751</c>), por eso
 /// <c>profile.block</c> no está en las órdenes que esperan a un diálogo nativo (<c>bridge.ts</c>) y por eso el cable
 /// de Windows no abre ventana ninguna: confirma la pantalla, escribe el host.
 /// </para>
@@ -95,7 +95,7 @@ public static class DesktopBlocked
     /// <summary>
     /// El <c>"Remitente no compatible."</c> de <c>:29</c> y <c>:35</c>, que en Java solo puede salir de un
     /// <c>MessageSender</c> desconocido y aquí de un cuarto subtipo de <c>Peer</c> que el esquema no tenía cuando se
-    /// midió. Allá la frase no llega a la pantalla: el <c>catch</c> de <c>NativeBridge.java:1526</c> la dobla en
+    /// midió. Allá la frase no llega a la pantalla: el <c>catch</c> de <c>NativeBridge.java:1546</c> la dobla en
     /// <see cref="ListFailed"/>; acá se deja la original, porque un tipo que ninguna de las dos capas sabe nombrar no
     /// es la misma noticia que un par que la respuesta no trae, y la diferencia se puede arreglar.
     /// </summary>
@@ -137,7 +137,7 @@ public static class DesktopBlocked
     public const string NoProfileHash = "Telegram no dio los datos necesarios para cambiar el bloqueo de esta persona. Vuelve a abrir su ficha desde la conversación e inténtalo de nuevo.";
 
     /// <summary>
-    /// Las dos negaciones de <c>profileBlock</c> (<c>NativeBridge.java:1282-1285</c>), que son las que ponen el
+    /// Las dos negaciones de <c>profileBlock</c> (<c>NativeBridge.java:1300-1303</c>), que son las que ponen el
     /// «Bloquear» de la ficha de la persona también en Windows. Allá son <c>IllegalArgumentException</c> con su
     /// cadena en español y viajan tal cual hasta la pantalla, así que se copian literales: la primera niega el
     /// bloqueo de una comunidad (<c>chat.type instanceof TdApi.ChatTypePrivate</c>, <c>:1282</c>) y la segunda el de
@@ -149,7 +149,7 @@ public static class DesktopBlocked
 
     /// <summary>
     /// El <c>params.getBoolean("value")</c> de <c>:1285</c>. Allá la ausencia lanza un <c>JSONException</c> que sube
-    /// al <c>catch</c> general de <c>NativeBridge.java:154</c> y la pantalla lee la frase genérica de siempre; aquí el
+    /// al <c>catch</c> general de <c>NativeBridge.java:167</c> y la pantalla lee la frase genérica de siempre; aquí el
     /// motivo se dice en concreto desde la ronda AT, y es el mismo criterio con el que la ronda BF negó la
     /// aprobación que no venía (<c>DesktopJoinRequests.MissingApprove</c>).
     /// </summary>
@@ -259,7 +259,7 @@ public static class DesktopBlocked
 
     private const string Identifier = @"^-?(0|[1-9][0-9]{0,18})$";
 
-    /// El <c>BridgePolicy.id(params,"id")</c> de <c>:19</c> contra la litera de <c>BridgePolicy.java:53</c>:
+    /// El <c>BridgePolicy.id(params,"id")</c> de <c>:19</c> contra la litera de <c>BridgePolicy.java:57</c>:
     /// tiene que llegar como cadena y con forma de entero largo, y un número sin comas se niega igual que allí.
     private static long RequestedId(JsonElement args)
     {

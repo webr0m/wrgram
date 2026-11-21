@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const text = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8');
 
 const reactRules = text('../../desktop/src/WRGram.Desktop/DesktopMessageReact.cs');
+const flow = text('../../desktop/src/WRGram.Desktop/DesktopMessageReactFlow.cs');
 const service = text('../../desktop/src/WRGram.Desktop/TelegramService.cs');
 const dto = text('../../desktop/src/WRGram.Desktop/DesktopState.cs');
 const app = text('./App.tsx');
@@ -18,10 +19,13 @@ function csSentence(name: string, from = reactRules): string {
   return match[1];
 }
 
-/** El literal de una constante de TypeScript (`const X = '...'`), que en el espejo va suelto. */
-function tsSentence(name: string, from = preview): string {
-  const match = new RegExp(`\\b${name}\\s*=\\s*\\n?\\s*'((?:[^'\\\\]|\\\\.)*)'`).exec(from);
-  if (!match) throw new Error(`Falta la constante ${name}`);
+/** La cadena que `preview.ts` asigna a una propiedad del objeto de frases, cortado por su llave de cierre. */
+function tsProperty(object: string, key: string): string {
+  const start = preview.indexOf(`const ${object} = {`);
+  if (start < 0) throw new Error(`Falta el bloque ${object}`);
+  const block = preview.slice(start, preview.indexOf('\n};', start));
+  const match = new RegExp(`\\b${key}: '((?:[^'\\\\]|\\\\.)*)'`).exec(block);
+  if (!match) throw new Error(`Falta ${key} en ${object}`);
   return match[1];
 }
 
@@ -39,20 +43,25 @@ function csBody(name: string, from = service): string {
 
 const count = (needle: string, source: string) => source.split(needle).length - 1;
 
-describe('ronda AG · la negativa dice lo que falta, no que falta el cable', () => {
-  it('la frase del puente nombra la petición que la biblioteca no tiene', () => {
-    const refused = csSentence('Refused');
-    expect(refused).toContain('la petición para enviar reacciones');
-    // Que la causa escrita sea la de verdad, y no un «no está conectado»: la sonda compilada contra
-    // WTelegramClient 4.4.10 dijo que `messages.setReactions` y la unión `TypeReaction` no existen.
-    expect(reactRules).toContain('messages.setReactions');
-    expect(reactRules).toContain('TypeReaction');
-    expect(reactRules).toContain('Client.CallRpcAsync');
+describe('ronda AG · la negativa que esta ronda escribió la desmontó la sonda de la BX', () => {
+  it('la petición existe en la librería, y el brazo la llama', () => {
+    // La ronda AG negó las tres escrituras con «la biblioteca de escritorio no incluye la petición para enviar
+    // reacciones». La sonda, compilada contra WTelegramClient 4.4.10, midió lo contrario: lo que no existe son los
+    // nombres jubilados que se buscaron. La escrita hoy es `messages.sendReaction`.
+    expect(flow).toContain('await client.Messages_SendReaction(entry.Input, ids[0], set, big: false, add_to_recent: true);');
+    expect(reactRules).toContain('Client.Messages_SendReaction(');
+    expect(reactRules).toContain('TL.ReactionEmoji.emoticon');
+    expect(reactRules).toContain('TL.ReactionCustomEmoji.document_id');
+    // Y la frase con la que se mentía ya no está declarada en ninguna de las dos capas.
+    expect(reactRules).not.toMatch(/public const string Refused\b/);
+    expect(preview).not.toMatch(/\bREACT_REFUSAL\b/);
   });
 
-  it('las tres escrituras se niegan antes del genérico de escritorio', () => {
-    const arm = '"message.react" or "message.react.custom" or "message.react.paid" => throw new BridgeException(DesktopMessageReact.Refused),';
+  it('las dos escrituras tienen brazo vivo, y la de pago se niega con su causa antes del genérico', () => {
+    const arm = '"message.react" or "message.react.custom" => await ReactAsync(args, method == "message.react.custom"),';
+    const paid = '"message.react.paid" => throw new BridgeException(DesktopMessageReact.PaidRefused),';
     expect(count(arm, service)).toBe(1);
+    expect(count(paid, service)).toBe(1);
     // El genérico está por debajo: si alguna mañana se mueve, la guarda lo ve.
     expect(service.indexOf(arm)).toBeLessThan(service.indexOf('_ => throw new BridgeException($"No disponible en escritorio (beta)'));
   });
@@ -63,18 +72,22 @@ describe('ronda AG · la negativa dice lo que falta, no que falta el cable', () 
     }
   });
 
-  it('el selector de escritorio no promete fichas que no se pueden poner', () => {
-    const props = csBody('Properties');
-    expect(props).toContain('reactions = DesktopMessageReact.None,');
+  it('el properties de Windows ya no devuelve la bandeja vacía, y dice la cara que sigue negada', () => {
+    const props = csBody('PropertiesAsync');
+    expect(props).toContain('var band = entry == null || _client is not Client client ? new List<object>() : await ReactionBandAsync(entry, client, message);');
+    expect(props).toContain('reactions = band,');
+    // La de Stars sigue negada porque gasta saldo sin cartera conectada. La ✨ la encendió la ronda CD con la bandera
+    // Premium de la sesión, la misma que `DesktopEmojiCatalog` usa para avisar antes de guardar un estado emoji.
     expect(props).toContain('paid = false,');
-    expect(props).toContain('allowCustom = false');
-    expect(reactRules).toContain('public static readonly string[] None = [];');
+    expect(props).toContain('allowCustom = customReaction');
+    expect(reactRules).not.toContain('public static readonly string[] None = [];');
   });
 
   it('y lo que la sonda negó no vuelve a aparecer como si existiera', () => {
     // En el transporte, no en la prosa: los nombres imposibles solo pueden estar en los comentarios.
     for (const name of ['Messages_SetReactions', 'TypeReactionEmoji', 'CallRpcAsync']) {
-      const outsideComments = service
+      const outsideComments = [service, flow]
+        .join('\n')
         .split('\n')
         .filter(line => !line.trim().startsWith('//') && !line.trim().startsWith('///'))
         .join('\n');
@@ -118,14 +131,17 @@ describe('ronda AG · leer reacciones sí existe, y ahora llega en directo', () 
 });
 
 describe('ronda AG · el espejo dice lo mismo que el puente', () => {
-  it('la frase del andamio es idéntica carácter a carácter a la del .cs', () => {
-    expect(tsSentence('REACT_REFUSAL')).toBe(csSentence('Refused'));
+  it('las seis frases del andamio son idénticas carácter a carácter a las del .cs', () => {
+    for (const [key, constant] of [['noEmoji', 'NoEmoji'], ['notOffered', 'NotOffered'], ['needsPremium', 'NeedsPremium'],
+      ['noCustom', 'NoCustomEmoji'], ['notPremium', 'NotPremiumAccount'], ['paid', 'PaidRefused']] as const) {
+      expect(tsProperty('REACT_REFUSALS', key), key).toBe(csSentence(constant));
+    }
   });
 
   it('las tres ramas entran por la puerta de la plataforma', () => {
-    for (const method of ['message.react', 'message.react.custom', 'message.react.paid']) {
-      expect(count(`if (method === '${method}' && state.platform === 'desktop') throw new Error(REACT_REFUSAL);`, preview)).toBe(1);
-    }
+    expect(count("if (method === 'message.react' && state.platform === 'desktop') return desktopReact(params, state, false);", preview)).toBe(1);
+    expect(count("if (method === 'message.react.custom' && state.platform === 'desktop') return desktopReact(params, state, true);", preview)).toBe(1);
+    expect(count("if (method === 'message.react.paid' && state.platform === 'desktop') throw new Error(REACT_REFUSALS.paid);", preview)).toBe(1);
   });
 
   it('en la vista de diseño las fichas del chat de arranque existen de verdad', () => {
@@ -136,11 +152,20 @@ describe('ronda AG · el espejo dice lo mismo que el puente', () => {
     expect(preview).toContain("{ emoji: '❤️', count: 1, chosen: true },");
   });
 
-  it('la banda de emojis la pinta solo la capa que puede escribir', () => {
-    const desktop = app.split('async function messageMenu')[1].split('});return;')[0];
-    expect(desktop).toContain('if(desktop){');
-    expect(desktop).not.toContain('reaction-picker');
-    // Las dos bandas que sí existen: la del menú de Android y la del visor de historias, que escribe por
+  it('la banda la pintan las dos capas, desde una sola función', () => {
+    // Antes la pantalla tapaba el selector en Windows porque ninguna de las dos capas sabía escribir. La BX conecta
+    // la escritura, así que la banda sale de `reactionBar`, definida una vez antes de las dos ramas de la plataforma.
+    const menu = app.slice(app.indexOf('async function messageMenu'));
+    const bar = menu.indexOf('const reactionBar=(props:Properties,act:');
+    const branch = menu.indexOf('if(desktop){');
+    const android = menu.indexOf('const owner=state.selfId,topic=');
+    expect(bar).toBeGreaterThan(-1);
+    expect(branch).toBeGreaterThan(bar);
+    expect(android).toBeGreaterThan(branch);
+    expect(menu.slice(branch, android)).toContain('{props.reactions.length>0&&reactionBar(props,act)}');
+    expect(menu.slice(android)).toContain('{reactionBar(props,act)}');
+    expect(count('const reactionBar=(props:Properties,act:', app)).toBe(1);
+    // Las dos bandas que se pintan: la compartida del menú y la del visor de historias, que escribe por
     // `story.react` y no por `message.react`.
     expect(count('className="reaction-picker"', app)).toBe(2);
     expect(preview).toContain('reactions: [],');
@@ -186,31 +211,45 @@ describe('ronda AG · medido con las manos, no con agujas', () => {
     snap = () => transport.snapshot() as unknown as Snap;
   });
 
-  it('tocar una ficha en Windows se niega con la causa, no con el genérico', async () => {
-    await expect(call('message.react', { id: '101', emoji: '👍' })).rejects.toThrow(
-      'La biblioteca de escritorio no incluye la petición para enviar reacciones, así que aquí se pueden ver pero no poner.',
-    );
-    await expect(call('message.react', { id: '101', emoji: '❤️', remove: true })).rejects.toThrow(tsSentence('REACT_REFUSAL'));
+  it('tocar una ficha en Windows escribe: la cuenta sube y la ficha queda marcada', async () => {
+    expect(await call('message.react', { id: '101', emoji: '👍' })).toBe(true);
+    const band = row('101').reactions;
+    expect(band.find(item => item.emoji === '👍')).toMatchObject({ count: 4, chosen: true });
+    // La otra no se borra: MTProto manda el conjunto completo, y mandar solo la nueva borraría la puesta.
+    expect(band.find(item => item.emoji === '❤️')).toMatchObject({ count: 1, chosen: true });
   });
 
-  it('las otras dos escrituras, con la misma frase', async () => {
-    const refused = tsSentence('REACT_REFUSAL');
-    await expect(call('message.react.custom', { id: '101', emoji: '1234', remove: false })).rejects.toThrow(refused);
-    await expect(call('message.react.paid', { id: '101', count: '5' })).rejects.toThrow(refused);
+  it('quitar la que estaba puesta baja su cuenta y deja la otra intacta', async () => {
+    expect(await call('message.react', { id: '101', emoji: '❤️', remove: true })).toBe(true);
+    expect(row('101').reactions.find(item => item.emoji === '❤️')).toMatchObject({ count: 0, chosen: false });
+    expect(row('101').reactions.find(item => item.emoji === '👍')).toMatchObject({ count: 3, chosen: false });
   });
 
-  it('negar no escribe: las fichas siguen exactamente como estaban', () => {
+  it('la de pago y la personalizada sin Premium se niegan con su causa, no con el genérico', async () => {
+    await expect(call('message.react.paid', { id: '101', count: '5' })).rejects.toThrow(tsProperty('REACT_REFUSALS', 'paid'));
+    await expect(call('message.react.custom', { id: '101', emoji: '1234' })).rejects.toThrow(tsProperty('REACT_REFUSALS', 'notPremium'));
+    await expect(call('message.react', { id: '101', emoji: '' })).rejects.toThrow(tsProperty('REACT_REFUSALS', 'noEmoji'));
+    await expect(call('message.react', { id: '101', emoji: '🍑' })).rejects.toThrow(tsProperty('REACT_REFUSALS', 'notOffered'));
+    await expect(call('message.react', { id: '101', emoji: '🫶' })).rejects.toThrow(tsProperty('REACT_REFUSALS', 'needsPremium'));
+  });
+
+  it('negar no escribe: las fichas siguen exactamente como estaban', async () => {
     const before = JSON.stringify(row('101').reactions);
-    return call('message.react', { id: '101', emoji: '👍' })
-      .then(() => Promise.reject(new Error('debería haberse negado')))
-      .catch(error => {
-        expect(String(error)).toContain('La biblioteca de escritorio');
-        expect(JSON.stringify(row('101').reactions)).toBe(before);
-      });
+    for (const params of [{ emoji: '' }, { emoji: '🍑' }, { emoji: '🫶' }]) {
+      await call('message.react', { id: '101', ...params }).then(
+        () => Promise.reject(new Error('debería haberse negado')),
+        () => undefined,
+      );
+    }
+    expect(JSON.stringify(row('101').reactions)).toBe(before);
   });
 
-  it('el properties de escritorio no ofrece el selector, y eso no tapa las fichas de la fila', async () => {
-    expect(await call('message.properties', { id: '101' })).toMatchObject({ reactions: [] });
+  it('el properties de Windows ya ofrece la bandeja, sin las fichas que esta cuenta tiene puestas', async () => {
+    const props = await call('message.properties', { id: '101' }) as { reactions: { emoji: string }[]; paid: boolean; allowCustom: boolean };
+    expect(props.reactions.length).toBeGreaterThan(0);
+    expect(props.reactions.some(item => item.emoji === '❤️')).toBe(false);
+    expect(props.reactions.some(item => item.emoji === '👍')).toBe(true);
+    expect(props).toMatchObject({ paid: false, allowCustom: false });
     expect(row('101').reactions).toHaveLength(2);
   });
 

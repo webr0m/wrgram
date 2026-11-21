@@ -3,33 +3,33 @@ import type { GroupPermissions } from './contract';
 /**
  * El espejo de `DesktopGroupPermissions.cs` (ronda BE): las cinco negaciones que las dos capas dicen sobre los
  * permisos predeterminados de una comunidad, las dieciséis claves del DTO con su orden y el paso de la tabla. Son las
- * cadenas que el puente devuelve —`NativeBridge.java:1868` y `:2376` los dos `answer.fail`, `DesktopGroupPermissions`
+ * cadenas que el puente devuelve —`NativeBridge.java:1888` y `:2396` los dos `answer.fail`, `DesktopGroupPermissions`
  * las mismas en C#—, copiadas carácter a carácter; `rondaBE.test.ts` las compara con el Java y con el C# para que la
  * vista de diseño no enseñe nunca una palabra que Android o Windows no dirían.
  *
- * Lo que no está aquí a propósito: las etiquetas del panel. `GROUP_PERMISSION_FIELDS` (`App.tsx:1424`) ya es la tabla
+ * Lo que no está aquí a propósito: las etiquetas del panel. `GROUP_PERMISSION_FIELDS` (`App.tsx:1444`) ya es la tabla
  * que la pantalla pinta, con su orden de lectura para una persona, y esta es la orden del puente. Son dos cosas
  * distintas y por eso viven separadas: la interfaz agrupa por tema, el contrato por la posición del constructor de
  * `TdApi.ChatPermissions` (`TdApi.java:17751`).
  */
 export const GROUP_PERMISSION_REFUSALS = {
-  /** El `answer.fail` de la forma en `groupPermissions` (`:1868`). */
+  /** El `answer.fail` de la forma en `groupPermissions` (`:1888`). */
   unsupported: 'La edición de permisos solo está disponible en supergrupos y canales.',
-  /** El `IllegalArgumentException` de la forma en `setGroupPermissions` (`:2376`). */
+  /** El `IllegalArgumentException` de la forma en `setGroupPermissions` (`:2396`). */
   required: 'Se requiere un supergrupo o canal.',
-  /** Las dos veces que se niega el derecho, en `:1868` y en `:2376`. */
+  /** Las dos veces que se niega el derecho, en `:1888` y en `:2396`. */
   noRight: 'Telegram no concede a esta cuenta el permiso para cambiar permisos del grupo.',
-  /** El `answer.fail` de `:1868` cuando TDLib aún no traía la tabla. */
+  /** El `answer.fail` de `:1888` cuando TDLib aún no traía la tabla. */
   unreadable: 'Telegram aún no cargó los permisos predeterminados.',
-  /** Lo que en Android provoca `requiredBool` (`:2757`) y aquí es la causa dicha en español. */
+  /** Lo que en Android provoca `requiredBool` (`:2777`) y aquí es la causa dicha en español. */
   incomplete: 'Algún permiso no llegó marcado como verdadero o falso. Vuelve a abrir el panel y guárdalos otra vez.',
-  /** La guarda de cuenta del botón positivo de `:2376`. */
+  /** La guarda de cuenta del botón positivo de `:2396`. */
   changedAccount: 'La cuenta cambió. No se cambiaron permisos.',
 } as const;
 
 /**
- * Las dieciséis claves en el orden del `object(...)` de `:1868`, que es el del constructor de
- * `TdApi.ChatPermissions` (`TdApi.java:17751`) y el de los dieciséis `requiredBool` de `:2376`. El orden no es
+ * Las dieciséis claves en el orden del `object(...)` de `:1888`, que es el del constructor de
+ * `TdApi.ChatPermissions` (`TdApi.java:17751`) y el de los dieciséis `requiredBool` de `:2396`. El orden no es
  * cosmético: es lo que el test compara con las dos capas, porque una tabla escrita en otro orden se lee igual y
  * desordena el DTO que Android fabrica.
  */
@@ -53,7 +53,7 @@ export function allowedPermissions(): GroupPermissions {
 }
 
 /**
- * El `requiredBool` de `:2376` y el `PermissionValues` de `DesktopGroupPermissionsFlow` hechos una sola pasada: las
+ * El `requiredBool` de `:2396` y el `PermissionValues` de `DesktopGroupPermissionsFlow` hechos una sola pasada: las
  * dieciséis claves tienen que llegar como booleanos, y lo que sobre se ignora. `null` es el mensaje mal formado, que
  * la pantalla no produce nunca —el panel siempre manda la tabla entera—, así que esta negativa solo la provoca una
  * llamada fuera de lo que la interfaz ofrece.
@@ -66,7 +66,7 @@ export function completePermissions(values: Record<string, unknown>): GroupPermi
   );
 }
 
-/** El DTO de `:1868` leído sobre la ficha. */
+/** El DTO de `:1888` leído sobre la ficha. */
 export function permissionsDto(entry: GroupPermissionsFixture): GroupPermissions | null {
   return entry.known ? GROUP_PERMISSION_KEYS.reduce(
     (value, key) => ({ ...value, [key]: entry.rights[key] }),

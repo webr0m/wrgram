@@ -8,7 +8,7 @@ using TL;
 using WTelegram;
 
 /// <summary>
-/// El cable de la privacidad de la cuenta en Windows: <c>privacy.get</c> (<c>NativeBridge.java:539</c> →
+/// El cable de la privacidad de la cuenta en Windows: <c>privacy.get</c> (<c>NativeBridge.java:552</c> →
 /// <c>privacyGet</c>, <c>:3848-3859</c>) y <c>privacy.set</c> (<c>:542</c> → <c>privacySet</c>, <c>:3860-3874</c>).
 /// Las claves, la proyección, la reconstrucción y las frases están en <see cref="DesktopPrivacy"/>; aquí está el
 /// hilo, que es lo que faltaba. Las dos órdenes están en la lista del puente desde la ronda B
@@ -99,8 +99,8 @@ public sealed partial class TelegramService
     /// <summary>
     /// Los dos <c>optionalIds(p, …, 100)</c> de <c>:3863</c>. La ausencia y el array vacío son la lista vacía, igual
     /// que allá; lo que no está bien formado se corta con la causa dicha en español, porque en Android ese rechazo
-    /// lo produce <c>BridgePolicy.ids</c> (<c>BridgePolicy.java:54</c>) fuera de cualquier <c>catch</c> propio: sube
-    /// al general de <c>NativeBridge.java:152</c> y la pantalla lee «Solicitud no válida o función no disponible».
+    /// lo produce <c>BridgePolicy.ids</c> (<c>BridgePolicy.java:58</c>) fuera de cualquier <c>catch</c> propio: sube
+    /// al general de <c>NativeBridge.java:165</c> y la pantalla lee «Solicitud no válida o función no disponible».
     /// </summary>
     private static long[] PrivacyIds(JsonElement args, string name)
     {

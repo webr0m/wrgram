@@ -249,9 +249,9 @@ describe('ronda AM · la pantalla de Windows ya entra al navegador', () => {
     const item = '<MenuItem icon={<Image/>} label="Editar textos del álbum" onClick={()=>openAlbumCaptions(message)}/>';
     expect(count(item, app)).toBe(2);
     expect(count(`{message.albumId&&!desktop&&${item}`, app)).toBe(0);
-    const desktop = app.slice(at("setDialog({title:'Opciones del mensaje',body:<div className=\"action-list\">", app),
+    const desktop = app.slice(at('{props.reactions.length>0&&reactionBar(props,act)}', app),
       at('const owner=state.selfId,topic=', app));
-    const android = app.slice(at("setDialog({title:'Opciones del mensaje',body:<>", app));
+    const android = app.slice(at('{reactionBar(props,act)}', app));
     for (const branch of [desktop, android]) {
       expect(branch).toContain(`{message.albumId&&${item}}`);
       // En las dos, justo después de las entradas de editar: el pie se escribe con la misma orden.

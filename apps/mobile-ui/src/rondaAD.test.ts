@@ -175,7 +175,7 @@ describe('ronda AD · lo que la petición no puede decir se niega, no se disimul
 
 describe('ronda AD · el contrato decide qué botón se pinta', () => {
   it('Properties dejó de publicar copy, copyContent y forward en verdadero a secas', () => {
-    const body = csBody('Properties');
+    const body = csBody('PropertiesAsync');
     expect(body).toContain('var forwardable = message?.CanForward ?? false;');
     expect(body).toContain('copy = forwardable && !string.IsNullOrWhiteSpace(message?.Text)');
     expect(body).toContain('copyContent = forwardable');

@@ -174,9 +174,9 @@ describe('ronda BB · la firma de invitación cruzada con las tres capas', () =>
   });
 
   it('un identificador que no cabe en un `long` es identificador inválido en las tres capas', () => {
-    // `positive` mira los dígitos y `Long.parseLong` el rango (`:2161-2163`): dos pasos y un solo mensaje.
-    expect(line(2161)).toContain('MemberAdditions.positive(value)');
-    expect(line(2163)).toContain('MemberAdditions.BAD_ID');
+    // `positive` mira los dígitos y `Long.parseLong` el rango (`:2178-2180`): dos pasos y un solo mensaje.
+    expect(line(2181)).toContain('MemberAdditions.positive(value)');
+    expect(line(2181)).toContain('MemberAdditions.BAD_ID');
     expect(positiveId('9223372036854775808')).toBe(true);
     expect(fitsLong('9223372036854775808')).toBe(false);
     expect(fitsLong('9223372036854775807')).toBe(true);
@@ -207,7 +207,7 @@ describe('ronda BB · la firma de invitación cruzada con las tres capas', () =>
     const reRead = body('private async Task<bool> AddedAsync(', cable);
     expect(reRead).toContain('BasicParticipantsAsync(client, entry)');
     expect(reRead).toContain('client.Channels_GetParticipant(ChannelInput(entry), new InputPeerUser(id, user.access_hash))');
-    expect(line(2216)).toContain('new TdApi.GetChatMember(chat.id, new TdApi.MessageSenderUser(id))');
+    expect(line(2236)).toContain('new TdApi.GetChatMember(chat.id, new TdApi.MessageSenderUser(id))');
     expect(rules).toContain('answer?.missing_invitees?.FirstOrDefault(item => item != null && item.user_id == userId)');
   });
 
@@ -216,8 +216,8 @@ describe('ronda BB · la firma de invitación cruzada con las tres capas', () =>
     expect(run).toContain('if (client.User?.id != owner) return (rows, DesktopMemberAdditions.ChangedAccount);');
     expect(run).toContain('return (rows, message);');
     expect(csSentence('ChangedAccount')).toBe('La cuenta cambió. Revisa el grupo antes de repetir.');
-    expect(says(line(2208), 'La cuenta cambió. Revisa el grupo antes de repetir.')).toBe(true);
-    expect(says(line(2217), 'La cuenta cambió. Revisa el grupo antes de repetir.')).toBe(true);
+    expect(says(line(2228), 'La cuenta cambió. Revisa el grupo antes de repetir.')).toBe(true);
+    expect(says(line(2237), 'La cuenta cambió. Revisa el grupo antes de repetir.')).toBe(true);
     // La persona sin `access_hash` se nombra y la cola sigue: no se corta por algo que no es de Telegram.
     expect(run).toContain('DesktopMemberAdditions.NeedsHash');
     expect(count('continue;', run)).toBe(2);
@@ -229,31 +229,31 @@ describe('ronda BB · la firma de invitación cruzada con las tres capas', () =>
     expect(add).not.toContain('"Añadir en Telegram"');
     expect(count('DesktopMemberAdditions.DialogTitle', add)).toBe(2);
     // El botón izquierdo de Android es solo la etiqueta del cierre; la frase del aviso vive en el espejo.
-    expect(says(line(2197), 'Cancelar')).toBe(true);
-    expect(line(2197)).toContain('MemberAdditions.CANCELLED');
+    expect(says(line(2217), 'Cancelar')).toBe(true);
+    expect(line(2221)).toContain('MemberAdditions.CANCELLED');
   });
 
   it('el cuadro es el de Android: tres nombres, título a sesenta y cuatro e historial solo si viaja', () => {
     expect(csSentence('DialogTitle')).toBe('Añadir en Telegram');
-    expect(says(line(2195), 'Añadir en Telegram')).toBe(true);
-    expect(says(line(2198), 'Añadir en Telegram')).toBe(true);
+    expect(says(line(2215), 'Añadir en Telegram')).toBe(true);
+    expect(says(line(2218), 'Añadir en Telegram')).toBe(true);
     const dialog = body('private void confirmAdd(', java);
     expect(dialog).toContain('Math.min(ids.length, 3)');
-    saysInParts(line(2190), ' y ', ' más');
+    saysInParts(line(2210), ' y ', ' más');
     expect(rules).toContain('list.Take(3)');
     expect(rules).toContain('" y " + (list.Count - 3) + " más"');
-    saysInParts(line(2192), 'WRGram añadirá a ', ' en «', '». Telegram decide una por una y ');
-    saysInParts(line(2193), 'puede negarse sin dar motivo; cada respuesta aparece al terminar.');
-    saysInParts(line(2194), ' Verá los ', ' mensajes anteriores.');
+    saysInParts(line(2212), 'WRGram añadirá a ', ' en «', '». Telegram decide una por una y ');
+    saysInParts(line(2213), 'puede negarse sin dar motivo; cada respuesta aparece al terminar.');
+    saysInParts(line(2214), ' Verá los ', ' mensajes anteriores.');
     const message = body('public static string Body(', rules);
     expect(message).toContain('"WRGram añadirá a " + names + " en «" + title + "». Telegram decide una por una y puede negarse sin dar motivo; cada respuesta aparece al terminar."');
     expect(message).toContain('" Verá los " + forward + " mensajes anteriores."');
     // El título, recortado a sesenta y cuatro en las dos capas.
     expect(dialog).toContain('NativeSnapshot.limit(chat.title == null ? "" : chat.title, 64)');
     expect(rules).toContain('DesktopContact.Limit(title ?? "", 64)');
-    // Los dos recortes de nombre son distintos a propósito: el del cuadro, medido en `:2188`.
-    expect(line(2188)).toContain('NativeSnapshot.limit(session.senderName(new TdApi.MessageSenderUser(ids[index])), 40)');
-    expect(line(2235)).toContain('NativeSnapshot.limit(session.senderName(new TdApi.MessageSenderUser(id)), 60)');
+    // Los dos recortes de nombre son distintos a propósito: el del cuadro, medido en `:2205`.
+    expect(line(2208)).toContain('NativeSnapshot.limit(session.senderName(new TdApi.MessageSenderUser(ids[index])), 40)');
+    expect(line(2255)).toContain('NativeSnapshot.limit(session.senderName(new TdApi.MessageSenderUser(id)), 60)');
     expect(count('NameInDialog = 40', rules)).toBe(1);
     expect(count('NameShown = 60', rules)).toBe(1);
     // En el cuadro manda el recorte corto; en el informe, el largo.
@@ -279,7 +279,7 @@ describe('ronda BB · la firma de invitación cruzada con las tres capas', () =>
 
   it('el hueco que queda solo se sabe en un básico con cifra leída', () => {
     expect(rules).toContain('kind == DesktopMembership.Kind.Basic && memberCount >= 0 ? BasicLimit - memberCount : -1');
-    expect(line(2143)).toContain('MemberAdditions.basic(chat) && memberCount >= 0');
+    expect(line(2163)).toContain('MemberAdditions.basic(chat) && memberCount >= 0');
     expect(body('private async Task<object?> AddInfoAsync(', cable)).toContain('DesktopMemberAdditions.Remaining(kind, members)');
     // Un privado no se pregunta a la red: la regla de forma se resuelve en casa, como `applicable`.
     expect(cable).toContain('if (!DesktopMemberAdditions.Applicable(kind))');

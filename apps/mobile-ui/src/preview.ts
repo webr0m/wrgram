@@ -1,4 +1,4 @@
-import { EMPTY, type AddResult, type BlockedSender, type Chat, type ChatMembership, type Contact, type ForumTopicInfo, type GlobalSearch, type GroupAdminRights, type GroupMember, type GroupPermissions, type InviteLink, type JoinRequest, type Media, type Message, type Poll, type ReactionOption, type RosterMember, type SafetyNotice, type SafetySignal, type SavedFilter, type ScopePatch, type ScopeSettings, type State, type StoryAlbum, type TextEntity } from './contract';
+import { EMPTY, type AddResult, type BlockedSender, type Chat, type ChatMembership, type CallLogEntry, type CallLogPage, type CommunityStats, type Contact, type ForumTopicInfo, type GlobalSearch, type GroupAdminRights, type GroupMember, type GroupPermissions, type InviteLink, type JoinRequest, type Media, type Message, type Poll, type ReactionOption, type RosterMember, type SafetyNotice, type SafetySignal, type SavedFilter, type ScopePatch, type ScopeSettings, type State, type StoryAlbum, type TextEntity } from './contract';
 import { acceptState, snapshot } from './bridge'; import { previewDeviceGallery } from './previewDeviceGallery';
 import { normalizeSearch } from './inboxModel';
 import { CHAT_SENDER, REJECTIONS, hasBand, problem } from './messageSearch';
@@ -8,7 +8,7 @@ import { ADD_REJECTIONS, batchProblem, fitsLong, forwardProblem, positiveId } fr
 import { MEMBERSHIP_UNSUPPORTED } from './membership';
 import { BAN_ACTIONS, ROSTER_NOTES, ROSTER_STATUS, ROSTER_UNKNOWN_NAME, banishProblem, rosterInvitedName, rosterManage, rosterMatches, rosterNote, rosterQueryProblem, rosterRemaining } from './groupRoster';
 import { BAD_RECIPIENT, MOMENTS, SELF_RECIPIENT, UNSUPPORTED, community, eligible } from './chatOwnership';
-import { DESKTOP_MEMBER_REFUSALS, desktopMemberFilterProblem, desktopMemberQueryProblem, isSupergroupOrChannel } from './desktopMembers';
+import { DESKTOP_MEMBER_REFUSALS, desktopMemberFilterProblem, desktopMemberQueryProblem, isSupergroupOrChannel } from './desktopMembers';import { STATS_REFUSALS } from './groupStats';
 import { CHAT_USERNAME_REFUSALS, type ChatUsernameFixture } from './chatUsernames';
 import { GROUP_PERMISSION_KEYS, GROUP_PERMISSION_REFUSALS, allowedPermissions, applyPermissions, completePermissions, permissionsDto, type GroupPermissionsFixture } from './groupPermissions';
 import { PRIVACY_KEYS, PRIVACY_MAX_KEY, PRIVACY_MAX_VALUE, PRIVACY_REFUSALS, mergePrivacy, privacyIds, privacyProblem, projectPrivacy, shapedIds, shapedText, type PrivacyRule } from './privacySettings';
@@ -16,7 +16,7 @@ import { BLOCKED_REFUSALS, blockedLimit, blockedOffset, blockedOffsetProblem, bl
 import { AUTO_DELETE_DAY, AUTO_DELETE_REFUSALS, autoDeleteOwned, autoDeleteProblem, canChangeAutoDelete, type AutoDeleteFixture } from './autoDelete';
 import { PEER_PAGE, PEER_REFUSALS, activeUsernames, peerCursor, peerMemberRow, peerOffset, peerPresence, peerRole, peerRow } from './peerCard';
 import { ADMIN_RIGHT_RULES, NO_ADMIN_RIGHTS, SANCTION_DURATION, SANCTION_REFUSALS, demotePreProblem, demoteRightProblem, demoteTargetProblem, liftPreProblem, liftRightProblem, liftTargetProblem, promotePreProblem, promoteRightProblem, promoteTargetProblem, requestedRights, sanctionPreProblem, sanctionRightProblem, sanctionTargetProblem } from './memberSanctions';
-import { desktopGapRefusal } from './desktopGap';
+import { desktopGapRefusal } from './desktopGap'; import { LIVE_DURATIONS, LIVE_REFUSALS, type LiveStart } from './liveLocation'; import { CALL_LOG_REFUSALS, callLogOffsetProblem, callLogPage, callRowLabel, type CallReason } from './callLogModel';
 const ownBio='Construyendo WRGram, un cliente de Telegram propio. Novedades en https://wrgram.app y dudas por @rodrigo_web';
 const mariaBio='Diseñadora de producto. Portfolio en https://maria.design · escríbeme por @maria_fdz';
 const communityBio='Un espacio para construir juntos. Guía y descargas en https://wrgram.app';
@@ -84,7 +84,7 @@ function communityEntry(id:string,chats:Chat[]):CommunityFixture {
 }
 /**
  * Los nombres públicos sintéticos por comunidad (ronda BC). Son las dos claves de `sendChatUsername`
- * (`NativeBridge.java:1871`) y cada fila enseña un estado distinto del puente: un foro con un solo nombre, un
+ * (`NativeBridge.java:1891`) y cada fila enseña un estado distinto del puente: un foro con un solo nombre, un
  * supergrupo con dos activos donde el editable es uno de ellos —el caso del vector con nombres secundarios—, un
  * canal con su enlace, y en «Colaboración» el chat sin enlace público, que es lo que la pantalla traduce por
  * «Sin nombre público activo» y lo que deja la caja de texto en blanco.
@@ -121,14 +121,14 @@ function applyChatUsername(entry:ChatUsernameFixture, username:string) {
 /**
  * El temporizador que el andamio tiene guardado por conversación (ronda BN): el espejo de los `ttl_period` que el
  * puente de Windows lee de `users.getFullUser`, `messages.getFullChat` y `channels.getFullChannel`, y del
- * `messageAutoDeleteTime` con el que TDLib contesta `NativeBridge.java:1337`. Cada fila enseña un estado distinto del
+ * `messageAutoDeleteTime` con el que TDLib contesta `NativeBridge.java:1357`. Cada fila enseña un estado distinto del
  * ajuste: «Equipo de diseño» con el día, «Comunidad» con la semana, «Ideas & café» con el mes y —porque es la única
  * comunidad administrada por otra persona— el caso por el que se ve trabajar el `noRight`; «María» y el canal de
  * «Novedades» sin temporizador, que es de donde sale el «Borrado automático desactivado.» del panel. Lo que no está
  * en la tabla se arranca en cero, igual que un chat recién creado.
  *
  * Los chats secretos no tienen fila aquí, y no hace falta: la pantalla no abre el ajuste sobre uno en ninguna de las
- * dos capas (`App.tsx:885` y `:970`), así que las dos frases con las que Android los niega (`:1343` y `:1367`) no
+ * dos capas (`App.tsx:889` y `:973`), así que las dos frases con las que Android los niega (`:1343` y `:1367`) no
  * tienen por dónde alcanzarse. Es el mismo motivo por el que la ronda AN dejó fuera del andamio la de las encuestas.
  */
 const autoDeleteFixtures: Record<string, number> = { '12': AUTO_DELETE_DAY, '14': 7 * AUTO_DELETE_DAY, '18': 30 * AUTO_DELETE_DAY };
@@ -207,7 +207,7 @@ function groupPermissionsEntry(id:string):GroupPermissionsFixture {
   return groupPermissionFixtures[id] = { rights:allowedPermissions(), known:true };
 }
 /**
- * El tope con el que `BridgePolicy.text` recibe los dos textos en `setChatInfo` (`NativeBridge.java:1924` y
+ * El tope con el que `BridgePolicy.text` recibe los dos textos en `setChatInfo` (`NativeBridge.java:1944` y
  * `:1926`), que es menor que el límite de Telegram y por eso se comprueba antes: un texto de 2000 caracteres se
  * anuncia como lo que es (demasiado largo para el puente) y no como el cambio que la interfaz creía estar
  * guardando. Las dos negativas de aquí no las produce la pantalla nunca —solo el puente—, así que viven en el
@@ -294,12 +294,12 @@ function inviteOf(raw: string): { shaped: boolean; hash: string } {
 }
 // Un código bien formado pero sin modelo en esta vista: se lo dice en vez de fingir que se abrió en el navegador.
 const INVITE_UNMODELED = 'La vista de diseño no tiene modelo para ese código de invitación; en Windows lo resuelve messages.checkChatInvite.';
-// La frase con la que Android cierra un brazo que se niega a sí mismo: el envoltorio (`NativeBridge.java:154`) no
+// La frase con la que Android cierra un brazo que se niega a sí mismo: el envoltorio (`NativeBridge.java:167`) no
 // distingue causas, así que sin fila, con temporizador o sin tarjeta suenan todas igual. Copiada carácter a carácter
 // de `DesktopBridge.InvalidRequest`, que es donde vive en la capa nueva.
 const INVALID_REQUEST = 'Solicitud no válida o función no disponible.';
 // El embudo que en las dos capas comparten `link.open` y `message.link` —`openLinkOrTelegram` de
-// `NativeBridge.java:868` y `LinkFromUrlAsync` del host—: si la forma es de invitación se pregunta antes de escribir,
+// `NativeBridge.java:888` y `LinkFromUrlAsync` del host—: si la forma es de invitación se pregunta antes de escribir,
 // y si no se va al navegador. Está fuera de las dos ramas de abajo para que las dos lo digan una sola vez.
 function openLinkedUrl(url: string, confirmed: boolean) {
   const link = inviteOf(url);
@@ -316,8 +316,8 @@ function openLinkedUrl(url: string, confirmed: boolean) {
   return { action:'membership', state: invite.state };
 }
 // Las direcciones de las tarjetas del muestrario, guardadas aparte de la fila publicada y no dentro de ella: en el
-// host tampoco viajan a la pantalla (`NativeSnapshot.java:218` escribe cuatro claves y ninguna es la URL) y el botón
-// las pide por el número del mensaje. `ephemeral` es el temporizador de la segunda guarda de `NativeBridge.java:766`;
+// host tampoco viajan a la pantalla (`NativeSnapshot.java:227` escribe cuatro claves y ninguna es la URL) y el botón
+// las pide por el número del mensaje. `ephemeral` es el temporizador de la segunda guarda de `NativeBridge.java:783`;
 // viaja aquí y no en la fila por el mismo motivo que en Windows: el DTO no lo publica, y la fila que lo tiene se queda
 // además sin tarjeta, porque la proyección de Java lo mira antes de escribir las cuatro claves.
 const linkUrls: Record<string, { url: string; ephemeral?: boolean }> = {
@@ -363,9 +363,11 @@ function desktopProperties(id: string, state: State) {
     deleteSelf: kind === 'private' || kind === 'basic',
     deleteAll: (message?.outgoing ?? false) || (kind === 'channel' && DELETE_RIGHTS.has(chat?.id ?? '')),
     forward: can, pin: desktopPinnable(message, chat), editCaption: caption, caption: caption ? message?.text ?? '' : '',
-    // Vacío porque no hay a dónde escribir: el host no tiene `messages.setReactions`. Las fichas que ya
-    // están bajo el mensaje sí se pintan —esas vienen de la fila, y `UpdateMessageReactions` las refresca—.
-    reactions: [],
+    // Desde la ronda BX la banda también sale en Windows: el host la arma en `ReactionBandAsync` con la lista que
+    // Telegram autoriza en el chat menos las fichas ya puestas. La de pago sigue apagada porque
+    // `messages.sendPaidReaction` existe pero gasta Stars sin cartera conectada, y la ✨ lee desde la ronda CD la misma
+    // bandera que lee el host —la marca Premium de la sesión—, que en el andamio es la marca de la cartera mockeada.
+    reactions: desktopReactionBand(message), paid: false, allowCustom: state.wallet?.premium === true,
   };
 }
 /**
@@ -387,13 +389,16 @@ function designProperties(id: string, state: State) {
   const can = forwardable(message);
   // `canBeEdited` en Android solo es cierto sobre lo propio, y encima pide que el contenido sea de texto: por
   // eso la otra cara, `editCaption`, es la lista de adjuntos que llevan pie (`hasCaption`). El espejo no tiene
-  // TDLib detrás, así que las dos las decide la forma de la fila.
+  // TDLib detrás, así que las dos las decide la forma de la fila. La tercera —`editMedia`— es en Android
+  // `canEditMedia`, que lo decide Telegram en tiempo de ejecución; aquí solo puede ser la forma de la fila, y el
+  // puente sigue negando con su frase si la cuenta real no concede el cambio.
   const own = message?.outgoing ?? false;
   const caption = own && captionable(message);
   return {
     reply: true, copy: can && !!message?.text, copyContent: can, edit: own && !message?.media && !message?.extra,
     deleteSelf: true, deleteAll: message?.outgoing ?? false,
     forward: can, pin: desktopPinnable(message, chat), editCaption: caption, caption: caption ? message?.text ?? '' : '',
+    editMedia: own && !!message?.media,
     reactions: DESIGN_REACTIONS, paid: false, allowCustom: false,
   };
 }
@@ -503,6 +508,89 @@ function desktopPin(params: Record<string, unknown>, state: State) {
   // `value:false` es el X de la barra: quita el ancla; sin la bandera, el id pedido pasa a ser el ancla, que
   // es lo que el host escribe en su caché después de que Telegram confirme.
   pinnedByChat.set(state.active, params.value === false ? '' : id);
+  return true;
+}
+/**
+ * Las seis frases de la escritura de reacción en Windows (ronda BX), copiadas carácter a carácter de
+ * `DesktopMessageReact.cs`. Ya no hay una negativa general: `messages.sendReaction` existe en la librería, así que
+ * el espejo reproduce el orden de comprobación del host —id, conversación, forma, fila, Premium, lista ofrecida— y
+ * el efecto de la escritura, que es el conjunto completo con el que Telegram se queda.
+ */
+const REACT_REFUSALS = {
+  noEmoji: 'Elige un emoji para reaccionar.',
+  notOffered: 'Telegram no ofrece esa reacción en este chat.',
+  needsPremium: 'Esa reacción necesita Telegram Premium.',
+  noCustom: 'Emoji personalizado no válido.',
+  notPremium: 'Necesitas Telegram Premium para reaccionar con emojis personalizados.',
+  paid: 'La reacción de pago gasta Stars de tu saldo y el escritorio todavía no tiene la cartera de Stars conectada, así que aquí no se ofrece.',
+};
+/**
+ * La cuenta del andamio no es Premium en ninguna de las dos capas: en Windows la clave que informa el estado de la
+ * suscripción sigue pendiente de cable, y en la vista de diseño de Android cae en la negativa sintética de siempre.
+ * Por eso la rama de Premium se recorre de verdad sin amañar el estado: la constante es `false`.
+ */
+const DESIGN_PREMIUM_ACCOUNT = false;
+function reactionKey(option: { kind?: string; emoji?: string; customEmojiId?: string }): string {
+  return option.kind === 'custom' ? `c:${option.customEmojiId}` : `e:${option.emoji}`;
+}
+/**
+ * La bandeja que el host arma en `ReactionBandAsync`: las ofrecidas menos las que esta cuenta ya tiene puestas. La
+ * lista personalizada del chat no se puede simular —detrás no hay ningún `channels.getFullChannel`—, así que el
+ * andamio usa la general, que es justo en lo que cae el host cuando Telegram no la personaliza.
+ */
+function desktopReactionBand(message?: Message): ReactionOption[] {
+  const taken = new Set((message?.reactions ?? []).filter(reaction => reaction.chosen).map(reactionKey));
+  return DESIGN_REACTIONS.filter(option => !taken.has(reactionKey(option)));
+}
+/**
+ * El vector completo que `<c>messages.sendReaction</c>` mandaría, con las dos reglas de
+ * `DesktopMessageReact.Request`: lo que no va en el conjunto se quita, y poner una segunda emoji no borra la
+ * primera. Las cuentas suben y bajan solo con la ficha propia, que es lo único que el andamio puede saber.
+ */
+function applyReaction(rows: Message['reactions'], target: ReactionOption, remove: boolean): Message['reactions'] {
+  const key = reactionKey(target);
+  const chosen = new Set(rows.filter(row => row.chosen).map(reactionKey));
+  if (remove) chosen.delete(key); else chosen.add(key);
+  const updated = rows.map(row => {
+    const next = chosen.has(reactionKey(row));
+    return { ...row, chosen: next, count: Math.max(0, row.count + (next === row.chosen ? 0 : next ? 1 : -1)) };
+  });
+  if (!remove && !updated.some(row => reactionKey(row) === key)) updated.push({
+    emoji: target.kind === 'custom' ? '' : target.emoji ?? '', count: 1, chosen: true,
+    ...(target.kind === 'custom' ? { kind: 'custom' as const, customEmojiId: target.customEmojiId } : {}),
+  });
+  return updated;
+}
+/** `message.react` y `message.react.custom` en Windows, con las guardas del host en su orden y sus mismas frases. */
+function desktopReact(params: Record<string, unknown>, state: State, custom: boolean) {
+  const id = String(params.id ?? '');
+  if (!/^[1-9]\d*$/.test(id)) throw new Error(DELETE_REFUSALS.range);
+  const chat = state.chats.find(item => item.id === state.active);
+  if (!chat) throw new Error('La conversación no está cargada. Actualiza la lista e inténtalo de nuevo.');
+  if (deleteKind(chat) === 'unknown') throw new Error(DELETE_REFUSALS.stale);
+  const index = state.messages.findIndex(message => message.chatId === state.active && message.id === id);
+  if (index < 0) throw new Error(DELETE_REFUSALS.loaded);
+  const remove = Boolean(params.remove);
+  const raw = String(params.emoji ?? '').trim();
+  let target: ReactionOption;
+  if (custom) {
+    if (!/^[1-9]\d*$/.test(raw)) throw new Error(REACT_REFUSALS.noCustom);
+    if (!DESIGN_PREMIUM_ACCOUNT) throw new Error(REACT_REFUSALS.notPremium);
+    target = { kind: 'custom', customEmojiId: raw, needsPremium: true };
+  } else {
+    if (raw.length === 0) throw new Error(REACT_REFUSALS.noEmoji);
+    // Al quitar, la lista no se pregunta: es lo que Android hace en `NativeBridge.java:4348` y lo que el host
+    // reproduce, porque la ficha que ya está puesta se quitó aunque el chat hubiera dejado de ofrecerla.
+    const match = DESIGN_REACTIONS.find(option => option.kind === 'emoji' && option.emoji === raw);
+    if (!remove) {
+      if (!match) throw new Error(REACT_REFUSALS.notOffered);
+      if (match.needsPremium && !DESIGN_PREMIUM_ACCOUNT) throw new Error(REACT_REFUSALS.needsPremium);
+    }
+    target = match ?? { kind: 'emoji', emoji: raw };
+  }
+  const messages = [...state.messages];
+  messages[index] = { ...messages[index], reactions: applyReaction(messages[index].reactions, target, remove) };
+  acceptState({ ...state, messages });
   return true;
 }
 /**
@@ -693,7 +781,7 @@ const ATTACH_REFUSALS = {
 };
 /**
  * Las negaciones del álbum, copiadas carácter a carácter de `DesktopAlbum.cs`. Once son literales de Android —de
- * `pickedAlbum` (`NativeBridge.java:4832-4849`), de `sendAlbum` (`:4786-4788`) y de `album` (`:4011-4017`)— y
+ * `pickedAlbum` (`NativeBridge.java:5029-5046`), de `sendAlbum` (`:4904-4907`) y de `album` (`:4028-4033`)— y
  * `notPhoto` la añade este puente, porque el selector de Windows admite «Todos los archivos» y el de Android no
  * puede devolver otra cosa que `image/*`. No hay `changed` aquí aunque en Android sí exista una frase de cuenta
  * cambiada en la elección: el puente de Windows sella cada vale con la conversación en la que se abrió el selector,
@@ -915,14 +1003,16 @@ function desktopMessageAlbum(params: Record<string, unknown>, state: State) {
   return items;
 }
 /**
- * Las dieciocho negaciones de la encuesta en Windows, copiadas carácter a carácter de `DesktopPoll.cs`. Once son
+ * Las diecinueve negaciones de la encuesta en Windows, copiadas carácter a carácter de `DesktopPoll.cs`. Once son
  * literales de Android —nueve de `sendPoll`, uno que comparten `answerPoll`, `stopPoll` y `pollVoters`, y la razón
  * de cierre de `NativeSnapshot.pollRestriction`—; `tooLong` es la traducción al español del «Invalid text» con el
  * que Android rechaza un texto pasado de largo, igual que hizo la ronda AH con el de la edición. `noVote`, `stale`
- * y `noOption` son las que Android lanza sin mensaje, y por eso llevan frase propia. `noStop` nombra un hueco de la
- * librería —cerrar una encuesta no existe en WTelegramClient—, y las dos restantes son reglas de Telegram dichas por
- * su nombre: el anonimato y la página en la que cabe la lista. La frase de los chats secretos no está, y no es un
- * olvido: este andamio no tiene por dónde alcanzarla porque el puente de Windows no lista chats secretos.
+ * y `noOption` son las que Android lanza sin mensaje, y por eso llevan frase propia. Dos nombran un hueco de la
+ * librería: `noStop`, porque cerrar una encuesta no existe en WTelegramClient, y `noDescription`, porque ni `TL.Poll`
+ * ni `TL.InputMediaPoll` traen campo donde escribir la descripción que Android sí manda. Las dos restantes son reglas
+ * de Telegram dichas por su nombre: el anonimato y la página en la que cabe la lista. La frase de los chats secretos
+ * no está, y no es un olvido: este andamio no tiene por dónde alcanzarla porque el puente de Windows no lista chats
+ * secretos.
  */
 const POLL_REFUSALS = {
   sending: 'No puedes enviar mensajes en este chat.',
@@ -930,27 +1020,45 @@ const POLL_REFUSALS = {
   notAllowed: 'Este chat no permite encuestas.',
   noQuestion: 'Escribe una pregunta.',
   tooLong: 'La pregunta admite hasta 255 caracteres.',
-  batch: 'Escribe entre 2 y 10 opciones.',
+  batch: 'Escribe entre 2 y 12 opciones.',
+  // Las tres negativas de la ronda CN-B, en el sitio que les toca: cada vale —con su MIME— se comprueba antes que
+  // el lote, y el lote antes que el texto de las opciones. Son los mismos literales de `DesktopPoll` y de
+  // `NativeBridge.sendPoll`.
+  changedPhotos: 'La conversación cambió. Vuelve a elegir las imágenes de las opciones.',
+  notPhoto: 'Cada opción admite una foto JPG, PNG o WebP.',
+  unevenPhotos: 'Una encuesta con imágenes lleva una imagen en cada opción.',
   option: 'Cada opción debe tener entre 1 y 100 caracteres.',
   repeated: 'Las opciones no pueden repetirse.',
   noCorrect: 'Elige una respuesta correcta.',
+  // La negativa que la ronda CF añadió a las nueve de siempre: el cierre se pide en segundos y Telegram publica la
+  // franja —de 5 a 2.628.000—. El cero se acepta aparte porque en la pantalla significa «sin cierre».
+  closeRange: 'La encuesta debe cerrarse entre 5 segundos y 30 días y 1 hora después de enviarse.',
   noPoll: 'Este mensaje no contiene una encuesta.',
   // La misma negativa de la ronda AM y del álbum: «la fila que tocaste ya no está». En C# son dos constantes con el
   // mismo literal —cada clase se lee sola— y aquí una referencia, para que el espejo no tenga dos frases que
   // defender. Una prueba exige que las dos capas sigan diciendo lo mismo.
   gone: ALBUM_REFUSALS.gone,
-  noVote: 'Marca entre una y diez opciones de esta encuesta.',
+  noVote: 'Marca entre una y doce opciones de esta encuesta.',
   stale: 'Alguna de las opciones ya no está en la encuesta.',
   closed: 'La encuesta está cerrada.',
   noStop: 'La biblioteca de escritorio no tiene petición para cerrar una encuesta, así que aquí se puede enviar y votar, pero no cerrarla.',
+  // El segundo hueco de la librería, medido sobre el ensamblado: `TL.Poll` y `TL.InputMediaPoll` no traen dónde poner
+  // la descripción, así que el andamio la niega en vez de mandar una encuesta sin lo que se le pidió.
+  noDescription: 'La biblioteca de escritorio no tiene campo para la descripción de la encuesta, así que aquí la encuesta se envía y se vota sin descripción.',
   noOption: 'Elige de qué opción quieres ver los votantes.',
   anonymousVoters: 'En una encuesta anónima Telegram no dice quién votó cada opción.',
   firstPage: 'La lista de votantes de escritorio solo da la primera página: el seguimiento de Telegram no es un número.',
 };
 /** Los topes de `DesktopPoll`: los de escribir arriba y los de leer abajo, que son distintos a propósito. */
-const POLL_MAX_QUESTION = 255, POLL_MIN_OPTIONS = 2, POLL_MAX_OPTIONS = 10, POLL_MAX_OPTION = 100;
-const POLL_MAX_EXPLANATION = 200, POLL_MIN_VOTES = 1, POLL_MAX_VOTES = 10, POLL_MAX_VOTERS = 50;
+const POLL_MAX_QUESTION = 255, POLL_MIN_OPTIONS = 2, POLL_MAX_OPTIONS = 12, POLL_MAX_OPTION = 100;
+const POLL_MAX_EXPLANATION = 200, POLL_MIN_VOTES = 1, POLL_MAX_VOTES = 12, POLL_MAX_VOTERS = 50;
+// La franja del cierre temporizado, con el cero como «sin cierre» —los mismos números de `DesktopPoll.MinClose` y
+// `MaxClose`, que a su vez son los que Telegram publica para `open_period` y `close_date`.
+const POLL_MIN_CLOSE = 5, POLL_MAX_CLOSE = 2628000;
 const POLL_SHOWN_QUESTION = 300, POLL_SHOWN_OPTION = 100, POLL_SHOWN_EXPLANATION = 300;
+// El nombre con el que se pinta la foto de una opción. Son las tres capas escribiendo la misma palabra:
+// `DesktopPoll.OptionPhotoName`, el literal de `NativeSnapshot.pollMedia` y aquí.
+const OPTION_PHOTO_NAME = 'Foto de la opción';
 /**
  * La primera de las tres salidas de `TdSession.senderName`, que es a lo que llama `pollVoters` en vez de formatear
  * nombres: la lista de votantes es la misma tabla en los dos dispositivos y una persona que vote desde ambos tiene
@@ -958,7 +1066,7 @@ const POLL_SHOWN_QUESTION = 300, POLL_SHOWN_OPTION = 100, POLL_SHOWN_EXPLANATION
  * olvido: en este andamio nadie vota por otra persona, así que no hay fila a la que ponerle ese nombre.
  */
 const VOTER_SELF = 'Tú';
-/** `poll.send`, con las nueve negaciones de `NativeBridge.sendPoll` en su orden exacto. */
+/** `poll.send`, con las diez negaciones de `NativeBridge.sendPoll` en su orden exacto y la undécima que solo dice Windows. */
 function desktopPollSend(params: Record<string, unknown>, state: State) {
   const chat = state.chats.find(item => item.id === state.active);
   if (!state.canSend) throw new Error(POLL_REFUSALS.sending);
@@ -972,11 +1080,29 @@ function desktopPollSend(params: Record<string, unknown>, state: State) {
   if (!question) throw new Error(POLL_REFUSALS.noQuestion);
   const options = (Array.isArray(params.options) ? params.options : []).map(option => String(option).trim());
   if (options.length < POLL_MIN_OPTIONS || options.length > POLL_MAX_OPTIONS) throw new Error(POLL_REFUSALS.batch);
+  // Las tres negativas de las fotos, en el orden del puente: primero cada vale —que siga siendo de esta cuenta y de
+  // esta conversación, y que el MIME sea uno de los tres de foto—, después el lote. Van antes del texto de las
+  // opciones porque en el cable la foto viaja por posición, igual que en `NativeBridge.sendPoll`.
+  const pictures = (Array.isArray(params.media) ? params.media : []).map(String).filter(token => token.length > 0);
+  const files = pictures.map(token => {
+    const file = desktopOutbox.find(item => item.token === token);
+    if (!file || file.account !== state.selfId || file.chat !== state.active) throw new Error(POLL_REFUSALS.changedPhotos);
+    if (!attachmentIsPhoto(file.mime)) throw new Error(POLL_REFUSALS.notPhoto);
+    return file;
+  });
+  if (files.length > 0 && files.length !== options.length) throw new Error(POLL_REFUSALS.unevenPhotos);
   if (options.some(option => option.length === 0 || option.length > POLL_MAX_OPTION)) throw new Error(POLL_REFUSALS.option);
   if (new Set(options.map(option => option.toLowerCase())).size !== options.length) throw new Error(POLL_REFUSALS.repeated);
   const quiz = params.quiz === true;
   const correct = Number(params.correct ?? -1);
   if (quiz && !(Number.isInteger(correct) && correct >= 0 && correct < options.length)) throw new Error(POLL_REFUSALS.noCorrect);
+  // La décima negación es la del cierre, y va la última en Android porque es la que se añadió después de las nueve de
+  // siempre. El cero es «sin cierre»; lo demás tiene que caer dentro de la franja publicada.
+  const duration = Number(params.duration ?? 0);
+  if (duration !== 0 && !(Number.isInteger(duration) && duration >= POLL_MIN_CLOSE && duration <= POLL_MAX_CLOSE)) throw new Error(POLL_REFUSALS.closeRange);
+  // La undécima la dice solo Windows, y va detrás de todas las compartidas porque en Android no existe: allí la
+  // descripción se escribe y aquí no hay campo donde escribirla.
+  if (String(params.description ?? '').trim()) throw new Error(POLL_REFUSALS.noDescription);
   const anonymous = params.anonymous !== false;
   const hide = params.hide === true;
   const explanation = String(params.explanation ?? '').trim().slice(0, POLL_MAX_EXPLANATION);
@@ -984,13 +1110,21 @@ function desktopPollSend(params: Record<string, unknown>, state: State) {
     // El identificador lo sortea el cliente, igual que `DesktopPoll.NewPollId`: la pantalla no lo mira nunca, pero
     // el puente lo necesita para encontrar la fila cuando un aviso de Telegram llega sin decir en qué chat cayó.
     pollId: Math.floor(Math.random() * 0x7fffffff) + 1,
+    // Sale vacía siempre, y ya no es un hueco sin decir: la negación de arriba no deja pasar una descripción, y al
+    // leer, `TL.Poll` tampoco la trae. En Android sí la escribe `NativeSnapshot` desde el contenedor del mensaje.
     question: question.slice(0, POLL_SHOWN_QUESTION), description: '', totalVoters: 0, anonymous,
     multiple: !quiz && params.multiple === true, revoting: params.revoting === true, closed: false,
     // Las dos banderas que Android lee de TDLib se calculan aquí, con la fórmula que el propio TDLib documenta.
     canSeeResults: quiz || !hide, canGetVoters: !anonymous,
     // Siempre falso, y no es un hueco: cerrar una encuesta no tiene petición en la librería de escritorio.
     canStop: false, quiz, ...(explanation ? { explanation: explanation.slice(0, POLL_SHOWN_EXPLANATION) } : {}),
-    options: options.map((text, index) => ({ index, text: text.slice(0, POLL_SHOWN_OPTION), votes: 0, percentage: 0, chosen: false, choosing: false })),
+    // La fecha de cierre, absoluta, igual que la guarda de Windows: aquí se suma al reloj de la simulación porque el
+    // espejo no tiene mensaje con fecha todavía —la fila `sent` se construye dos líneas más abajo.
+    ...(duration ? { closesAt: Math.floor(Date.now() / 1000) + duration } : {}),
+    options: options.map((text, index) => ({ index, text: text.slice(0, POLL_SHOWN_OPTION), votes: 0, percentage: 0, chosen: false, choosing: false,
+      // La foto por opción, que desde la ronda CN-B también se envía desde Windows. El nombre es el que le pone la
+      // lectura —`DesktopPoll.OptionPhotoName`, el mismo de `NativeSnapshot.pollMedia`— y no el del archivo elegido.
+      media: files.length === 0 ? undefined : { id: 0, ready: false, kind: 'image', mime: files[index].mime, name: OPTION_PHOTO_NAME, size: files[index].size } })),
   };
   const sent: Message = {
     id: String(Math.max(0, ...poolOf(state.active).map(message => Number(message.id) || 0)) + 1),
@@ -998,6 +1132,12 @@ function desktopPollSend(params: Record<string, unknown>, state: State) {
     outgoing: true, status: 'sent', edited: false, reactions: [], poll,
   };
   sentPolls.push(sent);
+  // El vale se tira en cuanto cuaja el envío, como en las dos capas: `DropOutbox` en Windows y
+  // `attachments.remove` en Android. Lo que la persona ya envió no puede volver a enviarse.
+  for (const token of pictures) {
+    const index = desktopOutbox.findIndex(item => item.token === token);
+    if (index >= 0) desktopOutbox.splice(index, 1);
+  }
   acceptState({ ...state, messages: [...state.messages, sent] });
   return true;
 }
@@ -1027,7 +1167,7 @@ function pollPercentage(votes: number, total: number): number {
  * `poll.answer`. Escribe, y por la regla de la ronda AH primero lee: el host vuelve a pedir la fila para sacar de
  * ella las claves opacas de las opciones, así que lo que la pantalla toca es un índice y lo que se manda no. En el
  * andamio el índice es todo lo que hay, y por eso las dos negaciones de Android que allá van sin mensaje —el lote
- * fuera de 1..10 y el índice negativo— tienen aquí su frase, igual que en el puente.
+ * fuera de 1..12 y el índice negativo— tienen aquí su frase, igual que en el puente.
  */
 function desktopPollAnswer(params: Record<string, unknown>, state: State) {
   const id = String(params.id ?? '');
@@ -1150,7 +1290,7 @@ function desktopOpenContact(params: Record<string, unknown>, state: State): Prom
   return designRequest('chat.open', { id: chat });
 }
 /**
- * Las dos negaciones de `contactAction` (`NativeBridge.java:1839`), carácter a carácter. Son también las dos que
+ * Las dos negaciones de `contactAction` (`NativeBridge.java:1859`), carácter a carácter. Son también las dos que
  * pronuncia `DesktopContactWrite` en Windows, y las únicas que este andamio puede reproducir: las otras dos salidas
  * de ese método no son frases, son un `false`.
  */
@@ -1163,7 +1303,7 @@ const CONTACT_WRITE_REFUSALS = {
  * son: tres guardas y un cambio de marca. El orden es el del brazo de Windows, que a su vez es el de Java —la
  * conversación cargada, la forma del chat, la persona con su bot y su cuenta propia— y detrás los dos «no hace nada»
  * que la pantalla ya sabe leer: quitar a quien no está y añadir a quien ya está devuelven `false` sin tocar el
- * estado, y `App.tsx:742` no repinta la ficha con un `false`. El cuadro de confirmar no está aquí porque el andamio
+ * estado, y `App.tsx:746` no repinta la ficha con un `false`. El cuadro de confirmar no está aquí porque el andamio
  * no abre ventanas, igual que `designUnblockSender` declaró lo mismo para el desbloqueo: cancelar responde `false`,
  * así que la vista queda idéntica al camino corto.
  */
@@ -1211,7 +1351,7 @@ function desktopShareContact(params: Record<string, unknown>, state: State) {
   acceptState({ ...state, messages: [...state.messages, sent] });
   return true;
 }
-/** Las dos negativas de `openMessageLocation` (`NativeBridge.java:403` y `:409`), carácter a carácter. */
+/** Las dos negativas de `openMessageLocation` (`NativeBridge.java:416` y `:409`), carácter a carácter. */
 const LOCATION_REFUSALS = {
   protected: 'Esta ubicación solo se puede ver dentro de este chat.',
   gone: 'La ubicación ya no está disponible.',
@@ -1253,7 +1393,7 @@ const HISTORY_DATE_REFUSALS = {
 const HISTORY_DATE_MAX = 2147483647;
 /**
  * `history.byDate`, con las dos negaciones del brazo en su orden —primero la conversación, luego la hora—. La
- * tercera frase de Android (`NativeBridge.java:3380`) no se espeja a propósito: nace de un callback que llega
+ * tercera frase de Android (`NativeBridge.java:3399`) no se espeja a propósito: nace de un callback que llega
  * tarde, y aquí —como en el puente de C#— la respuesta sale del mismo hilo que leyó el estado, así que ninguna
  * pantalla la pronuncia.
  *
@@ -1309,7 +1449,7 @@ function profileUsernameProblem(value: unknown): string | undefined {
   return trimmed.length > 0 && !ACCOUNT_USERNAME.test(trimmed) ? ACCOUNT_REFUSALS.badUsername : undefined;
 }
 /**
- * El `schedule()` de Android después de escribir (`NativeBridge.java:535-537`): que la interfaz vuelva a pedir lo
+ * El `schedule()` de Android después de escribir (`NativeBridge.java:548-550`): que la interfaz vuelva a pedir lo
  * suyo. Aquí eso es refrescar el `name` del estado, que es el rótulo del avatar y del menú de cuenta, y es también
  * lo que hace `RefreshSelf` en el puente de C#.
  */
@@ -1362,7 +1502,7 @@ const PROFILE_PHOTO = {
   /** `NotFound`: la foto que la cuenta dice tener no aparecía en `photos.getUserPhotos`. */
   notFound: 'Telegram no devolvió tu foto actual; vuelve a abrir el perfil e inténtalo otra vez.',
 };
-/** Los dos topes de `DesktopProfilePhoto.Problem`, que son los de `NativeBridge.java:1674-1675`. */
+/** Los dos topes de `DesktopProfilePhoto.Problem`, que son los de `NativeBridge.java:1694-1695`. */
 const PROFILE_PHOTO_MAX = { bytes: 20 * 1024 * 1024, pixels: 12000 };
 /** `IsImage`: el selector de Windows no da el tipo de contenido, así que el MIME se decide por extensión. */
 function profilePhotoIsImage(name: string): boolean {
@@ -1410,7 +1550,7 @@ function designAccountPhotoPick(params: Record<string, unknown>): boolean {
 }
 /**
  * `account.photo.delete` (ronda AU). Sin foto no hay diálogo ni error: Android responde `false` cuando `GetMe` no
- * trae perfil (`NativeBridge.java:1646`) y la pantalla ya sabe que `false` es «no cambió nada».
+ * trae perfil (`NativeBridge.java:1666`) y la pantalla ya sabe que `false` es «no cambió nada».
  */
 function designAccountPhotoDelete(): boolean {
   if (previewAccount.photoId === '0') return false;
@@ -1432,7 +1572,7 @@ function designAccountPhotoDelete(): boolean {
  * ventana modal, así que no hay ningún hueco donde la cuenta pueda cambiar a mitad de la petición.
  */
 const CHAT_PHOTO = {
-  /** `CHAT_PHOTO_UNSUPPORTED` (`NativeBridge.java:1702`), el noun cambiado de la frase de la ronda M. */
+  /** `CHAT_PHOTO_UNSUPPORTED` (`NativeBridge.java:1722`), el noun cambiado de la frase de la ronda M. */
   unsupported: 'La foto solo se edita en grupos, supergrupos y canales.',
   /** La negativa que solo existe en Windows: la librería no genera el vacío con el que se borra la foto. */
   noDelete: 'Windows no puede quitar la foto de la comunidad: la librería no trae el vacío con el que Telegram borra la imagen. Hazlo desde Telegram.',
@@ -1487,7 +1627,7 @@ function chatPhotoMedia(name: string): Media {
  * lista justo después de cerrar una sesión, y un espejo que responde `true` y sigue enseñando la fila cerrada
  * enseña una pantalla falsa. Las tres filas no son tres dispositivos al azar: cada una ejerce una de las tres
  * traducciones de `DesktopSessions` —la actual, con todo relleno; una remota sin `device_model`, que es la que
- * tiene que leerse como el respaldo «Dispositivo» de `NativeBridge.java:1766`, y una sin `app_version` ni
+ * tiene que leerse como el respaldo «Dispositivo» de `NativeBridge.java:1786`, y una sin `app_version` ni
  * procedencia, que es la que en TDLib dejaría una coma suelta y en Windows no—.
  */
 let previewSessions: { id: string; current: boolean; device: string; platform: string; version: string; location: string; ip: string; lastActive: number }[] = [
@@ -1516,7 +1656,7 @@ function designSessions(platform?: string): typeof previewSessions {
  */
 const SESSION_REFUSALS = { badId: 'El identificador de la sesión no es un identificador válido.' };
 /**
- * `DesktopSessions.ValidId`, que es el `-?(0|[1-9][0-9]{0,18})` de `BridgePolicy.id` (`BridgePolicy.java:53`). El
+ * `DesktopSessions.ValidId`, que es el `-?(0|[1-9][0-9]{0,18})` de `BridgePolicy.id` (`BridgePolicy.java:57`). El
  * ancla de Java y la de JavaScript caen solas; en C# son `\A` y `\z` por el salto de línea que `$` deja pasar.
  */
 const SESSION_ID = /^-?(0|[1-9][0-9]{0,18})$/;
@@ -1535,8 +1675,6 @@ function designSessionRevoke(params: Record<string, unknown>, platform?: string)
   previewSessions = previewSessions.filter(session => session.id !== id);
   return true;
 }
-const REACT_REFUSAL =
-  'La biblioteca de escritorio no incluye la petición para enviar reacciones, así que aquí se pueden ver pero no poner.';
 /** Uno o muchos ids, con las mismas cuatro negaciones del host antes de tocar nada. */
 function desktopDelete(raw: unknown[], revoke: boolean, state: State) {
   const ids = raw.map(String);
@@ -1554,9 +1692,9 @@ function desktopDelete(raw: unknown[], revoke: boolean, state: State) {
 }
 /**
  * Las seis negaciones de la cola, copiadas carácter a carácter de `DesktopJoinRequests.cs`. Cuatro son las que
- * Android ya pronunciaba en español (`NativeBridge.java:3510`, `:3514`, `:3567` y `JoinRequests.java:51`); las dos
- * de la forma estricta del `userId` y de la decisión salen en inglés por allá (`BridgePolicy.java:53`,
- * `NativeBridge.java:2757`) y Windows las dice en español, que es la norma fijada por la ronda AT.
+ * Android ya pronunciaba en español (`NativeBridge.java:3529`, `:3514`, `:3567` y `JoinRequests.java:51`); las dos
+ * de la forma estricta del `userId` y de la decisión salen en inglés por allá (`BridgePolicy.java:57`,
+ * `NativeBridge.java:2777`) y Windows las dice en español, que es la norma fijada por la ronda AT.
  */
 const JOIN_REFUSALS = {
   unsupported: 'Las solicitudes de ingreso solo existen en grupos y canales.',
@@ -1619,7 +1757,7 @@ export async function designRequest(method: string, params: Record<string, unkno
     const id = String(params.id);
     if (id === '11') return { id:'501', title:'María Fernández', username:'maria_fdz', usernames:activeUsernames([{ username:'maria_fdz', active:true }]), bio:mariaBio, bioEntities:entitiesOf(mariaBio,[['link','https://maria.design'],['mention','@maria_fdz']]), bot:false, groupCount:2, phone:'+34 600 111 222', premium:false, verified:false, blocked:designIsBlocked(id), presence:peerPresence({ kind:'online', expires:Math.floor(Date.now()/1000)+600 }, Math.floor(Date.now()/1000)) };
     // `canViewMembers` y `canManageMembers` son las dos banderas que Android saca del participante propio
-    // (`NativeBridge.java:1259-1265`). Sin ellas, la ficha de la comunidad no ofrecería nunca «Administrar
+    // (`NativeBridge.java:1279-1285`). Sin ellas, la ficha de la comunidad no ofrecería nunca «Administrar
     // miembros» en la vista de diseño y el panel se quedaría sin puerta que enseñar.
     if (id === '14') return { id:'-1001', title:'WRGram · Comunidad', username:'wrgram_community', usernames:['wrgram_community'], bio:communityBio, bioEntities:entitiesOf(communityBio,[['link','https://wrgram.app']]), bot:false, memberCount:groupMembers.length, administratorCount:1, canViewMembers:true, canManageMembers:true };
     // Los demás chats, con las mismas claves que el host de Windows responde desde la ronda BA: una comunidad
@@ -1640,7 +1778,7 @@ export async function designRequest(method: string, params: Record<string, unkno
     if (person) return { id, title: person.name, username: person.username, usernames: activeUsernames(person.username ? [{ username: person.username, active: true }] : []), bio: '', bioEntities: [], bot: person.bot, groupCount: 2, phone: '', premium: false, verified: false, blocked: false, presence: peerPresence({ kind: 'recently' }, Math.floor(Date.now() / 1000)) };
     return { id, title:'', username:'', usernames:[], bio:'', bioEntities:[], bot:false };
   }
-  // Las cinco de la ficha de perfil (rondas BA y BP). En Android las atiende `NativeBridge.java:522-529`; en
+  // Las cinco de la ficha de perfil (rondas BA y BP). En Android las atiende `NativeBridge.java:535-542`; en
   // Windows tienen brazo desde `TelegramService.cs`; aquí se modelan las tres respuestas que la pantalla lee, con las
   // reglas de `peerCard.ts` y sin frase propia.
   if (method === 'profile.related') return designRelated(params, state);
@@ -1750,7 +1888,7 @@ export async function designRequest(method: string, params: Record<string, unkno
     return true;
   }
   if (method === 'chat.invite') {
-    // `createInviteLink` (`NativeBridge.java:1863`) hecho andamio: sin formulario, con el nombre fijo, siete días y
+    // `createInviteLink` (`NativeBridge.java:1883`) hecho andamio: sin formulario, con el nombre fijo, siete días y
     // sin límite, y la respuesta `true` de siempre —el enlace no viaja a la pantalla, que en Windows lo ve en la caja
     // de la ventana del host y en Android en su hoja de compartir. La negativa de forma es la frase de Java, dicha
     // aquí aunque la puerta del menú ya la filtre: es lo único que se puede afirmar sin red. Del derecho no hay fila
@@ -1962,11 +2100,14 @@ export async function designRequest(method: string, params: Record<string, unkno
   // Abrir el mapa también entra por la puerta de Windows: en Android lo resuelve la activity con el intent de
   // `openMessageLocation`, y aquí solo hay espejo del host.
   if (method === 'message.location.open' && state.platform === 'desktop') return desktopOpenLocation(params, state);
-  // Las tres escrituras de reacción se niegan con la causa real. No es el «requiere una cuenta real» del final:
-  // en Windows la cuenta está y el chip se ve, lo que no existe es la petición dentro de la biblioteca.
-  if (method === 'message.react' && state.platform === 'desktop') throw new Error(REACT_REFUSAL); if (method === 'message.react' && !params.remove && !DESIGN_REACTIONS.some(option => option.kind === 'emoji' && option.emoji === String(params.emoji ?? ''))) throw new Error('Telegram no ofrece esa reacción en este chat.');
-  if (method === 'message.react.custom' && state.platform === 'desktop') throw new Error(REACT_REFUSAL);
-  if (method === 'message.react.paid' && state.platform === 'desktop') throw new Error(REACT_REFUSAL);
+  // Las dos escrituras de reacción entran por la puerta de Windows con el orden del host. En Android las atiende
+  // TDLib y el espejo no tiene con qué, así que siguen cayendo en la negativa del final.
+  if (method === 'message.react' && state.platform === 'desktop') return desktopReact(params, state, false);
+  if (method === 'message.react.custom' && state.platform === 'desktop') return desktopReact(params, state, true);
+  // La de pago sí se niega, y no por la biblioteca: la petición está, el gasto también, y en Windows no hay
+  // saldo que leer ni cargo reversible que ofrecer. Es la frase del host, no un hueco del espejo.
+  if (method === 'message.react.paid' && state.platform === 'desktop') throw new Error(REACT_REFUSALS.paid);
+  if (method === 'message.react' && !params.remove && !DESIGN_REACTIONS.some(option => option.kind === 'emoji' && option.emoji === String(params.emoji ?? ''))) throw new Error('Telegram no ofrece esa reacción en este chat.');
   // El borrador se guarda como en el puente: texto, formato y cita en el mismo objeto. Si el fixture
   // no conoce el mensaje citado, se guarda solo el texto y se devuelve la misma `note` de Telegram.
   // Escribir en la vista de diseño también avisa a Telegram: aquí se responde sin simular presencia.
@@ -2059,7 +2200,7 @@ export async function designRequest(method: string, params: Record<string, unkno
   }
   if (method === 'groups.add.info') return addPermission(String(params.id), state);
   if (method === 'groups.member.add') {
-    // El orden de cortafuegos de `addMembers` (`NativeBridge.java:2156-2172`): el identificador inválido se descarta
+    // El orden de cortafuegos de `addMembers` (`NativeBridge.java:2176-2192`): el identificador inválido se descarta
     // antes de contar el lote, y el margen se valida escrito o numérico. Al revés, veinticinco personas con un
     // identificador mal escrito oirían «selecciona hasta 20» cuando lo que está mal es un identificador.
     const raw = Array.isArray(params.userIds) ? params.userIds.map(String) : null;
@@ -2128,7 +2269,7 @@ export async function designRequest(method: string, params: Record<string, unkno
     if (!isSupergroupOrChannel(chat)) throw new Error(CHAT_USERNAME_REFUSALS.unsupported);
     const malformed = profileUsernameProblem(params.username);
     if (malformed) throw new Error(malformed);
-    // Solo el `trim()` del puente: la `@` la quita la pantalla antes de llamar (`App.tsx:368`), así que un
+    // Solo el `trim()` del puente: la `@` la quita la pantalla antes de llamar (`App.tsx:372`), así que un
     // «@nombre» que llega hasta aquí —una llamada hecha a mano, otra pantalla— es el nombre malo, igual que en
     // Windows. Aflojarlo en el andamio sería entrenar una vista de diseño que el host real rechaza.
     const username = String(params.username).trim();
@@ -2139,10 +2280,19 @@ export async function designRequest(method: string, params: Record<string, unkno
     acceptState({ ...state, chats: state.chats.map(other => other.id === id ? { ...other, username } : other) });
     return true;
   }
+  if (method === 'groups.stats') {
+    const chat = state.chats.find(item => item.id === String(params.id));
+    // El orden es el de `groups.stats` (`NativeBridge.java:883`) y el de `DesktopGroupStatsFlow.GroupStatsAsync`:
+    // primero la fila, luego la forma, y solo entonces la lectura. Lo que se devuelve es el muestrario con los mismos
+    // `id` que las dos bibliotecas contestan; la pantalla no sabe de qué capa viene.
+    if (!chat) throw new Error(FOLDER_REFUSALS.loaded);
+    if (!isSupergroupOrChannel(chat)) throw new Error(STATS_REFUSALS.notCommunity);
+    return statsSample(chat.type === 'channel');
+  }
   if (method === 'groups.permissions.get') {
     const id = String(params.id);
     const chat = state.chats.find(item => item.id === id);
-    // El orden es el de `groupPermissions` (`NativeBridge.java:1868`) y el de `DesktopGroupPermissionsFlow.GroupPermissionsAsync`:
+    // El orden es el de `groupPermissions` (`NativeBridge.java:1888`) y el de `DesktopGroupPermissionsFlow.GroupPermissionsAsync`:
     // la fila, la forma, el derecho propio y la tabla. Cada paso tiene su frase, y adelantar el derecho haría que un
     // grupo básico oyera «no tienes permiso» cuando lo que no tiene es permisos que editar.
     if (!chat) throw new Error(FOLDER_REFUSALS.loaded);
@@ -2221,7 +2371,7 @@ export async function designRequest(method: string, params: Record<string, unkno
   }
   if (method === 'message.link') {
     const id = String(params.id);
-    // Las tres guardas, en el orden medido de `NativeBridge.java:766`: la fila del chat abierto, el temporizador y la
+    // Las tres guardas, en el orden medido de `NativeBridge.java:783`: la fila del chat abierto, el temporizador y la
     // tarjeta. En Java son cuatro porque el tipo de contenido y la vista previa se comprueban aparte; aquí es la misma
     // mirada a la clase del adjunto, que es lo que hace `DesktopLinkPreview.PageOf`.
     const row = poolOf(state.active).find(item => item.id === id);
@@ -2302,8 +2452,79 @@ export async function designRequest(method: string, params: Record<string, unkno
   // Compartir un contacto es la escritura de la ronda AP. En el puente de Windows es un adjunto más —
   // `messages.sendMedia` con `InputMediaContact`—, y el espejo añade la misma tarjeta que la sesión lee del eco.
   if (method === 'share.contact' && state.platform === 'desktop') return desktopShareContact(params, state);
+  // La ubicación en directo (ronda CB) se parte en dos. Empezar a compartir solo existe en Android: el puente de
+  // Windows lee la coordenada de un sensor que su TFM no proyecta, así que el andamio dice su frase con nombre
+  // (`DesktopLiveLocation.NoSensor`) en vez de dejarla caer en la puerta genérica de BK —la misma razón por la que
+  // `poll.stop` o `chat.photo.delete` tampoco pasan por ella. Detener sí lo hacen las dos capas.
+  if (method === 'location.live.start') {
+    if (state.platform === 'desktop') throw new Error(LIVE_REFUSALS.noSensor);
+    return designLiveLocationStart(params, state);
+  }
+  if (method === 'location.live.stop') return designLiveLocationStop(params, state);
+  if (method === 'calls.list') return designCallPage(params, state);
   if (method === 'chats.list' || method === 'error.clear') return true;
   throw new Error('Vista sintética: esta acción requiere una cuenta real en Android. No se ha enviado nada.');
+}
+
+/** La compartida abierta que ve el andamio: una fila propia, viva y con cuenta atrás sin gastar. */
+function liveShareOf(state: State) {
+  return state.messages.find(message => {
+    const card = message.extra;
+    return message.outgoing && card?.kind === 'location' && card.live === true && (card.expiresAt ?? 0) > 0;
+  });
+}
+
+/**
+ * Lo que `startLiveLocation` (`NativeBridge.java:4735`) contesta: la fila escrita con su `id`, su `chatId` y el
+ * instante en que deja de renovarse, en segundos de epoch como `LiveLocationPolicy.expiresAt` (`:87-90`). El andamio
+ * no simula el sensor ni el diálogo nativo de confirmación; pinta la tarjeta que queda después de aceptar, que es lo
+ * que la pantalla necesita para enseñar el botón «Dejar de compartir».
+ */
+function designLiveLocationStart(params: Record<string, unknown>, state: State): LiveStart {
+  const period = Number(params.period);
+  // El orden es el del puente, no el de la conveniencia: `NativeBridge.java:4739` niega la compartida que ya está
+  // abierta antes de que `NativeBridge.java:4741` mire el periodo, así que con las dos cosas malas a la vez la
+  // pantalla tiene que oír «Ya estás compartiendo…» y no la cota de duración.
+  if (liveShareOf(state)) throw new Error(LIVE_REFUSALS.already);
+  if (!LIVE_DURATIONS.some(item => item.period === period)) throw new Error(LIVE_REFUSALS.badPeriod);
+  const now = Math.floor(Date.now() / 1000);
+  const sent: Message = {
+    id: String(Math.max(0, ...poolOf(state.active).map(message => Number(message.id) || 0)) + 1),
+    chatId: state.active, sender: 'Tú', text: '', date: now,
+    outgoing: true, status: 'sent', edited: false, reactions: [],
+    extra: { kind: 'location', title: 'Ubicación en vivo', address: '', latitude: 40.416775, longitude: -3.70379,
+      live: true, expiresAt: now + period, canOpen: true, canStop: true },
+  };
+  sentLive.push(sent);
+  acceptState({ ...state, messages: [...state.messages, sent] });
+  const card = sent.extra as { kind: 'location'; expiresAt: number };
+  return { id: sent.id, chatId: sent.chatId, expiresAt: card.expiresAt };
+}
+
+/**
+ * El `EditMessageLiveLocation` sin punto (`NativeBridge.java:4832`, y en Windows el bit `stopped` de
+ * `DesktopLiveLocation.Stopped`): la tarjeta sigue ahí, pero la cuenta atrás se apaga y el botón desaparece. El orden
+ * de las dos negativas es el del puente, no un capricho: primero si la fila es una compartida propia y abierta en el
+ * chat leído, y solo después si todavía le quedaba tiempo.
+ */
+function designLiveLocationStop(params: Record<string, unknown>, state: State): boolean {
+  const id = String(params.id ?? '');
+  const row = state.messages.find(message => message.id === id);
+  const card = row?.extra;
+  if (!row || card?.kind !== 'location' || card.live !== true || !row.outgoing || row.chatId !== state.active) {
+    throw new Error(LIVE_REFUSALS.notSharing);
+  }
+  if (!card.expiresAt) throw new Error(LIVE_REFUSALS.gone);
+  // La copia del historial se apaga a la vez que la fila en pantalla: si no, al volver a abrir el chat la tarjeta
+  // reviviría con su cuenta atrás y el botón de dejar de compartir volvería sobre una ubicación ya parada.
+  const stored = sentLive.find(item => item.id === id && item.chatId === state.active);
+  if (stored?.extra) stored.extra = { ...card, expiresAt: 0, canStop: false };
+  acceptState({
+    ...state,
+    messages: state.messages.map(message =>
+      message.id === id ? { ...message, extra: { ...card, expiresAt: 0, canStop: false } } : message),
+  });
+  return true;
 }
 const adminRights: GroupAdminRights = { canChangeInfo:true, canPostMessages:false, canEditMessages:true, canDeleteMessages:true, canInviteUsers:true, canRestrictMembers:true, canPinMessages:true, canManageTopics:true, canPromoteMembers:false, canManageVideoChats:false, canPostStories:true, canEditStories:false, canDeleteStories:false, canManageDirectMessages:false, canManageTags:false, canSendWelcomeMessages:false };
 const groupMembers: GroupMember[] = [
@@ -2330,7 +2551,7 @@ const banished = new Set<string>();
  * usa para repartir sitio; si cada flujo contase aparte, dirían dos números distintos en la misma pantalla.
  */
 /**
- * `profileRelated` (`NativeBridge.java:1554-1593`). Los tres caminos, con las mismas dos cifras que allá: la
+ * `profileRelated` (`NativeBridge.java:1574-1613`). Los tres caminos, con las mismas dos cifras que allá: la
  * ventana de desplazamiento y las treinta filas. Un privado da comunidades en común; un básico se corta en casa
  * porque su tabla llega entera; una comunidad se paga de treinta en treinta.
  */
@@ -2630,7 +2851,7 @@ let previewPrivacyRules: Record<string, PrivacyRule[]> = {
   findPhone: [{ kind: 'allowContacts' }],
 };
 
-/** `privacyGet` (`NativeBridge.java:3848-3859`): las diez claves proyectadas, en el orden de `PRIVACY_KEYS`. */
+/** `privacyGet` (`NativeBridge.java:3867-3878`): las diez claves proyectadas, en el orden de `PRIVACY_KEYS`. */
 function designPrivacyGet() {
   return PRIVACY_KEYS.map(key => projectPrivacy(key, previewPrivacyRules[key] ?? []));
 }
@@ -2658,7 +2879,7 @@ function designPrivacySet(params: Record<string, unknown>): boolean {
  * que `profile.block` escribe y de la que `chat.profile` saca su `blocked`. Dos fuentes enseñarían dos verdades
  * distintas en la misma pantalla. Las filas llevan `kind` e `id` tal y como los devuelve el puente —el id del
  * remitente, no el del chat—, y la ficha de una persona va por chats, así que hace falta un puente para las dos
- * personas del muestrario que son ficha y fila a la vez. No es una regla de ninguna capa: `NativeBridge.java:1284`
+ * personas del muestrario que son ficha y fila a la vez. No es una regla de ninguna capa: `NativeBridge.java:1304`
  * también saca el id de usuario del `ChatTypePrivate` antes de bloquear a nadie.
  */
 const designSenderIds: Record<string, string> = { '11': '501' };
@@ -2677,7 +2898,7 @@ const designBlockedRows: BlockedSender[] = [
   { kind: 'chat', id: '-1003', name: blockedLimit('Chat de la escalera') },
 ];
 
-/** `blockedSenders` (`NativeBridge.java:1507-1530`): el marcador se niega y la página se arma con la fórmula medida. */
+/** `blockedSenders` (`NativeBridge.java:1527-1550`): el marcador se niega y la página se arma con la fórmula medida. */
 function designBlockedPage(params: Record<string, unknown>) {
   const refusal = blockedOffsetProblem(params.offset);
   if (refusal) throw new Error(refusal);
@@ -2703,7 +2924,7 @@ function designUnblockSender(params: Record<string, unknown>, state: State): boo
 /**
  * `profileBlock` (`:1282-1288`), que es la otra mitad del mismo hueco: la ficha ya publicaba `blocked` desde la ronda
  * BA y su botón seguía sin puente. Aquí están las tres guardas de Java en su orden —forma del chat, cuenta propia,
- * valor— y ninguna ventana de confirmar, porque la abre la pantalla (`App.tsx:744-747`) y no el puente.
+ * valor— y ninguna ventana de confirmar, porque la abre la pantalla (`App.tsx:748-751`) y no el puente.
  */
 function designProfileBlock(params: Record<string, unknown>, state: State): boolean {
   const id = String(params.id ?? '');
@@ -2780,7 +3001,7 @@ let savedSearches: SavedFilter[] = [{ id: 'f1', name: 'Bocetos de la barra', que
 // la ventana visible. `chat.open` y `messages.search` comparten esta fuente para no divergir.
 const poolOf=(id:string):Message[]=>{
   const base=id==='21'?longHistory:id==='17'?privateDays:id==='22'?channelPosts:id==='23'?(threadComments['401']||[]):id==='26'?secretNotes:id==='11'||id==='14'||id==='24'?fixture.messages.map(message=>({...message,chatId:id})):[];
-  return [...base,...[...galleryItems,...savedItems].filter(item=>item.chatId===id),...locationItems.filter(item=>item.chatId===id),...forwardedCopies.filter(item=>item.chatId===id),...scheduledSent.filter(item=>item.chatId===id),...sentAttachments.filter(item=>item.chatId===id),...sentPolls.filter(item=>item.chatId===id),...sentContacts.filter(item=>item.chatId===id)].sort((a,b)=>a.date-b.date||Number(a.id)-Number(b.id));
+  return [...base,...[...galleryItems,...savedItems].filter(item=>item.chatId===id),...locationItems.filter(item=>item.chatId===id),...forwardedCopies.filter(item=>item.chatId===id),...scheduledSent.filter(item=>item.chatId===id),...sentAttachments.filter(item=>item.chatId===id),...sentPolls.filter(item=>item.chatId===id),...sentContacts.filter(item=>item.chatId===id),...sentLive.filter(item=>item.chatId===id)].sort((a,b)=>a.date-b.date||Number(a.id)-Number(b.id));
 };
 // Lo que recorre la búsqueda global: el historial de cada chat, etiquetado con su título.
 const globalPool=():Message[]=>fixture.chats.flatMap(chat=>poolOf(chat.id).map(message=>({...message,chatTitle:chat.title})));
@@ -2805,7 +3026,7 @@ const galleryItems: (Message & { filter: string })[] = [
   { ...galleryBase, id: '202', chatId: '14', filter: 'documents', text: 'Guía del proyecto', date: serviceSeed - 3600, media: { id: 0, ready: false, kind: 'file', mime: 'application/pdf', name: 'Guía del proyecto.pdf', size: 0 } },
   { ...galleryBase, id: '201', chatId: '14', filter: 'links', text: 'Sitio del proyecto https://wrgram.app', date: serviceSeed - 3700, preview: { title: 'WRGram — un espacio para construir juntos', site: 'wrgram.app', description: 'Cliente de Telegram propio para Android y Windows: conversaciones, comunidades, complementos y la misma interfaz en las dos casas.', photo: { id: 0, ready: false, kind: 'image' as const, mime: 'image/jpeg', name: 'Vista previa del enlace', size: 0, minithumbnail: '/bots/snake.jpg' } } },
   // Las otras dos filas son los dos caminos que el botón tiene además del artículo. La de la invitación pregunta antes
-  // de escribir. La del temporizador no lleva `preview` a propósito: `NativeSnapshot.java:218` exige `!temporary` para
+  // de escribir. La del temporizador no lleva `preview` a propósito: `NativeSnapshot.java:227` exige `!temporary` para
   // pintar la tarjeta, y el host hace lo mismo con `DesktopSenderProfile.IsEphemeral`, así que en las dos capas esa
   // fila se niega por el temporizador y por la ausencia de tarjeta con la misma frase.
   { ...galleryBase, id: '206', chatId: '14', filter: 'links', text: 'Entramos por este enlace https://t.me/+Abierto92', date: serviceSeed - 3800, preview: { title: 'Telegram: Únete a un grupo', site: 't.me', description: 'Astronomía en Chile — un espacio para mirar el cielo del sur.' } },
@@ -2894,6 +3115,10 @@ const sentPolls: Message[] = [];
 // andamio para dar id nuevo, así que una fila que solo vive en `state.messages` se escribiría dos veces con el mismo
 // identificador si se comparten dos personas seguidas.
 const sentContacts: Message[] = [];
+// Las ubicaciones en directo empezadas desde el andamio, en el mismo cajón aparte y por la misma razón: `poolOf` es
+// lo que mira el andamio para dar el id nuevo, así que una compartida que solo viviera en `state.messages` escribiría
+// dos filas con el mismo identificador al dejar de compartir y volver a empezar.
+const sentLive: Message[] = [];
 /**
  * Las ubicaciones que el host de Windows sabe leer, una por cada forma que produce `ConvertMessage` y sus dos
  * negativas: la fija, la en vivo (con `live` y `expiresAt`, como `MessageMediaGeoLive`), el lugar (título y dirección
@@ -2934,3 +3159,93 @@ export const fixture: State = { ...EMPTY, contactsSync: syncState, ready: true, 
     ['101',false,'Hola 👋 ¿Cómo va la nueva versión de WRGram? @rodrigo #WRGram',-90000],['102',true,'¡Mucho mejor! Estamos cuidando cada detalle. Que se sienta sencillo, pero que tenga todo a mano.',-3400],['103',false,'Justo eso. Una interfaz que te deje conversar sin distraerte.',-3200],['104',true,'Un espacio más limpio. Y los complementos tendrán su propio lugar, sin mezclarse con tus chats.',-3000],['105',false,'Me encanta cómo está quedando ✨',-2800],
   ].map(([id,outgoing,text,time]):Message=>({id:String(id),chatId:'11',sender:outgoing?'Tú':'María Fernández',authorKind:'user' as const,authorId:outgoing?'1':'502',text:String(text),date:Math.floor(Date.now()/1000)+Number(time),outgoing:Boolean(outgoing),status:outgoing?'read':'',edited:false,reactions:[],...designProvenance[String(id)],...(String(id)==='101'?{entities:[{type:'bold' as const,offset:0,length:4},{type:'mention' as const,offset:45,length:8},{type:'hashtag' as const,offset:54,length:7}],reactions:BOOT_REACTIONS}:{}),...(String(id)==='104'?{media:BOOT_PHOTO}:{})})).concat(serviceMessages, unsentFixtures),
 };
+
+/**
+ * El muestrario de `groups.stats` (ronda CA) con los `id` que de verdad contestan las dos capas, medidos en
+ * `TdApi.ChatStatisticsChannel` / `ChatStatisticsSupergroup` y en `TL.Stats_BroadcastStats` / `TL.Stats_MegagroupStats`.
+ * Todas las fichas llevan su periodo anterior porque las dos bibliotecas lo guardan junto al valor
+ * (`StatisticalValue.previousValue` allá, `StatsAbsValueAndPrev.previous` aquí), salvo `notifications`, que en TDLib es
+ * un `double` suelto y en MTProto un `StatsPercentValue{part,total}` sin pasado: sin dato anterior no se pinta flecha,
+ * y esa es la razón por la que la vista también la muestra sola. Los grupos traen además la tabla de los que más
+ * escriben, que es lo único que un supergrupo sabe de sus personas.
+ */
+function statsSample(channel: boolean): CommunityStats {
+  if (channel) return {
+    kind: 'channel', from: '2026-10-20', to: '2026-11-19',
+    values: [
+      { id: 'members', value: 1200, previous: 1000 },
+      { id: 'viewsPerPost', value: 430, previous: 400 },
+      { id: 'sharesPerPost', value: 12, previous: 9 },
+      { id: 'reactionsPerPost', value: 30, previous: 25 },
+      { id: 'viewsPerStory', value: 210, previous: 186 },
+      { id: 'sharesPerStory', value: 8, previous: 11 },
+      { id: 'reactionsPerStory', value: 22, previous: 22 },
+      { id: 'notifications', value: 64.5 },
+    ],
+    top: [],
+  };
+  return {
+    kind: 'group', from: '2026-10-20', to: '2026-11-19',
+    values: [
+      { id: 'members', value: 80, previous: 74 },
+      { id: 'messages', value: 1400, previous: 1200 },
+      { id: 'viewers', value: 55, previous: 50 },
+      { id: 'senders', value: 9, previous: 6 },
+    ],
+    top: [
+      { name: 'María Fernández', messages: 40, avgChars: 120 },
+      { name: 'Diego Salaverría', messages: 27, avgChars: 96 },
+      { name: ROSTER_UNKNOWN_NAME, messages: 12, avgChars: 60 },
+    ],
+  };
+}
+
+// Las filas del registro de llamadas (ronda CL). `fetched` es lo que la página traía antes de recortar por nombre y
+// `shown` lo que sobrevive: la pantalla tiene que poder decir las dos cifras porque el servidor no sabe de nombres.
+const CALL_LOG_DESIGN_PAGE = 5;
+const designCallRows: Array<{ chat: string; reason: CallReason; video: boolean; group: boolean; missed: boolean; ongoing?: boolean; seconds: number }> = [
+  { chat: '11', reason: 'missed', video: false, group: false, missed: true, seconds: 0 },
+  { chat: '17', reason: 'ended', video: false, group: false, missed: false, seconds: 95 },
+  { chat: '15', reason: 'ended', video: true, group: false, missed: false, seconds: 3840 },
+  { chat: '12', reason: 'ended', video: true, group: true, missed: false, ongoing: true, seconds: 0 },
+  { chat: '13', reason: 'declined', video: false, group: false, missed: true, seconds: 0 },
+  { chat: '26', reason: 'missed', video: true, group: false, missed: true, seconds: 0 },
+  { chat: '14', reason: 'ended', video: true, group: true, missed: false, seconds: 1250 },
+  { chat: '18', reason: 'disconnected', video: false, group: false, missed: false, seconds: 30 },
+  { chat: '19', reason: 'ended', video: true, group: false, missed: false, seconds: 210 },
+  { chat: '1', reason: 'missed', video: false, group: false, missed: true, seconds: 0 },
+  { chat: '22', reason: 'declined', video: true, group: false, missed: true, seconds: 0 },
+  { chat: '24', reason: 'missed', video: true, group: true, missed: true, seconds: 0 },
+  { chat: '17', reason: 'ended', video: false, group: false, missed: false, seconds: 45 },
+  { chat: '15', reason: 'ended', video: false, group: false, missed: false, seconds: 600 },
+  { chat: '24', reason: 'missed', video: false, group: true, missed: true, seconds: 0 },
+];
+// El puente recuerda el cursor que repartió (`NativeBridge.java:5321`); aquí lo recuerda esta variable, y con ella la
+// pantalla puede comprobar de verdad que un cursor viejo se niega en vez de devolver otra página.
+let designCalls: { owner: string; onlyMissed: boolean; cursor: string } | null = null;
+
+/**
+ * `callLog` (`NativeBridge.java:5316-5345`): primero el cursor, luego la guarda de que siga el recorrido de esta
+ * pantalla, y solo después el recorte por nombre —que es local, porque `SearchCallMessages` no tiene `query`—. El
+ * título lo pone la lista de chats real, así que una fila no puede prometer un nombre que la bandeja no muestre.
+ */
+function designCallPage(params: Record<string, unknown>, state: State): CallLogPage {
+  const refusal = callLogOffsetProblem(params.offset);
+  if (refusal) throw new Error(refusal);
+  const onlyMissed = params.onlyMissed === true;
+  const query = typeof params.query === 'string' ? params.query.trim() : '';
+  const cursor = typeof params.offset === 'string' ? params.offset : '';
+  if (cursor !== '' && (!designCalls || designCalls.owner !== state.selfId || designCalls.onlyMissed !== onlyMissed || designCalls.cursor !== cursor)) {
+    throw new Error(CALL_LOG_REFUSALS.staleCursor);
+  }
+  const start = cursor === '' ? 0 : Number(cursor);
+  const pool: CallLogEntry[] = designCallRows.map((row, index) => ({
+    chatId: row.chat, messageId: String(7001 + index), title: state.chats.find(chat => chat.id === row.chat)?.title ?? '',
+    label: callRowLabel(row.reason, row.video, row.group, row.seconds, row.ongoing === true),
+    date: serviceSeed - index * 5400, missed: row.missed, video: row.video, group: row.group,
+    duration: row.ongoing ? 0 : row.seconds,
+  }));
+  const page = callLogPage(pool, start, query, onlyMissed, pool.length, CALL_LOG_DESIGN_PAGE);
+  designCalls = { owner: state.selfId, onlyMissed, cursor: page.nextOffset };
+  return page;
+}

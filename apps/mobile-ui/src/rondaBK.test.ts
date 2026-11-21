@@ -11,6 +11,8 @@ const pinRules = text('../../desktop/src/WRGram.Desktop/DesktopMessagePin.cs');
 const pollRules = text('../../desktop/src/WRGram.Desktop/DesktopPoll.cs');
 const reactRules = text('../../desktop/src/WRGram.Desktop/DesktopMessageReact.cs');
 const photoRules = text('../../desktop/src/WRGram.Desktop/DesktopChatPhoto.cs');
+const liveRules = text('../../desktop/src/WRGram.Desktop/DesktopLiveLocation.cs');
+const liveScaffold = text('./liveLocation.ts');
 
 /** El literal que C# asigna a una constante de texto. */
 function csSentence(name: string, from: string): string {
@@ -29,16 +31,9 @@ function tsBlock(name: string, from = preview): string {
 }
 
 /** La cadena que ese objeto asigna a una propiedad. */
-function tsProperty(object: string, key: string): string {
-  const match = new RegExp(`\\b${key}:\\s*'((?:[^'\\\\]|\\\\.)*)'`).exec(tsBlock(object));
+function tsProperty(object: string, key: string, from = preview): string {
+  const match = new RegExp(`\\b${key}:\\s*'((?:[^'\\\\]|\\\\.)*)'`).exec(tsBlock(object, from));
   if (!match) throw new Error(`Falta ${key} en ${object}`);
-  return match[1];
-}
-
-/** El literal de una constante suelta, que en el espejo va en la línea de abajo. */
-function tsSentence(name: string): string {
-  const match = new RegExp(`\\b${name}\\s*=\\s*\\n?\\s*'((?:[^'\\\\]|\\\\.)*)'`).exec(preview);
-  if (!match) throw new Error(`Falta la constante ${name}`);
   return match[1];
 }
 
@@ -77,7 +72,7 @@ function claims(side: 'available' | 'pending'): string[] {
 const pending = claims('pending');
 const available = claims('available');
 
-/** Las seis claves que `desktopGap.ts` deja pasar porque su frase con nombre dice más que la genérica. */
+/** Las cinco claves que `desktopGap.ts` deja pasar porque su frase con nombre dice más que la genérica. */
 const namedInScaffold = [...gap.matchAll(/'([a-z][a-zA-Z0-9._]*)'/g)].map(m => m[1]);
 
 /** Las diez que BJ encontró fingiendo resultado en escritorio sin tener brazo en el host. */
@@ -107,9 +102,9 @@ describe('ronda BK · medido en el texto de las dos capas', () => {
   it('la puerta no se inventa ninguna clave: las saca todas del aviso medido', () => {
     expect(gap).toContain("from './desktopScope'");
     expect(gap).toContain('DESKTOP_PENDING.flatMap(claim => claim.methods)');
-    expect([...namedInScaffold].sort()).toEqual(['chat.photo.delete', 'message.react', 'message.react.custom', 'message.react.paid', 'pinned.list', 'poll.stop']);
+    expect([...namedInScaffold].sort()).toEqual(['chat.photo.delete', 'location.live.start', 'message.react.paid', 'pinned.list', 'poll.stop']);
     const written = [...gap.matchAll(/const DESKTOP_NAMED_IN_SCAFFOLD[^\n]*\n\s+([^\n]+)/g)][0]?.[1] ?? '';
-    expect(written.split(',').filter(Boolean).length).toBe(6);
+    expect(written.split(',').filter(Boolean).length).toBe(5);
   });
 
   it('la frase genérica del andamio es la línea que el host reserva para lo que no tiene brazo', () => {
@@ -117,12 +112,13 @@ describe('ronda BK · medido en el texto de las dos capas', () => {
     expect(gap).toContain('No disponible en escritorio (beta): ${method}');
   });
 
-  it('las seis que saltan la puerta la saltan de verdad, y con la frase del host', () => {
+  it('las cinco que saltan la puerta la saltan de verdad, y con la frase del host', () => {
     const pairs: [string, string, string][] = [
-      ['message.react', tsSentence('REACT_REFUSAL'), csSentence('Refused', reactRules)],
+      ['message.react.paid', tsProperty('REACT_REFUSALS', 'paid'), csSentence('PaidRefused', reactRules)],
       ['poll.stop', tsProperty('POLL_REFUSALS', 'noStop'), csSentence('NoStop', pollRules)],
       ['pinned.list', tsProperty('PIN_REFUSALS', 'list'), csSentence('NoList', pinRules)],
       ['chat.photo.delete', tsProperty('CHAT_PHOTO', 'noDelete'), csSentence('NoDelete', photoRules)],
+      ['location.live.start', tsProperty('LIVE_REFUSALS', 'noSensor', liveScaffold), csSentence('NoSensor', liveRules)],
     ];
     for (const [method, mirror, host] of pairs) {
       expect(mirror).toBe(host);
@@ -131,7 +127,7 @@ describe('ronda BK · medido en el texto de las dos capas', () => {
     }
   });
 
-  it('ninguna de las seis negadas por nombre puede acabar en la puerta genérica', () => {
+  it('ninguna de las cinco negadas por nombre puede acabar en la puerta genérica', () => {
     for (const key of namedInScaffold) {
       expect(pending).toContain(key);
       expect(available).not.toContain(key);
@@ -208,14 +204,14 @@ describe('ronda BK · medido llamando de verdad', () => {
     expect(missed).toEqual([]);
   });
 
-  it('las seis con nombre siguen diciendo la suya y no el genérico', async () => {
+  it('las cinco con nombre siguen diciendo la suya y no el genérico', async () => {
     const expected: Record<string, string> = {
-      'message.react': tsSentence('REACT_REFUSAL'),
-      'message.react.custom': tsSentence('REACT_REFUSAL'),
-      'message.react.paid': tsSentence('REACT_REFUSAL'),
+      'message.react.paid': tsProperty('REACT_REFUSALS', 'paid'),
       'poll.stop': tsProperty('POLL_REFUSALS', 'noStop'),
       'pinned.list': tsProperty('PIN_REFUSALS', 'list'),
       'chat.photo.delete': tsProperty('CHAT_PHOTO', 'noDelete'),
+      // La quinta la trae la ronda CB: el brazo existe, lo que falta es una coordenada que el equipo no puede leer.
+      'location.live.start': tsProperty('LIVE_REFUSALS', 'noSensor', liveScaffold),
     };
     for (const [method, phrase] of Object.entries(expected)) {
       const error = await failure(desktop.call, method, { id: '101', emoji: '👍', count: '5' });

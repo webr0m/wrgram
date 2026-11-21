@@ -177,8 +177,9 @@ describe('ronda AR · el puente, medido con la vista de diseño', () => {
     expect(dto).toMatch(/\[JsonIgnore\(Condition = JsonIgnoreCondition\.WhenWritingNull\)\]\s*\n\s*public double\? Latitude/);
     expect(dto).toMatch(/\[JsonIgnore\(Condition = JsonIgnoreCondition\.WhenWritingNull\)\]\s*\n\s*public double\? Longitude/);
     expect(card).toContain('location.latitude!==undefined&&location.longitude!==undefined&&<small dir="ltr">{location.latitude.toFixed(5)');
-    // El contrato ya distinguía «no hay punto» de «punto en cero»: aquí solo se cumple.
-    expect(contract).toContain("{kind:'location';title:string;address:string;latitude?:number;longitude?:number;live?:boolean;expiresAt?:number;canOpen:boolean}");
+    // El contrato ya distinguía «no hay punto» de «punto en cero»: aquí solo se cumple. La bandera de poder
+    // apagarla la añadió la ronda CB, y viaja en el contrato porque la tarjeta la lee para su botón.
+    expect(contract).toContain("{kind:'location';title:string;address:string;latitude?:number;longitude?:number;live?:boolean;expiresAt?:number;canOpen:boolean;canStop?:boolean}");
   });
 
   it('la pantalla solo ofrece el mapa con punto y permiso', () => {
@@ -203,8 +204,9 @@ describe('ronda AR · el puente, medido con la vista de diseño', () => {
     // del momento, incluido el «salta al mensaje» y la búsqueda.
     expect(count('...locationItems.filter(item=>item.chatId===id),', preview)).toBe(1);
     expect(count("const locationItems: Message[] = [", preview)).toBe(1);
-    // Cuatro formas de publicar: fija, viva, lugar y las dos medias que apagan el botón.
-    expect(count("kind: 'location'", preview)).toBe(5);
+    // Siete apariciones: las cinco filas del historial —fija, viva, lugar, sin punto y sin permiso— y las dos del
+    // bloque de la tarjeta viva, la fila semilla y el moldeo con que la prueba lee el vencimiento.
+    expect(count("kind: 'location'", preview)).toBe(7);
   });
 
   it('Android no se tocó: sigue negando por su cuenta y abriendo el intent', () => {

@@ -1,0 +1,16 @@
+/* El registro de llamadas (ronda CL): las filas son texto largo —un nombre de chat y la frase de la llamada—, así que
+   todo lo que se corta tiene que poder partirse sin empujar el ancho de la pantalla. */
+.call-log { display:grid; gap:10px; min-width:0; padding:10px 14px; }
+.call-log .settings-note { margin:0; padding:0; }
+.call-log-tools { display:flex; flex-wrap:wrap; gap:8px; align-items:center; min-width:0; }
+.call-log-search { display:flex; align-items:center; gap:7px; flex:1 1 220px; min-width:0; padding:7px 10px; border:1px solid var(--line); border-radius:10px; background:var(--input); color:var(--muted); }
+.call-log-search input { flex:1 1 60px; min-width:0; border:0; background:none; color:var(--text); font:inherit; font-size:calc(12px * var(--ui-scale,1)); }
+.call-log-search input:focus { outline:none; }
+.call-log-tools .secondary { flex:none; min-height:38px; }
+.call-log-list { display:grid; gap:6px; margin:0; padding:0; list-style:none; min-width:0; }
+.call-log-row { display:flex; align-items:center; flex-wrap:wrap; gap:9px; padding:9px; border:1px solid var(--line); border-radius:10px; min-width:0; }
+.call-log-icon { display:grid; place-items:center; flex:none; width:32px; height:32px; border-radius:50%; background:var(--soft); color:var(--muted); }
+.call-log-body { flex:1 1 140px; min-width:0; }
+.call-log-body strong,.call-log-body small { display:block; overflow-wrap:anywhere; }
+.call-log-body small { color:var(--muted); font-size:calc(10px * var(--ui-scale,1)); line-height:1.45; }
+.call-log-date { flex:none; color:var(--muted); font-size:calc(10px * var(--ui-scale,1)); text-align:right; overflow-wrap:anywhere; }

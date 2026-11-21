@@ -9,9 +9,9 @@ import { desktopGapRefusal } from './desktopGap';
  * prueba vigila es lo que esa conexión promete, en las cuatro piezas que la forman y en los tres estados que puede
  * dar la orden.
  *
- * Primero las frases: `senderProfile` de Android solo sabe negar de dos maneras —la guarda agrupada de `:1600`, que
- * comparte la literal del chat secreto ya escrita en `DesktopPeerProfile.cs:23`, y la del autor que la fila no trae,
- * en `:1611`— y ninguna de las dos se vuelve a escribir en el cable, en el andamio ni en la pantalla. Segundo el
+ * Primero las frases: `senderProfile` de Android solo sabe negar de dos maneras —la guarda agrupada de `:1618`, que
+ * comparte la literal del chat secreto ya escrita en `DesktopPeerProfile.cs:39`, y la del autor que la fila no trae,
+ * en `:1629`— y ninguna de las dos se vuelve a escribir en el cable, en el andamio ni en la pantalla. Segundo el
  * orden: las guardas del cable tienen que caer en las mismas posiciones relativas que las de Java, con la lectura del
  * temporizador por delante de la negación que produce y con el `access_hash` por delante de la fila devuelta, porque
  * una ficha inventada con el número suelto es peor que un aviso (norma BI). Tercero la puerta: BO había vuelto texto
@@ -91,8 +91,8 @@ const CABLE = body('private async Task<object?> SenderProfileAsync', cable);
 
 /** Las dos negaciones de la orden, con la línea de Android que las dice. */
 const REFUSALS: [string, number][] = [
-  [PEER_REFUSALS.secret, 1601],
-  [PEER_REFUSALS.noSender, 1611],
+  [PEER_REFUSALS.secret, 1621],
+  [PEER_REFUSALS.noSender, 1631],
 ];
 
 describe('ronda BP · las tres capas dicen lo mismo del remitente', () => {
@@ -108,20 +108,20 @@ describe('ronda BP · las tres capas dicen lo mismo del remitente', () => {
       '"profile.sender" => await SenderProfileAsync(args)',
       '_ => throw new BridgeException');
     // El número que la ronda BM dejó anclado sigue siendo el del brazo.
-    expect(cable).toContain('TelegramService.cs:253');
-    expect(dispatchTable.split('\n')[252]).toContain('"profile.sender" => await SenderProfileAsync(args),');
+    expect(cable).toContain('TelegramService.cs:254');
+    expect(dispatchTable.split('\n')[253]).toContain('"profile.sender" => await SenderProfileAsync(args),');
   });
 
   it('las dos negaciones son literales de Android y cada una vive una sola vez por capa', () => {
     for (const [phrase, at] of REFUSALS) expect(says(javaLine(at), phrase), `NativeBridge.java:${at}`).toBe(true);
     // La primera no se copia: es la misma frase del chat secreto, así que la constante de aquí es un alias.
-    expect(javaLine(1601)).toContain(`"${PEER_REFUSALS.secret}"`);
+    expect(javaLine(1621)).toContain(`"${PEER_REFUSALS.secret}"`);
     expect(rules).toContain('public const string NoProfile = DesktopPeerProfile.Secret;');
     expect(count(`"${PEER_REFUSALS.secret}"`, rules)).toBe(0);
     // La literal vive una sola vez en la capa, y es la de siempre: la casa que la escribió sigue siendo la dueña.
     expect(count(`"${PEER_REFUSALS.secret}"`, hashes)).toBe(1);
     // La segunda sí es de esta clase, y carácter a carácter.
-    expect(javaLine(1611)).toContain(`"${PEER_REFUSALS.noSender}"`);
+    expect(javaLine(1631)).toContain(`"${PEER_REFUSALS.noSender}"`);
     expect(csSentence('UnknownSender')).toBe(PEER_REFUSALS.noSender);
     expect(mirror).toContain(`noSender: '${PEER_REFUSALS.noSender}',`);
     for (const phrase of REFUSALS.map(([phrase]) => phrase)) {
@@ -134,9 +134,9 @@ describe('ronda BP · las tres capas dicen lo mismo del remitente', () => {
     expect(count(PEER_REFUSALS.noSender, mirror)).toBe(1);
   });
 
-  it('la guarda agrupada de `:1600` son seis condiciones y una sola frase', () => {
+  it('la guarda agrupada de `:1618` son seis condiciones y una sola frase', () => {
     // Seis condiciones unidas con cinco `||`, todas contra un solo `answer.fail`.
-    const guard = javaLine(1600);
+    const guard = javaLine(1620);
     expect(count('||', guard)).toBe(5);
     for (const needle of ['message==null', 'message.chatId!=chatId', 'source==null',
       'source.type instanceof TdApi.ChatTypeSecret', 'message.selfDestructType!=null', 'message.ephemeralContent!=null']) {
@@ -144,7 +144,7 @@ describe('ronda BP · las tres capas dicen lo mismo del remitente', () => {
     }
     // Una sola frase para las seis: la negación se escribe detrás del `if`, no dentro de cada rama.
     expect(count('answer.fail', guard)).toBe(0);
-    expect(count('answer.fail', javaLine(1601))).toBe(1);
+    expect(count('answer.fail', javaLine(1621))).toBe(1);
     // En C# las seis se reparten entre dos casas: la del chat y la del temporizador, y todas dicen lo mismo.
     expect(CABLE).toContain('if (entry == null) throw new BridgeException(DesktopSenderProfile.NoProfile);');
     expect(CABLE).toContain('if (row == null) throw new BridgeException(DesktopSenderProfile.NoProfile);');
@@ -266,7 +266,7 @@ describe('ronda BP · medido con las manos en el andamio', () => {
     expect(await sender('11', '105')).toMatchObject({ id: '502', title: 'María Fernández' });
     // Las dos familias que solo se ven en la comunidad —el muestrario de multimedia y las ubicaciones— también
     // fueron firmadas con su número: antes decían «Vista de diseño» y «Álex Moreno» sin autor, y al pulsarlas
-    // el andamio habría negado con la frase de `:1611` algo que el puente sí sabe contestar.
+    // el andamio habría negado con la frase de `:1629` algo que el puente sí sabe contestar.
     expect(await sender('14', '205')).toMatchObject({ id: '502', title: 'María Fernández' });
     expect(await sender('14', '213')).toMatchObject({ id: '501', title: 'Álex Moreno' });
   });
@@ -285,7 +285,7 @@ describe('ronda BP · medido con las manos en el andamio', () => {
     expect(await sender('11', '503')).toBe(PEER_REFUSALS.secret);
   });
 
-  it('quien no tiene autor se niega con la frase de `:1611`, y quien no tiene ficha con el `access_hash`', async () => {
+  it('quien no tiene autor se niega con la frase de `:1629`, y quien no tiene ficha con el `access_hash`', async () => {
     // Las filas de servicio y las que el propio andamio escribe no traen autor identificado: la negación con nombre.
     expect(await sender('11', '106')).toBe(PEER_REFUSALS.noSender);
     expect(await sender('21', '1001')).toBe(PEER_REFUSALS.noSender);
@@ -306,7 +306,7 @@ describe('ronda BP · medido con las manos en el andamio', () => {
   it('ninguna fila que la pantalla pinta como botón se queda sin autor', async () => {
     // La guarda mecánica de la coherencia: en un grupo el nombre del remitente es botón de ficha, así que toda
     // fila ajena y no-de-servicio de todo grupo del muestrario tiene que responder con una ficha. Si alguien
-    // añade una fila sin `authorId`, esto lo dice con chat y número; en la pantalla sería la frase de `:1611`.
+    // añade una fila sin `authorId`, esto lo dice con chat y número; en la pantalla sería la frase de `:1629`.
     const scaffold = await import('./preview');
     const bridge = await import('./bridge');
     const groups = scaffold.fixture.chats.filter(chat => chat.type === 'group');

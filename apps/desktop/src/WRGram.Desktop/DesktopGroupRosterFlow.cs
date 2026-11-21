@@ -9,18 +9,18 @@ using TL;
 using WTelegram;
 
 /// <summary>
-/// El cable de las listas de miembros: <c>groups.members</c> y <c>groups.members.page</c> (<c>NativeBridge.java:567</c>
-/// y <c>:568</c> → <c>groupMembers</c>, <c>:2774-2790</c>), <c>groups.members.basic</c> (<c>:569</c> →
-/// <c>basicRoster</c>, <c>:2797-2806</c>) y <c>groups.member.ban</c> cuando el chat es un básico (<c>:567</c> →
-/// <c>banGroupMember</c> → <c>banBasicMember</c>, <c>:2774-2792</c>). Las reglas y las frases están en
+/// El cable de las listas de miembros: <c>groups.members</c> y <c>groups.members.page</c> (<c>NativeBridge.java:580</c>
+/// y <c>:581</c> → <c>groupMembers</c>, <c>:2790-2808</c>), <c>groups.members.basic</c> (<c>:582</c> →
+/// <c>basicRoster</c>, <c>:2815-2824</c>) y <c>groups.member.ban</c> cuando el chat es un básico (<c>:584</c> →
+/// <c>banGroupMember</c> → <c>banBasicMember</c>, <c>:2878-2896</c>). Las reglas y las frases están en
 /// <see cref="DesktopGroupMembers"/> y <see cref="DesktopGroupRoster"/>; aquí solo se pide, se funde la caché de
 /// personas y se responde en el orden que marcó Android.
 /// <para>
 /// Antes de esta ronda, ninguna de las cuatro existía en Windows: <c>grep groups\. apps/desktop</c> no devolvía ni
 /// una línea, así que las tres lecturas caían en el <c>_ =&gt; throw</c> genérico. Las dos entradas del panel de
-/// detalles («Ver miembros» y «Administrar miembros», <c>App.tsx:1217</c>) no llevan guarda de plataforma, de modo
+/// detalles («Ver miembros» y «Administrar miembros», <c>App.tsx:1237</c>) no llevan guarda de plataforma, de modo
 /// que en Windows «Ver miembros» enseñaba la frase genérica y «Administrar miembros» no decía nada —el panel
-/// (<c>App.tsx:1379</c>) no captura el rechazo y se quedaba en «Sin miembros para este filtro o búsqueda»—. Dos
+/// (<c>App.tsx:1399</c>) no captura el rechazo y se quedaba en «Sin miembros para este filtro o búsqueda»—. Dos
 /// huecos distintos con la misma causa.
 /// </para>
 /// <para>
@@ -103,7 +103,7 @@ public sealed partial class TelegramService
             var person = DesktopGroupRoster.Person(part);
             var user = _users.GetValueOrDefault(person);
             // La búsqueda se aplica sobre el nombre y el usuario sin arroba, que es lo que
-            // <c>writeRoster</c> pasa a <c>BasicGroupRoster.matches</c> (<c>NativeBridge.java:2819</c>).
+            // <c>writeRoster</c> pasa a <c>BasicGroupRoster.matches</c> (<c>NativeBridge.java:2829</c>).
             if (!DesktopGroupRoster.Matches(query, DesktopGroupRoster.Name(user), DesktopGroupRoster.Username(user) ?? "")) continue;
             // El invitador se resuelve contra la misma caché que `MergePeers` llenó con esta respuesta, sin pedir
             // una persona suelta: en un básico quien invita es casi siempre otra fila de la propia lista, y si no
@@ -126,7 +126,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>groups.member.ban</c> (<c>NativeBridge.java:571</c> → <c>banGroupMember</c>, <c>:2879</c>). Aquí solo está
+    /// <c>groups.member.ban</c> (<c>NativeBridge.java:584</c> → <c>banGroupMember</c>, <c>:2879</c>). Aquí solo está
     /// el camino del básico, que es el que <c>banBasicMember</c> (<c>:2860-2878</c>) abre antes de nada: plazo a
     /// cero, <c>revoke</c> decidido por la persona y <c>messages.deleteChatUser</c>. El estado objetivo se vuelve a
     /// leer, igual que allá se vuelve a preguntar con <c>GetChatMember</c> (<c>:2781</c>); lo que la lista pintaba
@@ -147,7 +147,7 @@ public sealed partial class TelegramService
         if (problem != null) throw new BridgeException(problem);
         var user = _users.GetValueOrDefault(userId);
         if (user == null || user.access_hash == 0) throw new BridgeException(DesktopGroupRoster.NoHash);
-        // El título lo pone Android (<c>NativeBridge.java:2871</c>): «Expulsar de » seguido del nombre del chat, y
+        // El título lo pone Android (<c>NativeBridge.java:2890</c>): «Expulsar de » seguido del nombre del chat, y
         // el botón derecho dice «Expulsar», no «Aplicar en Telegram». Por eso se llama a <c>ConfirmPhoto</c> a secas
         // y no a <c>ConfirmCommunity</c>, que fija los rótulos del guardado de la ficha.
         if (!ConfirmPhoto(DesktopGroupRoster.DialogTitle(entry.Title),
@@ -164,7 +164,7 @@ public sealed partial class TelegramService
 
     /// El brazo único de la expulsión: un básico va por su camino y un canal o supergrupo va por el de las sanciones
     /// (<see cref="SanctionAsync"/>), con la bandera de baneo. La bifurcación es la de <c>banGroupMember</c>
-    /// (<c>NativeBridge.java:2879</c>), que entra en <c>banBasicMember</c> (<c>:2860-2878</c>) antes de preguntar
+    /// (<c>NativeBridge.java:2899</c>), que entra en <c>banBasicMember</c> (<c>:2860-2878</c>) antes de preguntar
     /// nada más.
     private async Task<object?> BanMemberAsync(JsonElement args)
     {
@@ -191,7 +191,7 @@ public sealed partial class TelegramService
     }
 
     /// La fila propia del canal, que es como MTProto contesta a lo que TDLib resuelve con
-    /// <c>GetChatMember(chat.id, MessageSenderUser(self))</c> (<c>NativeBridge.java:2779</c>). Sin esta pregunta no
+    /// <c>GetChatMember(chat.id, MessageSenderUser(self))</c> (<c>NativeBridge.java:2798</c>). Sin esta pregunta no
     /// hay forma de saber si la cuenta administra el chat, y sin administración la lista se niega igual que allá.
     private async Task<ChannelParticipantBase?> SelfParticipantAsync(Client client, InputChannel channel)
     {

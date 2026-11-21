@@ -19,10 +19,10 @@ import { COMPOSER_TYPES, MAX_ENTITIES, MAX_LENGTH } from './richDraft';
  * compositor puede escribir tenga brazo en las dos orillas; y que el CSS del campo rico herede las reglas del
  * campo que sustituyó.
  *
- * Dos cosas que esta prueba **no** afirma. Que el editor se comporte en el teléfono: Vitest corre en `node`, sin
+ * Lo que esta prueba **no** afirma es el comportamiento en el teléfono: Vitest corre en `node`, sin
  * DOM, así que el pegamento queda pinned por aguja de fuente y nada más, y lo único que lo valida es una pasada
- * por `emulator-5554` con cuenta real. Y que Windows y Android sean simétricos: `customEmoji` solo tiene brazo en
- * Android, y aquí se mide que ese hueco sigue siendo hueco.
+ * por `emulator-5554` con cuenta real. La simetría entre Windows y Android ya no es un hueco: la ronda CE escribió
+ * el brazo del emoji personalizado en el despacho y aquí se mide el brazo, no la ausencia.
  */
 const text = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8');
 const JAVA = '../../mobile/android/app/src/main/java/cc/webrom/wrgram/';
@@ -262,15 +262,20 @@ describe('ronda BT · las dos orillas', () => {
     expect(bridge).toContain('if(offset<0||offset>length||size<1||size>length-offset)throw new IllegalArgumentException();');
   });
 
-  it('Windows tiene brazo para los mismos tipos, menos el emoji personalizado', () => {
+  it('Windows tiene brazo para los mismos tipos, ya incluido el emoji personalizado', () => {
     const arms = [
       ['bold', 'MessageEntityBold'], ['italic', 'MessageEntityItalic'], ['underline', 'MessageEntityUnderline'],
       ['strikethrough', 'MessageEntityStrike'], ['spoiler', 'MessageEntitySpoiler'], ['code', 'MessageEntityCode'],
       ['pre', 'MessageEntityPre'], ['blockquote', 'MessageEntityBlockquote'],
     ];
     for (const [type, kind] of arms) expect(service, type).toContain(`"${type}" => new ${kind}(),`);
-    expect(service).toContain('"link" => item.TryGetProperty("url", out var url) && url.ValueKind == JsonValueKind.String');
-    expect(service).not.toContain('customEmoji');
+    // La ronda CE sacó el enlace y la cifra del emoji a dos ayudantes, porque la negativa necesita ir antes del brazo.
+    expect(service).toContain('"link" => new MessageEntityTextUrl { url = LinkUrlOf(item) },');
+    expect(service).toContain('"customEmoji" => new MessageEntityCustomEmoji { document_id = FaceIdOf(item) },');
+    // La BY trajo al host las claves del puente `customEmoji.get` y `customEmoji.search`, que son ramas de lectura de
+    // documentos y no tienen nada que ver con este brazo; el de la entidad es el que acaba en `MessageEntityCustomEmoji`.
+    expect([...service.matchAll(/"customEmoji" => new MessageEntityCustomEmoji/g)]).toHaveLength(1);
+    expect(service).toContain('MessageEntityCustomEmoji => "customEmoji",');
   });
 
   it('la vuelta también trae subrayado y cita, en el nombre que usa el modelo', () => {

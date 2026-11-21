@@ -5,6 +5,7 @@
 .poll-description{margin:0;color:var(--muted);font-size:.82rem;line-height:1.4}
 .poll-options{display:flex;flex-direction:column;gap:6px}
 .poll-option-row{display:flex;align-items:stretch;gap:6px}
+.poll-option-media{flex:none;width:46px;height:46px;border:1px solid var(--line);border-radius:10px;overflow:hidden}.poll-option-media img,.poll-option-media video{width:100%;height:100%;object-fit:cover}
 .poll-option{position:relative;display:flex;align-items:center;gap:8px;flex:1;min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--input);color:var(--text);text-align:left;cursor:pointer;overflow:hidden;transition:border-color .15s,background .15s}
 .poll-option:hover:not(:disabled){border-color:var(--gold-line);background:var(--hover)}
 .poll-option:disabled{cursor:default;opacity:.85}

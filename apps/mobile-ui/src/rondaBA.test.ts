@@ -60,12 +60,12 @@ describe('ronda BA · la ficha de perfil y su pestaña, cruzadas con las tres ca
 
   it('las tres negaciones con gemelo son la palabra de Android en su línea', () => {
     expect(PEER_REFUSALS.noList).toBe(csSentence('NoList'));
-    expect(says(1576, PEER_REFUSALS.noList)).toBe(true);
+    expect(says(1596, PEER_REFUSALS.noList)).toBe(true);
     expect(PEER_REFUSALS.secret).toBe(csSentence('Secret'));
-    expect(says(1601, PEER_REFUSALS.secret)).toBe(true);
+    expect(says(1621, PEER_REFUSALS.secret)).toBe(true);
     expect(PEER_REFUSALS.loadFailed).toBe(csSentence('LoadFailed'));
-    expect(says(1232, PEER_REFUSALS.loadFailed)).toBe(true);
-    expect(says(1270, PEER_REFUSALS.loadFailed)).toBe(true);
+    expect(says(1252, PEER_REFUSALS.loadFailed)).toBe(true);
+    expect(says(1290, PEER_REFUSALS.loadFailed)).toBe(true);
   });
 
   it('la cuarta es propia de Windows y lo dice una sola vez en cada capa', () => {
@@ -85,15 +85,15 @@ describe('ronda BA · la ficha de perfil y su pestaña, cruzadas con las tres ca
 
   it('las cinco cadenas de presencia son las de presence() y viven una vez en el espejo', () => {
     expect(PEER_PRESENCE.online).toBe(csSentence('Online'));
-    expect(says(1544, PEER_PRESENCE.online)).toBe(true);
+    expect(says(1564, PEER_PRESENCE.online)).toBe(true);
     expect(PEER_PRESENCE.offline).toBe(csSentence('OfflinePrefix'));
-    saysInParts(1547, PEER_PRESENCE.offline);
+    saysInParts(1567, PEER_PRESENCE.offline);
     expect(PEER_PRESENCE.recently).toBe(csSentence('Recently'));
-    expect(says(1549, PEER_PRESENCE.recently)).toBe(true);
+    expect(says(1569, PEER_PRESENCE.recently)).toBe(true);
     expect(PEER_PRESENCE.week).toBe(csSentence('LastWeek'));
-    expect(says(1550, PEER_PRESENCE.week)).toBe(true);
+    expect(says(1570, PEER_PRESENCE.week)).toBe(true);
     expect(PEER_PRESENCE.month).toBe(csSentence('LastMonth'));
-    expect(says(1551, PEER_PRESENCE.month)).toBe(true);
+    expect(says(1571, PEER_PRESENCE.month)).toBe(true);
     // Cada una, una sola vez en la clase de reglas: el cable pregunta, no repite.
     for (const phrase of Object.values(PEER_PRESENCE)) expect(count(`"${phrase}"`, rules)).toBe(1);
     // Y el cable no escribe español suyo: usa la función.
@@ -103,16 +103,19 @@ describe('ronda BA · la ficha de perfil y su pestaña, cruzadas con las tres ca
   it('la ventana de treinta y el recorte de cinco mil, con su línea', () => {
     expect(PEER_PAGE).toBe(30);
     expect(PEER_MAX_OFFSET).toBe(5000);
-    expect(line(1556)).toContain('5000');
-    expect(line(1560)).toContain(',30)');
-    expect(line(1574)).toContain(',30)');
-    expect(line(1581)).toContain('30');
+    // Medido hoy en NativeBridge: el recorte vive en la línea del `Math.min`, las dos ventanas de treinta
+    // son llamadas distintas (`GetGroupsInCommon` y `GetSupergroupMembers`) y el 30 del cursor está en la
+    // comparación que arma `nextCursor`.
+    expect(line(1576)).toContain('5000');
+    expect(line(1580)).toContain(',30)');
+    expect(line(1594)).toContain(',30)');
+    expect(line(1587)).toContain('count==30');
     expect(cable).toContain('DesktopPeerProfile.Offset(Long(args, "offset"))');
     expect(cable).toContain('DesktopPeerProfile.Page');
   });
 
   it('el puesto de la fila es el de profileMembers, en las dos familias de participantes', () => {
-    saysInParts(1587, 'Creador', 'Administrador');
+    saysInParts(1607, 'Creador', 'Administrador');
     expect(PEER_ROLE.creator).toBe('Creador');
     expect(PEER_ROLE.admin).toBe('Administrador');
     expect(PEER_ROLE.none).toBe('');
@@ -176,7 +179,7 @@ describe('ronda BA · las manos sobre el andamio', () => {
     expect(value.chats!.length).toBeGreaterThan(0);
     expect(value.chats!.every(chat => chat.type === 'group' || chat.type === 'channel')).toBe(true);
     expect(Object.keys(value.chats![0])).toEqual(['id', 'title', 'type', 'username', 'bot', 'supported']);
-    // Menos de treinta: la lista terminó, y el cursor vuelve a «0» como en `:1567`.
+    // Menos de treinta: la lista terminó, y el cursor vuelve a «0» como en `:1584`.
     expect(value.nextCursor).toBe('0');
     expect(peerCursor(['9', '10'], 2)).toBe('0');
   });
@@ -244,7 +247,7 @@ describe('ronda BA · las manos sobre el andamio', () => {
   it('las cinco cadenas de presencia se deciden igual en las dos capas', () => {
     const now = 1_700_000_000;
     expect(peerPresence({ kind: 'online', expires: now + 5 }, now)).toBe(PEER_PRESENCE.online);
-    // Un `expires` ya pasado no dice «En línea», como en `:1544`.
+    // Un `expires` ya pasado no dice «En línea», como en `:1561`.
     expect(peerPresence({ kind: 'online', expires: now - 5 }, now)).toBe('');
     expect(peerPresence({ kind: 'recently' }, now)).toBe(PEER_PRESENCE.recently);
     expect(peerPresence({ kind: 'week' }, now)).toBe(PEER_PRESENCE.week);

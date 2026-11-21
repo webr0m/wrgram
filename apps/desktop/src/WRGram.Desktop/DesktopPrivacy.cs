@@ -9,7 +9,7 @@ using TL;
 
 /// <summary>
 /// Las reglas de la privacidad de la cuenta: las diez claves que Android define en
-/// <c>NativeBridge.java:3829</c> (<c>PRIVACY_KEYS</c>) y traduce a un ajuste de TDLib en
+/// <c>NativeBridge.java:3847</c> (<c>PRIVACY_KEYS</c>) y traduce a un ajuste de TDLib en
 /// <c>privacySetting</c> (<c>:3830-3844</c>), la proyección de sus reglas (<c>PrivacyRules.project</c>,
 /// <c>PrivacyRules.java:33-49</c>) y la reconstrucción que se envía (<c>PrivacyRules.merge</c>,
 /// <c>:56-70</c>). No hay aquí ninguna norma nueva: hay la misma norma escrita una vez en la capa de Windows.
@@ -105,7 +105,7 @@ public static class DesktopPrivacy
     /// <summary>El <c>custom</c> de <c>PrivacyRules.java:47</c>: más de una base en la lista, o ninguna, y no se puede reescribir.</summary>
     public const string Custom = "custom";
 
-    /// <summary>Los topes de <c>BridgePolicy.text</c> sobre las dos cadenas del argumento (<c>NativeBridge.java:3862</c>).</summary>
+    /// <summary>Los topes de <c>BridgePolicy.text</c> sobre las dos cadenas del argumento (<c>NativeBridge.java:3880</c>).</summary>
     public const int MaxKey = 20;
 
     /// <summary>El mismo tope para el valor elegido.</summary>
@@ -119,7 +119,7 @@ public static class DesktopPrivacy
 
     // ---- las negaciones, una por fuente, con la cadena de Java delante ----
 
-    /// <summary>El <c>default</c> de <c>privacySetting</c> (<c>NativeBridge.java:3842</c>). Allá es un <c>throw</c> que el despacho genérico (<c>:152</c>) convierte en un «función no disponible»; aquí es la causa concreta.</summary>
+    /// <summary>El <c>default</c> de <c>privacySetting</c> (<c>NativeBridge.java:3849</c>). Allá es un <c>throw</c> que el despacho genérico (<c>:152</c>) convierte en un «función no disponible»; aquí es la causa concreta.</summary>
     public const string UnknownSetting = "Ajuste de privacidad no válido.";
 
     /// <summary>El primer <c>throw</c> de <c>PrivacyRules.validate</c> (<c>PrivacyRules.java:90</c>), que en Android sí llega a la pantalla porque el <c>catch</c> de <c>:3869</c> lo reenvía.</summary>
@@ -152,10 +152,10 @@ public static class DesktopPrivacy
     public const string Untranslatable =
         "Hay una regla de Telegram que WRGram no sabe reescribir. El ajuste queda intacto.";
 
-    /// <summary>El <c>Invalid text</c> de <c>BridgePolicy.text</c> (<c>BridgePolicy.java:55</c>) sobre la clave o el valor.</summary>
+    /// <summary>El <c>Invalid text</c> de <c>BridgePolicy.text</c> (<c>BridgePolicy.java:59</c>) sobre la clave o el valor.</summary>
     public const string BadText = "El ajuste y el valor de privacidad tienen que llegar como texto corto.";
 
-    /// <summary>El <c>Invalid identifier list</c> de <c>BridgePolicy.ids</c> (<c>BridgePolicy.java:54</c>): lista de más de 100, o con elementos que no son identificadores.</summary>
+    /// <summary>El <c>Invalid identifier list</c> de <c>BridgePolicy.ids</c> (<c>BridgePolicy.java:58</c>): lista de más de 100, o con elementos que no son identificadores.</summary>
     public const string BadList = "La lista de excepciones de privacidad no está bien formada.";
 
     // ---- las siete etiquetas de lo que se conserva, una por regla no modelada ----
@@ -313,15 +313,15 @@ public static class DesktopPrivacy
     }
 
     /// <summary>
-    /// La forma de las dos cadenas del argumento: <c>BridgePolicy.text</c> (<c>BridgePolicy.java:55</c>) niega el
+    /// La forma de las dos cadenas del argumento: <c>BridgePolicy.text</c> (<c>BridgePolicy.java:59</c>) niega el
     /// <see langword="null"/> y lo que pase del tope. Es <see cref="BadText"/> y no la causa concreta inglesa
-    /// porque allá ese <c>throw</c> se pierde en el despacho genérico (<c>NativeBridge.java:152</c>); aquí se dice.
+    /// porque allá ese <c>throw</c> se pierde en el despacho genérico (<c>NativeBridge.java:165</c>); aquí se dice.
     /// </summary>
     public static bool Shaped(string? raw, int maximum) => raw != null && raw.Length <= maximum;
 
     /// <summary>
     /// <c>optionalIds</c> (<c>:3875</c>): ausencia o array vacío es la lista vacía, y lo demás pasa por la regla
-    /// de <c>BridgePolicy.ids</c> (<c>BridgePolicy.java:54</c>) —como mucho 100 elementos, todos cadenas con la
+    /// de <c>BridgePolicy.ids</c> (<c>BridgePolicy.java:58</c>) —como mucho 100 elementos, todos cadenas con la
     /// forma de un entero firmado de hasta diecinueve dígitos—. El desbordamiento no es un caso aparte: la propia
     /// expresión lo acota, y <c>long.TryParse</c> hace el resto, que es lo que allá hace <c>Long.parseLong</c>
     /// cuando el número pasa de <c>9223372036854775807</c>.
@@ -350,7 +350,7 @@ public static class DesktopPrivacy
     }
 
     /// <summary>
-    /// La expresión de <c>BridgePolicy.java:54</c>. Java ancla los dos extremos él solo con <c>matches</c>; en .NET
+    /// La expresión de <c>BridgePolicy.java:58</c>. Java ancla los dos extremos él solo con <c>matches</c>; en .NET
     /// <c>$</c> además deja pasar un salto de línea final, así que van <c>\A</c> y <c>\z</c> —lo mismo que ya se
     /// midió para los nombres públicos en <see cref="DesktopAccountProfile.UsernamePattern"/>— para que las dos
     /// capas rechacen exactamente las mismas cadenas.

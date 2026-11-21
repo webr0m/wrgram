@@ -12,8 +12,8 @@
  */
 
 /**
- * `DesktopChatUsernames.Unsupported` (`NativeBridge.java:1870` y `:1872` —los dos métodos dicen la misma cadena—)
- * y `DesktopChatUsernames.NoRight` (`answer.fail` de `:1872`).
+ * `DesktopChatUsernames.Unsupported` (`NativeBridge.java:1890` y `:1889` —los dos métodos dicen la misma cadena—)
+ * y `DesktopChatUsernames.NoRight` (`answer.fail` de `:1889`).
  */
 export const CHAT_USERNAME_REFUSALS = {
   unsupported: 'Los nombres públicos solo están disponibles en supergrupos y canales.',
@@ -21,7 +21,7 @@ export const CHAT_USERNAME_REFUSALS = {
 } as const;
 
 /**
- * Las dos claves del DTO de `sendChatUsername` (`:1785`), en su orden. `editable` es el nombre que la cuenta puede
+ * Las dos claves del DTO de `sendChatUsername` (`:1891`), en su orden. `editable` es el nombre que la cuenta puede
  * cambiar —el que la caja de texto prellena—, y `active` la lista entera de los encendidos, que es lo que la
  * pantalla muestra como `@a, @b` antes de la caja.
  */

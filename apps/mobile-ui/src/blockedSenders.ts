@@ -3,7 +3,7 @@ import type { BlockedSender, BlockedSenders } from './contract';
 /**
  * El espejo de `BlockedSendersPolicy.java` y de `DesktopBlocked.cs` (ronda BI): la página de remitentes bloqueados,
  * su marcador, las dos palabras de `kind`, los tres techos y las negaciones que dicen las dos capas. Son las cadenas
- * que el puente devuelve, copiadas carácter a carácter de `NativeBridge.java:1507-1542` y de
+ * que el puente devuelve, copiadas carácter a carácter de `NativeBridge.java:1541-1576` y de
  * `BlockedSendersPolicy.java:9-36`; `rondaBI.test.ts` las compara con el Java, con el C# y con los rótulos del panel
  * para que la vista de diseño no enseñe nunca una palabra que Android o Windows no dirían.
  *
@@ -42,7 +42,7 @@ export const BLOCKED_REFUSALS = {
   needsHash: 'Telegram no dio los datos necesarios para desbloquear a este remitente. Vuelve a abrir la lista de bloqueados e inténtalo de nuevo.',
   /** Solo lo diría Windows, y por la misma falta de hash, pero desde la ficha de la persona. */
   noProfileHash: 'Telegram no dio los datos necesarios para cambiar el bloqueo de esta persona. Vuelve a abrir su ficha desde la conversación e inténtalo de nuevo.',
-  /** El primer `throw` de `profileBlock` (`NativeBridge.java:1282`). */
+  /** El primer `throw` de `profileBlock` (`NativeBridge.java:1316`). */
   notPrivate: 'Esta acción solo está disponible para usuarios y bots.',
   /** El segundo (`:1284`). */
   selfBlock: 'Esta es tu propia cuenta.',
@@ -60,7 +60,7 @@ export const BLOCKED_DIALOG = {
 } as const;
 
 /**
- * Copia de `NativeSnapshot.limit` (`NativeSnapshot.java:523`) y de `DesktopContact.Limit` (`DesktopContact.cs:83`):
+ * Copia de `NativeSnapshot.limit` (`NativeSnapshot.java:545`) y de `DesktopContact.Limit` (`DesktopContact.cs:83`):
  * se corta y se marca con punto suspensivo, no se corta a secas. El andamio lo necesita porque el recorte lo hace el
  * puente, y una fila de diseño más ancha que la real engaña al que está mirando la pantalla.
  */
@@ -76,7 +76,7 @@ export const blockedOffsetProblem = (raw: unknown): string | null => {
 
 export const blockedOffset = (raw: unknown): number => (typeof raw === 'number' && Number.isInteger(raw) ? raw : 0);
 
-/** La litera de `BridgePolicy.id` (`BridgePolicy.java:53`): cadena con forma de entero firmado de hasta diecinueve dígitos. */
+/** La litera de `BridgePolicy.id` (`BridgePolicy.java:57`): cadena con forma de entero firmado de hasta diecinueve dígitos. */
 const IDENTIFIER = /^-?(0|[1-9][0-9]{0,18})$/;
 
 /**

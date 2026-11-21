@@ -37,6 +37,17 @@ public sealed class DesktopState
     public List<long> MediaLoading { get; set; } = new();
     public List<long> MediaFailed { get; set; } = new();
     public MediaDto? ProfilePhoto { get; set; }
+
+    /// La marca de estado emoji de la cuenta conectada, en la forma de <c>NativeSnapshot.java:59</c>: <c>null</c>
+    /// cuando no hay marca, con <c>customEmojiId</c> y su caducidad absoluta cuando la hay. La pinta
+    /// <c>PremiumMark.tsx:36</c> junto al nombre, y la lee <c>EmojiStatusSettings.tsx:28</c>.
+    public EmojiStatusDto? EmojiStatus { get; set; }
+
+    /// Lo único de la cartera que el escritorio puede afirmar: la bandera de Premium de la sesión conectada. Las dos
+    /// cifras del saldo de Stars se quedan fuera porque <c>stars.transactions</c> y <c>premium.limit</c> siguen sin
+    /// brazo; ninguna pantalla de la rama de escritorio de <c>SettingsPage.tsx</c> las lee, así que no hay un cero
+    /// falso que las represente.
+    public WalletDto? Wallet { get; set; }
     public string? QrImage { get; set; }
     public string? AuthEmailPattern { get; set; }
     public int? AuthCodeLength { get; set; }
@@ -71,6 +82,8 @@ public sealed class DesktopState
         History = new();
         Typing = "";
         ProfilePhoto = null;
+        EmojiStatus = null;
+        Wallet = null;
         MediaReady = new();
         MediaLoading = new();
         MediaFailed = new();
@@ -110,6 +123,7 @@ public sealed class ChatDto
     public string? Fingerprint { get; set; }
     public string? Username { get; set; }
     public string? Draft { get; set; }
+    public bool? DefaultSilent { get; set; }
 }
 
 public sealed class MessageDto
@@ -168,8 +182,16 @@ public sealed class MessageDto
     /// WTelegram lo exige al editar: cambiar el pie obliga a volver a mandar el archivo.
     public bool HasCaption { get; set; }
 
+    /// De cuál de los cinco tipos de <c>DesktopMessageEditMedia.CurrentKind</c> es el adjunto de la fila, o
+    /// cadena vacía si no es de ninguno —texto, sticker, nota de voz, videomensaje, encuesta, ubicación—. Lo
+    /// anota la conversión por el mismo motivo que <see cref="HasCaption"/>: es la única mirada que ve la clase
+    /// real del objeto de Telegram, y sin ella el host negaría <c>message.edit.media</c> leyendo la red cada vez
+    /// que la pantalla pregunta <c>message.properties</c>. No viaja: la pantalla no lo pinta, solo lo pregunta.
+    [JsonIgnore]
+    public string MediaKind { get; set; } = "";
+
     /// La encuesta cuando la fila es una. Se pone a null en el resto, que es lo que la pantalla mira para
-    /// pintar o no la tarjeta: en Android el campo también es opcional (`contract.ts:135`).
+    /// pintar o no la tarjeta: en Android el campo también es opcional (`contract.ts:138`).
     public PollDto? Poll { get; set; }
 
     /// La tarjeta del enlace que va en el texto, o `null`. Es la norma no tenerla: solo la trae una fila cuyo
@@ -181,7 +203,7 @@ public sealed class MessageDto
 
 /// <summary>
 /// La tarjeta de vista previa tal y como la ve la pantalla. Las cuatro claves copian campo a campo
-/// `preview` de `contract.ts:83` y la escritura de `NativeSnapshot.java:218`, y salen en camelCase por la
+/// `preview` de `contract.ts:84` y la escritura de `NativeSnapshot.java:227`, y salen en camelCase por la
 /// política de `DesktopBridge.cs:18`. La quinta clave que Android tiene en mano —la dirección de la página— no
 /// está aquí a propósito: ver <see cref="DesktopLinkPreview"/>.
 /// </summary>
@@ -195,7 +217,7 @@ public sealed class LinkPreviewDto
 
 /// <summary>
 /// Una encuesta ya convertida para la pantalla. Los nombres salen en camelCase por la política de
-/// <c>DesktopBridge.cs:18</c>, y coinciden campo a campo con <c>Poll</c> de <c>contract.ts:119</c>; el orden no
+/// <c>DesktopBridge.cs:18</c>, y coinciden campo a campo con <c>Poll</c> de <c>contract.ts:120</c>; el orden no
 /// importa pero la ausencia sí, así que los cuatro que Android rellena con estado del cliente —los dos
 /// <c>can*</c>, <c>closed</c> y <c>chosen</c> de cada opción— llevan aquí su comentario cuando no son lo que
 /// parecen.
@@ -231,6 +253,14 @@ public sealed class PollDto
     public bool CanStop { get; set; }
 
     public bool Quiz { get; set; }
+
+    /// El punto en el que Telegram cierra la encuesta, en segundos de época, y solo cuando la fila lo trae. En
+    /// Android es <c>Poll.closeDate</c> de TDLib; aquí es el <c>close_date</c> de <c>TL.Poll</c> con su bandera
+    /// puesta —ver <see cref="DesktopPoll.HasCloseDate"/>—. Sin dato no se pinta nada: una encuesta sin cierre y
+    /// una encuesta con cierre dicho solo como periodo son la misma fila para esta capa, y adivinar la fecha sería
+    /// peor que callarla.
+    public long? ClosesAt { get; set; }
+
     public string? Explanation { get; set; }
     public string? Restriction { get; set; }
     public List<PollOptionDto> Options { get; set; } = new();
@@ -251,18 +281,26 @@ public sealed class PollOptionDto
     /// votos por su cuenta: el <c>updateMessagePoll</c> que responde al voto propio trae la marca puesta.
     public bool Chosen { get; set; }
 
-    /// <c>choosing</c> en <c>contract.ts:118</c> es <c>PollOption.is_being_chosen</c> de TDLib: un voto de esta
+    /// <c>choosing</c> en <c>contract.ts:119</c> es <c>PollOption.is_being_chosen</c> de TDLib: un voto de esta
     /// cuenta que todavía no ha confirmado. MTProto no conoce ese estado por opción —el aviso llega con el recuento
     /// ya definitivo—, así que aquí sale siempre en falso. No es una plaza vacía ni una memoria que falta: la
     /// pantalla hoy no lee el campo, y mientras no lo lea, mentir con un «de camino» sería peor que decir nada.
     public bool Choosing { get; set; }
+
+    /// La foto de la opción, cuando la fila la trae. En Android es un <c>PollMedia</c> de TDLib pintado con el nombre
+    /// «Foto de la opción»; aquí es el <c>TL.PollAnswer.media</c> con su bandera <c>has_media</c> puesta y registrado
+    /// en <see cref="MediaRegistry"/>, y solo sale cuando ese medio es una foto. Los demás tipos que TDLib declara
+    /// para su <c>PollMedia</c> se quedan sin pintar, que es lo mismo que hace
+    /// <c>NativeSnapshot.pollMedia</c> al devolver <c>null</c> (<c>NativeSnapshot.java:441</c>): sin camino propio
+    /// en esta capa, una miniatura adivinada sería peor que un hueco.
+    public MediaDto? Media { get; set; }
 }
 
 /// <summary>
 /// La lista de votantes de una opción, con los dos campos que <c>pollVoters</c> de Android siempre devolvió:
 /// <c>total</c> y <c>items</c>. Son literalmente <c>object("total",result.totalCount,"items",items)</c>, y cada
 /// ítem es <c>object("name",…,"date",…)</c>. La <c>date</c> viaja en segundos de Unix porque así la multiplica la
-/// pantalla por 1000 (<c>BatchPanels.tsx:56</c>); mandarla como <c>DateTime</c> serializado habría dado una tarjeta
+/// pantalla por 1000 (<c>BatchPanels.tsx:58</c>); mandarla como <c>DateTime</c> serializado habría dado una tarjeta
 /// con fecha en 1970.
 /// </summary>
 public sealed class PollVotersDto
@@ -281,12 +319,12 @@ public sealed class PollVoterDto
 
 /// <summary>
 /// Una fila de la agenda, con los cuatro campos que <c>contacts</c> de Android arma en
-/// <c>object("id",…,"name",…,"username",…,"bot",…)</c> (<c>NativeBridge.java:1767</c>). El <c>id</c> es texto porque
+/// <c>object("id",…,"name",…,"username",…,"bot",…)</c> (<c>NativeBridge.java:1786</c>). El <c>id</c> es texto porque
 /// Android lo pasa con <c>Long.toString</c> y la pantalla lo devuelve tal cual a <c>share.contact</c>.
 /// <para>
 /// Falta el quinto campo de Android, <c>photo</c>, y falta a propósito: la orden de TDLib ya traía las miniaturas
 /// descargadas y esta capa tendría que pedir cada una por su cuenta para una lista de hasta 50 personas. La
-/// pantalla tiene respaldo con iniciales (<c>ContactAvatar</c>, <c>App.tsx:95</c>), así que lo que se pierde es un
+/// pantalla tiene respaldo con iniciales (<c>ContactAvatar</c>, <c>App.tsx:96</c>), así que lo que se pierde es un
 /// retrato y no información.
 /// </para>
 /// </summary>
@@ -304,7 +342,7 @@ public sealed class ContactDto
 /// <summary>
 /// La tarjeta rica de un mensaje. Android las arma todas en <c>MessageExtras.card</c>; esta capa solo publica la de
 /// contacto, que es la que la ronda AP sabe escribir y por lo tanto tiene que saber leer. Los cuatro campos son el
-/// molde de <c>contract.ts:161</c> —<c>kind</c>, <c>name</c>, <c>phone</c>, <c>userId</c>, <c>canCopy</c>—.
+/// molde de <c>contract.ts:164</c> —<c>kind</c>, <c>name</c>, <c>phone</c>, <c>userId</c>, <c>canCopy</c>—.
 /// </summary>
 public sealed class MessageExtraDto
 {
@@ -353,6 +391,19 @@ public sealed class MessageExtraDto
     /// Si el puente deja abrir el mapa. Es el <c>!protect</c> de la tarjeta de ubicación, y manda sobre el botón
     /// aunque las coordenadas estén puestas.
     public bool CanOpen { get; set; }
+
+    /// La marca <c>mention</c> de la tarjeta de historia (<c>contract.ts:168</c>): la compartieron porque lo
+    /// mencionaron en ella. Viaja <b>solo</b> en esa tarjeta —de ahí el <c>JsonIgnore</c>— porque el contrato la pide
+    /// como booleano obligatorio dentro del caso <c>kind:'story'</c> y ninguna de las otras seis variantes la tiene.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Mention { get; set; }
+
+    /// Si la tarjeta de una ubicación viva puede ofrecer «Dejar de compartir». Viaja <b>solo</b> en esa tarjeta, que es
+    /// el único sitio donde Android escribe la clave (<c>MessageExtras.java:44</c>): en una ubicación fija o en un
+    /// lugar la clave no existe en el JSON, y el <c>JsonIgnore</c> reproduce ese detalle. La regla, en
+    /// <see cref="DesktopLiveLocation.CanStop"/>.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? CanStop { get; set; }
 }
 
 public sealed class ForwardDto
@@ -395,6 +446,9 @@ public sealed class EntityDto
     public int Offset { get; set; }
     public int Length { get; set; }
     public string? Url { get; set; }
+
+    /// <summary>La cifra del emoji personalizado, en texto para que JavaScript no la redondee.</summary>
+    public string? CustomEmojiId { get; set; }
 }
 
 public sealed class MediaDto
@@ -526,4 +580,111 @@ public sealed class FolderDto
 public static class DesktopInfo
 {
     public const string Version = "0.1.0-desktop2";
+}
+
+/// <summary>
+/// Las dos fichas de las historias (ronda BZ), calcadas de <c>ActiveStory</c> y <c>OpenStory</c>
+/// (<c>contract.ts:58-59</c>): las cuatro claves del array que Android arma en
+/// <c>NativeBridge.java:372</c> y las diez del objeto de <c>NativeBridge.java:429</c>. No se añade ninguna: la
+/// pantalla es la misma en las dos capas y una clave de más aquí sería una clave que nadie lee.
+/// </summary>
+public sealed class ActiveStoryDto
+{
+    public int Id { get; set; }
+    public long Date { get; set; }
+    public bool CloseFriends { get; set; }
+
+    /// TDLib lo saca de <c>StoryInfo.isLive</c>; en MTProto <c>StoryItem</c> no hay bandera que lo diga —lo medido
+    /// en la reflexión sobre WTelegramClient 4.4.10—, así que viaja en falso y la limitación va escrita en el registro.
+    public bool Live { get; set; }
+}
+
+public sealed class OpenStoryDto
+{
+    public int Id { get; set; }
+    public string ChatId { get; set; } = "";
+
+    /// El número suelto del que publicó, sin prefijo, para que la pantalla lo compare con <c>selfId</c>.
+    public string PosterChatId { get; set; } = "";
+    public string Caption { get; set; } = "";
+    public MediaDto Media { get; set; } = new();
+
+    /// Los cuatro mandos de escritura: salen en falso mientras el host no tenga el brazo que los obedezca, y la
+    /// pantalla los gatingea uno a uno (<c>App.tsx:291</c>) para que no aparezca un botón muerto.
+    public bool CanEdit { get; set; }
+    public bool CanDelete { get; set; }
+    public bool CanToggleProfile { get; set; }
+
+    /// La bandera <c>pinned</c> de <c>StoryItem</c>, que en el esquema es «publicada en la página del perfil»: esa
+    /// sí está medida, y es la única de las cuatro que no depende de un brazo sin cable.
+    public bool IsPostedToChatPage { get; set; }
+    public bool CanArchive { get; set; }
+}
+
+/// <summary>
+/// La marca de estado emoji de la cuenta, en la forma de <c>NativeSnapshot.java:59</c>: dos claves, el identificador
+/// del documento personalizado y su caducidad absoluta en segundos. <c>Contract.ts</c> la llama
+/// <c>EmojiStatusMark</c> y la consumen <c>PremiumMark.tsx:36</c> y <c>EmojiStatusSettings.tsx:28</c>.
+/// </summary>
+public sealed class EmojiStatusDto
+{
+    public string CustomEmojiId { get; set; } = "0";
+    public long Expiration { get; set; }
+
+    /// El puente de Android manda <c>null</c> (un JSON vacío) cuando no hay marca; aquí la propiedad entera se
+    /// anula, que es lo que <c>useSyncExternalStore</c> compara con <c>undefined</c> y deja el dibujo en la estrella.
+    public static EmojiStatusDto? Of(DesktopEmojiCatalog.Mark? mark) => mark == null
+        ? null
+        : new EmojiStatusDto { CustomEmojiId = mark.Value.CustomEmojiId, Expiration = mark.Value.Expiration };
+}
+
+/// <summary>
+/// Lo que el escritorio sabe de la cartera: solo la bandera de Premium. Android añade en
+/// <c>NativeSnapshot.java:49</c> las cifras de <c>stars</c> y <c>nanostars</c>, que aquí necesitarían el saldo real
+/// y no hay brazo para él; dejarlas fuera es más honesto que poner un cero que la pantalla tomaría por saldo.
+/// </summary>
+public sealed class WalletDto
+{
+    public bool Premium { get; set; }
+}
+
+/// <summary>
+/// La fila de un pack de stickers o emojis personalizados. Las nueve primeras claves son las de <c>stickerInfo</c>
+/// (<c>NativeBridge.java:4899</c>), que es la forma común de las cuatro lecturas; las tres siguientes son las que
+/// solo trae un pack ya abierto: la portada y el caracter del <c>emojiPackList</c> (<c>:4714</c>) y la lista de
+/// dentro de <c>emojiPacks.get</c> (<c>:4765</c>) o <c>stickers.get</c> (<c>:4784</c>).
+/// </summary>
+public sealed class StickerPackDto
+{
+    public string Id { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Name { get; set; } = "";
+    public int Size { get; set; }
+    public bool Installed { get; set; }
+    public bool Archived { get; set; }
+    public bool Official { get; set; }
+
+    /// En Android es un <c>thumb</c> de <c>StickerSetCovered</c>; aquí, cuando hay portada, el documento que la
+    /// sustituye, porque <c>StickerSet.thumbs</c> son <c>PhotoSize</c> y el registro de medios solo sirve documentos.
+    public MediaDto? Thumbnail { get; set; }
+
+    /// El caracter que el emoji personalizado lleva dentro, leído de <c>DocumentAttributeCustomEmoji.alt</c>.
+    public string? Emoji { get; set; }
+
+    /// La lista de <c>emojiPacks.get</c>: <c>{id, emoji, media}</c> por elemento.
+    public List<object>? Items { get; set; }
+
+    /// La lista de <c>stickers.get</c>: <c>stickerInfo</c> suelto por elemento, sin medio, con el tope de veinticuatro.
+    public List<object>? Stickers { get; set; }
+}
+
+/// <summary>
+/// Lo que vive en <c>default-silent.json</c>: la cuenta dueña y los chats cuyo envío propio sale silenciado por
+/// defecto. Es la pareja local del <c>Chat.default_disable_notification</c> de TDLib, que en Android tampoco es un
+/// dato del servidor.
+/// </summary>
+public sealed class DefaultSilentFileDto
+{
+    public string Account { get; set; } = "";
+    public List<string> Chats { get; set; } = new();
 }

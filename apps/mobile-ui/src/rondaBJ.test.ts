@@ -73,7 +73,7 @@ describe('ronda BJ · medido en el cable del despacho', () => {
       expect(cable.answered.has(key), key).toBe(true);
     }
     // Los cuatro que se niegan a sí mismos no cuentan como respuesta, aunque tengan línea en el despacho.
-    for (const key of ['pinned.list', 'poll.stop', 'message.react', 'chat.photo.delete', 'accounts.add', 'authenticate.qr']) {
+    for (const key of ['pinned.list', 'poll.stop', 'message.react.paid', 'chat.photo.delete', 'accounts.add', 'authenticate.qr']) {
       expect(cable.answered.has(key), key).toBe(false);
       expect(cable.refused.has(key), key).toBe(true);
     }
@@ -96,7 +96,7 @@ describe('ronda BJ · medido en el cable del despacho', () => {
     // Las negaciones con nombre: la pantalla no dice «falta tiempo», dice lo que falta.
     expect(line(serviceLines, cable.refused.get('pinned.list')!, 'TelegramService.cs')).toContain('DesktopMessagePin.NoList');
     expect(line(serviceLines, cable.refused.get('poll.stop')!, 'TelegramService.cs')).toContain('DesktopPoll.NoStop');
-    expect(line(serviceLines, cable.refused.get('message.react')!, 'TelegramService.cs')).toContain('DesktopMessageReact.Refused');
+    expect(line(serviceLines, cable.refused.get('message.react.paid')!, 'TelegramService.cs')).toContain('DesktopMessageReact.PaidRefused');
     expect(line(serviceLines, cable.refused.get('chat.photo.delete')!, 'TelegramService.cs')).toContain('DesktopChatPhoto.NoDelete');
   });
 

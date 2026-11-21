@@ -32,14 +32,20 @@ function useLiveLocation(expiresAt:number) {
 function LocationCard({message,run}:{message:Message;run?:Run}) {
   const location=message.extra;
   const live=useLiveLocation(location?.kind==='location'?location.expiresAt??0:0);
+  const [stopping,setStopping]=useState(false);
   if(location?.kind!=='location')return null;
   const hasPoint=location.latitude!==undefined&&location.longitude!==undefined;
+  // La orden existe en las dos capas, pero lo que hace no es lo mismo: el teléfono apaga su rastreador y escribe el
+  // final; Windows solo escribe el final porque no tuvo rastreador. La pantalla no lo distingue —lo que ve es la
+  // bandera `canStop` que cada capa calcula con la misma regla.
+  const stop=async()=>{setStopping(true);try{await run?.('location.live.stop',{id:message.id});}finally{setStopping(false);}};
   return <Card icon={live?<Radio size={19}/>:<MapPin size={19}/>} title={location.title}>
     {location.address&&<p dir="auto">{location.address}</p>}
     {location.latitude!==undefined&&location.longitude!==undefined&&<small dir="ltr">{location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}</small>}
     {location.live&&<small role="status">{live?'Ubicación en vivo activa':'La ubicación dejó de actualizarse'}</small>}
     {!hasPoint&&<small>Coordenadas no disponibles.</small>}
     {hasPoint&&location.canOpen&&run&&<button type="button" className="text-button" onClick={()=>void run('message.location.open',{id:message.id})}>Abrir en el mapa</button>}
+    {location.canStop&&run&&<button type="button" className="text-button" disabled={stopping} onClick={()=>void stop()}>{stopping?'Dejando de compartir…':'Dejar de compartir'}</button>}
   </Card>;
 }
 

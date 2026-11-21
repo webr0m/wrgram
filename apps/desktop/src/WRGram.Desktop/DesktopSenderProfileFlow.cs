@@ -6,10 +6,10 @@ using TL;
 using WTelegram;
 
 /// <summary>
-/// El cable de <c>profile.sender</c> (brazo en <c>TelegramService.cs:253</c>): leer la fila, sacar su autor y devolver
+/// El cable de <c>profile.sender</c> (brazo en <c>TelegramService.cs:254</c>): leer la fila, sacar su autor y devolver
 /// la fila de chat que la pantalla abre después. Las reglas y las frases están en <see cref="DesktopSenderProfile"/>;
 /// el par de frases negativas y el orden de las guardas son los de <c>senderProfile</c>
-/// (<c>NativeBridge.java:1594-1612</c>).
+/// (<c>NativeBridge.java:1614-1632</c>).
 /// <para>
 /// Después de esta orden la pantalla hace <c>chat.profile</c> con el identificador devuelto (<c>PeerProfile.tsx:50-54</c>),
 /// y esa ya estaba conectada desde la ronda BA —así que el trabajo de aquí es solo el puente entre un número de mensaje

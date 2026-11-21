@@ -49,7 +49,7 @@ const count = (needle: string, source: string) => source.split(needle).length - 
 
 describe('ronda AH · la edición deja de ser un `false` a secas', () => {
   it('las dos banderas las decide una regla, no una constante', () => {
-    const props = csBody('Properties');
+    const props = csBody('PropertiesAsync');
     expect(props).toContain('edit = canEdit,');
     expect(props).toContain('editCaption = canEditCaption,');
     expect(props).toContain('var canEdit = DesktopMessageEdit.CanEditText(message, kind, channel);');
@@ -59,7 +59,7 @@ describe('ronda AH · la edición deja de ser un `false` a secas', () => {
   });
 
   it('el pie viaja en `caption`, que es de donde la pantalla rellena la casilla', () => {
-    expect(csBody('Properties')).toContain('caption = canEditCaption ? message?.Text ?? "" : "",');
+    expect(csBody('PropertiesAsync')).toContain('caption = canEditCaption ? message?.Text ?? "" : "",');
     // En Android sale de `dto.caption(message)`; aquí el pie de un adjunto vive en el mismo campo que el texto.
     expect(java).toContain('"caption",dto.caption(message)');
   });
@@ -143,9 +143,11 @@ describe('ronda AH · escribir obliga a leer, porque la petición reemplaza', ()
 
   it('el formato se parsea una vez y se convierte para la fila', () => {
     const body = csBody('EditMessageAsync');
-    expect(body).toContain('var entities = ParseEntities(args);');
+    // La ronda CE pasó el texto a las dos llamadas: el rango de una entidad solo se comprueba contra el
+    // mensaje que va a recibir Telegram, y la dirección de un enlace detectado se saca del mismo trozo.
+    expect(body).toContain('var entities = ParseEntities(args, value);');
     expect(body).toContain('entities: entities');
-    expect(body).toContain('row.Entities = ConvertEntities(entities);');
+    expect(body).toContain('row.Entities = ConvertEntities(entities, value);');
   });
 
   it('confirmado el cambio, la ventana se actualiza sin esperar al aviso', () => {
@@ -199,8 +201,11 @@ describe('ronda AH · el espejo dice lo mismo que el puente', () => {
   it('las dos entradas del menú son las mismas en Android y en Windows', () => {
     // Antes solo las pintaba la rama de Android: el puente podía estar conectado y la pantalla seguir sin ofrecerlo.
     expect(count('{editEntries(props)}', app)).toBe(2);
-    const desktop = app.split('async function messageMenu')[1].split('});return;')[0];
-    expect(desktop).toContain('if(desktop){');
+    // Desde la ronda BX la banda de reacciones se define y se pinta antes del `if(desktop)`, así que el recorte ya
+    // no puede cerrarse en el primer `});return;`: se ancla entre la fila de la banda de Windows y la cabecera de la
+    // lista de Android.
+    const desktop = app.slice(app.indexOf('{props.reactions.length>0&&reactionBar(props,act)}'), app.indexOf('const owner=state.selfId,topic='));
+    expect(desktop.length).toBeGreaterThan(0);
     expect(desktop).toContain('{editEntries(props)}');
     // Las dos etiquetas viven una sola vez en el menú del mensaje; la segunda «Editar texto» que cuenta el
     // fichero es la del visor de historias, que escribe por `story.edit.caption` y no por `message.edit`.

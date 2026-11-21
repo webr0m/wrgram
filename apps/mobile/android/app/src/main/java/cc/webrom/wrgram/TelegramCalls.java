@@ -62,7 +62,7 @@ final class TelegramCalls {
     }
     String name() {
         TdApi.User user = session == null ? null : session.user(peer);
-        return user == null ? "Telegram" : (user.firstName + " " + user.lastName).trim();
+        String name = PersonName.of(user); return name == null ? "Telegram" : name;
     }
     void addObserver(Runnable observer) { observers.add(observer); }
     void removeObserver(Runnable observer) { observers.remove(observer); }

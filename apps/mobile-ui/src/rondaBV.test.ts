@@ -104,9 +104,9 @@ describe('ronda BV · Android: se pregunta antes de añadir', () => {
     expect(list).not.toContain('!reaction.needsPremium&&');
     expect(list).not.toContain('result.length()<16');
     expect(java).not.toContain('private JSONArray emojis(');
-    expect(javaLine(4310)).toContain('result.put("reactions",reactionOptions(value))');
-    expect(javaLine(4314).startsWith('    private JSONArray reactionOptions(')).toBe(true);
-    expect(javaLine(4315).startsWith('    private void react(JSONObject p,Answer a){')).toBe(true);
+    expect(javaLine(4329)).toContain('result.put("reactions",reactionOptions(value))');
+    expect(javaLine(4333).startsWith('    private JSONArray reactionOptions(')).toBe(true);
+    expect(javaLine(4334).startsWith('    private void react(JSONObject p,Answer a){')).toBe(true);
   });
 
   it('las tres claves de reacción del puente siguen siendo las tres de siempre', () => {
@@ -149,23 +149,37 @@ describe('ronda BV · la interfaz ya no puede ofrecer lo que el puente niega', (
     expect(contract).toContain('reactions: ReactionOption[]');
     expect(contract).toContain('export interface ReactionOption { kind: \'emoji\' | \'custom\'');
     expect(contract).toContain('export type StoryReactionOption = ReactionOption;');
-    expect(previewLine(377).startsWith('const DESIGN_REACTIONS: ReactionOption[] = [')).toBe(true);
+    // El número de línea que `docs/validation.md` cita para esta lista se mide aquí en vez de copiarse: el día que
+    // alguien meta filas arriba, la cita se reancla sola y la aguja sigue señalando la declaración.
+    const designAt = previewLines.findIndex(row => row.startsWith('const DESIGN_REACTIONS: ReactionOption[] = [')) + 1;
+    expect(previewLine(designAt)).toContain("['👍', '❤️', '🔥', '👏', '🎉', '✅', '👀', '🙏', '🤔', '🤯', '😍', '😂', '😢', '🙌']");
     const sample = /\[([^\]]*)\]\.map<ReactionOption>/.exec(preview)![1].split(',');
     expect(sample.length).toBe(14);
-    expect(count('needsPremium: true', preview)).toBe(2);
+    // Las dos ofertas de Premium del muestrario son `🫶` y el emoji personalizado. La tercera vez que la cadena
+    // aparece en el archivo está en el espejo de la guarda de `message.react.custom` (la BX), que es código de
+    // guarda y no lista, así que se cuenta sobre la línea del muestrario.
+    expect(count('needsPremium: true', line('const DESIGN_REACTIONS', preview))).toBe(2);
     expect(preview).toContain("{ kind: 'custom', customEmojiId: '544028896108879570', needsPremium: true }");
   });
 });
 
-describe('ronda BV · Windows no cambia de opinión', () => {
-  it('las tres escrituras se siguen negando con la causa, antes que cualquier pregunta', () => {
-    expect(service).toContain('"message.react" or "message.react.custom" or "message.react.paid" => throw new BridgeException(DesktopMessageReact.Refused),');
-    expect(service).toContain('reactions = DesktopMessageReact.None,');
-    const refused = /Refused =\s*\n\s*"([^"]+)"/.exec(reactRules)![1];
-    expect(preview).toContain(`if (method === 'message.react' && state.platform === 'desktop') throw new Error(REACT_REFUSAL);`);
+describe('ronda BV · en Windows la negativa de las tres ya no cabe: la BX dejó dos', () => {
+  it('dos escrituras se contestan y solo la de pago se niega con su causa', () => {
+    // BV escribió este párrafo cuando las tres claves caían en la misma frase. La sonda de la BX midió que la
+    // petición existe con su nombre actual —`messages.sendReaction`—, así que dos de las tres se contestan y la
+    // negativa que queda es la de Stars, que niega el gasto y no la biblioteca.
+    expect(count('"message.react" or "message.react.custom" => await ReactAsync(args, method == "message.react.custom"),', service)).toBe(1);
+    expect(count('"message.react.paid" => throw new BridgeException(DesktopMessageReact.PaidRefused),', service)).toBe(1);
+    expect(service).not.toContain('reactions = DesktopMessageReact.None,');
+    expect(reactRules).not.toMatch(/public const string Refused\b/);
+    expect(reactRules).not.toContain('public static readonly string[] None = [];');
+    const refused = /PaidRefused =\s*\n\s*"([^"]+)"/.exec(reactRules)![1];
+    expect(refused.length).toBeGreaterThan(0);
+    expect(preview).toContain(`if (method === 'message.react.paid' && state.platform === 'desktop') throw new Error(REACT_REFUSALS.paid);`);
+    // Lo que BV sí pidió y sobrevive: la comprobación de «está entre las ofrecidas» viene después de las puertas
+    // de Windows, para que el espejo no discuta una orden que el host ya atiende por su cuenta.
     expect(at("'message.react' && state.platform === 'desktop'", preview))
       .toBeLessThan(at("&& !params.remove && !DESIGN_REACTIONS.some", preview));
-    expect(refused.length).toBeGreaterThan(0);
   });
 
   it('la frase nueva del andamio es la del puente, carácter a carácter', () => {

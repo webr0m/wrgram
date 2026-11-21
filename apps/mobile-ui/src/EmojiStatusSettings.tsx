@@ -26,6 +26,9 @@ export function PremiumEmojiPicker({pick}:{pick(emoji:EmojiStatusOption):void}) 
 
 function EmojiCatalog({premium,initial,pick}:{premium:boolean;initial:'status'|'featured';pick?(emoji:EmojiStatusOption):void}) {
   const status = useSyncExternalStore(subscribe,() => snapshot().emojiStatus);
+  // En Windows el host pone el estado pero no puede quitarlo: WTelegramClient 4.4.10 no tiene la orden de borrar
+  // (ronda BY), así que el mando desaparece en vez de prometer un fallo.
+  const desktop = useSyncExternalStore(subscribe,() => snapshot().platform === 'desktop');
   const [view,setView] = useState<View>(initial);
   const [options,setOptions] = useState<EmojiStatusOption[]>([]);
   const [page,setPage] = useState<EmojiPackPage>();
@@ -150,7 +153,7 @@ function EmojiCatalog({premium,initial,pick}:{premium:boolean;initial:'status'|'
     {!pick && (premium ? <div className="emoji-current">
       <PremiumMark premium status={status} size={24}/>
       <span>{status ? 'Estado emoji activo' : 'Sin estado emoji'}</span>
-      {status && <button type="button" className="text-button" disabled={saving} onClick={()=>void apply('0')}>Quitar</button>}
+      {status && !desktop && <button type="button" className="text-button" disabled={saving} onClick={()=>void apply('0')}>Quitar</button>}
     </div> : <p className="settings-note">Puedes ver los packs. Para elegir un emoji de estado necesitas Telegram Premium.</p>)}
     <nav className="settings-subnav" aria-label="Explorar emojis">
       {TABS.filter(([id])=>!pick||id!=='status').map(([id,label])=><button type="button" key={id} aria-pressed={view===id} disabled={saving||(!pack && view===id)} onClick={()=>browse(id)}>{label}</button>)}

@@ -161,7 +161,7 @@ describe('ronda AC · el contrato que decide qué botón se pinta', () => {
   });
 
   it('Properties dejó de publicar las banderas en falso', () => {
-    const body = csBody('Properties');
+    const body = csBody('PropertiesAsync');
     expect(body).toContain('deleteSelf = DesktopMessageDelete.CanDeleteSelf(kind)');
     expect(body).toContain('deleteAll = DesktopMessageDelete.CanDeleteAll(kind, message?.Outgoing ?? false, channel)');
     expect(body).not.toContain('deleteSelf = false');
@@ -172,7 +172,7 @@ describe('ronda AC · el contrato que decide qué botón se pinta', () => {
     const self = csBody('CanDeleteSelf', rules);
     expect(self).toContain('kind is Kind.Private or Kind.Basic');
     expect(csBody('Of', rules)).toContain("'u' => Kind.Private");
-    expect(csBody('Properties')).toContain('ChannelOf(entry)');
+    expect(csBody('PropertiesAsync')).toContain('ChannelOf(entry)');
     expect(csBody('ChannelOf', service)).toContain('_chats.GetValueOrDefault(peer.channel_id) as Channel');
   });
 });

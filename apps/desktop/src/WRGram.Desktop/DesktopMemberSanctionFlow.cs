@@ -9,7 +9,7 @@ using WTelegram;
 
 /// <summary>
 /// El cable de las cinco escrituras sobre una fila de supergrupo o canal: <c>groups.member.ban</c> y
-/// <c>groups.member.restrict</c> (<c>NativeBridge.java:571</c> → <c>banGroupMember</c>, <c>:2879</c>),
+/// <c>groups.member.restrict</c> (<c>NativeBridge.java:585</c> → <c>banGroupMember</c>, <c>:2879</c>),
 /// <c>groups.member.unban</c> (<c>:572</c> → <c>unbanGroupMember</c>, <c>:2846</c>), <c>groups.member.promote</c>
 /// (<c>:573</c> → <c>promoteGroupMember</c>, <c>:2765</c>) y <c>groups.member.demote</c> (<c>:570</c> →
 /// <c>demoteGroupMember</c>, <c>:2766</c>). Las reglas, las frases y el orden de las guardas están en

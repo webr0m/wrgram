@@ -5,11 +5,11 @@ using System.IO;
 
 /// <summary>
 /// Reglas de la foto de perfil en Windows. Son las dos órdenes que Android atiende desde hace rondas
-/// —<c>account.photo.pick</c> (<c>NativeBridge.java:531</c>) y <c>account.photo.delete</c>
-/// (<c>NativeBridge.java:532</c>)— y que en este host no tenían brazo hasta la ronda AU: la pantalla de escritorio
+/// —<c>account.photo.pick</c> (<c>NativeBridge.java:544</c>) y <c>account.photo.delete</c>
+/// (<c>NativeBridge.java:545</c>)— y que en este host no tenían brazo hasta la ronda AU: la pantalla de escritorio
 /// no llegaba a ofrecerlas, porque las dos entradas estaban tapadas con <c>!desktop</c>.
 /// <para>
-/// Todo lo que aquí se copia viene de <c>NativeBridge.preparePhoto</c> (<c>NativeBridge.java:1670-1687</c>) y de
+/// Todo lo que aquí se copia viene de <c>NativeBridge.preparePhoto</c> (<c>NativeBridge.java:1690-1707</c>) y de
 /// su llamador <c>pickedProfilePhoto</c> (<c>:1654-1662</c>), más los dos diálogos: el de confirmar (<c>:1690</c>)
 /// y el de borrar (<c>:1646</c>). Las frases van letra por
 /// letra, porque en Android no son decoración: son lo único que la persona lee cuando algo sale mal o cuando tiene
@@ -40,51 +40,51 @@ using System.IO;
 /// </summary>
 public static class DesktopProfilePhoto
 {
-    /// <c>cursor.getLong(0)&gt;20L*1024*1024</c> de <c>preparePhoto</c> (<c>NativeBridge.java:1674</c>).
+    /// <c>cursor.getLong(0)&gt;20L*1024*1024</c> de <c>preparePhoto</c> (<c>NativeBridge.java:1694</c>).
     public const long MaxBytes = 20L * 1024 * 1024;
 
-    /// <c>bounds.outWidth&gt;12000 || bounds.outHeight&gt;12000</c> (<c>NativeBridge.java:1675</c>).
+    /// <c>bounds.outWidth&gt;12000 || bounds.outHeight&gt;12000</c> (<c>NativeBridge.java:1695</c>).
     public const int MaxPixels = 12000;
 
-    /// El <c>while(max/factor&gt;2048) inSampleSize*=2</c> de <c>NativeBridge.java:1676</c>, que en WPF es
+    /// El <c>while(max/factor&gt;2048) inSampleSize*=2</c> de <c>NativeBridge.java:1696</c>, que en WPF es
     /// <c>DecodePixelWidth</c> y solo se pone cuando de verdad recorta.
     public const int DecodeLimit = 2048;
 
-    /// <c>Bitmap.createScaledBitmap(crop,640,640,true)</c> (<c>NativeBridge.java:1678</c>).
+    /// <c>Bitmap.createScaledBitmap(crop,640,640,true)</c> (<c>NativeBridge.java:1698</c>).
     public const int Side = 640;
 
-    /// <c>scaled.compress(Bitmap.CompressFormat.JPEG,88,stream)</c> (<c>NativeBridge.java:1679</c>).
+    /// <c>scaled.compress(Bitmap.CompressFormat.JPEG,88,stream)</c> (<c>NativeBridge.java:1699</c>).
     public const int JpegQuality = 88;
 
-    /// La única frase que sale del descarte de Android (<c>NativeBridge.java:1684</c>): las cinco negaciones —no
+    /// La única frase que sale del descarte de Android (<c>NativeBridge.java:1704</c>): las cinco negaciones —no
     /// es imagen, pesa más de 20 MB, no tiene dimensiones legibles, pasa de 12000 píxeles y no decodifica— caben
     /// en una sola cadena, y aquí caben en la misma.
     public const string NoImage = "No se pudo preparar la imagen. Elige una foto válida de hasta 20 MB.";
 
-    /// Literal de <c>NativeBridge.java:1659</c> y <c>:1693</c>: la cuenta que estaba abierta al elegir ya no es la
+    /// Literal de <c>NativeBridge.java:1679</c> y <c>:1709</c>: la cuenta que estaba abierta al elegir ya no es la
     /// abierta cuando hay que escribir.
     public const string ChangedAccount = "La cuenta cambió. No se estableció la foto.";
 
-    /// <c>setTitle</c> del diálogo de confirmar (<c>NativeBridge.java:1690</c>).
+    /// <c>setTitle</c> del diálogo de confirmar (<c>NativeBridge.java:1710</c>).
     public const string PickTitle = "Confirmar foto de perfil";
 
-    /// <c>setMessage</c> del mismo diálogo (<c>NativeBridge.java:1690</c>). Es la promesa de privacidad de la
+    /// <c>setMessage</c> del mismo diálogo (<c>NativeBridge.java:1710</c>). Es la promesa de privacidad de la
     /// ronda: lo que sube es el recuadro que se está viendo, no el archivo entero, y no se guarda ninguna copia.
     public const string PickBody = "Esta foto se establecerá en Telegram. No se cambiará su privacidad y WRGram no la enviará a sus servidores.";
 
-    /// <c>setPositiveButton</c> de <c>NativeBridge.java:1690</c>.
+    /// <c>setPositiveButton</c> de <c>NativeBridge.java:1710</c>.
     public const string PickAccept = "Establecer foto";
 
-    /// <c>setTitle</c> del diálogo de borrar (<c>NativeBridge.java:1646</c>).
+    /// <c>setTitle</c> del diálogo de borrar (<c>NativeBridge.java:1666</c>).
     public const string DeleteTitle = "Eliminar foto de perfil";
 
-    /// <c>setMessage</c> del mismo (<c>NativeBridge.java:1646</c>).
+    /// <c>setMessage</c> del mismo (<c>NativeBridge.java:1666</c>).
     public const string DeleteBody = "La foto actual se quitará de tu perfil de Telegram. WRGram no conserva una copia.";
 
-    /// <c>setPositiveButton("Eliminar foto",…)</c> de <c>NativeBridge.java:1646</c>.
+    /// <c>setPositiveButton("Eliminar foto",…)</c> de <c>NativeBridge.java:1666</c>.
     public const string DeleteAccept = "Eliminar foto";
 
-    /// <c>setNegativeButton("Cancelar",…)</c> de <c>NativeBridge.java:1646</c>, que aparece en los dos diálogos y en los dos responde
+    /// <c>setNegativeButton("Cancelar",…)</c> de <c>NativeBridge.java:1666</c>, que aparece en los dos diálogos y en los dos responde
     /// <c>answer.ok(false)</c>: cancelar no es un error, es una decisión.
     public const string Cancel = "Cancelar";
 
@@ -96,11 +96,11 @@ public static class DesktopProfilePhoto
     /// trae <c>users.getUsers</c>: <c>photos.deletePhotos</c> pide un <c>InputPhoto</c> con su <c>access_hash</c> y
     /// su <c>file_reference</c>, y eso solo lo da <c>photos.getUserPhotos</c>. Si esa lectura no trae la foto que
     /// la cuenta dice tener, no se finge el borrado: se dice. TDLib no puede fallar así porque su
-    /// <c>DeleteProfilePhoto(photoId)</c> (<c>NativeBridge.java:1646</c>) se arregla solo con el id.
+    /// <c>DeleteProfilePhoto(photoId)</c> (<c>NativeBridge.java:1666</c>) se arregla solo con el id.
     /// </summary>
     public const string NotFound = "Telegram no devolvió tu foto actual; vuelve a abrir el perfil e inténtalo otra vez.";
 
-    /// La frase de Android cuando el selector lanza (<c>attachment.pick</c>, <c>NativeBridge.java:826</c>) sirve
+    /// La frase de Android cuando el selector lanza (<c>attachment.pick</c>, <c>NativeBridge.java:844</c>) sirve
     /// igual aquí, pero en Windows el selector es del sistema y no puede faltar, así que esta solo cubre que el
     /// diálogo sea rechazado por el propio Windows.
     public const string NoPicker = "No hay un selector de imágenes disponible.";
@@ -134,7 +134,7 @@ public static class DesktopProfilePhoto
         return factor;
     }
 
-    /// <c>Math.min(oriented.getWidth(), oriented.getHeight())</c> (<c>NativeBridge.java:1678</c>). Va después del
+    /// <c>Math.min(oriented.getWidth(), oriented.getHeight())</c> (<c>NativeBridge.java:1698</c>). Va después del
     /// giro, igual que en Android: un retrato con orientación 6 tiene el lado menor en el eje contrario a sus
     /// dimensiones almacenadas.
     public static int CropSide(int width, int height) => Math.Min(width, height);
@@ -145,7 +145,7 @@ public static class DesktopProfilePhoto
     /// <c>(oriented.getHeight() - side) / 2</c>.
     public static int CropTop(int width, int height) => (height - CropSide(width, height)) / 2;
 
-    /// <c>rotation</c> de <c>NativeBridge.java:1677</c>: 3 y 4 giran 180, 5 y 6 giran 90, 7 y 8 giran 270.
+    /// <c>rotation</c> de <c>NativeBridge.java:1697</c>: 3 y 4 giran 180, 5 y 6 giran 90, 7 y 8 giran 270.
     public static int Turn(ushort orientation) => orientation switch
     {
         3 or 4 => 180,

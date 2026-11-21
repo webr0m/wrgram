@@ -154,8 +154,11 @@ describe('ronda AO · la lista de votantes habla en las tres capas', () => {
   it('el conjunto de negaciones de la encuesta es el que está escrito, sin claves sueltas', () => {
     const keys = [...pollRefusals.matchAll(/^ {2}(\w+):/gm)].map(match => match[1]).sort();
     expect(keys).toEqual([
-      'anonymousVoters', 'batch', 'closed', 'firstPage', 'gone', 'noCorrect', 'noOption', 'noPoll', 'noQuestion',
-      'noStop', 'noVote', 'notAllowed', 'option', 'private', 'repeated', 'sending', 'stale', 'tooLong',
+      // Las tres de la ronda CN-B —`changedPhotos`, `notPhoto`, `unevenPhotos`— entran en el conjunto porque el
+      // andamio las escribe con las mismas frases que Windows y Android, no con una paráfrasis propia.
+      'anonymousVoters', 'batch', 'changedPhotos', 'closeRange', 'closed', 'firstPage', 'gone', 'noCorrect', 'noDescription', 'noOption',
+      'noPoll', 'noQuestion', 'noStop', 'noVote', 'notAllowed', 'notPhoto', 'option', 'private', 'repeated', 'sending', 'stale', 'tooLong',
+      'unevenPhotos',
     ]);
     // La negativa que decía que el cable faltaba ya no está en ninguna capa: borrarla era parte de conectarlo.
     expect(preview).not.toContain('noVoters');

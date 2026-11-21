@@ -36,7 +36,7 @@ final class NativeSnapshot {
         JSONArray folders=new JSONArray();for(TdApi.ChatFolderInfo folder:session.folders)folders.put(new JSONObject().put("id",folder.id).put("title",folder.name.text.text));data.put("folders",folders);
         data.put("quickReplies",quickRepliesDto());
         HistoryWindow history=session.currentWindow();data.put("history",new JSONObject().put("loading",history!=null&&history.loading).put("initialRetry",history!=null&&history.waitingRetry).put("end",history!=null&&history.end).put("error",history==null?"":history.error).put("latest",history==null||history.latest).put("anchor",String.valueOf(history==null?0:history.anchor))).put("topic",session.topicState());
-        data.put("appearance",appearanceDto(prefs,session.context()));
+        data.put("appearance",appearanceDto(prefs,session.context(),String.valueOf(session.selfId)));
         data.put("permissions",new JSONObject().put("notes",granted("notes")).put("replies",granted("replies")));
         JSONArray turns=new JSONArray();for(AssistantPayload.Turn turn:assistant.history())turns.put(new JSONObject().put("role",turn.role).put("content",turn.content));
         data.put("assistant",new JSONObject().put("state",assistant.state).put("ready",assistant.ready).put("busy",assistant.busy).put("consent",assistant.consent).put("error",assistant.error).put("turns",turns));
@@ -83,9 +83,12 @@ final class NativeSnapshot {
         return photo;
     }
     boolean granted(String plugin){return session.selfId>0&&prefs.getBoolean("plugin."+session.selfId+"."+plugin,false);}
+    // El campo `supported` del DTO dice si el objeto llegó cargado del servidor, no si el tipo de chat se
+    // puede editar: por aquí solo pasan chats ya leídos, así que sale siempre `true`. El `false` lo ponen
+    // las tarjetas de la interfaz cuando inventan la ficha de un chat que no está en la lista (`App.tsx:303`).
     JSONObject chat(TdApi.Chat chat)throws Exception{
         boolean pinned=false,archived=false;if(chat.positions!=null)for(TdApi.ChatPosition position:chat.positions){if(TdSession.sameList(position.list,session.selectedList()))pinned=position.isPinned;if(position.list instanceof TdApi.ChatListArchive&&position.order>0)archived=true;}
-         JSONObject data=new JSONObject().put("id",String.valueOf(chat.id)).put("title",chat.title).put("preview",caption(chat.lastMessage)).put("date",chat.lastMessage==null?0:chat.lastMessage.date).put("unread",chat.unreadCount).put("marked",chat.isMarkedAsUnread).put("bot",session.bot(chat)).put("type",chat.type instanceof TdApi.ChatTypePrivate?"private":"group").put("pinned",pinned).put("archived",archived).put("readInbox",String.valueOf(chat.lastReadInboxMessageId)).put("muted",chat.notificationSettings!=null&&chat.notificationSettings.muteFor>0).put("supported",session.unsupported(chat).isEmpty()).put("activeStories",session.activeStoryCount(chat.id));
+         JSONObject data=new JSONObject().put("id",String.valueOf(chat.id)).put("title",chat.title).put("preview",caption(chat.lastMessage)).put("date",chat.lastMessage==null?0:chat.lastMessage.date).put("unread",chat.unreadCount).put("marked",chat.isMarkedAsUnread).put("bot",session.bot(chat)).put("type",chat.type instanceof TdApi.ChatTypePrivate?"private":"group").put("pinned",pinned).put("archived",archived).put("readInbox",String.valueOf(chat.lastReadInboxMessageId)).put("muted",chat.notificationSettings!=null&&chat.notificationSettings.muteFor>0).put("supported",true).put("activeStories",session.activeStoryCount(chat.id));
          String draft=draftText(chat.draftMessage);
          data.put("canReport",chat.canBeReported);
          int requests=JoinRequests.count(chat);if(requests>0)data.put("requests",requests);
@@ -101,6 +104,9 @@ final class NativeSnapshot {
          if(chat.type instanceof TdApi.ChatTypePrivate){TdApi.User privateUser=session.user(((TdApi.ChatTypePrivate)chat.type).userId);data.put("isContact",privateUser!=null&&privateUser.isContact);addPremiumMark(data,privateUser,"premium","emojiStatus");}
          if(chat.type instanceof TdApi.ChatTypeSupergroup){data.put("supergroup",true);if(((TdApi.ChatTypeSupergroup)chat.type).isChannel)data.put("type","channel");TdApi.Supergroup group=session.supergroup(((TdApi.ChatTypeSupergroup)chat.type).supergroupId);if(group!=null){if(group.isForum)data.put("isForum",true);if(group.hasAutomaticTranslation)data.put("automaticTranslation",true);}}
          data.put("translatable",chat.isTranslatable);
+         // `defaultSilent` es el aviso que se quita a lo que la propia cuenta envía; el `muted` de arriba es el de lo
+         // que llega. TDLib lo guarda por conversación y el compositor lo usa de arranque.
+         if(chat.defaultDisableNotification)data.put("defaultSilent",true);
         if(chat.type instanceof TdApi.ChatTypeSecret){
             data.put("type","secret");
             TdApi.SecretChat peer=session.secret(chat);
@@ -194,6 +200,7 @@ final class NativeSnapshot {
                     .put("revoting",poll.allowsRevoting).put("closed",poll.isClosed).put("canSeeResults",poll.canSeeResults)
                     .put("canGetVoters",poll.canGetVoters).put("canStop",message.isOutgoing&&!poll.isClosed)
                     .put("quiz",poll.type instanceof TdApi.PollTypeQuiz);
+                if(poll.closeDate>0)value.put("closesAt",poll.closeDate);
                 if(poll.type instanceof TdApi.PollTypeQuiz&&((TdApi.PollTypeQuiz)poll.type).explanation!=null)value.put("explanation",limit(((TdApi.PollTypeQuiz)poll.type).explanation.text,300));
                 if(poll.voteRestrictionReason!=null)value.put("restriction",pollRestriction(poll.voteRestrictionReason));
                 TdApi.PollOption[] source=poll.options==null?new TdApi.PollOption[0]:poll.options;int[] order=poll.optionOrder!=null&&poll.optionOrder.length>0?poll.optionOrder:null;
@@ -201,8 +208,10 @@ final class NativeSnapshot {
                 for(int i=0;i<source.length;i++){
                     int index=order!=null&&i<order.length?order[i]:i;if(index<0||index>=source.length)index=i;
                     TdApi.PollOption option=source[index];if(option==null)continue;
-                    options.put(new JSONObject().put("index",index).put("text",option.text==null?"":limit(option.text.text,100))
-                        .put("votes",option.voterCount).put("percentage",option.votePercentage).put("chosen",option.isChosen).put("choosing",option.isBeingChosen));
+                    JSONObject item=new JSONObject().put("index",index).put("text",option.text==null?"":limit(option.text.text,100))
+                        .put("votes",option.voterCount).put("percentage",option.votePercentage).put("chosen",option.isChosen).put("choosing",option.isBeingChosen);
+                    JSONObject image=pollMedia(option.media);if(image!=null)item.put("media",image);
+                    options.put(item);
                 }
                 value.put("options",options);data.put("poll",value);
             }
@@ -418,6 +427,20 @@ final class NativeSnapshot {
         if(value!=null){media.protect(value.getInt("id"));JSONObject thumb=value.optJSONObject("thumbnail");if(thumb!=null)media.protect(thumb.getInt("id"));}return value;
     }
     JSONObject documentMedia(TdApi.Document value)throws Exception{String mime=mediaMime(value.mimeType,value.fileName);return preview(media.register(value.document,mime,mediaKind(mime,"file"),value.fileName),value.thumbnail,null);}
+    // Lo que Telegram pone en cada opción de una encuesta con imágenes. Enlazar, ubicación y punto de interés
+    // siguen sin camino: no son una foto ni un archivo que esta pantalla sepa pintar.
+    // El tamaño que se pinta es el más ancho que quepa en 1280 píxeles; si Telegram aún no lo tiene, no hay tamaño.
+    static TdApi.PhotoSize pollPhotoSize(TdApi.Photo photo){TdApi.PhotoSize best=null;if(photo!=null&&photo.sizes!=null)for(TdApi.PhotoSize size:photo.sizes)if(size!=null&&size.photo!=null&&size.width>0&&size.width<=1280&&(best==null||size.width>best.width))best=size;return best;}
+    JSONObject pollMedia(TdApi.PollMedia value)throws Exception{
+        if(value instanceof TdApi.PollMediaPhoto){TdApi.Photo photo=((TdApi.PollMediaPhoto)value).photo;if(photo==null)return null;TdApi.PhotoSize best=pollPhotoSize(photo);if(best==null)return miniOnly(photo.minithumbnail,"Foto de la opción");return preview(media.register(best.photo,"image/jpeg","image","Foto de la opción"),null,photo.minithumbnail);}
+        if(value instanceof TdApi.PollMediaVideo){TdApi.Video video=((TdApi.PollMediaVideo)value).video;String mime=mediaMime(video.mimeType,video.fileName);return preview(media.register(video.video,mime,"video",video.fileName),video.thumbnail,video.minithumbnail);}
+        if(value instanceof TdApi.PollMediaAnimation)return animation(((TdApi.PollMediaAnimation)value).animation);
+        if(value instanceof TdApi.PollMediaDocument)return documentMedia(((TdApi.PollMediaDocument)value).document);
+        if(value instanceof TdApi.PollMediaSticker)return sticker(((TdApi.PollMediaSticker)value).sticker);
+        if(value instanceof TdApi.PollMediaAudio){TdApi.Audio audio=((TdApi.PollMediaAudio)value).audio;String mime=mediaMime(audio.mimeType,audio.fileName);return preview(media.register(audio.audio,mime,"audio",audio.fileName),audio.albumCoverThumbnail,audio.albumCoverMinithumbnail);}
+        return null;
+    }
+    JSONObject miniOnly(TdApi.Minithumbnail mini,String name)throws Exception{return mini!=null&&mini.data!=null&&mini.data.length<=16384?new JSONObject().put("id",0).put("ready",false).put("mime","image/jpeg").put("kind","image").put("name",name).put("size",0).put("minithumbnail","data:image/jpeg;base64,"+java.util.Base64.getEncoder().encodeToString(mini.data)):null;}
     static String mediaMime(String mime,String name){if(mime!=null&&mime.matches("(?i)^(image|video|audio)/[a-z0-9.+-]+$"))return mime.toLowerCase(java.util.Locale.ROOT);String filename=name==null?"":name.toLowerCase(java.util.Locale.ROOT);if(filename.endsWith(".jpg")||filename.endsWith(".jpeg"))return "image/jpeg";if(filename.endsWith(".png"))return "image/png";if(filename.endsWith(".webp"))return "image/webp";if(filename.endsWith(".gif"))return "image/gif";if(filename.endsWith(".mp4")||filename.endsWith(".m4v"))return "video/mp4";if(filename.endsWith(".webm"))return "video/webm";if(filename.endsWith(".mov"))return "video/quicktime";if(filename.endsWith(".3gp"))return "video/3gpp";if(filename.endsWith(".mkv"))return "video/x-matroska";if(filename.endsWith(".avi"))return "video/x-msvideo";if(filename.endsWith(".mp3"))return "audio/mpeg";if(filename.endsWith(".ogg")||filename.endsWith(".opus"))return "audio/ogg";if(filename.endsWith(".m4a"))return "audio/mp4";if(filename.endsWith(".wav"))return "audio/wav";return mime==null||mime.isBlank()?"application/octet-stream":mime;}
     static String mediaKind(String mime,String fallback){return mime!=null&&(mime.startsWith("image/")||mime.startsWith("video/")||mime.startsWith("audio/"))?mime.startsWith("image/")?"image":mime.startsWith("audio/")?"audio":"video":fallback;}
     JSONObject sticker(TdApi.Sticker sticker)throws Exception{
@@ -508,12 +531,18 @@ final class NativeSnapshot {
         }
         return result;
     }
-    static JSONObject appearanceDto(SharedPreferences prefs,Context context)throws Exception{
+    /**
+     * Lo que la pantalla lee para pintarse. Los dos huecos del fondo de la cuenta viajan juntos porque el
+     * único que sabe qué modo está activo es el tema de la interfaz: aquí solo se publica lo que la tienda
+     * tiene guardado para esta `account`, y si el dueño cambió no sale ninguno.
+     */
+    static JSONObject appearanceDto(SharedPreferences prefs,Context context,String account)throws Exception{
         JSONObject value=new JSONObject().put("theme",prefs.getString("theme","gold")).put("font",prefs.getInt("font",16)).put("compact",prefs.getBoolean("compact",false)).put("typing",prefs.getBoolean("typing",true)).put("enter",prefs.getBoolean("enter",false)).put("fontFamily",prefs.getString("fontFamily","system")).put("wallpaper",prefs.getString("wallpaper","none")).put("auto",prefs.getBoolean("auto",false)).put("navigation","side".equals(prefs.getString("navigation","bar"))?"side":"bar").put("systemDark",Palette.systemDark(context));
         String gestures=prefs.getString("gestures","");
         if(gestures!=null&&!gestures.isEmpty())try{JSONObject parsed=new JSONObject(gestures);value.put("gestures",new JSONObject().put("left",parsed.optString("left","reply")).put("right",parsed.optString("right","menu")));}catch(Exception ignored){}
         String custom=prefs.getString("customTheme","");
         if(custom!=null&&!custom.isEmpty())try{value.put("custom",new JSONObject(custom));}catch(Exception ignored){}
+        value.put("accountBackgrounds",AccountBackgrounds.slots(prefs.getString("accountBackgrounds",""),account));
         JSONArray themes=new JSONArray();
         try{themes=new JSONArray(prefs.getString("customThemes","[]"));}catch(Exception ignored){}
         JSONObject chats=new JSONObject();

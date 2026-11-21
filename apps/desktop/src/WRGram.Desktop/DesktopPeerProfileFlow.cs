@@ -11,11 +11,11 @@ using WTelegram;
 /// El cable de la ficha de perfil: <c>chat.profile</c>, <c>profile.related</c>, <c>profile.peer</c> y
 /// <c>profile.contact</c>. Las reglas y las frases están en <see cref="DesktopPeerProfile"/>; aquí solo se pide, se
 /// funda la caché de personas y se responde con las claves que la pantalla lee
-/// (<c>PeerProfile.tsx:52</c>, <c>:141</c> y <c>App.tsx:736</c>).
+/// (<c>PeerProfile.tsx:52</c>, <c>:141</c> y <c>App.tsx:740</c>).
 /// <para>
 /// Hasta esta ronda las cuatro caían en el <c>_ =&gt; throw</c> genérico del host, y la consecuencia se veía en
 /// pantalla: la ficha de una persona no se abría desde Windows y la pestaña «Miembros»/«En común» —que Android sí
-/// atiende desde <c>NativeBridge.java:1554</c>— se quedaba en el aviso de siempre. La ficha tampoco ofrecía
+/// atiende desde <c>NativeBridge.java:1574</c>— se quedaba en el aviso de siempre. La ficha tampoco ofrecía
 /// «Administrar miembros» en Windows porque <c>canManageMembers</c> nunca llegó a viajar.
 /// </para>
 /// <para>
@@ -30,7 +30,7 @@ using WTelegram;
 public sealed partial class TelegramService
 {
     /// <see cref="DesktopPeerProfile"/>: la ficha pide el chat y Telegram responde según su forma. El orden es el de
-    /// <c>chatProfile</c> (<c>NativeBridge.java:1203-1250</c>) —privado, comunidad, básico, y al final el resto—.
+    /// <c>chatProfile</c> (<c>NativeBridge.java:1223-1270</c>) —privado, comunidad, básico, y al final el resto—.
     private async Task<object?> ChatProfileAsync(JsonElement args)
     {
         var client = CollectionClient();
@@ -40,13 +40,13 @@ public sealed partial class TelegramService
             InputPeerUser peer => await PrivateProfileAsync(client, entry, peer),
             InputPeerChannel => await CommunityProfileAsync(client, entry),
             InputPeerChat basic => await BasicProfileAsync(client, entry, basic.chat_id),
-            // «Mensajes guardados» y cualquier otro peer: Android cierra con el objeto mínimo de `:1245` y aquí
+            // «Mensajes guardados» y cualquier otro peer: Android cierra con el objeto mínimo de `:1265` y aquí
             // igual, sin prometer ni bio ni derechos que nadie leyó.
             _ => DesktopPeerProfile.PeerRow(entry.Id, entry.Title, entry.Type, entry.Username ?? "", entry.Bot),
         };
     }
 
-    /// <c>GetUserFullInfo</c> + <c>session.user(userId)</c> (<c>:1203-1226</c>). Las dos fuentes siguen siendo dos
+    /// <c>GetUserFullInfo</c> + <c>session.user(userId)</c> (<c>:1224-1251</c>). Las dos fuentes siguen siendo dos
     /// en MTProto: la biografía, el cumple y el bloqueo viajan en <c>TL.UserFull</c>; el teléfono, la insignia,
     /// premium y la presencia viajan en el <c>TL.User</c> que la misma respuesta trae.
     private async Task<object?> PrivateProfileAsync(Client client, ChatEntry entry, InputPeerUser peer)
@@ -109,7 +109,7 @@ public sealed partial class TelegramService
         };
     }
 
-    /// <c>sendPublicChatProfile</c> (<c>:1247-1267</c>). La cifra, la descripción y el permiso de ver la lista salen
+    /// <c>sendPublicChatProfile</c> (<c>:1267-1287</c>). La cifra, la descripción y el permiso de ver la lista salen
     /// de <c>TL.ChannelFull</c>; las banderas del peer (<c>verified</c>, <c>forum</c>) se leen del <c>TL.Channel</c>
     /// que la misma respuesta renueva, que es el equivalente exacto del <c>GetSupergroup</c> de Android. La
     /// administración, no: MTProto no la publica en el full, así que se pregunta al participante propio antes de
@@ -146,7 +146,7 @@ public sealed partial class TelegramService
     }
 
     /// <see cref="DesktopPeerProfile"/>: la pestaña «En común» o «Miembros». El orden es el de <c>profileRelated</c>
-    /// (<c>NativeBridge.java:1554-1576</c>): recorte del desplazamiento y, según la forma del chat, una de las tres
+    /// (<c>NativeBridge.java:1574-1597</c>): recorte del desplazamiento y, según la forma del chat, una de las tres
     /// lecturas o la negación.
     private async Task<object?> RelatedAsync(JsonElement args)
     {
@@ -177,7 +177,7 @@ public sealed partial class TelegramService
                     if (id.Length == 0) continue;
                     rows.Add(DesktopPeerProfile.PeerRow(id, chat.Title, type, (chat as Channel)?.MainUsername ?? "", false));
                 }
-                // Android marca el final cuando la página vino corta (`:1563`); el cursor es el identificador del
+                // Android marca el final cuando la página vino corta (`:1583`); el cursor es el identificador del
                 // último chat devuelto, que en MTProto es el `max_id` de la siguiente petición.
                 return new { chats = rows, nextCursor = DesktopPeerProfile.Cursor(chats, rows.Count) };
             }

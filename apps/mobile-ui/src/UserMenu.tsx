@@ -130,6 +130,10 @@ export function UserMenu({state,run,desktop=false,openDataFolder,openProfile,ope
     <section className="account-menu-section">
       <div className="account-menu-heading"><span>CUENTA</span></div>
       {state.ready&&<Row icon={<Users/>} label="Mi perfil de Telegram" detail="Nombre, biografía y nombre público, escritos en tu cuenta" onClick={openProfile}/>}
+      {/* La ronda BY cableó en Windows las once claves de emojis y packs, así que el catálogo ya no es un botón
+          muerto: lee los packs, los guarda y pone el estado. Lo que el host no puede hacer —quitar el estado— se
+          gatingea dentro del propio catálogo, no aquí. */}
+      {state.ready&&<Row icon={<Sparkles/>} label={state.wallet?.premium?'Cambiar estado emoji':'Packs de emojis'} detail="Packs de Telegram, guardados y estado emoji escritos en tu cuenta" onClick={openEmoji}/>}
     </section>
 
     <section className="account-menu-section">

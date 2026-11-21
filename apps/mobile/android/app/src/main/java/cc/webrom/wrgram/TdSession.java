@@ -50,6 +50,9 @@ final class TdSession {
     private boolean folderTagsEnabled;
     private final Map<Long, Long> orders = new HashMap<>();
     private final Map<Long,TdApi.ChatActiveStories> activeStories=new HashMap<>();
+    /** Los dos fondos por defecto que la cuenta avisó la última vez, uno por modo; el centinela es «sin fondo puesto» y la llave ausente «de este modo no he oído nada». */
+    private final Map<Boolean,TdApi.Background> defaultBackgrounds=new java.util.concurrent.ConcurrentHashMap<>();
+    private static final TdApi.Background NO_DEFAULT_BACKGROUND=new TdApi.Background();
     private TdApi.ChatList selectedList = new TdApi.ChatListMain();
     final List<TdApi.ChatFolderInfo> folders = new ArrayList<>();
     private final LinkedHashMap<Integer, TdApi.File> files = new LinkedHashMap<>(32, .75f, true);
@@ -151,6 +154,8 @@ final class TdSession {
     boolean sending(long chat) { return sending.contains(chat); }
     boolean uncertain(long chat) { return uncertainSends.containsKey(chat); }
     int activeStoryCount(long chatId){TdApi.ChatActiveStories value=activeStories.get(chatId);return value==null||value.stories==null?0:value.stories.length;}
+    /** El fondo por defecto que la cuenta avisó para un modo, o null si el aviso decía que no hay ninguno; si es que de este modo no se ha oído nada todavía lo dice `defaultBackgroundKnown`, más abajo. */
+    TdApi.Background defaultBackground(boolean dark){TdApi.Background value=defaultBackgrounds.get(dark);return value==NO_DEFAULT_BACKGROUND?null:value;}
     void acknowledgeUncertain(long chat) { uncertainSends.remove(chat); }
     void rememberStars(TdApi.StarAmount value) { if (value == null) return; starAmount = value; emit("stars"); }
 
@@ -306,6 +311,7 @@ final class TdSession {
         else if(object instanceof TdApi.UpdateFileDownload){TdApi.UpdateFileDownload download=(TdApi.UpdateFileDownload)object;storeDownloadCounts(download.counts);emit("downloads");}
         else if(object instanceof TdApi.UpdateFileRemovedFromDownloads){TdApi.UpdateFileRemovedFromDownloads removed=(TdApi.UpdateFileRemovedFromDownloads)object;storeDownloadCounts(removed.counts);emit("downloads");}
         else if(object instanceof TdApi.UpdateSecretChat){TdApi.SecretChat secret=((TdApi.UpdateSecretChat)object).secretChat;secretChats.put(secret.id,secret);emit("chats");emit("messages");}
+        else if(object instanceof TdApi.UpdateDefaultBackground){TdApi.UpdateDefaultBackground update=(TdApi.UpdateDefaultBackground)object;defaultBackgrounds.put(update.forDarkTheme,update.background==null?NO_DEFAULT_BACKGROUND:update.background);emit("appearance");}
         else if (object instanceof TdApi.UpdateAuthorizationState) {
             authorization = ((TdApi.UpdateAuthorizationState) object).authorizationState; busy = false; error = "";
             if(!ready()){
@@ -327,8 +333,8 @@ final class TdSession {
                 if(!ageClosing){PushNotifications.clearReceiver(context,slot);while(!pendingPushes.isEmpty())pendingPushes.removeFirst().done.accept(false);}
                 boolean resumeAfterCheck = ageClosing, background = backgroundClose; ageClosing = false; backgroundClose = false;
                 client = null; starting = false; connected = false; transportAvailable = false; busy = false; chatsBusy = false;
-                requests.clear(); stopTyping(); chats.clear(); savedTopics.clear(); savedTopicsEnd=false; folderTagsEnabled=false; orders.clear();activeStories.clear(); users.clear(); windows.clear();topicWindows.clear();supergroups.clear();secretChats.clear();sponsored.clear();sponsoredError="";notificationChat=0;notificationMessage=0;notificationTargets.clear();quickReplies.clear();quickReplyMessages.clear();quickReplyOrder=new int[0];quickRepliesLoaded=false;
-                sending.clear(); uncertainSends.clear(); typingUsers.clear(); activeChat = 0; activeTopic = 0; activeTopicName = ""; activeTopicClosed = false; activeTopicRead = 0; selfId = 0; displayName = ""; starAmount = null;
+                requests.clear(); stopTyping(); chats.clear(); savedTopics.clear(); savedTopicsEnd=false; folderTagsEnabled=false; orders.clear();activeStories.clear(); users.clear(); windows.clear();topicWindows.clear();supergroups.clear();secretChats.clear();defaultBackgrounds.clear();sponsored.clear();sponsoredError="";notificationChat=0;notificationMessage=0;notificationTargets.clear();quickReplies.clear();quickReplyMessages.clear();quickReplyOrder=new int[0];quickRepliesLoaded=false;
+                sending.clear(); uncertainSends.clear(); unknownUsers.clear(); typingUsers.clear(); activeChat = 0; activeTopic = 0; activeTopicName = ""; activeTopicClosed = false; activeTopicRead = 0; selfId = 0; displayName = ""; starAmount = null;
                 connection = "Sin conectar"; chatsEnd = false;
                 folders.clear(); files.clear(); selectedList = new TdApi.ChatListMain();
                 if (!resumeAfterCheck && !background) setConsent(false);
@@ -349,7 +355,7 @@ final class TdSession {
             HistoryWindow current = currentWindow();
             if (connected && !previouslyConnected && ready() && current != null && !current.loading && current.stale) fetchHistory(false);
         } else if (object instanceof TdApi.UpdateUser) {
-            TdApi.User user = ((TdApi.UpdateUser) object).user; users.put(user.id, user);
+            TdApi.User user = ((TdApi.UpdateUser) object).user; users.put(user.id, user); unknownUsers.remove(user.id);
             while (users.size() > 2000) users.remove(users.keySet().iterator().next());
             emit("chats"); emit("messages");
         } else if (object instanceof TdApi.UpdateSavedMessagesTopic) {
@@ -422,6 +428,10 @@ final class TdSession {
         } else if (object instanceof TdApi.UpdateChatIsTranslatable) {
             TdApi.UpdateChatIsTranslatable value = (TdApi.UpdateChatIsTranslatable) object;
             if (chats.containsKey(value.chatId)) chats.get(value.chatId).isTranslatable = value.isTranslatable; emit("chats");
+        } else if (object instanceof TdApi.UpdateChatDefaultDisableNotification) {
+            // TDLib avisa solo del valor por defecto del silencio propio; el `muted` de la lista no cambia aqui.
+            TdApi.UpdateChatDefaultDisableNotification value = (TdApi.UpdateChatDefaultDisableNotification) object;
+            if (chats.containsKey(value.chatId)) chats.get(value.chatId).defaultDisableNotification = value.defaultDisableNotification; emit("chats");
         } else if (object instanceof TdApi.UpdateChatReplyMarkup) {
             TdApi.UpdateChatReplyMarkup value = (TdApi.UpdateChatReplyMarkup) object;
             TdApi.Chat chat=chats.get(value.chatId);TdApi.Message source=value.replyMarkupMessage;if(chat!=null)chat.replyMarkupMessageId=source==null?0:source.id;if(source==null)replyMarkupMessages.remove(value.chatId);else{replyMarkupMessages.put(value.chatId,source);while(replyMarkupMessages.size()>200)replyMarkupMessages.remove(replyMarkupMessages.keySet().iterator().next());}emit("messages");
@@ -700,17 +710,22 @@ final class TdSession {
         }, ignored -> {}, null);
     }
 
-    String unsupported(TdApi.Chat chat) {
-        if (chat == null) return "La conversación todavía no está cargada.";
-        return "";
-    }
+    /**
+     * La única razón real por la que WRGram no puede actuar sobre una conversación: el objeto
+     * `Chat` todavía no llegó. No existe hoy ningún chat «no admitido» —el puente lista, abre,
+     * escribe y reenvía en privados, grupos, supergrupos, canales y secretos según sus propios
+     * permisos—, así que esta frase vive aquí una sola vez y la repiten los cuatro sitios que
+     * pueden recibir un chat sin cargar.
+     */
+    static final String CHAT_NOT_LOADED = "La conversación todavía no está cargada.";
+
     void loadChat(long id,Consumer<TdApi.Chat> success,Consumer<String> failure){perform(new TdApi.GetChat(id),chat->{chats.put(chat.id,chat);updateOrder(chat.id,chat.positions);emit("chats");success.accept(chat);},failure);}
     File filesDirectory(){return new File(context.getNoBackupFilesDir(),AccountSlot.directory(slot)+"/files");}
     TdApi.SecretChat secret(TdApi.Chat chat){return chat!=null&&chat.type instanceof TdApi.ChatTypeSecret?secretChats.get(((TdApi.ChatTypeSecret)chat.type).secretChatId):null;}
     void createSecret(String username,Consumer<TdApi.Chat> completed,Consumer<String> failure){findPublic(username,chat->{if(!(chat.type instanceof TdApi.ChatTypePrivate)||((TdApi.ChatTypePrivate)chat.type).userId==selfId){failure.accept("Elige una persona, no un canal o tu propia cuenta.");return;}long userId=((TdApi.ChatTypePrivate)chat.type).userId;perform(new TdApi.GetUser(userId),user->{if(!(user.type instanceof TdApi.UserTypeRegular)){failure.accept("Los chats secretos solo pueden crearse con personas, no con bots.");return;}perform(new TdApi.CreateNewSecretChat(userId),created->{chats.put(created.id,created);completed.accept(created);},failure);},failure);},failure);}
     boolean canSend() {
         TdApi.Chat chat = chat(activeChat);
-        if (chat == null || !ready() || selfId <= 0 || !transportAvailable || !unsupported(chat).isEmpty()) return false;
+        if (chat == null || !ready() || selfId <= 0 || !transportAvailable) return false;
         if (chat.type instanceof TdApi.ChatTypeSecret) return ChatAccessPolicy.secretReady(secret(chat));
         boolean memberPermissions = chat.permissions == null || chat.permissions.canSendBasicMessages;
         if (chat.type instanceof TdApi.ChatTypeSupergroup) {
@@ -740,7 +755,7 @@ final class TdSession {
         request("supergroup:"+supergroupId,8000,new TdApi.GetSupergroup(supergroupId),group->{supergroups.put(group.id,group);emit("chats");},ignored->{},null);
     }
     void open(long id,long messageId) {
-        String unsupported = unsupported(chats.get(id)); if (!unsupported.isEmpty()) { fail(unsupported); return; }
+        if (chats.get(id) == null) { fail(CHAT_NOT_LOADED); return; }
         // UpdateSupergroup is the only source of isForum; fetch it when opening a chat so
         // the topic UI is available even if the update has not arrived in this session.
         ensureSupergroup(chats.get(id));
@@ -1123,17 +1138,25 @@ final class TdSession {
     void sendContent(TdApi.InputMessageContent content, long replyTo, Consumer<Boolean> completed) { sendContent(content, replyTo, false, completed); }
 
     void sendContent(TdApi.InputMessageContent content, long replyTo, boolean silent, Consumer<Boolean> completed) {
-        if (!canSend() || sending.contains(activeChat)) { fail("Comprueba la conexión y los permisos de envío."); completed.accept(false); return; }
+        sendContentMessage(content, replyTo, silent, message -> completed.accept(message != null));
+    }
+
+    /**
+     * El mismo envío con el mensaje que devolvió Telegram. Quien necesita el id del mensaje recién creado —la
+     * ubicación en directo, que se renueva editándolo— usa esta variante; la otra no lo veía. Nulo es fallo.
+     */
+    void sendContentMessage(TdApi.InputMessageContent content, long replyTo, boolean silent, Consumer<TdApi.Message> completed) {
+        if (!canSend() || sending.contains(activeChat)) { fail("Comprueba la conexión y los permisos de envío."); completed.accept(null); return; }
         final long chat = activeChat, attempt = ++requestSerial; sending.add(chat); stopTyping(); emit("sending");
         TdApi.SendMessage send = new TdApi.SendMessage(); send.chatId = chat; send.inputMessageContent = content;
         if (activeTopic != 0) send.topicId = new TdApi.MessageTopicForum(activeTopic);
         if (silent) { send.options = new TdApi.MessageSendOptions(); send.options.disableNotification = true; }
         if (replyTo != 0) { TdApi.InputMessageReplyToMessage reply = new TdApi.InputMessageReplyToMessage(); reply.messageId = replyTo; send.replyTo = reply; }
         request("send:" + chat, 25_000, send, message -> {
-            sending.remove(chat); uncertainSends.remove(chat, attempt); putMessage(message); emit("sending"); completed.accept(true);
+            sending.remove(chat); uncertainSends.remove(chat, attempt); putMessage(message); emit("sending"); completed.accept(message);
         }, value -> {
             sending.remove(chat); if (value.code == 408) uncertainSends.put(chat, attempt);
-            fail(value.code == 408 ? "Envío sin confirmar. Puede llegar todavía; comprueba el historial antes de repetirlo." : safeError(value)); emit("sending"); completed.accept(false);
+            fail(value.code == 408 ? "Envío sin confirmar. Puede llegar todavía; comprueba el historial antes de repetirlo." : safeError(value)); emit("sending"); completed.accept(null);
         }, message -> { putMessage(message); uncertainSends.remove(chat, attempt); emit("sending"); });
     }
 
@@ -1283,12 +1306,32 @@ final class TdSession {
     String senderName(TdApi.MessageSender sender) {
         if (sender instanceof TdApi.MessageSenderUser) {
             long id = ((TdApi.MessageSenderUser) sender).userId; if (id == selfId) return "Tú";
-            TdApi.User user = users.get(id); return user == null ? "Usuario de Telegram" : (user.firstName + " " + user.lastName).trim();
+            TdApi.User user = users.get(id); if (user == null) requestUser(id); String name = PersonName.of(user); return name == null ? "Usuario de Telegram" : name;
         }
         if (sender instanceof TdApi.MessageSenderChat) { TdApi.Chat chat = chats.get(((TdApi.MessageSenderChat) sender).chatId); return chat == null ? "Conversación" : chat.title; }
         return "Telegram";
     }
     TdApi.File senderPhoto(TdApi.MessageSender sender){if(sender instanceof TdApi.MessageSenderUser){TdApi.User user=users.get(((TdApi.MessageSenderUser)sender).userId);return user!=null&&user.profilePhoto!=null?user.profilePhoto.small:null;}if(sender instanceof TdApi.MessageSenderChat){TdApi.Chat chat=chats.get(((TdApi.MessageSenderChat)sender).chatId);return chat!=null&&chat.photo!=null?chat.photo.small:null;}return null;}
+    private final Set<Long> unknownUsers = new HashSet<>();
+    /**
+     * Pide a Telegram el perfil que falta para poder ponerle nombre. `users` solo se llena con `getMe`, con los
+     * `updateUser` que Telegram manda por su cuenta y con lo que traen las respuestas ya pedidas, y encima es un
+     * LRU de 2000: a una persona que se salió de la memoria no vuelve a llamarla nadie, así que su burbuja se
+     * queda en «Usuario de Telegram» para siempre. Aquí se pide de una vez, una sola vez por identificador, y al
+     * llegar la respuesta el nombre verdadero sustituye al relleno en el siguiente repintado. Si Telegram falla,
+     * el identificador se queda apuntado y no se reintenta en cada dibujo; limpiar la lista al cerrar sesión
+     * deja un intento nuevo para la próxima vez.
+     */
+    void requestUser(long id) {
+        if (!ready() || id == 0 || id == selfId || users.containsKey(id) || !unknownUsers.add(id)) return;
+        perform(new TdApi.GetUser(id), user -> {
+            unknownUsers.remove(id);
+            if (user == null) return;
+            users.put(id, user);
+            while (users.size() > 2000) users.remove(users.keySet().iterator().next());
+            emit("chats"); emit("messages");
+        }, ignored -> { });
+    }
     String typingLabel() { return typingUsers.isEmpty() ? "" : String.join(", ", typingUsers.keySet()) + " escribiendo…"; }
     void typing(boolean active) {
         if (!active || !canSend()) { stopTyping(); return; }
@@ -1360,4 +1403,7 @@ final class TdSession {
         if (message.content instanceof TdApi.MessagePoll) return "Encuesta";
         return "Contenido del mensaje no disponible";
     }
+
+    /** Si el aviso de este modo llegó en esta sesión: la llave ausente no es «sin fondo», es «no lo sé». */
+    boolean defaultBackgroundKnown(boolean dark){return defaultBackgrounds.containsKey(dark);}
 }

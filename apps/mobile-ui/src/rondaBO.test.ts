@@ -59,13 +59,15 @@ type Door = { file: string; methods: string[]; guards: string[] };
 
 const DOORS: Door[] = [
   {
+    // BZ abrió las tres puertas de historias de esta pantalla, y la deuda que queda es la de siempre: regalos y
+    // temas de foro. Las dos entradas de historia que dependen de un contador —`activeStories` en la cabecera y
+    // `hasStories` en el menú— siguen sin enseñarse en Windows, pero ya no por una guarda de plataforma: el host no
+    // publica ninguno de los dos (`DesktopState.cs:105` declara el entero y nadie lo escribe; la ronda BA dejó
+    // medido que `hasStories` no sale del cable). Quitar el `!desktop` no enciende nada: apaga una promesa falsa.
     file: 'PeerProfile.tsx',
-    methods: ['chat.stories', 'story.open', 'gifts.catalog', 'gifts.received', 'gifts.send', 'forum.topics'],
+    methods: ['gifts.catalog', 'gifts.received', 'gifts.send', 'forum.topics'],
     guards: [
       "const desktop = snapshot().platform === 'desktop';",
-      "{!!chat.activeStories && !desktop && <button",
-      "{!desktop && chat.type !== 'secret' && <button type=\"button\" onClick={() => stories(chat)}",
-      "{!desktop && profile?.hasStories && <button",
       "{!desktop && chat.type !== 'secret' && !chat.bot && <button type=\"button\" onClick={() => gifts(chat)}",
       "{!desktop && isForum && <button type=\"button\" onClick={() => forum(chat)}",
     ],
@@ -74,15 +76,27 @@ const DOORS: Door[] = [
     // BP volvió a abrir la puerta de `profile.sender`: la orden ya tiene brazo en Windows, así que el nombre del
     // remitente otra vez es botón y no texto suelto. Aquí queda constado porque las otras once claves de esta
     // pantalla sí siguen sin brazo; si alguien las tapara de más, este lista lo diría.
+    // Las tres claves de reacción dejaron esta lista en la BX: Windows ya escribe `messages.sendReaction`, así que
+    // la puerta no tapaba un hueco sino una mentira antigua. `message.react.paid` tampoco vuelve: no la tapa una
+    // guarda de plataforma, la niega el host por su nombre con `DesktopMessageReact.PaidRefused`, y eso lo compuerta
+    // la ronda BJ. Aquí queda lo demás: los once nombres que Windows aún no contesta.
     file: 'App.tsx',
-    methods: ['message.react', 'message.react.custom', 'message.react.paid', 'forum.topics', 'story.open',
-      'emojiStatus.options', 'emojiStatus.set', 'emojiPacks.list', 'bot.inline.query', 'bot.inline.more', 'bot.inline.send'],
+    methods: ['forum.topics',
+      // Las tres claves de emojis salieron de esta lista en la BY: ya tienen brazo en el host, así que la puerta de
+      // plataforma que las tapaba se quitó de `App.tsx` y del menú de cuenta del escritorio.
+      'bot.inline.query', 'bot.inline.more', 'bot.inline.send',
+      // La BZ abrió el visor de historias en Windows y el visor pedía las reacciones siempre, con o sin brazo: la
+      // guarda quita el aviso del host de la pantalla y deja el pie y el archivo, que sí viajan medidos.
+      'story.reactions'],
     guards: [
-      'if(desktop)return <span key={key} className={`${look} reaction-quiet`}',
       'const forumView=!desktop&&!!active?.isForum&&!state.topic?.id;',
       '{forumView&&!search?<ForumTopics',
-      "if(desktop)setToast('Las historias de Telegram todavía no se abren en WRGram para Windows.');else showStory(owner,result.storyId);",
-      '{!desktop&&state.wallet?.premium&&<MenuItem icon={<Sparkles/>} label="Cambiar estado emoji"',
+      "void Promise.all([desktop?Promise.resolve(undefined):run<StoryReactions>('story.reactions'),",
+      // La historia de un enlace t.me ya no se niega en Windows: la BZ cableó las cuatro lectoras, así que la
+      // pantalla llama a `showStory` en las dos capas. Lo que sigue siendo hueco —y está anotado para la CG— es que
+      // el `telegram.link` de este host solo devuelve `action:"link"`, `invite_preview` o `membership`, de modo que
+      // el `case 'story'` de `App.tsx:414` no se alcanza todavía en Windows: rama muerta, no función tapada.
+      'navigate(\'chats\');setMobileChat(true);showStory(owner,result.storyId);return;',
       "{!desktop&&inlineMatch&&<div className=\"inline-hint\">",
     ],
   },
@@ -170,9 +184,14 @@ describe('ronda BO · las puertas de escritorio cerradas y medidas', () => {
     expect(source).not.toContain('active.isForum&&!state.topic?.id');
   });
 
-  it('el chip de reacción sigue enseñando el recuento, sin ofrecer el toque', () => {
+  it('el chip de reacción es botón en las dos capas, y la clase quieta ya no existe', () => {
+    // La ronda BX comprobó que la escrita existe, así que el chip dejó de ser texto suelto en Windows: una sola
+    // fila de `<button>` sirve a las dos plataformas y cada toque manda la orden que el host contesta. La clase
+    // que pintaba la versión inerte se borró del CSS junto con su única uso.
     const source = text('./App.tsx');
-    expect(source).toContain('<span key={key} className={`${look} reaction-quiet`}');
-    expect(text('./style.css')).toContain('.reactions .reaction-quiet{');
+    expect(source).toContain('return <button key={key} className={look}');
+    expect(source).toContain("onClick={()=>{if(reaction.kind==='paid'){paidReaction(message);return;}if(reaction.kind==='custom')void run('message.react.custom',{id:message.id,emoji:reaction.customEmojiId,remove:reaction.chosen});else void run('message.react',{id:message.id,emoji:reaction.emoji,remove:reaction.chosen});}}>");
+    expect(source).not.toContain('reaction-quiet');
+    expect(text('./style.css')).not.toContain('.reactions .reaction-quiet{');
   });
 });

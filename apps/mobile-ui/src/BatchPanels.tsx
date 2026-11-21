@@ -1,5 +1,5 @@
-import { useEffect, useState, type CSSProperties } from 'react';
-import { Activity, ArrowRight, Check, ListChecks, LoaderCircle, Plus, RefreshCw, Search, Send, ShieldCheck, Smile, Trash2, UserRound, X } from 'lucide-react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { Activity, ArrowRight, Check, ListChecks, LoaderCircle, Paperclip, Plus, RefreshCw, Search, Send, ShieldCheck, Smile, Trash2, UserRound, X } from 'lucide-react';
 import type { CacheCategory, CacheDetails, CachePolicy, ChecklistInfo, Contact, Poll, ProxyEntry, StickerPack, StorageStatus } from './contract';
 import { MediaView } from './MediaView';
 import './batch.css';
@@ -29,13 +29,14 @@ export function PollCard({messageId,poll,run}:{messageId:string;poll:Poll;run:Ru
   function tap(index:number){
     if(closed||pending)return;
     if(!poll.multiple){setChoices(new Set([index]));void submit([index]);return;}
-    setChoices(previous=>{const next=new Set(previous);if(next.has(index))next.delete(index);else if(next.size<10)next.add(index);return next;});
+    setChoices(previous=>{const next=new Set(previous);if(next.has(index))next.delete(index);else if(next.size<12)next.add(index);return next;});
   }
   async function stop(){setPending(true);setError('');try{await run('poll.stop',{id:messageId});}catch(caught){setError(errorText(caught,'Telegram no permitió cerrar la encuesta.'));}finally{setPending(false);setStopAsk(false);}}
   async function loadVoters(option:number){setPending(true);setError('');try{const result=await run<{total:number;items:{name:string;date:number}[]}>('poll.voters',{id:messageId,option,limit:50});if(result)setVoters({option,total:result.total,items:result.items});}catch(caught){setError(errorText(caught,'No se pudo consultar la lista de votantes.'));}finally{setPending(false);}}
   return <section className="poll-card" aria-label="Encuesta">
     <header><ListChecks size={16}/><strong>{poll.question}</strong>{poll.closed&&<span className="poll-badge">Cerrada</span>}{poll.quiz&&<span className="poll-badge">Cuestionario</span>}</header>
     {poll.description&&<p className="poll-description">{poll.description}</p>}
+    {poll.closesAt&&!closed&&<p className="poll-description">Cierra el {new Date(poll.closesAt*1000).toLocaleString('es',{dateStyle:'short',timeStyle:'short'})}.</p>}
     <div className="poll-options">{poll.options.map(option=>{
       const chosen=choices.has(option.index);
       return <div className="poll-option-row" key={option.index}>
@@ -45,6 +46,7 @@ export function PollCard({messageId,poll,run}:{messageId:string;poll:Poll;run:Ru
           <span className="poll-label">{option.text}</span>
           {showResults&&<span className="poll-percentage">{option.percentage}%</span>}
         </button>
+        {option.media&&<span className="poll-option-media"><MediaView media={option.media} eager/></span>}
         {showResults&&<button type="button" className="poll-votes" disabled={pending||!poll.canGetVoters} title={poll.canGetVoters?'Ver votantes':undefined} onClick={()=>void loadVoters(option.index)}>{option.votes}</button>}
       </div>;
     })}</div>
@@ -58,30 +60,44 @@ export function PollCard({messageId,poll,run}:{messageId:string;poll:Poll;run:Ru
   </section>;
 }
 
-export interface PollDraft {question:string;options:string[];quiz:boolean;multiple:boolean;anonymous:boolean;revoting:boolean;hide:boolean;explanation:string;correct:number}
+export interface PollDraft {question:string;description:string;options:string[];media:string[];quiz:boolean;multiple:boolean;anonymous:boolean;revoting:boolean;hide:boolean;explanation:string;correct:number;duration:number}
 
-export function PollComposer({send,close}:{send(draft:PollDraft):Promise<boolean|undefined>;close:Close}){
+// Los cierres que la pantalla deja elegir, todos dentro de la franja de 5 segundos a 2.628.000 que publica la
+// Bot API para `open_period` y `close_date` y que comprueban las dos capas. El cero es «Sin cierre».
+const POLL_CLOSE_OPTIONS:[number,string][]=[[0,'Sin cierre'],[3600,'1 hora'],[21600,'6 horas'],[43200,'12 horas'],[86400,'1 día'],[259200,'3 días'],[604800,'7 días'],[2592000,'30 días']];
+
+export function PollComposer({send,close,desktop,images=false,pick,drop}:{send(draft:PollDraft):Promise<boolean|undefined>;close:Close;desktop:boolean;images?:boolean;pick:()=>Promise<string|null>;drop:(token:string)=>void}){
   const [question,setQuestion]=useState('');
   const [options,setOptions]=useState<string[]>(['','']);
+  const [pictures,setPictures]=useState<(string|null)[]>([null,null]);
   const [quiz,setQuiz]=useState(false),[multiple,setMultiple]=useState(false),[anonymous,setAnonymous]=useState(true),[revoting,setRevoting]=useState(false),[hide,setHide]=useState(false);
   const [correct,setCorrect]=useState(0),[explanation,setExplanation]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+  const [duration,setDuration]=useState(0);
+  const [description,setDescription]=useState('');
   function update(index:number,value:string){setOptions(previous=>previous.map((item,position)=>position===index?value:item));}
+  function updateMedia(index:number,value:string|null){setPictures(previous=>previous.map((item,position)=>position===index?value:item));}
+  // Telegram solo conoce la imagen mientras el puente la guarda: si la pantalla se cierra sin enviar, se descarta.
+  const leftovers=useRef(pictures);leftovers.current=pictures;
+  useEffect(()=>()=>{leftovers.current.forEach(token=>{if(token)drop(token);});},[]);
+  async function choose(index:number){const before=pictures[index];const token=await pick();updateMedia(index,token);if(before&&before!==token)drop(before);}
   async function submit(){
     const clean=options.map(option=>option.trim());
     if(!question.trim())return setError('Escribe una pregunta.');
     if(question.trim().length>255)return setError('La pregunta admite hasta 255 caracteres.');
-    if(clean.length<2||clean.length>10)return setError('Añade entre 2 y 10 opciones.');
+    if(clean.length<2||clean.length>12)return setError('Añade entre 2 y 12 opciones.');
     if(clean.some(option=>!option))return setError('Completa todas las opciones o elimina las que sobren.');
     if(clean.some(option=>option.length>100))return setError('Cada opción admite hasta 100 caracteres.');
     if(new Set(clean.map(option=>option.toLocaleLowerCase())).size!==clean.length)return setError('Las opciones no pueden repetirse.');
     if(quiz&&(correct<0||correct>=clean.length))return setError('Elige la respuesta correcta.');
+    if(pictures.some(Boolean)&&pictures.filter(Boolean).length!==clean.length)return setError('Una encuesta con imágenes lleva una imagen en cada opción.');
     setBusy(true);setError('');
-    try{const sent=await send({question:question.trim(),options:clean,quiz,multiple:!quiz&&multiple,anonymous,revoting,hide,explanation:explanation.trim(),correct:quiz?correct:-1});if(sent)close();}catch(caught){setError(errorText(caught,'No se pudo enviar la encuesta.'));}
+    try{const sent=await send({question:question.trim(),description:description.trim(),options:clean,media:pictures.map(item=>item||''),quiz,multiple:!quiz&&multiple,anonymous,revoting,hide,explanation:explanation.trim(),correct:quiz?correct:-1,duration});if(sent)close();}catch(caught){setError(errorText(caught,'No se pudo enviar la encuesta.'));}
     finally{setBusy(false);}
   }
   return <form className="poll-composer" onSubmit={event=>{event.preventDefault();void submit();}}>
     <label className="field-label">Pregunta<input autoFocus value={question} maxLength={255} placeholder="¿Qué quieres preguntar?" onChange={event=>setQuestion(event.target.value)}/></label>
-    <fieldset><legend>Opciones ({options.length}/10)</legend>{options.map((option,index)=><div className="poll-composer-option" key={index}>{quiz?<input type="radio" aria-label={`Respuesta correcta ${index+1}`} checked={correct===index} onChange={()=>setCorrect(index)}/>:<span className="poll-option-number">{index+1}</span>}<input value={option} maxLength={100} placeholder={`Opción ${index+1}`} onChange={event=>update(index,event.target.value)}/>{options.length>2&&<button type="button" className="icon-button" aria-label={`Quitar opción ${index+1}`} onClick={()=>{setOptions(previous=>previous.filter((_,position)=>position!==index));if(correct>=options.length-1)setCorrect(0);}}><X size={15}/></button>}</div>)}{options.length<10&&<button type="button" className="text-button" onClick={()=>setOptions(previous=>[...previous,''])}><Plus size={15}/>Añadir opción</button>}</fieldset>
+    <fieldset><legend>Opciones ({options.length}/12)</legend>{options.map((option,index)=><div className="poll-composer-option" key={index}>{quiz?<input type="radio" aria-label={`Respuesta correcta ${index+1}`} checked={correct===index} onChange={()=>setCorrect(index)}/>:<span className="poll-option-number">{index+1}</span>}<input value={option} maxLength={100} placeholder={`Opción ${index+1}`} onChange={event=>update(index,event.target.value)}/>{images&&<button type="button" className="icon-button" aria-label={`Imagen de la opción ${index+1}`} title={pictures[index]?'Quitar la imagen de la opción':'Añadir imagen a la opción'} onClick={()=>void choose(index)}>{pictures[index]?<Check size={15}/>:<Paperclip size={15}/>}</button>}{options.length>2&&<button type="button" className="icon-button" aria-label={`Quitar opción ${index+1}`} onClick={()=>{setOptions(previous=>previous.filter((_,position)=>position!==index));setPictures(previous=>previous.filter((_,position)=>position!==index));if(correct>=options.length-1)setCorrect(0);}}><X size={15}/></button>}</div>)}{options.length<12&&<button type="button" className="text-button" onClick={()=>{setOptions(previous=>[...previous,'']);setPictures(previous=>[...previous,null]);}}><Plus size={15}/>Añadir opción</button>}</fieldset>
+    {!desktop&&<label className="field-label">Descripción (opcional)<textarea className="large-input" value={description} maxLength={1024} placeholder="El contexto que conviene leer antes de votar" onChange={event=>setDescription(event.target.value)}/></label>}
     <div className="poll-composer-toggles">
       <label><input type="checkbox" checked={quiz} onChange={event=>{setQuiz(event.target.checked);if(event.target.checked)setMultiple(false);}}/>Cuestionario con una respuesta correcta</label>
       <label><input type="checkbox" checked={quiz?false:multiple} disabled={quiz} onChange={event=>setMultiple(event.target.checked)}/>Permitir varias respuestas</label>
@@ -89,6 +105,7 @@ export function PollComposer({send,close}:{send(draft:PollDraft):Promise<boolean
       <label><input type="checkbox" checked={revoting} onChange={event=>setRevoting(event.target.checked)}/>Permitir cambiar el voto</label>
       <label><input type="checkbox" checked={hide} onChange={event=>setHide(event.target.checked)}/>Ocultar resultados hasta cerrar</label>
     </div>
+    <label className="field-label">Cierre automático<select aria-label="Cierre automático de la encuesta" value={duration} onChange={event=>setDuration(Number(event.target.value))}>{POLL_CLOSE_OPTIONS.map(([seconds,label])=><option key={seconds} value={seconds}>{label}</option>)}</select></label>
     <label className="field-label">Explicación (opcional, solo cuestionarios)<textarea className="large-input" value={explanation} maxLength={200} disabled={!quiz} onChange={event=>setExplanation(event.target.value)}/></label>
     <p className="settings-note">La encuesta se envía a Telegram solo al pulsar el botón. Las encuestas anónimas no revelan quién votó qué.</p>
     {error&&<p className="poll-note" role="alert">{error}</p>}

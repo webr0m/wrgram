@@ -31,74 +31,248 @@ const anchors: Record<number, string> = {
   117: 'if (method == "media.retry")',
   122: 'object? result = method switch',
   173: '"privacy.autoDelete" =>',
-  220: '"chat.join" =>',
-  253: '"profile.sender" =>',
-  270: '"groups.permissions.get" =>',
-  277: '"chat.invite" =>',
-  301: '"history.byDate" =>',
-  309: '"message.forward" =>',
-  331: '"attachment.pick" => await AttachmentPickAsync(Str(args, "kind")),',
-  359: '"message.react" or "message.react.custom" or "message.react.paid" => throw new BridgeException(DesktopMessageReact.Refused),',
-  364: '"app.background" => true',
-  365: '"native.settings" => OpenDataFolder()',
-  370: '"message.link" =>',
-  371: '"link.open" =>',
-  419: '"contacts.list" =>',
-  425: '"contacts.open" =>',
-  429: '"contacts.add" =>',
-  440: '_ => throw new BridgeException',
-  532: '_state.ProfilePhoto = _media.RegisterProfile(',
-  919: 'private async Task<object?> OpenContactAsync(',
-  995: 'private async Task<object?> JoinChatAsync(',
-  1046: 'private async Task<object?> MessageLinkAsync(',
-  1066: 'private async Task<object?> TelegramLinkAsync(JsonElement args) => await LinkFromUrlAsync(',
-  1081: 'private async Task<object?> LinkFromUrlAsync(',
-  1125: 'private static string LinkRefusal(',
-  1162: 'private async Task<object?> HistoryDateAsync(',
-  1538: 'private async Task<object?> ForwardAsync(',
-  1907: 'private async Task<object?> AttachmentPickAsync(string kind)',
-  2045: 'attributes = DesktopAttachment.AttributesFor(file.Name, file.Mime)',
-  2670: 'dispatcher.Invoke(() => Clipboard.SetText(text))',
-  2926: 'private object Properties(',
-  2937: 'var forwardable = message?.CanForward',
-  2951: 'deleteSelf = DesktopMessageDelete.CanDeleteSelf(kind)',
-  2960: 'reactions = DesktopMessageReact.None,',
-  2984: 'var name = DesktopDocuments.DownloadName(',
-  3075: 'private bool OpenLink(',
-  3103: 'private async Task<object?> OpenLocationAsync(',
-  3110: 'ProtectedChat(entry)) throw new BridgeException',
-  3114: 'MessageMediaGeoLive live => live.geo',
-  3146: 'AlbumId = DesktopAlbum.AlbumIdOf(message)',
-  3172: 'dto.CanForward = exportable',
-  3192: 'case MessageMediaContact card:',
-  3211: 'case MessageMediaGeoLive live:',
-  3230: 'case MessageMediaGeo fixedGeo:',
-  3244: 'case MessageMediaVenue venue:',
-  3258: 'case MessageMediaWebPage { webpage: WebPage page }:',
-  3410: 'MessageEntityUnderline => "underline"',
-  3451: '"blockquote" => new MessageEntityBlockquote()',
-  3512: 'Username = channel.MainUsername',
-  3552: 'return "@" + user.MainUsername',
-  3571: 'MessageMediaGeoLive => DesktopLocation.Live',
+  // El brazo de silencio por defecto que la ronda CJ cita en la fila X06 del mapa.
+  219: '"chat.defaultSilent" => SetDefaultSilent(args),',
+  221: '"chat.join" =>',
+  254: '"profile.sender" =>',
+  271: '"groups.permissions.get" =>',
+  279: '"groups.stats" =>',
+  285: '"chat.invite" =>',
+  309: '"history.byDate" =>',
+  317: '"message.forward" =>',
+  // El brazo de sustituir el archivo de un mensaje enviado (ronda CK-B), citado en la hoja de validación y en la
+  // fila F04 del mapa.
+  325: '"message.edit.media" => await EditMessageMediaAsync(args),',
+  // La barrida reescribió el punto 7 de la ronda AD, que decía en presente que `scheduled.list` no tenía brazo.
+  335: '"scheduled.list" => await ScheduledListAsync(args),',
+  343: '"attachment.pick" => await AttachmentPickAsync(Str(args, "kind")),',
+  // La barrida de citas reancló la fila X06 del mapa, que decía en presente que `message.album` seguía sin brazo:
+  // hoy lo tiene, y es la línea que lo prueba.
+  354: '"message.album" => await AlbumItemsAsync(args),',
+  // La negativa con nombre de cerrar una encuesta, que la ronda CF cita dos veces para decir que sigue sin cubrirse.
+  368: '"poll.stop" => throw new BridgeException(DesktopPoll.NoStop)',
+  374: '"message.react" or "message.react.custom" => await ReactAsync(args, method == "message.react.custom"),',
+  // La negativa con nombre que la ronda BX dejó como única de las tres claves de reacción, citada en el mapa.
+  375: '"message.react.paid" => throw new BridgeException(DesktopMessageReact.PaidRefused),',
+  // Los once brazos de la familia del emoji (ronda BY), citados como rango en la hoja de validación.
+  384: '"emojiStatus.state" => await EmojiStatusStateAsync(),',
+  // La última rama de la familia del emoji, que la CD cita como el borde por delante del suyo.
+  394: '"stickers.install" => await ChangeStickerSetAsync(args),',
+  // El brazo de la marca de Premium (ronda CD), citado en la hoja de validación y en la fila X06 del mapa.
+  399: '"premium.state" => await PremiumStateAsync(),',
+  404: '"app.background" => true',
+  405: '"native.settings" => OpenDataFolder()',
+  410: '"message.link" =>',
+  411: '"link.open" =>',
+  // La visera de las cuatro lectoras de historias y su primer brazo (ronda BZ), citados en la hoja de validación y en
+  // la fila T05 del mapa.
+  419: '// Las cuatro lectoras de la ronda BZ',
+  423: '"chat.stories" =>',
+  // El brazo de crear el enlace y la primera línea de los tres pegados de la ronda CI, citados en su bullet.
+  441: '"folders.link" => await FolderLinkAsync(args),',
+  443: '"folders.links.list" => await FolderLinksListAsync(args),',
+  470: '"contacts.list" =>',
+  476: '"contacts.open" =>',
+  480: '"contacts.add" =>',
+  // Los dos brazos de la ubicación en directo (ronda CB), citados como rango en la fila F09 del mapa.
+  492: '"location.live.start" => throw new BridgeException(DesktopLiveLocation.NoSensor)',
+  493: '"location.live.stop" => await StopLiveLocationAsync(args),',
+  498: '_ => throw new BridgeException',
+  // La línea que la visera de historias (ronda BZ) cita para decir que `selfId` viaja sin prefijo, que es la forma
+  // con la que la pantalla reconoce al autor de la propia historia.
+  588: '_state.SelfId = user.id.ToString();',
+  590: '_state.ProfilePhoto = _media.RegisterProfile(',
+  // La siembra de la marca Premium en el estado del escritorio, que la CD cita al corregir la nota que dejó la BY.
+  595: '_state.Wallet = new WalletDto { Premium = DesktopEmojiCatalog.IsPremium(user) };',
+  // Las dos marcas del silencio por defecto (ronda CJ), citadas en su bullet y en la fila X06 del mapa.
+  833: 'DefaultSilent = DefaultSilentMark(entry.Id)',
+  898: 'DefaultSilent = DefaultSilentMark(entry.Id)',
+  985: 'private async Task<object?> OpenContactAsync(',
+  1061: 'private async Task<object?> JoinChatAsync(',
+  1112: 'private async Task<object?> MessageLinkAsync(',
+  1132: 'private async Task<object?> TelegramLinkAsync(JsonElement args) => await LinkFromUrlAsync(',
+  1147: 'private async Task<object?> LinkFromUrlAsync(',
+  1191: 'private static string LinkRefusal(',
+  1228: 'private async Task<object?> HistoryDateAsync(',
+  1606: 'private async Task<object?> ForwardAsync(',
+  // Las nueve líneas del reenvío que la ronda AD citó sin nombre de archivo delante, medidas hoy una a una.
+  1611: 'var ids = DesktopMessageDelete.Ids(requested)',
+  1613: 'var rows = DesktopMessageDelete.Loaded(_state.Messages, source.Id, ids);',
+  1616: 'var target = FindEntry(Str(args, "to"))',
+  1617: 'var when = Str(args, "schedule");',
+  1630: 'var random = ids.Select(_ => Random.Shared.NextInt64(1, long.MaxValue)).ToArray();',
+  1631: 'await _client.Messages_ForwardMessages(source.Input, ids, random, target.Input,',
+  1636: 'if (target.Id == source.Id) await RefreshHistoryLocked();',
+  1641: '_state.Uncertain = true;',
+  2060: 'private async Task<object?> AttachmentPickAsync(string kind)',
+  2198: 'attributes = DesktopAttachment.AttributesFor(file.Name, file.Mime)',
+  // Las nueve citas de la ronda CN-B: la hoja de validación y la fila P01 del mapa señalan la subida de la foto por
+  // opción, la clave que ya no se inventa y el registro de la lectura.
+  2500: 'var pictures = DesktopPoll.Photos(Arr(args, "media"));',
+  2506: 'throw new BridgeException(DesktopPoll.ChangedPhotos);',
+  2507: 'if (!DesktopAttachment.IsPhoto(picked.Mime))',
+  2510: 'if (!DesktopPoll.PhotosMatch(pictures.Length, options.Length))',
+  2527: 'var keys = pictures.Length > 0 ? null',
+  2579: 'var uploaded = await client.UploadFileAsync(photos[position].Path, null);',
+  2580: 'var stored = await client.Messages_UploadMedia(',
+  2597: 'foreach (var token in pictures) DropOutbox(token);',
+  2974: 'Media = DesktopPoll.PhotoOf(answers[position]) is { } picture',
+  // Los seis números del cierre temporizado (ronda CF): la hoja de validación los cuenta uno a uno y la fila P01 del
+  // mapa cita la guarda, la bandera y la fecha.
+  2519: 'var duration = (int)Long(args, "duration", 0)',
+  2520: 'if (!DesktopPoll.ClosesInRange(duration))',
+  // La última negación del envío, la de la descripción (ronda CM), citada en la hoja de validación y en la fila P01 del mapa.
+  2523: 'if (DesktopPoll.HasDescription(Str(args, "description")))',
+  2540: 'var media = new InputMediaPoll { poll = poll }',
+  2544: 'if (duration > 0)',
+  2546: 'poll.flags |= TL.Poll.Flags.has_close_date',
+  2547: 'poll.close_date = DesktopPoll.CloseDate(',
+  // Los seis envíos a los que la ronda CJ aplica el silencio por defecto: la hoja de validación los cuenta uno a
+  // uno y la fila X06 del mapa cita el de texto y el de reenvío a un chat reenumerado.
+  1451: 'var silent = SilentFor(entry.Id, args);',
+  // La otra media pareja del `DesktopSchedule` que la ronda AD citó por vecindad: el flujo de texto.
+  1455: 'var when = Str(args, "schedule");',
+  1624: 'var silent = SilentFor(target.Id, args);',
+  2186: 'var silent = SilentFor(entry.Id, args);',
+  2361: 'var silent = SilentFor(entry.Id, args);',
+  2565: 'var silent = SilentFor(entry.Id, args);',
+  // La lectura de la agenda, que la ronda AQ citaba con un número pelado que heredaba `NativeBridge.java`: el
+  // `MergePeers` que alimenta `_users` con los usuarios que trae `contacts.getContacts`.
+  2748: 'MergePeers(page.users?.Values, null);',
+  2843: 'var silent = SilentFor(entry.Id, args);',
+  2885: 'dispatcher.Invoke(() => Clipboard.SetText(text))',
+  // El comentario que la ronda CF cita para decir que `canStop` sale en falso, y la línea que lee el cierre al volver.
+  2919: 'El <c>canStop</c> sale en <c>false</c>',
+  // La fila del mapa cita hoy la asignación, no el comentario que la explica: la ronda CN la midió por contenido.
+  2953: 'CanStop = false,',
+  // La línea con la que la ronda CM declara el hueco al leer: la librería de escritorio no trae descripción nunca.
+  2945: 'Description = "",',
+  2961: 'if (DesktopPoll.HasCloseDate(poll)) dto.ClosesAt',
+  // Las diez líneas del cuerpo del brazo de sustituir el archivo (ronda CK-B): la hoja de validación cita la
+  // cabecera, las tres guardas en el orden en que caen, la lectura del mensaje fresco, la comprobación con el
+  // espejo, la subida, la llamada con el `media`, el pie forzado del `catch` y la salida del índice de descartes.
+  1810: 'private async Task<object?> EditMessageMediaAsync(JsonElement args)',
+  1812: 'if (_client == null) throw new BridgeException(',
+  1818: 'if (!_outbox.TryGetValue(token, out var file) || file.Account != client.User!.id || file.Chat != _active)',
+  1825: 'if (!File.Exists(file.Path)) throw new BridgeException(DesktopAttachment.NotPrepared);',
+  1832: 'var found = await client.GetMessages(entry.Input, new InputMessageID { id = ids[0] });',
+  1846: 'var problem = DesktopMessageEditMedia.Problem(DesktopMessageEditMedia.CanEditMedia(fresh, channelAllowed),',
+  1852: 'var uploaded = await client.UploadFileAsync(file.Path, null);',
+  1855: 'await client.Messages_EditMessage(entry.Input, ids[0],',
+  1856: 'message: DesktopMessageEditMedia.CaptionOf(fresh),',
+  1867: 'DropOutbox(token);',
+  3174: 'private async Task<object> PropertiesAsync(string id)',
+  3185: 'var forwardable = message?.CanForward',
+  // La bandera que ofrece la opción (ronda CK-B), medida en la propiedad de `message.properties`.
+  3196: 'var canEditMedia = DesktopMessageEditMedia.Offered(message?.Outgoing ?? false,',
+  // La bandera de la cuenta que decide el botón ✨ (ronda CD), medida sobre la sesión conectada sin pasar por la red.
+  3206: 'var customReaction = _client is Client session && session.User is { } self && DesktopEmojiCatalog.IsPremium(self);',
+  3213: 'deleteSelf = DesktopMessageDelete.CanDeleteSelf(kind)',
+  3218: 'editMedia = canEditMedia,',
+  3224: 'reactions = band,',
+  // La cara de Stars, que sigue apagada y la CD cita por su línea.
+  3225: 'paid = false,',
+  // La cara que el host manda desde la ronda CD, y la que el andamio espeja en lugar de apagar.
+  3226: 'allowCustom = customReaction',
+  // La cadena con la que el host ya negaba guardar, que la ronda AD puso como la misma del reenvío protegido.
+  3244: 'if (!_media.CanExport(id)) throw new BridgeException(',
+  3248: 'var name = DesktopDocuments.DownloadName(',
+  3339: 'private bool OpenLink(',
+  3367: 'private async Task<object?> OpenLocationAsync(',
+  3374: 'ProtectedChat(entry)) throw new BridgeException',
+  3378: 'MessageMediaGeoLive live => live.geo',
+  // La línea que `DesktopLiveLocation.cs` cita para decir que el viajero de la ubicación en directo sabe quién la
+  // escribió: sin `Outgoing` no hay botón de «Dejar de compartir».
+  3408: 'Outgoing = (message.flags & TL.Message.Flags.out_) != 0',
+  3410: 'AlbumId = DesktopAlbum.AlbumIdOf(message)',
+  // La barrida de citas escritas de oído reancló el `exportable` que la hoja cita al explicar las dos filas de
+  // ubicación a medias: estaba dicho sin archivo.
+  3430: 'var exportable = (message.flags & TL.Message.Flags.noforwards) == 0',
+  3436: 'dto.CanForward = exportable',
+  // La línea del DTO que la ronda CK-B cita por la bandera leída del medio.
+  3440: 'dto.MediaKind = DesktopMessageEditMedia.CurrentKind(message.media);',
+  3457: 'case MessageMediaContact card:',
+  3476: 'case MessageMediaGeoLive live:',
+  3500: 'case MessageMediaGeo fixedGeo:',
+  3514: 'case MessageMediaVenue venue:',
+  3528: 'case MessageMediaWebPage { webpage: WebPage page }:',
+  3645: 'private string ServiceText(MessageService service, string actor = "") => service.action switch',
+  // Los cinco brazos de llamada que la ronda CW-B pegó bajo la cabecera, y el paraguas al que ya no caen.
+  3655: 'MessageActionPhoneCall call => DesktopServiceCalls.PhoneCall(call),',
+  3660: '_ => "Mensaje de servicio de Telegram"',
+  3692: 'MessageEntityUnderline => "underline"',
+  3756: '"blockquote" => new MessageEntityBlockquote()',
+  // Las tres cadenas con prefijo que `DesktopStories.cs` cita para explicar por qué `chatId` del DTO no es un número
+  // de TDLib: son la clave con la que `RequireEntry` reencuentra la fila.
+  3788: 'var id = "u" + user.id;',
+  3805: 'var id = "g" + chat.ID;',
+  3818: 'var id = "c" + channel.ID;',
+  3829: 'Username = channel.MainUsername',
+  3863: 'private ChatEntry RequireEntry(string id)',
+  3869: 'return "@" + user.MainUsername',
+  3888: 'MessageMediaGeoLive => DesktopLocation.Live',
+  // Las cinco citas que escribió la ronda CW-D al bajar el actor hasta el despacho: las dos llamadas que pasan de
+  // acción pelada a mensaje entero, la firma de instancia de `PreviewOf` y los dos ayudantes dueños de la caché.
+  3574: 'Text = ServiceText(service, ActorOf(service)),',
+  3873: 'private string PreviewOf(MessageBase? message)',
+  3903: 'if (message is MessageService service) return ServiceText(service, ActorOf(service));',
+  3910: 'private string ActorOf(MessageBase message) =>',
+  3914: 'que es lo que dice <c>TdSession.java:1309</c>',
+  3916: 'private string UserName(long id) =>',
+  3981: 'if (code.StartsWith("AUTH_KEY_UNREGISTERED")',
+  // Las veinte líneas de las entidades de formato (ronda CE): la hoja de validación cita la firma de los dos
+  // miembros, las cuatro guardas en el orden en que caen, el brazo del emoji personalizado y su negativa nombrada,
+  // la ordenación, los dos ayudantes de la cifra y la dirección, las tres caras de la vuelta y sus dos llamadas.
+  387: '"customEmoji.get" => await CustomEmojiAsync(args),',
+  3682: 'private static List<EntityDto>? ConvertEntities(MessageEntity[]? entities, string text)',
+  3700: 'MessageEntityCustomEmoji => "customEmoji",',
+  3711: 'MessageEntityTextUrl link => link.url,',
+  3713: 'MessageEntityUrl => DesktopTextEntities.TextAsUrl(text, entity.offset, entity.length),',
+  3718: 'CustomEmojiId = entity is MessageEntityCustomEmoji face ? face.document_id.ToString() : null',
+  3731: 'private static MessageEntity[]? ParseEntities(JsonElement args, string text)',
+  3734: 'var ceiling = DesktopTextEntities.TooManyProblem(array.GetArrayLength());',
+  3740: 'if (!item.TryGetProperty("offset", out var offsetElement)',
+  3742: 'if (!item.TryGetProperty("length", out var lengthElement)',
+  3744: 'var range = DesktopTextEntities.OffsetProblem(offset, length, text);',
+  3758: '"customEmoji" => new MessageEntityCustomEmoji { document_id = FaceIdOf(item) },',
+  3759: '_ => throw new BridgeException(DesktopTextEntities.UnknownTypeProblem(type)!),',
+  3766: 'return list.Count > 0 ? [.. list.OrderBy(entity => entity.offset)] : null;',
+  3770: 'private static string LinkUrlOf(JsonElement item)',
+  3779: 'private static long FaceIdOf(JsonElement item) =>',
+  3418: 'dto.Entities = ConvertEntities(message.entities, dto.Text);',
+  1462: 'var entities = ParseEntities(args, text);',
+  1771: 'var entities = ParseEntities(args, value);',
+  1783: 'row.Entities = ConvertEntities(entities, value);',
 };
 
 /** La última línea de cada rango citado; la primera la lleva la tabla de arriba. */
 const rangeEnds = new Map<number, number>([
-  [173, 176], [270, 271], [309, 310], [371, 372], [419, 421], [429, 430], [1162, 1177],
-  [2937, 2953], [3114, 3116], [3571, 3573],
+  [173, 176], [271, 272], [317, 318], [384, 394],
+  [411, 412], [419, 422], [423, 426], [443, 445],
+  [470, 472], [480, 481], [1228, 1243], [3185, 3215],
+  [3378, 3380], [3888, 3890], [1455, 1459], [1617, 1621], [1641, 1644],
+  [3655, 3659],
 ]);
 
 const ends: Record<number, string> = {
   176: '"chat.autoDelete.set" =>',
-  271: '"groups.permissions.set" =>',
-  310: '"messages.forward" =>',
-  372: '"telegram.link" =>',
-  421: '"share.contact" =>',
-  430: '"contacts.remove" =>',
-  1177: '}',
-  2953: 'forward = forwardable',
-  3116: 'MessageMediaVenue venue => venue.geo',
-  3573: 'MessageMediaVenue venue => DesktopLocation.Title(',
+  272: '"groups.permissions.set" =>',
+  318: '"messages.forward" =>',
+  394: '"stickers.install" =>',
+  412: '"telegram.link" =>',
+  422: 'sigue sin brazo',
+  426: '"story.close" =>',
+  445: '"folders.links.delete" => await FolderLinkChangeAsync(args, delete: true),',
+  472: '"share.contact" =>',
+  481: '"contacts.remove" =>',
+  1243: '}',
+  3215: 'forward = forwardable',
+  3380: 'MessageMediaVenue venue => venue.geo',
+  3890: 'MessageMediaVenue venue => DesktopLocation.Title(',
+  1459: 'if (scheduleProblem != null) throw new BridgeException(scheduleProblem);',
+  1621: 'if (problem != null) throw new BridgeException(problem);',
+  1644: 'Revisa el historial del destino antes de repetirlo',
+  3659: 'MessageActionInviteToGroupCall call => DesktopServiceCalls.Invitation(call, actor, UserName, _client?.User?.id ?? 0, (service.flags & MessageService.Flags.out_) != 0),',
 };
 
 /** Las citas escritas, con su rango: `TelegramService.cs:NNN` o `TelegramService.cs:NNN-MMM`. */

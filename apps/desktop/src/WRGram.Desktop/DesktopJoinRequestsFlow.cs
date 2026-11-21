@@ -10,18 +10,18 @@ using WTelegram;
 
 /// <summary>
 /// El cable de la cola de solicitudes de ingreso: las dos órdenes que Android despacha en
-/// `NativeBridge.java:740` y `:747`. Reglas, techos, frases y cuerpos están en <see cref="DesktopJoinRequests"/>;
+/// `NativeBridge.java:757` y `:747`. Reglas, techos, frases y cuerpos están en <see cref="DesktopJoinRequests"/>;
 /// aquí está el cable, que es lo que faltaba: las dos llevan desde la ronda F en la lista del puente
 /// (`BridgePolicy.java:48`, donde `chat.request.answer` está además en la de las que esperan a la persona,
 /// `bridge.ts:31`) y la pantalla las pide desde esa misma ronda. Pero en Windows la hoja de opciones no tenía
-/// ninguna entrada —la única puerta era el panel lateral, tapado con `!desktop` en `App.tsx:1217`— y, de
+/// ninguna entrada —la única puerta era el panel lateral, tapado con `!desktop` en `App.tsx:1237`— y, de
 /// haberse abierto, la primera pregunta habría caído en el `_ =&gt; throw` genérico dando a entender que faltaba
 /// una petición cuando las dos existen.
 /// <para>
 /// El orden de guardas es el del puente y es la prueba de que este archivo existe. Leer: forma, marcador,
 /// permiso, cuenta, posición, la tabla y la cuenta otra vez. Responder: forma, cuenta pedida, identificador,
 /// decisión, la propia solicitud descartada, permiso, confirmar, cuenta, escritura y cuenta. Android comprueba
-/// el derecho después de leer el nombre (`:3569` → `:3571`) y no antes: adelantar el permiso haría que un
+/// el derecho después de leer el nombre (`:3584` → `:3586`) y no antes: adelantar el permiso haría que un
 /// formulario mal escrito en un chat que sí se administrara oyera primero «no tienes permiso», y retrasar la
 /// resolución del nombre haría que el cuadro de confirmar se llenara de identificadores.
 /// </para>
@@ -49,8 +49,8 @@ using WTelegram;
 public sealed partial class TelegramService
 {
     /// <summary>
-    /// <c>joinRequests</c> (<c>:3508-3523</c>) más <c>requestJoinPage</c> (<c>:3524-3538</c>) más
-    /// <c>finishJoinPage</c> (<c>:3545-3557</c>). Las veinte filas se piden con <c>requested</c> en verdadero,
+    /// <c>joinRequests</c> (<c>:3525-3540</c>) más <c>requestJoinPage</c> (<c>:3541-3555</c>) más
+    /// <c>finishJoinPage</c> (<c>:3562-3574</c>). Las veinte filas se piden con <c>requested</c> en verdadero,
     /// que es la bandera que el esquema mide como «only returns info about users with pending join requests» y
     /// la traducción exacta del «Returns pending join requests in a chat» de TDLib; el filtro de enlace y la
     /// búsqueda por nombre que TDLib admite (<c>GetChatJoinRequests.inviteLink</c> y <c>.query</c>) viajan vacíos
@@ -93,7 +93,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>answerJoinRequest</c> (<c>:3558-3584</c>). Aprobar y rechazar son la misma escritura con la bandera
+    /// <c>answerJoinRequest</c> (<c>:3575-3602</c>). Aprobar y rechazar son la misma escritura con la bandera
     /// contraria —<c>messages.hideChatJoinRequest(peer, user_id, approved)</c>—, que es exactamente el par
     /// <c>ProcessChatJoinRequest(chatId, userId, approve)</c> de TDLib, y el cuadro de confirmar es el de Android
     /// con sus cuatro rótulos y sus dos cuerpos, no una paráfrasis.
@@ -105,7 +105,7 @@ public sealed partial class TelegramService
         var entry = RequireEntry(Str(args, "id"));
         var kind = DesktopMembership.Of(entry.Id);
         if (!DesktopJoinRequests.Supported(kind)) throw new BridgeException(DesktopJoinRequests.Unsupported);
-        // `:3563`: la cuenta ya no es la que abrió la cola, así que no se toca nada y la pantalla no oye nada.
+        // `:3578`: la cuenta ya no es la que abrió la cola, así que no se toca nada y la pantalla no oye nada.
         if (Raw(args, "accountId") is { } asked && asked != _state.SelfId) return false;
         if (DesktopJoinRequests.UserIdProblem(Raw(args, "userId")) is { } bad) throw new BridgeException(bad);
         var userId = long.Parse(Raw(args, "userId")!, NumberStyles.None, CultureInfo.InvariantCulture);
@@ -127,8 +127,8 @@ public sealed partial class TelegramService
         return true;
     }
 
-    /// `requiredBool(p,"approve")` (`:3565`). Allá es un `throw` en inglés —«Missing permission: approve»,
-    /// `:2757`— que el `catch` de `:3566` reenvía tal cual, así que la pantalla de Android lo lee en ese idioma.
+    /// `requiredBool(p,"approve")` (`:3580`). Allá es un `throw` en inglés —«Missing permission: approve»,
+    /// `:2773`— que el `catch` de `:3582` reenvía tal cual, así que la pantalla de Android lo lee en ese idioma.
     /// Aquí es la causa concreta en español, que es la norma fijada por la ronda AT y la misma decisión que la
     /// ronda BF tomó con la aprobación de los enlaces (`:742`, cuyo `catch` también reenvía el mensaje).
     private static bool ApproveValue(JsonElement args)
@@ -140,11 +140,13 @@ public sealed partial class TelegramService
         throw new BridgeException(DesktopJoinRequests.MissingApprove);
     }
 
-    /// <c>session.senderName(new MessageSenderUser(id))</c> (<c>TdSession.java:1283-1285</c>) traducido a lo que
-    /// MTProto trae: el diccionario <c>users</c> de la propia respuesta, la caché del host como segunda vuelta y
-    /// el mismo respaldo de Android —«Usuario de Telegram», <c>DesktopGroupMembers.UnknownPerson</c>— cuando nadie
-    /// describe a la persona. No es <see cref="FullName"/> a secas, que inventa un «Usuario 4102» cuando no hay
-    /// nombre y esa frase no la pronuncia Android por este camino.
+    /// <c>session.senderName(new MessageSenderUser(id))</c> (<c>TdSession.java:1306-1309</c>) traducido a lo que
+    /// MTProto trae: el diccionario <c>users</c> de la propia respuesta, la caché del host como segunda vuelta, el
+    /// usuario con arroba cuando solo dio el handle, y el mismo respaldo de Android —«Usuario de Telegram»,
+    /// <c>DesktopGroupMembers.UnknownPerson</c>— cuando nadie describe a la persona. A diferencia de Android, este
+    /// camino no vuelve a Telegram a por el perfil: se conforma con lo que la respuesta ya trajo. No es
+    /// <see cref="FullName"/> a secas, que inventa un «Usuario 4102» cuando no hay nombre y esa frase no la
+    /// pronuncia Android por este camino.
     private string PersonName(long userId, IDictionary<long, User>? page)
     {
         var person = (page != null && page.TryGetValue(userId, out var fresh) ? fresh : null)
@@ -152,6 +154,8 @@ public sealed partial class TelegramService
         if (person == null) return DesktopGroupMembers.UnknownPerson;
         var name = string.Join(" ", new[] { person.first_name, person.last_name }
             .Where(part => !string.IsNullOrWhiteSpace(part))).Trim();
-        return name.Length > 0 ? name : DesktopGroupMembers.UnknownPerson;
+        if (name.Length > 0) return name;
+        var handle = DesktopContact.Username(person);
+        return handle.Length == 0 ? DesktopGroupMembers.UnknownPerson : "@" + handle;
     }
 }

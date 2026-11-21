@@ -1,4 +1,5 @@
 import type { CustomTheme } from './themes';
+import type { CloudBackgroundSlots } from './cloud-backgrounds';
 export interface State { mediaReady?: number[]; mediaLoading?:number[]; mediaFailed?:number[] }
 export interface SecurityStatus {enabled:boolean;available:boolean;biometric:boolean;lockAfter:number}
 export interface TelegramLinkResult {action:string;chatId?:string;title?:string;messageId?:string;storyId?:number;installed?:boolean;channel?:boolean;opened?:boolean;members?:number;approval?:boolean;state?:string}
@@ -26,7 +27,7 @@ export interface Properties { report?:boolean }
 export interface AccountSession { id:string;current:boolean;device:string;platform:string;version:string;location:string;ip:string;lastActive:number }
 export interface MediaVariant { id:number; width:number; height:number; size:number }
 export interface Media { id: number; ready: boolean; mime: string; kind: 'image' | 'video' | 'audio' | 'file' | 'sticker'; name: string; size: number; animated?:boolean; width?:number; height?:number; downloadLimit?:number; thumbnail?: Media; minithumbnail?: string; exportable?: boolean; variants?: MediaVariant[] }
-export interface Chat { premium?:boolean; emojiStatus?:EmojiStatusMark; inList?:boolean; id: string; title: string; preview: string; date: number; unread: number; marked: boolean; bot: boolean; type: string; pinned: boolean; muted: boolean; archived: boolean; photo?: Media; supported: boolean; activeStories?:number;isContact?:boolean;supergroup?:boolean;isForum?:boolean;secretState?: 'pending'|'ready'|'closed'; fingerprint?: string; canSendExpressions?:boolean; username?:string; draft?:string; draftEntities?:TextEntity[]; draftReply?:string; readInbox?:string; senderKind?:'user'|'chat'; senderId?:string; senderName?:string; translatable?:boolean; automaticTranslation?:boolean }
+export interface Chat { premium?:boolean; emojiStatus?:EmojiStatusMark; inList?:boolean; id: string; title: string; preview: string; date: number; unread: number; marked: boolean; bot: boolean; type: string; pinned: boolean; muted: boolean; archived: boolean; photo?: Media; supported: boolean; activeStories?:number;isContact?:boolean;supergroup?:boolean;isForum?:boolean;secretState?: 'pending'|'ready'|'closed'; fingerprint?: string; canSendExpressions?:boolean; username?:string; draft?:string; draftEntities?:TextEntity[]; draftReply?:string; readInbox?:string; senderKind?:'user'|'chat'; senderId?:string; senderName?:string; translatable?:boolean; automaticTranslation?:boolean; defaultSilent?:boolean }
 export interface SpeechInfo { state:'pending'|'text'|'error'; partial?:string; text?:string; error?:string }
 export interface Message { speech?:SpeechInfo; transcribable?:boolean }
 export interface ChatSender { kind:'user'|'chat'; id:string; name:string; premium:boolean }
@@ -115,10 +116,12 @@ export interface BoostFeatures {levels:BoostLevelFeatures[];minimum:Record<strin
 export interface BoostLink {link:string;isPublic:boolean}
 export interface Message {invoice?:StarsInvoice}
 export interface Message { inlineKeyboard?:BotButton[][] }
-export interface PollOption { index:number;text:string;votes:number;percentage:number;chosen:boolean;choosing:boolean }
+export interface PollOption { index:number;text:string;votes:number;percentage:number;chosen:boolean;choosing:boolean;media?:Media }
 /** Identificador opaque de la encuesta. TDLib no lo manda nunca; Windows sí, porque su `updateMessagePoll`
  *  puede llegar sin `peer` y entonces la única forma de encontrar la fila es comparar este número. */
-export interface Poll { pollId?:number;question:string;description:string;totalVoters:number;anonymous:boolean;multiple:boolean;revoting:boolean;closed:boolean;canSeeResults:boolean;canGetVoters:boolean;canStop:boolean;quiz:boolean;explanation?:string;restriction?:string;options:PollOption[] }
+/** Segundo de época en el que Telegram cierra la encuesta. Falta cuando la encuesta no lleva cierre, y en
+ *  Windows también cuando el cierre viene dicho como periodo y no como fecha —ver DesktopPoll.HasCloseDate—. */
+export interface Poll { pollId?:number;question:string;description:string;totalVoters:number;anonymous:boolean;multiple:boolean;revoting:boolean;closed:boolean;canSeeResults:boolean;canGetVoters:boolean;canStop:boolean;quiz:boolean;closesAt?:number;explanation?:string;restriction?:string;options:PollOption[] }
 export interface GiftInfo { stars:number;premium:boolean;unique:boolean;saved:boolean;private:boolean;upgraded:boolean;converted:boolean;refunded:boolean;canUpgrade:boolean;number?:number;text?:string }
 export interface Message { gift?:GiftInfo }
 export interface GiftAttribute { name:string;rarity:string;perMille:number;crafted?:boolean;sticker?:Media }
@@ -157,7 +160,7 @@ export interface Message { entities?:TextEntity[]; albumId?:string; forumTopicId
 export interface ServiceInfo { kind:string; text:string; photo?:Media; messageId?:string; chatId?:string; userId?:string; currency?:string; amount?:number; date?:number; duration?:number; count?:number }
 export interface Message { service?:ServiceInfo }
 export type MessageExtra =
-  | {kind:'location';title:string;address:string;latitude?:number;longitude?:number;live?:boolean;expiresAt?:number;canOpen:boolean}
+  | {kind:'location';title:string;address:string;latitude?:number;longitude?:number;live?:boolean;expiresAt?:number;canOpen:boolean;canStop?:boolean}
   | {kind:'contact';name:string;phone:string;userId:string;canCopy:boolean}
   | {kind:'animatedEmoji';emoji:string;media?:Media;interactive:boolean}
   | {kind:'dice';emoji:string;value:number;media?:Media;stake?:string;prize?:string}
@@ -188,7 +191,7 @@ export interface Chat { requests?:number }
 export interface Chat { noPolls?:boolean }
 /**
  * El derecho que Telegram negó para las tarjetas de contacto en esta conversación. TDLib lo llama
- * `canSendOtherMessages` —es el que mira `NativeBridge.java:4625`— y MTProto no tiene ese bit, así que el puente de
+ * `canSendOtherMessages` —es el que mira `NativeBridge.java:4722`— y MTProto no tiene ese bit, así que el puente de
  * Windows usa `send_docs`, que es lo que un contacto es ahí: un documento con atributo de contacto. Como con las
  * encuestas, el andamio solo puede dar la respuesta, y ausente significa «no lo sé»: decide Telegram.
  */
@@ -204,10 +207,10 @@ export interface State { topic?: {id:number;name:string;closed:boolean;readInbox
 export interface ContactSync {enabled:boolean;running:boolean;last:number;matched:number;imported:number;skipped:boolean;error:string}
 export interface State { contactsSync?: ContactSync; authEmailPattern?: string; authCodeLength?: number; authHint?: string; authRecoveryAvailable?: boolean; authRecoveryPattern?: string; authTerms?: string; authMinAge?: number }
 export interface State { voiceAutoStopped?: boolean }
-export interface State { ready: boolean; auth: string; consent: boolean; busy: boolean; connection: string; online: boolean; error: string; notice: string; version: string; selfId: string; name: string; active: string; canSend: boolean; sending: boolean; uncertain: boolean; chatsBusy: boolean; chatsEnd?:boolean; chats: Chat[]; messages: Message[]; folders: { id: number; title: string }[]; history: { loading: boolean; initialRetry?:boolean; error: string; end: boolean; latest: boolean; anchor?:string }; typing: string; appearance: { theme: string; font: number; compact: boolean; typing: boolean; enter: boolean; fontFamily: string; wallpaper: string; auto?: boolean; custom?: CustomTheme; customThemes?: CustomTheme[]; chatThemes?: Record<string, string>; gestures?: { left:string; right:string }; navigation?: 'bar'|'side'; systemDark?: boolean }; permissions: { notes: boolean; replies: boolean }; security: SecurityStatus; assistant: { state: string; ready: boolean; busy: boolean; consent: boolean; error: string; turns: { role: string; content: string }[] }; platform?: 'android' | 'web' | 'desktop' }
+export interface State { ready: boolean; auth: string; consent: boolean; busy: boolean; connection: string; online: boolean; error: string; notice: string; version: string; selfId: string; name: string; active: string; canSend: boolean; sending: boolean; uncertain: boolean; chatsBusy: boolean; chatsEnd?:boolean; chats: Chat[]; messages: Message[]; folders: { id: number; title: string }[]; history: { loading: boolean; initialRetry?:boolean; error: string; end: boolean; latest: boolean; anchor?:string }; typing: string; appearance: { theme: string; font: number; compact: boolean; typing: boolean; enter: boolean; fontFamily: string; wallpaper: string; auto?: boolean; custom?: CustomTheme; customThemes?: CustomTheme[]; chatThemes?: Record<string, string>; accountBackgrounds?: CloudBackgroundSlots; gestures?: { left:string; right:string }; navigation?: 'bar'|'side'; systemDark?: boolean }; permissions: { notes: boolean; replies: boolean }; security: SecurityStatus; assistant: { state: string; ready: boolean; busy: boolean; consent: boolean; error: string; turns: { role: string; content: string }[] }; platform?: 'android' | 'web' | 'desktop' }
 export interface CatalogItem { key: string; label: string; media?: Media; preview?: string; emoji?:string; premium?:boolean }
 export interface Catalog { items: CatalogItem[]; sets?: { id: string; title: string; thumbnail?:Media; emoji?:string }[] }
-export interface Properties { reply: boolean; copy: boolean; copyContent: boolean; edit: boolean; editChecklist: boolean; deleteSelf: boolean; deleteAll: boolean; forward: boolean; pin: boolean; editCaption: boolean; caption: string; reactions: ReactionOption[]; paid?: boolean; allowCustom?: boolean; transcribe?: boolean; canBePaid?: boolean }
+export interface Properties { reply: boolean; copy: boolean; copyContent: boolean; edit: boolean; editChecklist: boolean; deleteSelf: boolean; deleteAll: boolean; forward: boolean; pin: boolean; editCaption: boolean; editMedia?: boolean; caption: string; reactions: ReactionOption[]; paid?: boolean; allowCustom?: boolean; transcribe?: boolean; canBePaid?: boolean }
 export interface PasswordState { hasPassword: boolean; hint: string; hasRecoveryEmail: boolean; hasPassport: boolean; pendingReset: number; recoveryEmailPattern?:string; recoveryCodeLength?:number }
 export interface AutoDeleteSettings { seconds:number; canChange:boolean }
 export interface PrivacySetting { key: string; value: string; allowUsers: string[]; restrictUsers: string[]; preserved?: string[] }
@@ -236,3 +239,11 @@ export interface BusinessLinkInfo { link:string; title:string; text:string; view
 export interface BusinessBotState { configured:boolean; botUserId?:string; name?:string; recipients?:BusinessRecipientsInfo; rights?:Record<string,boolean>; connectionDate?:number; deviceModel?:string; location?:string }
 export interface BusinessProfile { nextOpenIn?:number; nextCloseIn?:number; address?:string; timeZoneId?:string; hours?:{startMinute:number;endMinute:number}[]; greeting?:{shortcutId:string;inactivityDays:number;recipients:BusinessRecipientsInfo}; away?:{shortcutId:string;offlineOnly:boolean;schedule:{type:'always'|'outside'|'custom';startDate?:number;endDate?:number};recipients:BusinessRecipientsInfo}; startPage?:{title:string;message:string} }
 export const EMPTY: State = { ready: false, auth: 'welcome', consent: false, busy: false, connection: 'Sin conectar', online: false, error: '', notice: '', version: '1.0.0-beta29', selfId: '0', name: '', active: '0', canSend: false, sending: false, uncertain: false, chatsBusy: false, chats: [], messages: [], folders: [], history: { loading: false, error: '', end: false, latest: true }, typing: '', appearance: { theme: 'gold', font: 16, compact: false, typing: true, enter: false, fontFamily: 'system', wallpaper: 'none', auto: false, customThemes: [], chatThemes: {}, systemDark: false }, permissions: { notes: false, replies: false }, security:{enabled:false,available:false,biometric:false,lockAfter:0}, assistant: { state: 'Sin comprobar', ready: false, busy: false, consent: false, error: '', turns: [] }, access:{checked:false,allowed:false,blocked:false,expiresAt:0,countries:[]},update:{supported:false,checking:false,available:false,downloaded:false,currentVersionCode:57,availableVersionCode:0,priority:0,error:''},wallet:{stars:0,nanostars:0,premium:false},platform:'web' };
+/** Estadísticas de una comunidad (ronda CA). Las fichas viajan por `id` para que Android y Windows no puedan llamar de dos maneras al mismo número; `previous` se omite cuando la biblioteca no lo contesta, y la pantalla solo promete crecimiento si viene. */
+export interface ChatStatCard {id:string;value:number;previous?:number}
+export interface ChatStatSender {name:string;messages:number;avgChars:number}
+export interface CommunityStats {kind:'channel'|'group';from?:string;to?:string;values:ChatStatCard[];top:ChatStatSender[]}
+/** Registro de llamadas (ronda CL). `label` es la frase que ya se lee dentro del chat; `total` es aproximado y
+ *  viene 0 cuando Telegram no lo sabe; `more` solo es cierto si el servidor devolvió cursor para la página siguiente. */
+export interface CallLogEntry {chatId:string;messageId:string;title:string;label:string;date:number;missed:boolean;video:boolean;group:boolean;duration:number}
+export interface CallLogPage {rows:CallLogEntry[];fetched:number;shown:number;total:number;nextOffset:string;more:boolean}

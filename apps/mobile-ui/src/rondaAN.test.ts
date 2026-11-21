@@ -171,10 +171,11 @@ describe('ronda AN · el orden de las negaciones es el del puente', () => {
     '!chat.permissions.canSendPolls',
     'BridgePolicy.text(p,"question",255)',
     'if(question.isEmpty())',
-    'values.length()<2||values.length()>10',
+    'values.length()<2||values.length()>12',
     'text.isEmpty()||text.length()>100',
     '!unique.add(',
     'correct<0||correct>=options.length',
+    'period>2628000',
   ];
 
   it('Android niega en ese orden y el puente de Windows lo respeta', () => {
@@ -183,16 +184,15 @@ describe('ronda AN · el orden de las negaciones es el del puente', () => {
       if (index > 0) expect(at(needle, body)).toBeGreaterThan(at(javaOrder[index - 1], body));
     }
     const code = csBody('SendPollAsync');
-    for (const [index, needle] of [
+    const csOrder = [
       'DesktopPoll.CanSendText', 'DesktopPoll.PrivateOk', 'DesktopPoll.CanSendPolls',
       'DesktopPoll.WithinQuestion', 'DesktopPoll.HasQuestion', 'DesktopPoll.Fits(',
       'DesktopPoll.FitsOption', 'DesktopPoll.Repeats', 'DesktopPoll.AllowsCorrect',
-    ].entries()) {
+      'DesktopPoll.ClosesInRange',
+    ];
+    for (const [index, needle] of csOrder.entries()) {
       expect(code).toContain(needle);
-      if (index > 0) expect(at(needle, code)).toBeGreaterThan(at(
-        ['DesktopPoll.CanSendText', 'DesktopPoll.PrivateOk', 'DesktopPoll.CanSendPolls',
-          'DesktopPoll.WithinQuestion', 'DesktopPoll.HasQuestion', 'DesktopPoll.Fits(',
-          'DesktopPoll.FitsOption', 'DesktopPoll.Repeats', 'DesktopPoll.AllowsCorrect'][index - 1], code));
+      if (index > 0) expect(at(needle, code)).toBeGreaterThan(at(csOrder[index - 1], code));
     }
   });
 
@@ -208,7 +208,7 @@ describe('ronda AN · el orden de las negaciones es el del puente', () => {
     const code = tsBody('desktopPollSend');
     const order = ['POLL_REFUSALS.sending', 'POLL_REFUSALS.private', 'POLL_REFUSALS.notAllowed',
       'POLL_REFUSALS.tooLong', 'POLL_REFUSALS.noQuestion', 'POLL_REFUSALS.batch',
-      'POLL_REFUSALS.option', 'POLL_REFUSALS.repeated', 'POLL_REFUSALS.noCorrect'];
+      'POLL_REFUSALS.option', 'POLL_REFUSALS.repeated', 'POLL_REFUSALS.noCorrect', 'POLL_REFUSALS.closeRange'];
     for (const [index, needle] of order.entries()) {
       expect(code).toContain(needle);
       if (index > 0) expect(at(needle, code)).toBeGreaterThan(at(order[index - 1], code));
@@ -265,7 +265,9 @@ describe('ronda AN · las banderas y los números que hay que fabricar', () => {
   it('el identificador y las claves los sortea el cliente, y las claves son distintas entre sí', () => {
     const body = csBody('OptionKeys', pollRules);
     expect(body).toContain('while (!seen.Add(key))');
-    expect(csBody('SendPollAsync')).toContain('var keys = DesktopPoll.OptionKeys(options.length)'.replace('length', 'Length'));
+    // CN-B pone la única excepción a esa regla: con una foto por opción el montaje pasa a `InputPollAnswer`, que no
+    // tiene campo `option`, así que las claves del cliente solo se sortean cuando la encuesta va sin imágenes.
+    expect(csBody('SendPollAsync')).toContain('var keys = pictures.Length > 0 ? null : DesktopPoll.OptionKeys(options.Length);');
     // El id viaja hasta el contrato en las dos capas: Android no lo manda nunca, así que en la pantalla es opcional.
     expect(csBody('ConvertPoll')).toContain('PollId = poll.id');
     expect(tsBody('desktopPollSend')).toContain('pollId:');
@@ -340,8 +342,10 @@ describe('ronda AN · el contrato y la lectura', () => {
   it('cada campo de PollOptionDto existe en el contrato, y ninguno falta', () => {
     const dto = /public sealed class PollOptionDto\n\{([\s\S]*?)\n\}/.exec(state)?.[1] ?? '';
     const fields = [...dto.matchAll(/public [\w?<>]+ (\w+) \{ get; set; \}/g)].map(match => match[1]);
+    // `media` entra en la lista con la ronda CN-B: el DTO del host ya trae la foto de la opción, y el contrato la
+    // declara opcional, que es lo que permite seguir pintando encuestas sin imágenes.
     expect(fields.map(field => field[0].toLowerCase() + field.slice(1)).sort())
-      .toEqual(['choosing', 'chosen', 'index', 'percentage', 'text', 'votes']);
+      .toEqual(['choosing', 'chosen', 'index', 'media', 'percentage', 'text', 'votes']);
   });
 
   it('la encuesta se lee en la conversión y no en ningún otro sitio', () => {
@@ -388,11 +392,12 @@ describe('ronda AN · la pantalla deja de esconderla en Windows', () => {
     expect(app.slice(start, end)).toContain('onClick={()=>{setDialog(undefined);openPoll();}}/>');
   });
 
-  it('las otras siete entradas del adjuntar siguen escondidas, cada una con su motivo', () => {
+  it('las otras ocho entradas del adjuntar siguen escondidas, cada una con su motivo', () => {
     // La lista de tareas no tiene tipos en la librería; el resto necesita hardware o permisos de Android.
     // «Compartir contacto» se salió de esta cuenta con la ronda AP, que le armó el puente en Windows.
+    // «Ubicación en directo» entró con la ronda CB y se queda escondida por lo mismo: Windows no tiene sensor.
     const menu = app.slice(at('function openAttachments', app), at('function toggleFormat', app));
-    expect(count('{!desktop&&<MenuItem', menu)).toBe(2);
+    expect(count('{!desktop&&<MenuItem', menu)).toBe(3);
     expect(menu).toContain('id="record" title="Grabar" description="Voz, cámara y videomensajes" icon={<Mic/>}>{!desktop&&<>');
     // El contenido de pago va un poco más lejos: se esconde además fuera de los canales.
     expect(count("{!desktop&&active?.type==='channel'", menu)).toBe(1);
@@ -515,12 +520,13 @@ describe('ronda AN · medido con las manos, no con agujas', () => {
     set(saved);
     await expect(call('poll.send', { ...DRAFT, options: ['sola'] })).rejects.toThrow(tsProperty('batch', pollRefusals));
     await expect(call('poll.send', { ...DRAFT, options: [] })).rejects.toThrow(tsProperty('batch', pollRefusals));
-    await expect(call('poll.send', { ...DRAFT, options: Array.from({ length: 11 }, (_, i) => `op${i}`) }))
+    await expect(call('poll.send', { ...DRAFT, options: Array.from({ length: 13 }, (_, i) => `op${i}`) }))
       .rejects.toThrow(tsProperty('batch', pollRefusals));
     await expect(call('poll.send', { ...DRAFT, options: ['buena', '   '] })).rejects.toThrow(tsProperty('option', pollRefusals));
     await expect(call('poll.send', { ...DRAFT, options: ['buena', 'x'.repeat(101)] })).rejects.toThrow(tsProperty('option', pollRefusals));
     await expect(call('poll.send', { ...DRAFT, options: ['Barcelona', 'barcelona'] })).rejects.toThrow(tsProperty('repeated', pollRefusals));
-    expect((await pollOf({ options: Array.from({ length: 10 }, (_, i) => `op${i}`) })).options).toHaveLength(10);
+    // La ronda CF subió el tope de diez a doce, que es lo que Telegram publica («up to 12 options»).
+    expect((await pollOf({ options: Array.from({ length: 12 }, (_, i) => `op${i}`) })).options).toHaveLength(12);
   });
 
   it('el cuestionario exige una respuesta correcta que exista', async () => {
@@ -582,7 +588,7 @@ describe('ronda AN · medido con las manos, no con agujas', () => {
     await expect(call('poll.answer', { id: sinEncuesta.id, options: [0] })).rejects.toThrow(tsProperty('noPoll', pollRefusals));
     await expect(call('poll.answer', { id: '999999', options: [0] })).rejects.toThrow(tsProperty('gone', albumRefusals));
     await expect(call('poll.answer', { id: row.id, options: [] })).rejects.toThrow(tsProperty('noVote', pollRefusals));
-    await expect(call('poll.answer', { id: row.id, options: Array.from({ length: 11 }, (_, i) => i) }))
+    await expect(call('poll.answer', { id: row.id, options: Array.from({ length: 13 }, (_, i) => i) }))
       .rejects.toThrow(tsProperty('noVote', pollRefusals));
     await expect(call('poll.answer', { id: row.id, options: [-1] })).rejects.toThrow(tsProperty('noVote', pollRefusals));
     await expect(call('poll.answer', { id: row.id, options: [7] })).rejects.toThrow(tsProperty('stale', pollRefusals));

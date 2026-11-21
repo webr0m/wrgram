@@ -10,13 +10,13 @@ using TL;
 using WTelegram;
 
 /// <summary>
-/// El cable de la firma de invitación: <c>groups.add.info</c> (<c>NativeBridge.java:2136</c>) y
+/// El cable de la firma de invitación: <c>groups.add.info</c> (<c>NativeBridge.java:741</c>) y
 /// <c>groups.member.add</c> (<c>:2154</c>). Las reglas y las frases están en <see cref="DesktopMemberAdditions"/>;
 /// aquí se lee el estado propio, se pregunta permiso, se confirma en ventana y se ejecuta la tanda de una en una,
 /// que es el orden de <c>runAdd</c> (<c>:2118</c>).
 /// <para>
 /// Hasta esta ronda las dos caían en el <c>_ =&gt; throw</c> genérico del host, y la pantalla ya estaba puesta:
-/// el menú «Añadir personas» (<c>App.tsx:920</c>) no lleva guarda de plataforma, así que en Windows abrir el panel
+/// el menú «Añadir personas» (<c>App.tsx:924</c>) no lleva guarda de plataforma, así que en Windows abrir el panel
 /// enseñaba el aviso de error genérico en lugar de la lista de personas. Es el mismo hueco que declararon las
 /// rondas AX, AZ y BA, y el último que quedaba en la familia C10.
 /// </para>

@@ -41,7 +41,7 @@ export function PeerProfile({ initial, message, openChat, openUrl, jump, openPee
   const [tab, setTab] = useState<'info'|'media'|'related'>('info');
   const [more, setMore] = useState(false);
   const [notice, setNotice] = useState('');
-  // Historias, regalos y temas de foro aún no tienen brazo en el host de Windows: la ficha no los ofrece.
+  // Regalos, temas de foro y señales de seguridad siguen sin brazo en el host de Windows: la ficha no los ofrece.
   const desktop = snapshot().platform === 'desktop';
   useEffect(() => {
     let mounted = true;
@@ -83,14 +83,14 @@ export function PeerProfile({ initial, message, openChat, openUrl, jump, openPee
       <div className="peer-actions">
         {chat.supported && <button type="button" onClick={() => openChat(chat)}><MessageCircle size={20}/>Mensaje</button>}
         {chat.supported && <ChatMuteControl chat={chat} run={request} changed={muted=>setChat({...chat,muted})}/>}
-        {!!chat.activeStories && !desktop && <button type="button" onClick={() => stories(chat)}><Image size={20}/>Historias</button>}
+        {!!chat.activeStories && <button type="button" onClick={() => stories(chat)}><Image size={20}/>Historias</button>}
         <button type="button" aria-expanded={more} onClick={() => setMore(value => !value)}><MoreHorizontal size={20}/>Más</button>
       </div>
       {more && <div className="peer-menu">
         {publicLink && <button type="button" onClick={() => copy(publicLink)}><Link2 size={16}/>Copiar enlace público</button>}
         {profile?.phone && <button type="button" onClick={() => copy(profile.phone!)}><Copy size={16}/>Copiar número</button>}
-        {!desktop && chat.type !== 'secret' && <button type="button" onClick={() => stories(chat)}><Image size={16}/>Historias</button>}
-        {!desktop && profile?.hasStories && <button type="button" onClick={() => stories(chat,true)}><Image size={16}/>Historias del perfil</button>}
+        {chat.type !== 'secret' && <button type="button" onClick={() => stories(chat)}><Image size={16}/>Historias</button>}
+        {profile?.hasStories && <button type="button" onClick={() => stories(chat,true)}><Image size={16}/>Historias del perfil</button>}
         {profile?.canManageMembers && <button type="button" onClick={() => manage(chat)}><Users size={16}/>Administrar miembros</button>}
         {(chat.type === 'channel' || chat.type === 'group') && <button type="button" onClick={() => boosts(chat)}><Rocket size={16}/>Impulsos del chat</button>}
         {!desktop && chat.type !== 'secret' && !chat.bot && <button type="button" onClick={() => gifts(chat)}><Gift size={16}/>Regalos de Stars</button>}

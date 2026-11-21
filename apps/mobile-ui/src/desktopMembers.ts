@@ -15,7 +15,7 @@ export const DESKTOP_MEMBER_FILTERS = ['recent', 'administrators', 'restricted',
 
 /**
  * Los tres apretones de `DesktopGroupMembers` (`MaxQuery`, `MaxOffset`, `MaxLimit`/`MinLimit`), que son los de
- * `NativeBridge.groupMembers` (`NativeBridge.java:2777-2778`). El de la lista del básico es otro camino: allí el
+ * `NativeBridge.groupMembers` (`NativeBridge.java:2811-2812`). El de la lista del básico es otro camino: allí el
  * largo se mide recortado y no hay desplazamiento.
  */
 export const DESKTOP_MEMBER_LIMITS = { query: 80, offset: 5000, page: 50, minPage: 1 } as const;

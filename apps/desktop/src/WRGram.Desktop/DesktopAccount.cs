@@ -9,14 +9,14 @@ namespace WRGram.Desktop;
 /// Las cuatro órdenes del perfil propio en Windows: leer la cuenta y escribir nombre, biografía y nombre público.
 /// Las reglas y las frases están en <see cref="DesktopAccountProfile"/>; aquí solo está el cable, que es lo que
 /// faltaba — las peticiones existen en WTelegramClient 4.4.10 desde siempre y el puente Android las atiende desde
-/// <c>NativeBridge.java:521</c> y <c>:535-537</c>.
+/// <c>NativeBridge.java:534</c> y <c>:535-537</c>.
 /// <para>
 /// La medición que cambió el diseño a mitad de ronda, escrita para que no se vuelva a intentar: el plan era
 /// reconciliar la caché de la librería asignando <c>client.User</c> con la <c>TL.User</c> que devuelven las
 /// escrituras, y parecía confirmado por haber visto la propiedad pública con setter. Reflexionado
 /// WTelegramClient 4.4.10, ese <c>set_User</c> es **privado** y no existe un <c>GetMe()</c> público: la asignación
 /// no compila. Lo que se hace entonces es lo mismo que hace Android, que tampoco reusa un objeto guardado — su
-/// <c>accountProfile</c> empieza con un <c>GetMe</c> nuevo (<c>NativeBridge.java:1619</c>)—: cada lectura del
+/// <c>accountProfile</c> empieza con un <c>GetMe</c> nuevo (<c>NativeBridge.java:1637</c>)—: cada lectura del
 /// perfil vuelve a preguntar a Telegram.
 /// </para>
 /// </summary>
@@ -24,7 +24,7 @@ public sealed partial class TelegramService
 {
     /// <summary>
     /// <c>account.profile</c>, el DTO que la pantalla de «Mi perfil de Telegram» y el resumen del menú de cuenta
-    /// consumen. Se lee dos veces, como en Android (<c>NativeBridge.java:1619</c>, <c>GetMe</c> y dentro
+    /// consumen. Se lee dos veces, como en Android (<c>NativeBridge.java:1639</c>, <c>GetMe</c> y dentro
     /// <c>GetUserFullInfo</c>): lo que la cuenta es (<c>users.getUsers([self])</c>, de donde salen los nombres, el
     /// móvil, los nombres públicos y la foto) y lo que la cuenta escribe de sí misma
     /// (<c>users.getFullUser(self)</c>, de donde salen la biografía y el cumpleaños).
@@ -134,7 +134,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// Lo que Android hace con <c>schedule()</c> al terminar las tres escrituras (<c>NativeBridge.java:535-537</c>):
+    /// Lo que Android hace con <c>schedule()</c> al terminar las tres escrituras (<c>NativeBridge.java:548-550</c>):
     /// avisar a la interfaz de que vuelva a pedir lo suyo. El equivalente en Windows es refrescar
     /// <c>state.name</c> —el rótulo del avatar, del menú de cuenta y de la lista de cuentas— y empujar el estado;
     /// el resto (biografía, nombre público, foto) no vive en el estado sino en <c>account.profile</c>, que releer a

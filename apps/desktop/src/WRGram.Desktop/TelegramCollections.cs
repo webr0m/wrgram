@@ -10,11 +10,11 @@ public sealed partial class TelegramService
     private const long HiddenForwardAuthor = 2666000;
     private readonly Dictionary<string, (InputPeer Peer, int OffsetId, DateTime OffsetDate)> _savedOrigins = new();
 
-    private static ChatDto LookupDto(ChatEntry entry) => new()
+    private ChatDto LookupDto(ChatEntry entry) => new()
     {
         Id = entry.Id, Title = entry.Title, Type = entry.Type, Username = entry.Username,
         Photo = entry.Photo, Bot = entry.Bot, Supergroup = entry.Supergroup, IsForum = entry.IsForum,
-        InList = false
+        DefaultSilent = DefaultSilentMark(entry.Id), InList = false
     };
 
     private static ChatEntry SavedEntry(long userId) => new()

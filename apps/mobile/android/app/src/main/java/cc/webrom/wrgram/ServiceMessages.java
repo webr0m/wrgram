@@ -123,11 +123,11 @@ final class ServiceMessages {
         else if(c instanceof TdApi.MessagePassportDataReceived){kind="security";text="Se recibieron datos de Telegram Passport";}
         else if(c instanceof TdApi.MessageProximityAlertTriggered){TdApi.MessageProximityAlertTriggered a=(TdApi.MessageProximityAlertTriggered)c;kind="contact";text=nameOfSender(session,a.travelerId)+" está a "+a.distance+" m de "+nameOfSender(session,a.watcherId);}
         else if(c instanceof TdApi.MessageCall){TdApi.MessageCall a=(TdApi.MessageCall)c;kind="call";String type=a.isVideo?"Videollamada":"Llamada";text=a.discardReason instanceof TdApi.CallDiscardReasonMissed?type+" perdida":a.discardReason instanceof TdApi.CallDiscardReasonDeclined?type+" rechazada":a.discardReason instanceof TdApi.CallDiscardReasonDisconnected?type+" interrumpida":type+" finalizada"+(a.duration>0?" · "+duration(a.duration):"");return new Info(kind,text).put("duration",a.duration);}
-        else if(c instanceof TdApi.MessageGroupCall){TdApi.MessageGroupCall a=(TdApi.MessageGroupCall)c;kind="call";text=a.wasMissed?"Videollamada perdida":a.isActive?"Videollamada en curso":"Videollamada finalizada"+(a.duration>0?" · "+duration(a.duration):"");return new Info(kind,text).put("duration",a.duration);}
+        else if(c instanceof TdApi.MessageGroupCall){TdApi.MessageGroupCall a=(TdApi.MessageGroupCall)c;kind="call";String type=a.isVideo?"Videollamada":"Llamada de voz";text=a.wasMissed?type+" perdida":a.isActive?type+" en curso":type+" finalizada"+(a.duration>0?" · "+duration(a.duration):"");String otros=participantList(senderNames(session,a.otherParticipantIds));if(!otros.isEmpty())text+=" · Otros participantes: "+otros;return new Info(kind,text).put("duration",a.duration);}
         else if(c instanceof TdApi.MessageVideoChatScheduled){TdApi.MessageVideoChatScheduled a=(TdApi.MessageVideoChatScheduled)c;kind="call";text="Videollamada programada · "+date(a.startDate);return new Info(kind,text).put("date",a.startDate);}
         else if(c instanceof TdApi.MessageVideoChatStarted){kind="call";text="Videollamada iniciada";}
         else if(c instanceof TdApi.MessageVideoChatEnded){TdApi.MessageVideoChatEnded a=(TdApi.MessageVideoChatEnded)c;kind="call";text="Videollamada finalizada"+((a.duration>0)?" · "+duration(a.duration):"");return new Info(kind,text).put("duration",a.duration);}
-        else if(c instanceof TdApi.MessageInviteVideoChatParticipants){TdApi.MessageInviteVideoChatParticipants a=(TdApi.MessageInviteVideoChatParticipants)c;kind="call";int count=a.userIds==null?0:a.userIds.length;text="Se invitó a "+count+" persona"+(count==1?"":"s")+" a la videollamada";}
+        else if(c instanceof TdApi.MessageInviteVideoChatParticipants){TdApi.MessageInviteVideoChatParticipants a=(TdApi.MessageInviteVideoChatParticipants)c;kind="call";String invitados=a.userIds==null||a.userIds.length==0?"":names(session,a.userIds);boolean invitadaSelf=contains(a.userIds,session==null?0:session.selfId);text=self?(invitados.isEmpty()?"Invitaste a la videollamada":"Invitaste a "+invitados+" a la videollamada"):invitadaSelf?actor+" te invitó a la videollamada":invitados.isEmpty()?actor+" invitó a la videollamada":actor+" invitó a "+invitados+" a la videollamada";}
         else if(c instanceof TdApi.MessagePollOptionAdded){TdApi.MessagePollOptionAdded a=(TdApi.MessagePollOptionAdded)c;kind="poll";text="Se añadió una opción a la encuesta"+(a.text==null||a.text.text==null||a.text.text.isBlank()?"":" · "+a.text.text);return new Info(kind,text).id(a.pollMessageId);}
         else if(c instanceof TdApi.MessagePollOptionDeleted){TdApi.MessagePollOptionDeleted a=(TdApi.MessagePollOptionDeleted)c;kind="poll";text="Se eliminó una opción de la encuesta"+(a.text==null||a.text.text==null||a.text.text.isBlank()?"":" · "+a.text.text);return new Info(kind,text).id(a.pollMessageId);}
         else if(c instanceof TdApi.MessageExpiredPhoto||c instanceof TdApi.MessageExpiredVideo||c instanceof TdApi.MessageExpiredVideoNote||c instanceof TdApi.MessageExpiredVoiceNote){kind="system";text="El contenido temporal caducó";}
@@ -155,6 +155,27 @@ final class ServiceMessages {
         if(values.size()==1)return values.get(0);
         return String.join(", ",values.subList(0,values.size()-1))+" y "+values.get(values.size()-1);
     }
+    /** Nombres de los participantes que trae el mensaje, sin duplicar: con sesión nula todos caen en
+     *  «Alguien» y la burbuja no puede decir «Alguien y Alguien». */
+    static String[] senderNames(TdSession session,TdApi.MessageSender[] values){
+        if(values==null)return new String[0];
+        List<String> nombres=new ArrayList<>();
+        for(TdApi.MessageSender sender:values){if(sender==null)continue;String nombre=nameOfSender(session,sender);if(nombre==null||nombre.isBlank()||nombres.contains(nombre))continue;nombres.add(nombre);}
+        return nombres.toArray(new String[0]);
+    }
+
+    /** Tres nombres como mucho y sin cifra de «más»: `otherParticipantIds` se documenta como «some other
+     *  call participants», así que lo que llega no es el censo de la llamada y un número se leería como
+     *  total. Lo que sobra se corta con puntos suspensivos. */
+    static String participantList(String[] names){
+        if(names==null||names.length==0)return "";
+        int shown=Math.min(3,names.length);
+        if(shown==1)return names[0];
+        List<String> values=new ArrayList<>();for(int i=0;i<shown;i++)values.add(names[i]);
+        String joined=String.join(", ",values.subList(0,values.size()-1))+" y "+values.get(values.size()-1);
+        return names.length>shown?joined+"…":joined;
+    }
+
     private static String giftLine(TdSession session,long gifter,long receiver,String gift){
         if(gifter>0&&receiver>0&&gifter==receiver)return nameOf(session,gifter)+" recibió "+gift;
         if(gifter==0)return "Se regaló "+gift;

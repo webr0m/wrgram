@@ -3,7 +3,7 @@ namespace WRGram.Desktop;
 /// <summary>
 /// Reglas de «abrir el chat de una persona» en Windows, el botón «Abrir chat» de la tarjeta de contacto que la
 /// ronda AP dejó a medias y el que ya usaban los nombres citados en una biografía. Android lo resuelve con
-/// <c>TdApi.CreatePrivateChat(userId)</c> (<c>NativeBridge.java:564</c>): a TDLib le basta el número de la persona
+/// <c>TdApi.CreatePrivateChat(userId)</c> (<c>NativeBridge.java:577</c>): a TDLib le basta el número de la persona
 /// porque el <c>access_hash</c> vive dentro de la biblioteca. MTProto no presta ese servicio —<c>InputPeerUser</c>
 /// pide <c>id</c> **y** <c>access_hash</c>, y el hash solo viene en las listas que Telegram ya mandó a esta
 /// sesión: los contactos, los diálogos y los participantes de los mensajes—, así que la diferencia de protocolo es
@@ -21,7 +21,7 @@ public static class DesktopPrivateChat
     public const string NoAccount = "Inicia sesión para abrir conversaciones.";
 
     /// Lo que Android lanza como <c>Invalid identifier</c> desde <c>BridgePolicy.id</c>
-    /// (<c>BridgePolicy.java:53</c>): no es un número positivo de hasta diecinueve dígitos.
+    /// (<c>BridgePolicy.java:57</c>): no es un número positivo de hasta diecinueve dígitos.
     public const string BadId = "El identificador de la persona no es un identificador válido.";
 
     /// La consecuencia de la diferencia de protocolo escrita con nombre: sin el <c>access_hash</c> no hay

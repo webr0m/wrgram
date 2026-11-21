@@ -285,10 +285,11 @@ describe('ronda AT · las reglas, cruzadas con las tres capas', () => {
     // que sigue teniendo su rama móvil en otras pantallas —la cámara y la nota de voz de `adjuntos`—.
     const profile = app.slice(app.indexOf('function openProfile('), app.indexOf('function openSessions('));
     expect(profile).not.toBe('');
-    // La ronda BO añadió una guarda: el estado emoji pide `emojiStatus.options` y `emojiPacks.list`, que el host de
-    // Windows aún no contesta. Es la única puerta cerrada del diálogo; las tres entradas destapadas siguen abiertas.
-    expect(profile.match(/!desktop/g) ?? []).toHaveLength(1);
-    expect(profile).toContain('{!desktop&&state.wallet?.premium&&<MenuItem icon={<Sparkles/>} label="Cambiar estado emoji"');
+    // La BO dejó aquí la única guarda del diálogo porque las dos claves que pedía el estado emoji
+    // (`emojiStatus.options` y `emojiPacks.list`) no tenían brazo en Windows. La BY las cableó con las otras nueve de
+    // la familia, así que la entrada se abre igual en las dos capas y ya no queda ningún `!desktop` en el perfil.
+    expect(profile.match(/!desktop/g) ?? []).toHaveLength(0);
+    expect(profile).toContain('{state.wallet?.premium&&<MenuItem icon={<Sparkles/>} label="Cambiar estado emoji" onClick={openEmoji}/>');
     expect(app).toContain('{<MenuItem icon={<Image/>} label="Cambiar foto de perfil"');
     expect(app).toContain('{profile.photoId!=="0"&&<MenuItem icon={<Trash2/>} label="Eliminar foto de perfil"');
     expect(app).toContain('<MenuItem icon={<ShieldCheck/>} label="Administrar sesiones" onClick={openSessions}/>');

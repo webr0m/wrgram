@@ -11,7 +11,7 @@ public sealed class DesktopBridge
 {
     /// <summary>
     /// La única frase que Android deja oír cuando un brazo falla por su cuenta: el <c>catch</c> general del envoltorio
-    /// (<c>NativeBridge.java:154</c>) no distingue causas, y los brazos que lanzan un <c>throw new
+    /// (<c>NativeBridge.java:167</c>) no distingue causas, y los brazos que lanzan un <c>throw new
     /// IllegalArgumentException()</c> vacío —sin texto— acaban todos sonando igual delante de la persona. Aquí vive esa
     /// cadena una sola vez por capa, y la piden por alias los brazos que copian esa forma de negarse.
     /// <para>

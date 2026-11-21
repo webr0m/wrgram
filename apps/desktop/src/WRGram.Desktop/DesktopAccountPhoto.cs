@@ -14,7 +14,7 @@ namespace WRGram.Desktop;
 /// las frases están en <see cref="DesktopProfilePhoto"/>; aquí está el cable, que es lo que falta en esta ronda —
 /// el selector, el descodificador, el diálogo nativo de confirmación y la escritura.
 /// <para>
-/// En Android el puente se queda con la petición abierta (<c>profilePhotoPicking</c>, <c>NativeBridge.java:531</c>)
+/// En Android el puente se queda con la petición abierta (<c>profilePhotoPicking</c>, <c>NativeBridge.java:544</c>)
 /// mientras el sistema muestra el selector y el diálogo de confirmar; aquí las dos ventanas son modales y
 /// sincrónicas, así que no hay petición a medias que proteger —y tampoco hace falta la negativa «Ya hay un
 /// selector de imagen abierto» (<c>:531</c>), porque dos cuadros modales del mismo proceso no se abultan.
@@ -37,11 +37,11 @@ public sealed partial class TelegramService
 {
     /// Lo que <see cref="PreparePhoto"/> saca del archivo elegido: los bytes que se van a subir y la imagen con la
     /// que se pinta la confirmación. Es exactamente el par que Android guarda como <c>profilePhotoFile</c> y
-    /// <c>preview</c> (<c>NativeBridge.java:1659</c>), menos el archivo.
+    /// <c>preview</c> (<c>NativeBridge.java:1678</c>), menos el archivo.
     private sealed record PreparedPhoto(byte[] Jpeg, BitmapSource Preview);
 
     /// <summary>
-    /// <c>account.photo.pick</c> (<c>NativeBridge.java:531</c>). Cancelar en el selector o en la confirmación
+    /// <c>account.photo.pick</c> (<c>NativeBridge.java:544</c>). Cancelar en el selector o en la confirmación
     /// responde <c>false</c>, como en Android (<c>:1655</c> y <c>:1690</c>); establecerla responde <c>true</c> y
     /// nada de esto es un error.
     /// <para>
@@ -68,7 +68,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>account.photo.delete</c> (<c>NativeBridge.java:532</c>). Sin foto no hay diálogo ni error: Android
+    /// <c>account.photo.delete</c> (<c>NativeBridge.java:545</c>). Sin foto no hay diálogo ni error: Android
     /// responde <c>false</c> cuando <c>GetMe</c> no trae <c>profilePhoto</c> (<c>:1646</c>), y la pantalla ya sabe
     /// que <c>false</c> significa «no cambió nada».
     /// <para>
@@ -114,8 +114,8 @@ public sealed partial class TelegramService
     /// caché de la librería no se puede reemplazar, así que se vuelve a preguntar a Telegram.
     /// <para>
     /// Lo que la AT no previó es <see cref="DesktopState.ProfilePhoto"/>: se escribe una sola vez al abrir la
-    /// sesión, con la instantánea de <c>client.User</c> (<c>TelegramService.cs:532</c>), y además va cacheado en
-    /// disco bajo una clave que no cambia nunca (<c>photo:self:&lt;id&gt;</c> en <c>MediaRegistry.cs:76</c>). Sin
+    /// sesión, con la instantánea de <c>client.User</c> (<c>TelegramService.cs:590</c>), y además va cacheado en
+    /// disco bajo una clave que no cambia nunca (<c>photo:self:&lt;id&gt;</c> en <c>MediaRegistry.cs:79</c>). Sin
     /// borrar ese archivo, cambiar la foto desde otra parte dejaría en la pantalla la foto vieja para siempre.
     /// </para>
     /// </summary>
@@ -154,7 +154,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// El <c>preparePhoto</c> de Android (<c>NativeBridge.java:1670-1687</c>) con el descodificador de WPF:
+    /// El <c>preparePhoto</c> de Android (<c>NativeBridge.java:1690-1707</c>) con el descodificador de WPF:
     /// tipo, peso y dimensiones antes de tocar nada; <c>Factor</c> para no meter en memoria un lienzo de 12000
     /// píxeles; el giro y el espejo leídos del EXIF; el recuadro al centro; 640x640; y JPEG a calidad 88.
     /// <para>
@@ -237,7 +237,7 @@ public sealed partial class TelegramService
         return image;
     }
 
-    /// Los dos pasos del giro, en el orden canónico de EXIF y con la tabla de <c>NativeBridge.java:1677</c>.
+    /// Los dos pasos del giro, en el orden canónico de EXIF y con la tabla de <c>NativeBridge.java:1696</c>.
     private static BitmapSource Turn(BitmapSource source, ushort orientation)
     {
         var angle = DesktopProfilePhoto.Turn(orientation);
@@ -259,7 +259,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// El <c>AlertDialog</c> de Android (<c>NativeBridge.java:1690</c> y <c>:1646</c>) hecho ventana de WPF: el
+    /// El <c>AlertDialog</c> de Android (<c>NativeBridge.java:1709</c> y <c>:1646</c>) hecho ventana de WPF: el
     /// mismo texto, los mismos dos botones y la misma regla de que cerrar la ventana por la equis vale por
     /// «Cancelar». Sale del hilo de la interfaz, como los dos selectores que ya había en el host; la diferencia es
     /// que aquí hay dos botones propios en vez de los del sistema, porque la vista previa de 240 píxeles no cabe en
@@ -269,7 +269,7 @@ public sealed partial class TelegramService
         Dialog(title, body, accept, DesktopProfilePhoto.Cancel, preview, null) == true;
 
     /// <summary>
-    /// El <c>AlertDialog</c> de un solo botón con su caja seleccionable (<c>NativeBridge.java:1863</c>). Android lo
+    /// El <c>AlertDialog</c> de un solo botón con su caja seleccionable (<c>NativeBridge.java:1883</c>). Android lo
     /// monta cuando no hay ninguna aplicación a la que pasarle el enlace recién creado; en Windows es el único camino
     /// posible, porque aquí no hay <c>Intent.ACTION_SEND</c>. Se pone el enlace en una caja de lectura, como allá, y
     /// no en el portapapeles: copiar sin que se pida sería escribir en un sitio que la persona no eligió.

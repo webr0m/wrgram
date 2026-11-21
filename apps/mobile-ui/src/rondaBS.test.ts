@@ -97,9 +97,9 @@ const SEARCH_ROUTE = /if \(path === '([^']+)'\) return request\.method === 'GET'
 
 describe('ronda BS · Giphy como fuente aparte, servida por nuestro borde', () => {
   it('la fuente entra por un parámetro más de catalog, no por un método nuevo', () => {
-    expect(javaLine(817).trim()).toBe('case "catalog":catalog.list(BridgePolicy.text(p,"tab",10),BridgePolicy.text(p,"query",100),BridgePolicy.text(p,"setId",40),BridgePolicy.text(p,"source",20),a::ok,a::fail);break;');
+    expect(javaLine(835).trim()).toBe('case "catalog":catalog.list(BridgePolicy.text(p,"tab",10),BridgePolicy.text(p,"query",100),BridgePolicy.text(p,"setId",40),BridgePolicy.text(p,"source",20),a::ok,a::fail);break;');
     // El envío es la misma orden de siempre: la clave que devuelve el catálogo decide el camino, no un método aparte.
-    expect(javaLine(818)).toContain('case "send.catalog":catalog.send(BridgePolicy.text(p,"key",80)');
+    expect(javaLine(836)).toContain('case "send.catalog":catalog.send(BridgePolicy.text(p,"key",80)');
     // Y la lista cerrada del puente no crece: «giphy» no es un método en ninguna de sus partes.
     expect(policy).not.toContain('giphy');
     expect(count('"catalog"', policy)).toBe(1);
@@ -253,8 +253,8 @@ describe('ronda BS · Giphy como fuente aparte, servida por nuestro borde', () =
     expect(css).toContain('.gif-preview { max-width: 100%; border-radius: 8px; }');
     expect(css).toContain('.expression-picker .catalog-grid .gif-preview { width: 100%; height: 100%; object-fit: cover; background: var(--input); }');
     // El contrato: seis claves, ninguna dirección ajena, y `preview` es opcional porque Telegram no la manda.
-    expect(contractLine(208)).toBe('export interface CatalogItem { key: string; label: string; media?: Media; preview?: string; emoji?:string; premium?:boolean }');
-    expect(count('preview?: string', contractLine(208))).toBe(1);
+    expect(contractLine(211)).toBe('export interface CatalogItem { key: string; label: string; media?: Media; preview?: string; emoji?:string; premium?:boolean }');
+    expect(count('preview?: string', contractLine(211))).toBe(1);
     expect(app).toContain("{item.preview?'Se descargará desde WRGram y se enviará como GIF.':'Contenido real de Telegram.'}");
     expect(count("run<boolean>('send.catalog'", app)).toBe(1);
   });

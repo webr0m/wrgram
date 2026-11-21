@@ -41,7 +41,7 @@ final class MessageExtras {
             TdApi.MessageLiveLocation live = (TdApi.MessageLiveLocation) content;
             long expiresAt = live.expiresIn <= 0 || live.location == null ? 0 : (long) message.date + live.location.livePeriod;
             return location(coordinates(content), "Ubicación en vivo", "", !protect)
-                    .put("live", true).put("expiresAt", expiresAt);
+                    .put("live", true).put("expiresAt", expiresAt).put("canStop", message.isOutgoing && live.expiresIn > 0);
         }
         if (content instanceof TdApi.MessageLocation) return location(coordinates(content), "Ubicación", "", !protect);
         if (content instanceof TdApi.MessageVenue) {

@@ -60,8 +60,8 @@ function csBody(name: string, from = cable): string {
   throw new Error(`Sin cierre para ${name}`);
 }
 
-/** Las ocho claves del DTO, en el orden en que aparecen en una de las tres capas. */
-const ANDROID_KEYS = [...javaLine(1766).matchAll(/"([a-zA-Z]+)",/g)].map(match => match[1]);
+/** Las ocho claves del DTO, en el orden en que aparecen en una de las tres capas (línea medida: 1786). */
+const ANDROID_KEYS = [...javaLine(1786).matchAll(/"([a-zA-Z]+)",/g)].map(match => match[1]);
 
 describe('ronda AV · las sesiones de la cuenta, cruzadas con las tres capas', () => {
   it('las dos frases que la persona lee están letra por letra donde las dice Android', () => {
@@ -74,7 +74,10 @@ describe('ronda AV · las sesiones de la cuenta, cruzadas con las tres capas', (
   });
 
   it('la frase del identificador malo es la guarda de Android, dicha en español', () => {
-    const idLine = policy.split('\n')[52] ?? '';
+    // Medido en el archivo de hoy: la guarda vive en la línea 57. El `envelope` ocupa la 56 desde que la fila
+    // `backgrounds.list`/`background.set` abrió sitio delante en la ronda CH-A, del mismo modo que antes se lo
+    // abrieron `calls.list` y `message.edit.media`.
+    const idLine = policy.split('\n')[56] ?? '';
     expect(idLine).toContain('static long id(JSONObject params,String key)');
     expect(idLine).toContain('throw new IllegalArgumentException("Invalid identifier")');
     // Como en AT y en AU: un código de biblioteca en inglés no explica qué arreglar.
@@ -181,11 +184,11 @@ describe('ronda AV · las sesiones de la cuenta, cruzadas con las tres capas', (
   });
 
   it('las citas de Android en la regla pura y en el cable dicen eso mismo en la línea citada', () => {
-    expect(javaLine(538)).toContain('case "account.sessions":accountSessions(a);break;');
-    expect(javaLine(553)).toContain('case "account.session.revoke"');
-    expect(javaLine(553)).toContain('BridgePolicy.id(p,"id")');
-    expect(javaLine(553)).toContain('new TdApi.TerminateSession(id)');
-    expect(javaLine(1766)).toContain('new TdApi.GetActiveSessions()');
+    expect(javaLine(551)).toContain('case "account.sessions":accountSessions(a);break;');
+    expect(javaLine(566)).toContain('case "account.session.revoke"');
+    expect(javaLine(566)).toContain('BridgePolicy.id(p,"id")');
+    expect(javaLine(566)).toContain('new TdApi.TerminateSession(id)');
+    expect(javaLine(1786)).toContain('new TdApi.GetActiveSessions()');
     for (const citation of [...cable.matchAll(/NativeBridge\.java:(\d+)/g)].map(match => Number(match[1]))) {
       expect(lines[citation - 1]).toBeTruthy();
     }
@@ -264,7 +267,7 @@ describe('ronda AV · medido con las manos, no con agujas', () => {
     expect(rows[0].current).toBe(true);
     expect(rows[0].device).toBe('POCO X5 Pro');
     expect(rows[0].platform).toBe('Android 13');
-    // La forma la comprueba `BridgePolicy.id` (`BridgePolicy.java:53`) dentro del puente, con su frase en inglés de
+    // La forma la comprueba `BridgePolicy.id` (`BridgePolicy.java:57`) dentro del puente, con su frase en inglés de
     // biblioteca; el andamio no emula TDLib, así que aquí la orden pasa y la fila se busca igual.
     expect(await android('account.session.revoke', { id: '9'.repeat(20) })).toBe(true);
     expect((await android('account.sessions')) as Session[]).toHaveLength(3);

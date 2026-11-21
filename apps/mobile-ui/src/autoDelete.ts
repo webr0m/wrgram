@@ -1,7 +1,7 @@
 /**
  * El espejo de `DesktopAutoDelete.cs` (ronda BN): las frases con las que las dos capas niegan el borrado automático,
  * la regla de la duración y las dos claves del DTO. Son las cadenas que el puente devuelve —`AccountSafetyPolicy.java:11`,
- * `:15` y `:17`, más los `answer.fail` de `NativeBridge.java:1370`, `:1373`, `:1381` y `:1392`, todas copiadas
+ * `:15` y `:17`, más los `answer.fail` de `NativeBridge.java:1404`, `:1373`, `:1381` y `:1392`, todas copiadas
  * carácter a carácter en C#—, y `rondaBN.test.ts` las compara con el Java y con el C# para que el andamio de diseño
  * no enseñe nunca una palabra que Android o Windows no dirían.
  *
@@ -16,7 +16,7 @@ export const AUTO_DELETE_DAY = 86400;
 /** `AccountSafetyPolicy.java:17`: 365 días, y ni una hora más. */
 export const AUTO_DELETE_MAX_DAYS = 365;
 
-/** El `777000` de `NativeBridge.java:1347` y `:1370`: el usuario con el que Telegram habla solo. */
+/** El `777000` de `NativeBridge.java:1381` y `:1370`: el usuario con el que Telegram habla solo. */
 export const AUTO_DELETE_TELEGRAM_NOTICES = 777000;
 
 /**
@@ -41,7 +41,7 @@ export const AUTO_DELETE_REFUSALS = {
   unreadable: 'Telegram no devolvió la información actual de la conversación. Vuelve a intentarlo.',
 } as const;
 
-/** El rótulo del botón positivo (`NativeBridge.java:1391`); el negativo es «Cancelar» y los dos responden sin tocar Telegram. */
+/** El rótulo del botón positivo (`NativeBridge.java:1425`); el negativo es «Cancelar» y los dos responden sin tocar Telegram. */
 export const AUTO_DELETE_ACCEPT = 'Aplicar en Telegram';
 
 /** El título del modo predeterminado, que en Android es literal (`:1357`) porque no hay comunidad que nombrar. */

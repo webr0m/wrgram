@@ -7,7 +7,7 @@ using TL;
 
 /// <summary>
 /// Las reglas de las cinco escrituras sobre una fila de supergrupo o canal: <c>groups.member.ban</c> y
-/// <c>groups.member.restrict</c> (<c>NativeBridge.java:2879</c>), <c>groups.member.unban</c> (<c>:2846</c>),
+/// <c>groups.member.restrict</c> (<c>NativeBridge.java:585</c>), <c>groups.member.unban</c> (<c>:2846</c>),
 /// <c>groups.member.promote</c> (<c>:2851</c>) y <c>groups.member.demote</c> (<c>:2852</c>). Cada frase está copiada
 /// carácter a carácter de esas cinco líneas, incluidos los tres rótulos del cuadro de confirmación y el remate de
 /// cada cuerpo; y cada guarda se comprueba en el mismo orden en que las comprueba Android, que no es un orden

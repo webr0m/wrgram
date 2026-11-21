@@ -36,16 +36,16 @@ public static class DesktopLocation
     public const string Venue = "Lugar";
 
     /// Literal de <c>openMessageLocation</c> cuando la fila o el chat protegen su contenido
-    /// (<c>NativeBridge.java:403</c>). Es la misma idea del <c>noforwards</c> que ya apaga el reenvío: el mapa
+    /// (<c>NativeBridge.java:416</c>). Es la misma idea del <c>noforwards</c> que ya apaga el reenvío: el mapa
     /// externo se considera una salida del chat.
     public const string Protected = "Esta ubicación solo se puede ver dentro de este chat.";
 
     /// Literal de <c>openMessageLocation</c> cuando las coordenadas no están o no valen
-    /// (<c>NativeBridge.java:409</c>). La pantalla ya oculta el botón en ese caso; esta frase la oye quien invoque
+    /// (<c>NativeBridge.java:421</c>). La pantalla ya oculta el botón en ese caso; esta frase la oye quien invoque
     /// el puente por su cuenta.
     public const string Gone = "La ubicación ya no está disponible.";
 
-    /// La URL que arma Android tal cual (<c>NativeBridge.java:411</c>): <c>query</c> con «lat,lon». No es un
+    /// La URL que arma Android tal cual (<c>NativeBridge.java:425</c>): <c>query</c> con «lat,lon». No es un
     /// capricho del puente —es el enlace que la persona ve en el portapapeles del navegador—, así que se copia
     /// entero y una prueba lo compara con el archivo Java.
     public const string MapBase = "https://www.google.com/maps/search/?api=1&query=";

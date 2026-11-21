@@ -105,8 +105,8 @@ function scaffoldSentence(key: string): string {
 
 describe('ronda BG · las cuatro capas dicen lo mismo de la cola de ingreso', () => {
   it('el despacho de las dos órdenes está en las tres capas', () => {
-    expect(bridgeLine(740)).toContain('case "chat.requests":joinRequests(p,a);break;');
-    expect(bridgeLine(747)).toContain('case "chat.request.answer":answerJoinRequest(p,a);break;');
+    expect(bridgeLine(757)).toContain('case "chat.requests":joinRequests(p,a);break;');
+    expect(bridgeLine(764)).toContain('case "chat.request.answer":answerJoinRequest(p,a);break;');
     expect(policy).toContain('static { METHODS.addAll(Arrays.asList("chat.requests","chat.request.answer")); }');
     for (const arm of [
       '"chat.requests" => await JoinRequestsAsync(args),',
@@ -122,8 +122,8 @@ describe('ronda BG · las cuatro capas dicen lo mismo de la cola de ingreso', ()
     expect(csNumber('PageSize')).toBe(javaNumber('PAGE'));
     expect(csNumber('BioShown')).toBe(limitAt(modelLine(27), 'limit(request.bio'));
     // El nombre y el título se recortan en el puente, no en la clase de reglas de Android.
-    expect(csNumber('NameShown')).toBe(limitAt(bridgeLine(3549), 'NativeSnapshot.limit'));
-    expect(csNumber('ChatShown')).toBe(limitAt(bridgeLine(3568), 'NativeSnapshot.limit'));
+    expect(csNumber('NameShown')).toBe(limitAt(bridgeLine(3588), 'NativeSnapshot.limit'));
+    expect(csNumber('ChatShown')).toBe(limitAt(bridgeLine(3587), 'NativeSnapshot.limit'));
     expect(csNumber('NameShown')).toBe(80);
     expect(csNumber('ChatShown')).toBe(csNumber('NameShown'));
     // Y la función que recorta hace lo mismo en las dos capas: corte seco más puntos suspensivos.
@@ -132,12 +132,12 @@ describe('ronda BG · las cuatro capas dicen lo mismo de la cola de ingreso', ()
 
   it('cada frase vive una vez por capa, con la cadena de Java delante', () => {
     const measured: [string, string[], number][] = [
-      ['Unsupported', ['3510', '3560'], 2],
-      ['CursorGone', ['3514'], 1],
-      ['NoRightReview', ['3520'], 1],
-      ['SelfAnswer', ['3567'], 1],
-      ['NoRightAnswer', ['3571'], 1],
-      ['ChangedAccount', ['3577'], 1],
+      ['Unsupported', ['3529', '3579'], 2],
+      ['CursorGone', ['3533'], 1],
+      ['NoRightReview', ['3539'], 1],
+      ['SelfAnswer', ['3586'], 1],
+      ['NoRightAnswer', ['3590'], 1],
+      ['ChangedAccount', ['3596'], 1],
     ];
     for (const [name, places, occurrences] of measured) {
       const phrase = csSentence(name);
@@ -152,7 +152,7 @@ describe('ronda BG · las cuatro capas dicen lo mismo de la cola de ingreso', ()
     expect(count(csSentence('CursorIssue'), model)).toBe(3);
     expect(count(csSentence('CursorIssue'), java)).toBe(0);
     expect(count(csSentence('CursorIssue'), cable)).toBe(0);
-    // Las dos causas de la forma estricta: Android las lanza en inglés y las reenvía tal cual (`:3566`), y Windows
+    // Las dos causas de la forma estricta: Android las lanza en inglés y las reenvía tal cual (`:3583`), y Windows
     // las dice en español. No son cadenas de Java, pero tampoco son un invento: citan al centímetro su causa.
     for (const name of ['BadUserId', 'MissingApprove'] as const) {
       expect(count(csSentence(name), java)).toBe(0);
@@ -167,14 +167,14 @@ describe('ronda BG · las cuatro capas dicen lo mismo de la cola de ingreso', ()
   });
 
   it('los cuatro rótulos y los dos cuerpos del diálogo son los de Android', () => {
-    expect(says(bridgeLine(3572), csSentence('ApproveTitle'))).toBe(true);
-    expect(says(bridgeLine(3572), csSentence('RejectTitle'))).toBe(true);
-    expect(says(bridgeLine(3576), csSentence('ApproveAccept'))).toBe(true);
-    expect(says(bridgeLine(3576), csSentence('RejectAccept'))).toBe(true);
-    expect(bridgeLine(3575)).toContain('setNegativeButton("Cancelar"');
+    expect(says(bridgeLine(3591), csSentence('ApproveTitle'))).toBe(true);
+    expect(says(bridgeLine(3591), csSentence('RejectTitle'))).toBe(true);
+    expect(says(bridgeLine(3595), csSentence('ApproveAccept'))).toBe(true);
+    expect(says(bridgeLine(3595), csSentence('RejectAccept'))).toBe(true);
+    expect(bridgeLine(3594)).toContain('setNegativeButton("Cancelar"');
     // Los dos cuerpos, con sus dos interpolaciones en el mismo orden: nombre y título, nunca al revés.
-    expect(bridgeLine(3573)).toContain('"«"+name+"» entrará en «"+title+"» en cuanto Telegram lo confirme. Podrás retirarlo después desde Miembros."');
-    expect(bridgeLine(3574)).toContain('"Se descartará la solicitud de «"+name+"» para «"+title+"». La persona podrá enviar otra si sigue teniendo un enlace válido."');
+    expect(bridgeLine(3592)).toContain('"«"+name+"» entrará en «"+title+"» en cuanto Telegram lo confirme. Podrás retirarlo después desde Miembros."');
+    expect(bridgeLine(3593)).toContain('"Se descartará la solicitud de «"+name+"» para «"+title+"». La persona podrá enviar otra si sigue teniendo un enlace válido."');
     expect(rules).toContain('"«" + name + "» entrará en «" + title + "» en cuanto Telegram lo confirme. Podrás retirarlo después desde Miembros.";');
     expect(rules).toContain('"Se descartará la solicitud de «" + name + "» para «" + title + "». La persona podrá enviar otra si sigue teniendo un enlace válido.";');
     // Un solo sitio decide cuál de los dos se dice, y el cable lo pregunta en lugar de escribirlo.
@@ -186,10 +186,10 @@ describe('ronda BG · las cuatro capas dicen lo mismo de la cola de ingreso', ()
   });
 
   it('la fila y la página salen con las mismas claves, en el mismo orden', () => {
-    // Android parte la fila en dos pasos: `row` pone tres claves y `finishJoinPage` añade el nombre (`:3549`).
+    // Android parte la fila en dos pasos: `row` pone tres claves y `finishJoinPage` añade el nombre (`:3566`).
     const built = keys(model.slice(model.indexOf('static JSONObject row('), model.indexOf('static JSONObject page(')), /\.put\("([a-zA-Z]+)"/g);
     expect(built).toEqual(['userId', 'date', 'bio']);
-    expect(bridgeLine(3549)).toContain('row.put("name",');
+    expect(bridgeLine(3568)).toContain('row.put("name",');
     const written = keys(rules.slice(rules.indexOf('new Entry('), rules.indexOf('public readonly record struct Entry')), /^ {16}([a-zA-Z]+)(?: = |,)/gm);
     expect(written).toEqual([...built, 'name']);
     // La página: `total` y `requests` siempre; `next` y `cursor` viajan también siempre, vacío cuando no hay más.
@@ -205,7 +205,7 @@ describe('ronda BG · las cuatro capas dicen lo mismo de la cola de ingreso', ()
 
   it('lo que la pantalla ofrece es lo que el puente acepta', () => {
     const sheet = desktopSheet();
-    // La puerta del escritorio es la forma de `:3510`/`:3560`, más ancha que la de permisos: la cola también existe
+    // La puerta del escritorio es la forma de `:3527`/`:3577`, más ancha que la de permisos: la cola también existe
     // en un grupo básico, y en MTProto vive en el `PeerChannel` o en el `PeerChat`.
     expect(sheet).toContain("{(chat.supergroup===true||chat.type==='group'||chat.type==='channel')&&<MenuItem icon={<UserPlus/>} label=\"Solicitudes de ingreso\" onClick={()=>{setDialog(undefined);setRequests(chat);}}/>}");
     expect(count('label="Solicitudes de ingreso"', app)).toBe(1);
@@ -250,15 +250,15 @@ describe('ronda BG · las cuatro capas dicen lo mismo de la cola de ingreso', ()
       'var hash = TargetHash(userId);',
       'await client.Messages_HideChatJoinRequest(entry.Input, new InputUser(userId, hash), approve);');
     // La cuenta que cambió a mitad del viaje se comprueba en cada salto: dos en la lectura, tres en la respuesta,
-    // la última después de escribir, que es la que Android pone dentro del botón positivo (`:3577`).
+    // la última después de escribir, que es la que Android pone dentro del botón positivo (`:3594`).
     expect(count('if (client.User?.id != owner) throw new BridgeException(DesktopJoinRequests.ChangedAccount);', READ)).toBe(2);
     expect(count('if (client.User?.id != owner) throw new BridgeException(DesktopJoinRequests.ChangedAccount);', ANSWER)).toBe(3);
-    // La `approve` ausente o no booleana se niega antes de mirar a quién responde, igual que `requiredBool` (`:3565`).
+    // La `approve` ausente o no booleana se niega antes de mirar a quién responde, igual que `requiredBool` (`:3582`).
     expect(count('throw new BridgeException(DesktopJoinRequests.MissingApprove);', cable)).toBe(2);
   });
 
   it('el cable reutiliza lo que ya estaba medido y no vuelve a escribirlo', () => {
-    // El derecho de la cola es el mismo que el de los enlaces (NativeBridge.java:1843 lo lee para las dos cosas),
+    // El derecho de la cola es el mismo que el de los enlaces (NativeBridge.java:1863 lo lee para las dos cosas),
     // la cuenta propia es la de siempre y el hash es el de la ronda AZ: cero reglas nuevas de permisos.
     expect(cable).toContain('if (!await MayManageLinksAsync(client, entry, kind))');
     expect(cable).toContain('var hash = TargetHash(userId);');
@@ -286,13 +286,13 @@ describe('ronda BG · las cuatro capas dicen lo mismo de la cola de ingreso', ()
       for (const [, at] of file.matchAll(/<c>:(\d{3,4})<\/c>/g)) expect(javaLines.length, `:${at}`).toBeGreaterThan(Number(at));
       for (const [, at] of file.matchAll(/<c>:(\d{3,4})-(\d{3,4})<\/c>/g)) expect(javaLines.length, `:${at}`).toBeGreaterThan(Number(at));
     }
-    expect(rules).toContain('NativeBridge.java:740');
+    expect(rules).toContain('NativeBridge.java:757');
     expect(rules).toContain('JoinRequests.java:26-31');
     expect(cable).toContain('BridgePolicy.java:48');
     expect(cable).toContain('JoinRequestsPanel.tsx:65');
     // El abanico de nombres y el cierre de página, que son las dos idas que Android hace y Windows no.
-    expect(bridgeLine(3540)).toContain('private void joinResolve(Answer a,TdApi.Chat chat,JSONArray rows');
-    expect(bridgeLine(3545)).toContain('private void finishJoinPage(Answer a,TdApi.Chat chat,JSONArray rows,int total)');
+    expect(bridgeLine(3559)).toContain('private void joinResolve(Answer a,TdApi.Chat chat,JSONArray rows');
+    expect(bridgeLine(3564)).toContain('private void finishJoinPage(Answer a,TdApi.Chat chat,JSONArray rows,int total)');
   });
 
   it('el andamio modela el flujo en lugar de prometer un vacío', () => {
@@ -423,7 +423,7 @@ describe('ronda BG · medido con las manos en el andamio de escritorio', () => {
     const first = await page();
     expect(await call('chat.request.answer', { id: '14', userId: String(rows(first)[0].userId), approve: true, accountId: '999' })).toBe(false);
     expect(await call('chat.request.answer', { id: '14', userId: 'zzz', approve: true, accountId: '999' })).toBe(false);
-    // Sin la clave, el puente no la echa de menos: `:3563` solo niega una cuenta distinta de la propia.
+    // Sin la clave, el puente no la echa de menos: `:3580` solo niega una cuenta distinta de la propia.
     expect(await call('chat.request.answer', { id: '14', userId: String(rows(first)[0].userId), approve: true })).toBe(true);
   });
 

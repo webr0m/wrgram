@@ -51,10 +51,13 @@ public sealed class MediaRegistry
         return dto;
     }
 
-    public MediaDto? RegisterDocument(Document document, bool exportable = true)
+    /// El nombre del archivo que se guarda y se lista. Cuando lo trae la respuesta de Telegram vale el
+    /// <c>DocumentAttributeFilename</c> del propio documento; cuando lo pide una capa —la de una historia, que en
+    /// MTProto no lleva nombre— vale ese nombre, y la ficha de arriba es la que lo decide.
+    public MediaDto? RegisterDocument(Document document, bool exportable = true, string? displayName = null)
     {
         var mime = string.IsNullOrWhiteSpace(document.mime_type) ? "application/octet-stream" : document.mime_type;
-        var name = string.IsNullOrWhiteSpace(document.Filename) ? "Archivo" : document.Filename!;
+        var name = !string.IsNullOrWhiteSpace(displayName) ? displayName! : string.IsNullOrWhiteSpace(document.Filename) ? "Archivo" : document.Filename!;
         var kind = KindOf(mime, document);
         var entry = new Entry(document.id, mime, name, kind, document.size,
             (client, stream) => client.DownloadFileAsync(document, stream, (PhotoSizeBase?)null, null), exportable);
@@ -244,6 +247,12 @@ public sealed class MediaRegistry
     private static string KindOf(string mime, Document document)
     {
         if (mime is "application/x-tgsticker" or "application/x-tgs") return "sticker";
+        // Un emoji personalizado se clasifica por su formato, como en `NativeSnapshot.java:443-448` (webp es
+        // «image», tgs es «sticker», webm es «video»), y no por ser sticker: en MTProto el mismo documento suele
+        // traer también `DocumentAttributeSticker`, y ese brazo lo mandaría al lector de Lottie, que solo entiende
+        // `.tgs` y reventaría con el PNG estático de casi todos los emojis.
+        if (document.attributes?.Any(attribute => attribute is DocumentAttributeCustomEmoji) == true)
+            return mime.StartsWith("image/") ? "image" : mime.StartsWith("video/") ? "video" : "file";
         if (document.attributes?.Any(attribute => attribute is DocumentAttributeSticker) == true && mime.StartsWith("image/")) return "sticker";
         if (mime.StartsWith("image/")) return "image";
         if (mime.StartsWith("video/")) return "video";

@@ -8,8 +8,8 @@ using TL;
 /// <summary>
 /// Los permisos predeterminados de una comunidad en Windows: las dieciséis reglas que Telegram aplica a quien es
 /// miembro normal de un supergrupo o de un canal. En Android son dos métodos —<c>groupPermissions</c>
-/// (<c>NativeBridge.java:1868</c>) lee y <c>setGroupPermissions</c> (<c>:2376</c>) escribe, los dos despachados en
-/// <c>:576</c> y <c>:577</c>— y todo lo que deciden cabe en cinco líneas: la forma del chat, el derecho propio, la
+/// (<c>NativeBridge.java:1888</c>) lee y <c>setGroupPermissions</c> (<c>:2394</c>) escribe, los dos despachados en
+/// <c>:589</c> y <c>:590</c>— y todo lo que deciden cabe en cinco líneas: la forma del chat, el derecho propio, la
 /// tabla de lo que hay, la ventana de confirmar y la escritura. Aquí eso está escrito una vez, con las frases copiadas
 /// carácter a carácter y el mismo orden, y el cable solo pide.
 /// <para>
@@ -47,9 +47,9 @@ using TL;
 /// foto de la cuenta.
 /// </para>
 /// <para>
-/// Última diferencia de capas, y es la que fijó la ronda AT. En Android el <c>throw</c> de <c>:2376</c> (la forma) y
-/// el de <c>requiredBool</c> (<c>:2757</c>, «Missing permission: X», en inglés) nunca llegan a la pantalla: el despacho
-/// genérico (<c>:152</c>) convierte cualquier <c>throw</c> en «Solicitud no válida o función no disponible.». Windows
+/// Última diferencia de capas, y es la que fijó la ronda AT. En Android el <c>throw</c> de <c>:2393</c> (la forma) y
+/// el de <c>requiredBool</c> (<c>:2774</c>, «Missing permission: X», en inglés) nunca llegan a la pantalla: el despacho
+/// genérico (<c>:167</c>) convierte cualquier <c>throw</c> en «Solicitud no válida o función no disponible.». Windows
 /// dice la causa en español, que es la norma de la casa para lo que en Java es un fallo de programación y no un aviso.
 /// La norma y el orden no cambian; solo el camino por el que llegan.
 /// </para>
@@ -58,33 +58,33 @@ public static class DesktopGroupPermissions
 {
     // ---- las frases ----
 
-    /// El <c>answer.fail</c> de <c>groupPermissions</c> (<c>NativeBridge.java:1868</c>) cuando el chat no es un
+    /// El <c>answer.fail</c> de <c>groupPermissions</c> (<c>NativeBridge.java:1888</c>) cuando el chat no es un
     /// supergrupo. Es la única negación que este flujo decide sin preguntarle a Telegram, y dice «supergrupos y
     /// canales» porque en TDLib el canal <i>es</i> un supergrupo con <c>isChannel</c>.
     public const string Unsupported = "La edición de permisos solo está disponible en supergrupos y canales.";
 
-    /// El <c>IllegalArgumentException</c> de <c>setGroupPermissions</c> (<c>:2376</c>): la misma norma dicho con otras
+    /// El <c>IllegalArgumentException</c> de <c>setGroupPermissions</c> (<c>:2394</c>): la misma norma dicho con otras
     /// palabras, porque allá la escritura no usa el <c>answer.fail</c> de la lectura.
     public const string Required = "Se requiere un supergrupo o canal.";
 
-    /// Las dos veces que Android niega el derecho, en <c>:1868</c> y en <c>:2376</c>, con la cadena exacta. El testigo
+    /// Las dos veces que Android niega el derecho, en <c>:1885</c> y en <c>:2393</c>, con la cadena exacta. El testigo
     /// es <c>canRestrictMembers</c>, que en MTProto es <c>ChatAdminRights.Flags.ban_users</c> y ya lo sabe
     /// <see cref="DesktopGroupMembers.Actor.CanRestrict"/>; aquí solo vive la frase.
     public const string NoRight = "Telegram no concede a esta cuenta el permiso para cambiar permisos del grupo.";
 
-    /// El <c>answer.fail</c> de <c>:1868</c> cuando <c>chat.permissions</c> vale <c>null</c>: TDLib aún no había
+    /// El <c>answer.fail</c> de <c>:1886</c> cuando <c>chat.permissions</c> vale <c>null</c>: TDLib aún no había
     /// cargado la tabla. Sin dato no se pinta un panel en blanco que invite a escribir encima.
     public const string Unreadable = "Telegram aún no cargó los permisos predeterminados.";
 
-    /// Lo que <c>requiredBool</c> (<c>:2757</c>) provoca en Android cuando una de las dieciséis claves no llega o no es
+    /// Lo que <c>requiredBool</c> (<c>:2775</c>) provoca en Android cuando una de las dieciséis claves no llega o no es
     /// booleano. Allá es un <c>throw</c> en inglés que el despacho genérico convierte en el aviso genérico; aquí es la
     /// causa concreta, en español y sin número de clave, que es lo único que la persona puede comprobar.
     public const string Incomplete = "Algún permiso no llegó marcado como verdadero o falso. Vuelve a abrir el panel y guárdalos otra vez.";
 
-    /// El <c>answer.fail</c> del botón positivo de <c>:2376</c>, la guarda de cuenta antes de escribir.
+    /// El <c>answer.fail</c> del botón positivo de <c>:2394</c>, la guarda de cuenta antes de escribir.
     public const string ChangedAccount = "La cuenta cambió. No se cambiaron permisos.";
 
-    /// Las tres palabras del <c>Dialogs.builder</c> de <c>:2376</c>. El <c>Cancelar</c> no se vuelve a declarar: es
+    /// Las tres palabras del <c>Dialogs.builder</c> de <c>:2394</c>. El <c>Cancelar</c> no se vuelve a declarar: es
     /// <see cref="DesktopProfilePhoto.Cancel"/>, la misma cadena que ya usan los diálogos de la foto desde la AU.
     public const string DialogTitle = "Cambiar permisos predeterminados";
     public const string DialogBody =
@@ -97,7 +97,7 @@ public static class DesktopGroupPermissions
     private const ChatBannedRights.Flags Media = ChatBannedRights.Flags.send_media;
 
     /// <summary>
-    /// Las dieciséis claves del DTO de Android, en el orden exacto de su <c>object(...)</c> (<c>:1868</c>) y del
+    /// Las dieciséis claves del DTO de Android, en el orden exacto de su <c>object(...)</c> (<c>:1885</c>) y del
     /// constructor de <c>TdApi.ChatPermissions</c> (<c>TdApi.java:17751</c>). <c>Denied</c> son las banderas que este
     /// panel escribe; <c>Covers</c> son las que no escribe pero que también prohíben lo mismo, y por eso entran en la
     /// lectura. Cada emparejamiento está sacado de la glosa del campo de TDLib y del comentario de la bandera en el
@@ -148,13 +148,13 @@ public static class DesktopGroupPermissions
         _ => null
     };
 
-    /// El DTO de <c>:1868</c>: las dieciséis claves, en su orden, cada una en verdadero solo si ni su bandera ni
+    /// El DTO de <c>:1885</c>: las dieciséis claves, en su orden, cada una en verdadero solo si ni su bandera ni
     /// ninguno de sus paraguas está puesto. La inversión es la del esquema, no una decisión de aquí.
     public static Dictionary<string, bool> Dto(ChatBannedRights rights) => Fields.ToDictionary(
         field => field.Key,
         field => (rights.flags & (field.Denied | field.Covers)) == 0);
 
-    /// Si las dieciséis claves están todas presentes. Es el <c>requiredBool</c> de <c>:2376</c> hecho pregunta: la
+    /// Si las dieciséis claves están todas presentes. Es el <c>requiredBool</c> de <c>:2394</c> hecho pregunta: la
     /// pantalla siempre las manda todas, así que faltar una es un mensaje mal formado, no un gusto del usuario.
     public static bool Complete(IReadOnlyDictionary<string, bool> values) =>
         Fields.All(field => values.ContainsKey(field.Key));

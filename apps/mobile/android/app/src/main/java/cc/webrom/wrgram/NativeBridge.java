@@ -55,7 +55,7 @@ final class NativeBridge implements TdSession.Listener {
     private final Runnable assistantChanged=this::schedule;
     private final PendingRequests pending=new PendingRequests();
     private final Map<Long,TdApi.Message> searchResults=new HashMap<>();
-    private long searchOwner,searchChat,searchNext,searchFrom,searchUntil;private String searchQuery="",searchFilterKey="",searchSender="",searchSecretOffset="";private int searchTopic,searchGeneration;private boolean searchSecret;
+    private long searchOwner,searchChat,searchNext,searchFrom,searchUntil;private String searchQuery="",searchFilterKey="",searchSender="",searchSecretOffset="";private int searchTopic,searchGeneration;private boolean searchSecret;private long callLogOwner;private String callLogOffset="";private boolean callLogMissed;
     private long threadOwner,threadRootChat,threadRootId,threadNext;private JSONObject threadSummary;
     private long requestOwner,requestChat,requestCursorUser;private int requestCursorDate;
     private long linkOwner,linkChat;private int linkOffsetDate;private String linkOffsetLink="";private boolean linkRevoked;
@@ -82,6 +82,19 @@ final class NativeBridge implements TdSession.Listener {
     private TdApi.Message locationSource;
     private long locationReply;
     private boolean locationSilent;
+    private Answer liveAnswer;
+    private long liveChat,liveReply,liveMessage,liveOwner,liveStartElapsed,livePushElapsed;
+    private int livePeriod;
+    private boolean liveSilent;
+    private android.location.Location liveFix,livePushed;
+    private android.location.LocationManager liveManager;
+    private android.location.LocationListener liveListener;
+    private final Runnable liveTicker=new Runnable(){@Override public void run(){
+        if(destroyed||liveMessage==0)return;
+        if(LiveLocationPolicy.remainingMs(SystemClock.elapsedRealtime(),liveStartElapsed,livePeriod)<=0){stopLiveTracking();return;}
+        pushLiveLocation(liveFix);
+        main.postDelayed(this,LiveLocationPolicy.TICK_MS);
+    }};
     private Answer voiceAnswer;
     private android.media.MediaRecorder voiceRecorder;
     private File voiceFile;
@@ -110,14 +123,14 @@ final class NativeBridge implements TdSession.Listener {
     void attach(){if(!currentAccount())return;attached=true;chatsDirty=true;messagesDirty=true;session.observe(this);assistant.observe(assistantChanged);if(((WrgramApplication)activity.getApplication()).ageAccess().allowed())session.onForeground();if(session.ready()&&contactSyncEnabled(session.selfId))armContactSync();schedule();}
     void detach(){if(!((WrgramApplication)activity.getApplication()).ageAccess().allowed())activity.clearSensitiveGateFields();attached=false;main.removeCallbacks(contactSyncTrigger);session.unobserve(this);assistant.unobserve(assistantChanged);session.stopTyping();cancelVoiceRecording();}
     private void armContactSync(){main.removeCallbacks(contactSyncTrigger);main.postDelayed(contactSyncTrigger,8000);}
-    void destroy(){cancelVoiceRecording();if(videoNotePicking!=null)videoNotePicking.fail("La app se cerró; no se envió el videomensaje.");videoNotePicking=null;if(locationAnswer!=null)locationAnswer.fail("La app se cerró; no se compartió ninguna ubicación.");if(profilePhotoPicking!=null)profilePhotoPicking.fail("La app se cerró; no se cambió la foto.");locationAnswer=null;locationSource=null;profilePhotoPicking=null;if(chatPhotoPicking!=null)chatPhotoPicking.fail("La app se cerró; no se cambió la foto de la comunidad.");chatPhotoPicking=null;if(storyPicking!=null)storyPicking.fail("La app se cerró; no se publicó ninguna historia.");storyPicking=null;if(albumPicking!=null)albumPicking.fail("La app se cerró; no se envió el álbum.");albumPicking=null;if(contactsImportAnswer!=null)contactsImportAnswer.fail("La app se cerró; no se importaron contactos.");contactsImportAnswer=null;if(contactSyncPending!=null)contactSyncPending.fail("La app se cerró; no se activó la sincronización de agenda.");contactSyncPending=null;if(contactSyncNowAnswer!=null)contactSyncNowAnswer.fail("La app se cerró; no se sincronizó la agenda.");contactSyncNowAnswer=null;discardStoryDraft();deleteProfilePhotoFile();deleteChatPhotoFile();starsPayments.clear();pending.clear();destroyed=true;main.removeCallbacksAndMessages(null);events=null;media.clear();catalog.clear();inlineBatches.clear();inlineSelections.clear();clearUnsent();}
-    @Override public void changed(String kind){syncAccount();if(kind.equals("chats"))chatsDirty=true;if(kind.equals("messages")||kind.startsWith("history"))messagesDirty=true;if(kind.equals("selected")||kind.equals("auth")||kind.equals("account")){chatsDirty=true;messagesDirty=true;}if(kind.equals("auth")&&session.ready()&&contactSyncEnabled(session.selfId))armContactSync();schedule();}
-    private void syncAccount(){if(account==session.selfId)return;account=session.selfId;chatsDirty=true;messagesDirty=true;media.clear();catalog.clear();searchResults.clear();inlineBatches.clear();inlineSelections.clear();openStoryViews.clear();starsPayments.clear();clearUnsent();if(account==0)assistant.clear();}
+    void destroy(){cancelVoiceRecording();if(liveAnswer!=null)liveAnswer.fail("La app se cerró; no se compartió ninguna ubicación en directo.");clearLiveRequest(null);stopLiveTracking();if(videoNotePicking!=null)videoNotePicking.fail("La app se cerró; no se envió el videomensaje.");videoNotePicking=null;if(locationAnswer!=null)locationAnswer.fail("La app se cerró; no se compartió ninguna ubicación.");if(profilePhotoPicking!=null)profilePhotoPicking.fail("La app se cerró; no se cambió la foto.");locationAnswer=null;locationSource=null;profilePhotoPicking=null;if(chatPhotoPicking!=null)chatPhotoPicking.fail("La app se cerró; no se cambió la foto de la comunidad.");chatPhotoPicking=null;if(storyPicking!=null)storyPicking.fail("La app se cerró; no se publicó ninguna historia.");storyPicking=null;if(albumPicking!=null)albumPicking.fail("La app se cerró; no se envió el álbum.");albumPicking=null;if(contactsImportAnswer!=null)contactsImportAnswer.fail("La app se cerró; no se importaron contactos.");contactsImportAnswer=null;if(contactSyncPending!=null)contactSyncPending.fail("La app se cerró; no se activó la sincronización de agenda.");contactSyncPending=null;if(contactSyncNowAnswer!=null)contactSyncNowAnswer.fail("La app se cerró; no se sincronizó la agenda.");contactSyncNowAnswer=null;discardStoryDraft();deleteProfilePhotoFile();deleteChatPhotoFile();starsPayments.clear();pending.clear();destroyed=true;main.removeCallbacksAndMessages(null);events=null;media.clear();catalog.clear();inlineBatches.clear();inlineSelections.clear();clearUnsent();}
+    @Override public void changed(String kind){syncAccount();if(kind.equals("chats"))chatsDirty=true;if(kind.equals("messages")||kind.startsWith("history"))messagesDirty=true;if(kind.equals("selected")||kind.equals("auth")||kind.equals("account")){chatsDirty=true;messagesDirty=true;}if(kind.equals("auth")&&session.ready()&&contactSyncEnabled(session.selfId))armContactSync();if(kind.equals("appearance"))rememberCloudBackgrounds();schedule();}
+    private void syncAccount(){if(account==session.selfId)return;account=session.selfId;chatsDirty=true;messagesDirty=true;media.clear();catalog.clear();searchResults.clear();inlineBatches.clear();inlineSelections.clear();openStoryViews.clear();starsPayments.clear();clearUnsent();if(account==0)assistant.clear();if(liveMessage!=0||liveAnswer!=null){clearLiveRequest(null);stopLiveTracking();}}
     private static void post(JavaScriptReplyProxy proxy,String value){if(WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER))proxy.postMessage(value);}
     private static void reject(JavaScriptReplyProxy proxy,String id,String error){try{post(proxy,object("id",id,"result",JSONObject.NULL,"error",error).toString());}catch(Exception ignored){}}
     void refreshAccessGate(){chatsDirty=true;messagesDirty=true;schedule();}
     void updateChanged(){schedule();}
-    private JSONObject bridgeState(boolean includeChats,boolean includeMessages)throws Exception{if(((WrgramApplication)activity.getApplication()).ageAccess().allowed()){JSONObject value=dto.state(includeChats,includeMessages);value.put("update",activity.playUpdateStatus());value.put("contactsSync",contactSyncStatus());value.put("voiceAutoStopped",voiceAutoStopped);return value;}return object("ready",false,"auth","age","consent",false,"busy",false,"connection","Sin conectar","online",false,"error","","notice","","version",BuildConfig.VERSION_NAME,"selfId","0","name","","active","0","canSend",false,"sending",false,"uncertain",false,"chatsBusy",false,"chats",new JSONArray(),"messages",new JSONArray(),"folders",new JSONArray(),"history",object("loading",false,"error","","end",false,"latest",true),"appearance",NativeSnapshot.appearanceDto(prefs,activity),"permissions",object("notes",false,"replies",false),"assistant",object("state","Sin comprobar","ready",false,"busy",false,"consent",false,"error","","turns",new JSONArray()),"security",AppLock.status(activity),"access",session.accessState(),"wallet",object("stars",0,"nanostars",0,"premium",false));}
+    private JSONObject bridgeState(boolean includeChats,boolean includeMessages)throws Exception{if(((WrgramApplication)activity.getApplication()).ageAccess().allowed()){JSONObject value=dto.state(includeChats,includeMessages);value.put("update",activity.playUpdateStatus());value.put("contactsSync",contactSyncStatus());value.put("voiceAutoStopped",voiceAutoStopped);return value;}return object("ready",false,"auth","age","consent",false,"busy",false,"connection","Sin conectar","online",false,"error","","notice","","version",BuildConfig.VERSION_NAME,"selfId","0","name","","active","0","canSend",false,"sending",false,"uncertain",false,"chatsBusy",false,"chats",new JSONArray(),"messages",new JSONArray(),"folders",new JSONArray(),"history",object("loading",false,"error","","end",false,"latest",true),"appearance",NativeSnapshot.appearanceDto(prefs,activity,String.valueOf(session.selfId)),"permissions",object("notes",false,"replies",false),"assistant",object("state","Sin comprobar","ready",false,"busy",false,"consent",false,"error","","turns",new JSONArray()),"security",AppLock.status(activity),"access",session.accessState(),"wallet",object("stars",0,"nanostars",0,"premium",false));}
     private void schedule(){
         if(scheduled||destroyed||!currentAccount())return;
         scheduled=true;
@@ -708,7 +721,7 @@ final class NativeBridge implements TdSession.Listener {
             case "saved.sources":savedSources(p,a);break;
             case "saved.history":savedHistory(p,a);break;
             case "gallery.list":gallery(p,a);break;
-            case "chat.find":requireAccount();session.findPublic(BridgePolicy.text(p,"username",33),chat->{if(!session.unsupported(chat).isEmpty())a.fail(session.unsupported(chat));else{session.open(chat.id);a.ok(true);}},a::fail);break;
+            case "chat.find":requireAccount();session.findPublic(BridgePolicy.text(p,"username",33),chat->{if(chat==null){a.fail(TdSession.CHAT_NOT_LOADED);return;}session.open(chat.id);a.ok(true);},a::fail);break;
             case "telegram.link":openTelegramLink(p,a);break;
             case "chats.more":session.refreshChats();a.ok(true);break;
             case "chats.list":{requireAccount();String key=BridgePolicy.text(p,"list",40);TdApi.ChatList list=new TdApi.ChatListMain();if(key.equals("archive"))list=new TdApi.ChatListArchive();else if(key.startsWith("folder:")){int id=Integer.parseInt(key.substring(7));if(session.folders.stream().noneMatch(folder->folder.id==id))throw new IllegalArgumentException();list=new TdApi.ChatListFolder(id);}session.selectList(list);a.ok(true);break;}
@@ -716,6 +729,7 @@ final class NativeBridge implements TdSession.Listener {
             case "chat.archive":{TdApi.Chat chat=target(p);TdApi.AddChatToList action=new TdApi.AddChatToList();action.chatId=chat.id;action.chatList=p.getBoolean("value")?new TdApi.ChatListArchive():new TdApi.ChatListMain();perform(action,a,value->a.ok(true));break;}
             case "chat.unread":{TdApi.Chat chat=target(p);TdApi.ToggleChatIsMarkedAsUnread action=new TdApi.ToggleChatIsMarkedAsUnread();action.chatId=chat.id;action.isMarkedAsUnread=p.getBoolean("value");perform(action,a,value->a.ok(true));break;}
             case "chat.mute":{TdApi.Chat chat=target(p);if(chat.notificationSettings==null)throw new IllegalArgumentException();TdApi.ChatNotificationSettings value=copySettings(chat.notificationSettings);value.useDefaultMuteFor=false;value.muteFor=ChatNotificationPolicy.muteFor(p);perform(new TdApi.SetChatNotificationSettings(chat.id,value),a,result->a.ok(true));break;}
+            case "chat.defaultSilent":{TdApi.Chat chat=target(p);perform(new TdApi.ToggleChatDefaultDisableNotification(chat.id,p.getBoolean("value")),a,result->a.ok(true));break;}
             case "chat.read":{
                 if(!p.has("messageId")){session.markRead();a.ok(true);break;}
                 requireAccount();
@@ -732,10 +746,13 @@ final class NativeBridge implements TdSession.Listener {
             case "history.refresh":session.refreshHistory();a.ok(true);break;
             case "typing":if(prefs.getBoolean("typing",true))session.typing(p.getBoolean("active"));a.ok(true);break;
             case "send.text":requireAccount();if(p.has("accountId")&&(BridgePolicy.id(p,"accountId")!=session.selfId||BridgePolicy.id(p,"chatId")!=session.activeChat||p.optInt("topicId",-1)!=session.activeTopic)){a.fail("La conversación cambió. No se envió el mensaje.");break;}if(session.uncertain(session.activeChat)&&!p.optBoolean("acknowledge")){a.fail("Comprueba el envío anterior antes de repetirlo.");break;}if(p.optBoolean("acknowledge"))session.acknowledgeUncertain(session.activeChat);String sendText=BridgePolicy.text(p,"text",4096);long sendSchedule=p.optLong("schedule",0);if("online".equals(p.optString("schedule","")))sendSchedule=-1;session.sendText(sendText,textEntities(p,sendText.length()),BridgePolicy.id(p,"reply"),sendSchedule,p.optInt("repeatPeriod",0),p.optBoolean("silent"),p.has("accountId"),a::ok);break;
-            case "messages.forward":{requireAccount();long[] ids=BridgePolicy.ids(p,"ids",100);java.util.Arrays.sort(ids);long to=BridgePolicy.id(p,"to");TdApi.Chat target=session.chat(to);if(target==null||!session.unsupported(target).isEmpty())throw new IllegalArgumentException();session.forwardMessages(to,ids,sendOptions(p),p.optBoolean("sendCopy"),p.optBoolean("removeCaption"),a::ok);break;}
+            case "messages.forward":{requireAccount();long[] ids=BridgePolicy.ids(p,"ids",100);java.util.Arrays.sort(ids);long to=BridgePolicy.id(p,"to");TdApi.Chat target=session.chat(to);if(target==null)throw new IllegalArgumentException();session.forwardMessages(to,ids,sendOptions(p),p.optBoolean("sendCopy"),p.optBoolean("removeCaption"),a::ok);break;}
             case "messages.delete":{requireAccount();long[] ids=BridgePolicy.ids(p,"ids",100);session.deleteMessages(session.activeChat,ids,p.optBoolean("revoke"),a::ok);break;}
             case "messages.search":search(p,a);break;
             case "messages.search.more":searchMore(p,a);break;
+            case "calls.list":callLog(p,a);break;
+            case "backgrounds.list":backgroundsList(p,a);break;
+            case "background.set":backgroundSet(p,a);break;
             case "thread.load":threadLoad(p,a);break;
             case "chat.requests":joinRequests(p,a);break;
             case "chat.invitelinks":inviteLinks(p,a);break;
@@ -811,6 +828,7 @@ final class NativeBridge implements TdSession.Listener {
             case "chat.bot.remove":removeBotFromChat(p,a);break;
             case "sponsored.retry":session.retrySponsoredMessages();a.ok(true);break;
             case "message.edit":case "message.edit.caption":case "message.delete":case "message.copy":case "message.forward":messageAction(method,p,a);break;
+            case "message.edit.media":editMessageMedia(p,a);break;
             case "message.retry":retryUnsent(p,a);break;
             case "message.unsent.delete":deleteUnsent(p,a);break;
             case "message.pin":if(p.has("value")&&!p.getBoolean("value"))unpin(BridgePolicy.id(p,"id"),a);else messageAction(method,p,a);break;
@@ -836,6 +854,8 @@ final class NativeBridge implements TdSession.Listener {
             case "poll.voters":pollVoters(p,a);break;
             case "share.contact":shareContact(p,a);break;
             case "share.location":shareLocation(p,a);break;
+            case "location.live.start":startLiveLocation(p,a);break;
+            case "location.live.stop":stopLiveLocation(p,a);break;
             case "voice.start":startVoice(a);break;
             case "voice.finish":finishVoice(a);break;
             case "voice.cancel":cancelVoice(a);break;
@@ -860,7 +880,7 @@ final class NativeBridge implements TdSession.Listener {
             case "assistant.send":a.ok(assistant.send(BridgePolicy.text(p,"text",4000)));break;
              case "native.settings":activity.showSettingsSupport();a.ok(true);break;
              case "native.assistant":activity.startActivity(new Intent(activity,MainActivity.class).putExtra("page","assistant"));a.ok(true);break;
-            case "attachment.recents":case "attachment.photos.permission":case "attachment.photo":case "attachment.recents.close":deviceGallery(method,p,a);break; case "composer.focus":composerFocus(p.optBoolean("active"));a.ok(true);break; default:throw new IllegalArgumentException();
+            case "attachment.recents":case "attachment.photos.permission":case "attachment.photo":case "attachment.recents.close":deviceGallery(method,p,a);break; case "composer.focus":composerFocus(p.optBoolean("active"));a.ok(true);break; case "groups.stats":{TdApi.Chat statsChat=target(p);if(!(statsChat.type instanceof TdApi.ChatTypeSupergroup)){a.fail(GroupChatStats.NOT_A_COMMUNITY);break;}final long statsOwner=a.owner;session.perform(new TdApi.GetChatStatistics(statsChat.id,false),stats->{if(destroyed||!currentAccount()||statsOwner!=session.selfId){a.fail(GroupChatStats.CHANGED);return;}try{JSONObject statsValue=GroupChatStats.dto(stats,id->{TdApi.User statsUser=session.user(id);if(statsUser==null)session.requestUser(id);String statsName=PersonName.of(statsUser);return statsName==null?"Usuario de Telegram":statsName;});if(statsValue==null){a.fail(GroupChatStats.BROKEN);return;}a.ok(statsValue);}catch(Exception ignored){a.fail(GroupChatStats.BROKEN);}},text->a.fail(GroupChatStats.explain(text)));}break; default:throw new IllegalArgumentException();
         }
     }
     private void changeAccount(String slot,Answer answer){WrgramApplication app=(WrgramApplication)activity.getApplication();if(app.account(slot)==null)throw new IllegalArgumentException();session.closeChat();clearUnsent();discardStoryDraft();if(storyPicking!=null)storyPicking.fail("La cuenta cambió. No se publicó ninguna historia.");storyPicking=null;media.clear();catalog.clear();searchResults.clear();MiniAppLaunch.clear();answer.ok(true);app.switchAccount(slot);main.post(activity::recreate);}
@@ -1124,7 +1144,7 @@ final class NativeBridge implements TdSession.Listener {
     }
     private void openInlineDestination(TdApi.Message message,int row,int column,long bot,String query,TdApi.InternalLinkType link,TdApi.Chat target,Answer answer){
         if(!currentInternalSwitch(message,row,column,link,query)){answer.fail("El botón o la conversación cambió. Vuelve a pulsarlo.");return;}
-        if(target.type instanceof TdApi.ChatTypeSecret||!session.unsupported(target).isEmpty()){answer.fail("El chat enlazado no admite resultados inline.");return;}
+        if(target==null||target.type instanceof TdApi.ChatTypeSecret){answer.fail("El chat enlazado no admite resultados inline.");return;}
         Dialogs.builder(activity).setTitle("Abrir destino inline").setMessage("El botón dirige a "+target.title+". Telegram consultará el bot inline al continuar; no se enviará nada hasta que elijas un resultado.").setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton("Continuar",(d,w)->{if(!currentInternalSwitch(message,row,column,link,query)){answer.fail("El destino cambió. No se consultó el bot.");return;}requestInlineResults(answer.owner,message.chatId,target.id,bot,message.topicId,null,session.senderName(message.senderId),target.title,query,answer);}).setOnCancelListener(ignored->answer.ok(false)).show();
     }
     private boolean hasInlineTarget(TdApi.TargetChatTypes types){return types!=null&&(types.allowUserChats||types.allowBotChats||types.allowGroupChats||types.allowChannelChats);}
@@ -1177,8 +1197,8 @@ final class NativeBridge implements TdSession.Listener {
     private void shareChatWithBot(TdApi.Message message,int row,int column,TdApi.KeyboardButtonTypeRequestChat button,Answer answer){if(!privateBotChat(message)){answer.fail("La solicitud de chats solo funciona en el chat privado del bot.");return;}if(button.botIsMember||button.userAdministratorRights!=null||button.botAdministratorRights!=null){answer.fail("Esta solicitud requiere agregar el bot o conceder permisos administrativos. WRGram no realiza esos cambios automáticamente.");return;}java.util.ArrayList<TdApi.Chat> candidates=new java.util.ArrayList<>();java.util.ArrayList<String> labels=new java.util.ArrayList<>();for(TdApi.Chat chat:session.chatList("")){if(chat.id==message.chatId||chat.type instanceof TdApi.ChatTypeSecret||chat.type instanceof TdApi.ChatTypePrivate)continue;boolean channel=chat.type instanceof TdApi.ChatTypeSupergroup&&((TdApi.ChatTypeSupergroup)chat.type).isChannel;if(channel!=button.chatIsChannel)continue;candidates.add(chat);labels.add(chat.title+(channel?" · Canal":" · Grupo"));}if(candidates.isEmpty()){answer.fail("No hay chats cargados del tipo solicitado por el bot.");return;}AlertDialog dialog=Dialogs.builder(activity).setTitle("Elegir chat para compartir").setMessage("La lista incluye chats ya cargados. El bot no se agregará ni recibirá permisos administrativos.").setItems(labels.toArray(new String[0]),(box,which)->{TdApi.Chat selected=candidates.get(which);if(!currentReplyButton(message,row,column,button.id,false)||!privateBotChat(message)){answer.fail("La conversación cambió. No se compartió ningún chat.");return;}TdApi.KeyboardButtonSource source=new TdApi.KeyboardButtonSourceMessage(message.chatId,message.id);perform(new TdApi.ShareChatWithBot(source,button.id,selected.id,true),answer,ignored->{String requested=(button.requestTitle?"título ":"")+(button.requestUsername?"nombre de usuario ":"")+(button.requestPhoto?"foto":"");String fields=requested.isEmpty()?"información del chat":requested.trim();Dialogs.builder(activity).setTitle("Confirmar chat para el bot").setMessage("Se compartirá "+selected.title+" y "+fields+" con "+session.senderName(message.senderId)+". No se cambiarán membresías ni permisos.").setNegativeButton("Cancelar",(confirm,action)->answer.ok(false)).setPositiveButton("Compartir",(confirm,action)->{if(!currentReplyButton(message,row,column,button.id,false)||!privateBotChat(message)){answer.fail("El teclado cambió. No se compartió el chat.");return;}perform(new TdApi.ShareChatWithBot(source,button.id,selected.id,false),answer,result->answer.ok(true));}).setOnCancelListener(confirm->answer.ok(false)).show();});}).setNegativeButton("Cancelar",(box,which)->answer.ok(false)).create();dialog.setOnCancelListener(box->answer.ok(false));dialog.show();}
     private void sharePhoneWithBot(TdApi.Message message,Answer answer){if(!privateBotChat(message)){answer.fail("Solo puedes compartir el número con el bot en su chat privado.");return;}TdApi.User me=session.user(session.selfId);if(me==null||me.phoneNumber==null||me.phoneNumber.isEmpty()){answer.fail("Telegram no proporcionó un número que se pueda compartir.");return;}String phone=me.phoneNumber;String name=me.firstName==null||me.firstName.isEmpty()?"Contacto":me.firstName;Dialogs.builder(activity).setTitle("Compartir teléfono con el bot").setMessage("Se enviará este número de tu cuenta de Telegram al bot:\n\n"+phone+"\n\nNo se comparte sin tu confirmación.").setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton("Compartir",(d,w)->{if(!currentAccount()||session.activeChat!=message.chatId){answer.fail("La conversación cambió. No se envió el teléfono.");return;}TdApi.Contact contact=new TdApi.Contact(phone,NativeSnapshot.limit(name,64),NativeSnapshot.limit(me.lastName==null?"":me.lastName,64),"",me.id);sendBotContent(message,new TdApi.InputMessageContact(contact),answer);}).setOnCancelListener(d->answer.ok(false)).show();}
     private void requestLocationForBot(TdApi.Message message,Answer answer){if(!privateBotChat(message)){answer.fail("Solo puedes compartir una ubicación con el bot en su chat privado.");return;}if(locationAnswer!=null){answer.fail("Ya hay una solicitud de ubicación en curso.");return;}Dialogs.builder(activity).setTitle("Compartir ubicación").setMessage("El bot solicita tu ubicación actual. Android pedirá permiso y luego podrás revisar la ubicación antes de enviarla.").setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton("Continuar",(d,w)->{if(!currentAccount()||session.activeChat!=message.chatId){answer.fail("La conversación cambió. No se solicitó ubicación.");return;}locationAnswer=answer;locationChat=message.chatId;locationSource=message;activity.requestBotLocationPermission();}).setOnCancelListener(d->answer.ok(false)).show();}
-    void botLocationPermissionResult(boolean granted){Answer answer=locationAnswer;long chatId=locationChat;TdApi.Message source=locationSource;long replyTo=locationReply;boolean silent=locationSilent;locationAnswer=null;locationChat=0;locationSource=null;locationReply=0;locationSilent=false;if(answer==null||answer.finished)return;if(!granted){answer.fail("No se concedió permiso. No se envió ninguna ubicación.");return;}if(!currentAccount()||!session.ready()||session.activeChat!=chatId){answer.fail("La conversación o la cuenta cambió. No se envió la ubicación.");return;}android.location.LocationManager manager=(android.location.LocationManager)activity.getSystemService(Context.LOCATION_SERVICE);android.location.Location latest=null;if(manager!=null){for(String provider:new String[]{android.location.LocationManager.NETWORK_PROVIDER,android.location.LocationManager.GPS_PROVIDER})try{android.location.Location candidate=manager.getLastKnownLocation(provider);if(candidate!=null&&(latest==null||candidate.getTime()>latest.getTime()))latest=candidate;}catch(SecurityException ignored){}}if(latest==null||System.currentTimeMillis()-latest.getTime()>5*60_000L){answer.fail("Android no tiene una ubicación reciente. No se envió nada; inténtalo cuando haya una señal disponible.");return;}float meters=latest.hasAccuracy()?latest.getAccuracy():0;String estimate=String.format(java.util.Locale.ROOT,"%.5f, %.5f (±%.0f m)",latest.getLatitude(),latest.getLongitude(),meters);android.location.Location location=latest;TdApi.Chat chat=session.chat(chatId);String destination=source!=null?"al bot":chat==null?"en esta conversación":"en “"+NativeSnapshot.limit(chat.title,80)+"”";Dialogs.builder(activity).setTitle("Confirmar ubicación").setMessage("Se enviará "+destination+" esta ubicación reciente:\n\n"+estimate).setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton("Enviar ubicación",(d,w)->{if(!currentAccount()||session.activeChat!=chatId){answer.fail("La conversación cambió. No se envió la ubicación.");return;}TdApi.InputMessageLocation content=new TdApi.InputMessageLocation(new TdApi.Location(location.getLatitude(),location.getLongitude(),meters));if(source!=null)sendBotContent(source,content,answer);else session.sendContent(content,replyTo,silent,answer::ok);}).setOnCancelListener(d->answer.ok(false)).show();}
-    private void createPollForBot(TdApi.Message message,TdApi.KeyboardButtonTypeRequestPoll requested,Answer answer){if(!privateBotChat(message)){answer.fail("Este teclado solo permite crear una encuesta en el chat privado del bot.");return;}LinearLayout form=new LinearLayout(activity);form.setOrientation(LinearLayout.VERTICAL);int pad=Math.round(16*activity.getResources().getDisplayMetrics().density);form.setPadding(pad,pad,pad,0);EditText question=new EditText(activity);question.setSingleLine(true);question.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(255)});question.setHint("Pregunta de la encuesta");EditText options=new EditText(activity);options.setMinLines(3);options.setGravity(android.view.Gravity.TOP);options.setHint("Una opción por línea (mínimo 2)");form.addView(question);form.addView(options);EditText correct=new EditText(activity);if(requested.forceQuiz){correct.setSingleLine(true);correct.setInputType(InputType.TYPE_CLASS_NUMBER);correct.setHint("Número de la respuesta correcta (1, 2…)");form.addView(correct);}AlertDialog dialog=Dialogs.builder(activity).setTitle(requested.forceQuiz?"Crear cuestionario":"Crear encuesta").setMessage("Revisa la pregunta y opciones antes de enviarlas al bot.").setView(form).setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton("Crear y enviar",null).create();dialog.setOnCancelListener(ignored->answer.ok(false));dialog.setOnShowListener(ignored->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view->{String q=question.getText().toString().trim();java.util.ArrayList<String> values=new java.util.ArrayList<>();for(String line:options.getText().toString().split("\\R")){String value=line.trim();if(!value.isEmpty())values.add(value);}if(q.isEmpty()||values.size()<2||values.size()>10||values.stream().anyMatch(value->value.length()>100)){options.setError("Escribe entre 2 y 10 opciones, de hasta 100 caracteres.");return;}TdApi.InputPollType pollType;if(requested.forceQuiz){int selected;try{selected=Integer.parseInt(correct.getText().toString().trim())-1;}catch(Exception ignoredParse){correct.setError("Indica el número de una opción correcta.");return;}if(selected<0||selected>=values.size()){correct.setError("El número debe corresponder a una opción.");return;}pollType=new TdApi.InputPollTypeQuiz(new int[]{selected},null,null);}else pollType=new TdApi.InputPollTypeRegular(false);TdApi.InputMessagePoll poll=new TdApi.InputMessagePoll();poll.question=new TdApi.FormattedText(q,new TdApi.TextEntity[0]);poll.options=new TdApi.InputPollOption[values.size()];for(int i=0;i<values.size();i++)poll.options[i]=new TdApi.InputPollOption(new TdApi.FormattedText(values.get(i),new TdApi.TextEntity[0]),null);poll.isAnonymous=true;poll.allowsMultipleAnswers=false;poll.type=pollType;dialog.dismiss();sendBotContent(message,poll,answer);}));dialog.show();}
+    void botLocationPermissionResult(boolean granted){if(liveAnswer!=null){livePermissionResult(granted);return;}Answer answer=locationAnswer;long chatId=locationChat;TdApi.Message source=locationSource;long replyTo=locationReply;boolean silent=locationSilent;locationAnswer=null;locationChat=0;locationSource=null;locationReply=0;locationSilent=false;if(answer==null||answer.finished)return;if(!granted){answer.fail("No se concedió permiso. No se envió ninguna ubicación.");return;}if(!currentAccount()||!session.ready()||session.activeChat!=chatId){answer.fail("La conversación o la cuenta cambió. No se envió la ubicación.");return;}android.location.LocationManager manager=(android.location.LocationManager)activity.getSystemService(Context.LOCATION_SERVICE);android.location.Location latest=null;if(manager!=null){for(String provider:new String[]{android.location.LocationManager.NETWORK_PROVIDER,android.location.LocationManager.GPS_PROVIDER})try{android.location.Location candidate=manager.getLastKnownLocation(provider);if(candidate!=null&&(latest==null||candidate.getTime()>latest.getTime()))latest=candidate;}catch(SecurityException ignored){}}if(latest==null||System.currentTimeMillis()-latest.getTime()>5*60_000L){answer.fail("Android no tiene una ubicación reciente. No se envió nada; inténtalo cuando haya una señal disponible.");return;}float meters=latest.hasAccuracy()?latest.getAccuracy():0;String estimate=String.format(java.util.Locale.ROOT,"%.5f, %.5f (±%.0f m)",latest.getLatitude(),latest.getLongitude(),meters);android.location.Location location=latest;TdApi.Chat chat=session.chat(chatId);String destination=source!=null?"al bot":chat==null?"en esta conversación":"en “"+NativeSnapshot.limit(chat.title,80)+"”";Dialogs.builder(activity).setTitle("Confirmar ubicación").setMessage("Se enviará "+destination+" esta ubicación reciente:\n\n"+estimate).setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton("Enviar ubicación",(d,w)->{if(!currentAccount()||session.activeChat!=chatId){answer.fail("La conversación cambió. No se envió la ubicación.");return;}TdApi.InputMessageLocation content=new TdApi.InputMessageLocation(new TdApi.Location(location.getLatitude(),location.getLongitude(),meters));if(source!=null)sendBotContent(source,content,answer);else session.sendContent(content,replyTo,silent,answer::ok);}).setOnCancelListener(d->answer.ok(false)).show();}
+    private void createPollForBot(TdApi.Message message,TdApi.KeyboardButtonTypeRequestPoll requested,Answer answer){if(!privateBotChat(message)){answer.fail("Este teclado solo permite crear una encuesta en el chat privado del bot.");return;}LinearLayout form=new LinearLayout(activity);form.setOrientation(LinearLayout.VERTICAL);int pad=Math.round(16*activity.getResources().getDisplayMetrics().density);form.setPadding(pad,pad,pad,0);EditText question=new EditText(activity);question.setSingleLine(true);question.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(255)});question.setHint("Pregunta de la encuesta");EditText options=new EditText(activity);options.setMinLines(3);options.setGravity(android.view.Gravity.TOP);options.setHint("Una opción por línea (mínimo 2)");form.addView(question);form.addView(options);EditText correct=new EditText(activity);if(requested.forceQuiz){correct.setSingleLine(true);correct.setInputType(InputType.TYPE_CLASS_NUMBER);correct.setHint("Número de la respuesta correcta (1, 2…)");form.addView(correct);}AlertDialog dialog=Dialogs.builder(activity).setTitle(requested.forceQuiz?"Crear cuestionario":"Crear encuesta").setMessage("Revisa la pregunta y opciones antes de enviarlas al bot.").setView(form).setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton("Crear y enviar",null).create();dialog.setOnCancelListener(ignored->answer.ok(false));dialog.setOnShowListener(ignored->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view->{String q=question.getText().toString().trim();java.util.ArrayList<String> values=new java.util.ArrayList<>();for(String line:options.getText().toString().split("\\R")){String value=line.trim();if(!value.isEmpty())values.add(value);}if(q.isEmpty()||values.size()<2||values.size()>12||values.stream().anyMatch(value->value.length()>100)){options.setError("Escribe entre 2 y 12 opciones, de hasta 100 caracteres.");return;}TdApi.InputPollType pollType;if(requested.forceQuiz){int selected;try{selected=Integer.parseInt(correct.getText().toString().trim())-1;}catch(Exception ignoredParse){correct.setError("Indica el número de una opción correcta.");return;}if(selected<0||selected>=values.size()){correct.setError("El número debe corresponder a una opción.");return;}pollType=new TdApi.InputPollTypeQuiz(new int[]{selected},null,null);}else pollType=new TdApi.InputPollTypeRegular(false);TdApi.InputMessagePoll poll=new TdApi.InputMessagePoll();poll.question=new TdApi.FormattedText(q,new TdApi.TextEntity[0]);poll.options=new TdApi.InputPollOption[values.size()];for(int i=0;i<values.size();i++)poll.options[i]=new TdApi.InputPollOption(new TdApi.FormattedText(values.get(i),new TdApi.TextEntity[0]),null);poll.isAnonymous=true;poll.allowsMultipleAnswers=false;poll.type=pollType;dialog.dismiss();sendBotContent(message,poll,answer);}));dialog.show();}
     private void sendBotContent(TdApi.Message source,TdApi.InputMessageContent content,Answer answer){if(source==null||!currentAccount()||session.activeChat!=source.chatId||!privateBotChat(source)){answer.fail("La conversación ya no está disponible. No se envió el dato.");return;}TdApi.SendMessage send=new TdApi.SendMessage();send.chatId=source.chatId;send.topicId=source.topicId;send.inputMessageContent=content;perform(send,answer,message->{session.putMessage(message);messagesDirty=true;schedule();answer.ok(true);});}
     private void openApp(String id,boolean miniApp,Answer answer){
         requireAccount();BuiltInApps.App app=BuiltInApps.require(id);
@@ -2761,8 +2781,8 @@ final class NativeBridge implements TdSession.Listener {
     private JSONObject memberDto(TdApi.ChatMember member,TdApi.ChatMember actor,boolean channel,boolean forum,boolean canRestrict,boolean canPromote)throws Exception{
         long userId=((TdApi.MessageSenderUser)member.memberId).userId;
         TdApi.User user=session.user(userId);
-        String name=user==null?"Usuario de Telegram":NativeSnapshot.limit(((user.firstName==null?"":user.firstName)+" "+(user.lastName==null?"":user.lastName)).trim(),90);
-        if(name.isEmpty())name=user==null?"Usuario de Telegram":NativeSnapshot.limit(user.usernames==null||user.usernames.editableUsername==null?"Usuario de Telegram":"@"+user.usernames.editableUsername,90);
+        String name=PersonName.of(user);
+        if(name==null){name="Usuario de Telegram";session.requestUser(userId);}
         boolean normal=member.status instanceof TdApi.ChatMemberStatusMember,restricted=member.status instanceof TdApi.ChatMemberStatusRestricted,banned=member.status instanceof TdApi.ChatMemberStatusBanned,editableAdmin=member.status instanceof TdApi.ChatMemberStatusAdministrator&&((TdApi.ChatMemberStatusAdministrator)member.status).canBeEdited;
         String status=member.status instanceof TdApi.ChatMemberStatusAdministrator?"Administrador":member.status instanceof TdApi.ChatMemberStatusCreator?"Propietario":restricted?"Restringido":banned?"Baneado":"Miembro";
         int until=banned?((TdApi.ChatMemberStatusBanned)member.status).bannedUntilDate:restricted?((TdApi.ChatMemberStatusRestricted)member.status).restrictedUntilDate:0;
@@ -2814,7 +2834,7 @@ final class NativeBridge implements TdSession.Listener {
                 if(!BasicGroupRoster.visible(member))continue;
                 listed++;
                 long userId=BasicGroupRoster.userId(member);
-                TdApi.User user=session.user(userId);
+                TdApi.User user=session.user(userId);if(PersonName.of(user)==null)session.requestUser(userId);
                 String name=rosterName(user),username=rosterUsername(user);
                 if(!BasicGroupRoster.matches(query,name,username))continue;
                 rows.put(object("id",Long.toString(userId),"name",name,"username",username==null?"":"@"+username,
@@ -2832,10 +2852,10 @@ final class NativeBridge implements TdSession.Listener {
     }
     private static String rosterName(TdApi.User user){
         if(user==null)return "Usuario de Telegram";
-        String name=NativeSnapshot.limit(((user.firstName==null?"":user.firstName)+" "+(user.lastName==null?"":user.lastName)).trim(),90);
-        if(!name.isEmpty())return name;
-        String username=rosterUsername(user);
-        return username==null?"Usuario de Telegram":NativeSnapshot.limit("@"+username,90);
+        String name=PersonName.of(user);
+        if(name!=null)return name;
+        // La regla devuelve `null` a propósito y cada superficie pone su palabra: esta la mide la pantalla tal cual.
+        return "Usuario de Telegram";
     }
     private static String rosterUsername(TdApi.User user){
         if(user==null||user.usernames==null)return null;
@@ -3154,8 +3174,7 @@ final class NativeBridge implements TdSession.Listener {
     private void openChatDestination(long id,long messageId,int topicId,long owner,Consumer<TdApi.Chat> success,Consumer<String> fail){
         Consumer<TdApi.Chat> open = chat -> {
             if (destroyed||!currentAccount()||owner!=session.selfId) {fail.accept("La cuenta cambió.");return;}
-            String unsupported = session.unsupported(chat);
-            if (!unsupported.isEmpty()) {fail.accept(unsupported);return;}
+            if (chat == null) {fail.accept(TdSession.CHAT_NOT_LOADED);return;}
             if (topicId>0&&(session.activeChat!=id||session.activeTopic!=topicId)) {
                 session.perform(new TdApi.GetForumTopic(id,topicId),topic->{
                     if(destroyed||!currentAccount()||owner!=session.selfId){fail.accept("La cuenta cambió.");return;}
@@ -3192,7 +3211,7 @@ final class NativeBridge implements TdSession.Listener {
             try {
                 if (result.chatIds != null) for (long id : result.chatIds) {
                     TdApi.Chat chat = session.chat(id);
-                    if (chat != null && session.unsupported(chat).isEmpty()) items.put(dto.chat(chat));
+                    if (chat != null) items.put(dto.chat(chat));
                     if (items.length() == 30) break;
                 }
                 answer.ok(items);
@@ -4304,7 +4323,7 @@ final class NativeBridge implements TdSession.Listener {
     }
     private void properties(TdApi.Message message,Answer a){
         perform(new TdApi.GetMessageProperties(message.chatId,message.id),a,props->{
-            JSONObject result=object("reply",props.canBeReplied,"copy",props.canBeCopied&&message.content instanceof TdApi.MessageText&&message.selfDestructType==null&&message.ephemeralContent==null,"copyContent",props.canBeCopied,"edit",props.canBeEdited&&message.content instanceof TdApi.MessageText,"editChecklist",props.canBeEdited&&message.content instanceof TdApi.MessageChecklist,"deleteSelf",props.canBeDeletedOnlyForSelf||props.canBeDeletedForAllUsers,"deleteAll",props.canBeDeletedForAllUsers,"forward",props.canBeForwarded,"pin",props.canBePinned,"editCaption",props.canBeEdited&&hasCaption(message),"caption",dto.caption(message),"canBePaid",props.canBePaid,"transcribe",props.canRecognizeSpeech&&(message.content instanceof TdApi.MessageVoiceNote||message.content instanceof TdApi.MessageVideoNote));
+            JSONObject result=object("reply",props.canBeReplied,"copy",props.canBeCopied&&message.content instanceof TdApi.MessageText&&message.selfDestructType==null&&message.ephemeralContent==null,"copyContent",props.canBeCopied,"edit",props.canBeEdited&&message.content instanceof TdApi.MessageText,"editChecklist",props.canBeEdited&&message.content instanceof TdApi.MessageChecklist,"deleteSelf",props.canBeDeletedOnlyForSelf||props.canBeDeletedForAllUsers,"deleteAll",props.canBeDeletedForAllUsers,"forward",props.canBeForwarded,"pin",props.canBePinned,"editCaption",props.canBeEdited&&hasCaption(message),"editMedia",props.canEditMedia&&!MessageMediaEdit.currentKind(message.content).isEmpty(),"caption",dto.caption(message),"canBePaid",props.canBePaid,"transcribe",props.canRecognizeSpeech&&(message.content instanceof TdApi.MessageVoiceNote||message.content instanceof TdApi.MessageVideoNote));
             TdApi.GetMessageAvailableReactions reactions=new TdApi.GetMessageAvailableReactions();reactions.chatId=message.chatId;reactions.messageId=message.id;reactions.rowSize=8;
             try{result.put("report",props.canReportChat);}catch(Exception invalid){a.fail("No se pudieron leer los permisos de denuncia.");return;}
             session.perform(reactions,value->{try{result.put("reactions",reactionOptions(value));result.put("paid",hasPaidReaction(value));result.put("allowCustom",value.allowCustomEmoji);a.ok(result);}catch(Exception ignored){a.fail("No se pudieron preparar las reacciones.");}},failure->{try{result.put("reactions",new JSONArray());a.ok(result);}catch(Exception ignored){a.fail("No se pudo preparar el menú.");}});
@@ -4584,9 +4603,83 @@ final class NativeBridge implements TdSession.Listener {
         else if(method.equals("message.delete")){boolean revoke=p.optBoolean("revoke");if(revoke?!props.canBeDeletedForAllUsers:!(props.canBeDeletedOnlyForSelf||props.canBeDeletedForAllUsers))throw new IllegalArgumentException();session.delete(message,revoke);a.ok(true);}
         else if(method.equals("message.copy")&&props.canBeCopied&&message.content instanceof TdApi.MessageText&&message.selfDestructType==null&&message.ephemeralContent==null){ClipboardManager clipboard=(ClipboardManager)activity.getSystemService(Context.CLIPBOARD_SERVICE);ClipData clip=ClipData.newPlainText("WRGram",dto.caption(message));PersistableBundle extra=new PersistableBundle();extra.putBoolean("android.content.extra.IS_SENSITIVE",true);clip.getDescription().setExtras(extra);if(clipboard!=null)clipboard.setPrimaryClip(clip);a.ok(true);}
         else if(method.equals("message.pin")&&props.canBePinned)perform(new TdApi.PinChatMessage(message.chatId,message.id,true,true),a,value->a.ok(true));
-        else if(method.equals("message.forward")){boolean sendCopy=p.optBoolean("sendCopy"),removeCaption=p.optBoolean("removeCaption")&&sendCopy;if(sendCopy?!props.canBeCopied:!props.canBeForwarded)throw new IllegalArgumentException();long to=BridgePolicy.id(p,"to");TdApi.Chat chat=session.chat(to);if(chat==null||!session.unsupported(chat).isEmpty())throw new IllegalArgumentException();TdApi.ForwardMessages forward=new TdApi.ForwardMessages();forward.chatId=to;forward.fromChatId=message.chatId;forward.messageIds=new long[]{message.id};forward.options=sendOptions(p);forward.sendCopy=sendCopy;forward.removeCaption=removeCaption;perform(forward,a,value->a.ok(true));}
+        else if(method.equals("message.forward")){boolean sendCopy=p.optBoolean("sendCopy"),removeCaption=p.optBoolean("removeCaption")&&sendCopy;if(sendCopy?!props.canBeCopied:!props.canBeForwarded)throw new IllegalArgumentException();long to=BridgePolicy.id(p,"to");TdApi.Chat chat=session.chat(to);if(chat==null)throw new IllegalArgumentException();TdApi.ForwardMessages forward=new TdApi.ForwardMessages();forward.chatId=to;forward.fromChatId=message.chatId;forward.messageIds=new long[]{message.id};forward.options=sendOptions(p);forward.sendCopy=sendCopy;forward.removeCaption=removeCaption;perform(forward,a,value->a.ok(true));}
         else a.fail("Telegram no permite esta acción sobre el mensaje.");
     }catch(Exception ignored){a.fail("No se pudo preparar la acción.");}});}
+    /**
+     * Sustituye el medio de un mensaje ya enviado. Las tres reglas —los cinco tipos que admite la función, lo que
+     * concede <c>canEditMedia</c> y la restricción del álbum— viven en {@link MessageMediaEdit}; aquí se arma el
+     * contenido y se manda. El contenido se construye en el hilo del puente y <b>antes</b> de preguntar: los avisos
+     * de TDLib llegan al hilo principal, y decodificar una foto o medir un vídeo delante de ellos congelaría la
+     * pantalla. Preguntar sigue siendo lo último antes de escribir.
+     */
+    private void editMessageMedia(JSONObject p,Answer a)throws Exception{
+        requireAccount();
+        TdApi.Message message=message(p);
+        String token=BridgePolicy.text(p,"token",80);
+        Attachment item=attachments.get(token);
+        if(item==null||item.account!=session.selfId||item.chat!=message.chatId)throw new IllegalArgumentException(MessageMediaEdit.CHANGED);
+        String current=MessageMediaEdit.currentKind(message.content),wanted=MessageMediaEdit.wantedKind(item.mime);
+        TdApi.InputMessageContent content=mediaContent(item,wanted,message.content);
+        long chatId=message.chatId,messageId=message.id,albumId=message.mediaAlbumId;
+        perform(new TdApi.GetMessageProperties(chatId,messageId),a,props->{
+            String problem=MessageMediaEdit.problem(props.canEditMedia,current,wanted,albumId);
+            if(problem!=null){a.fail(problem);return;}
+            perform(new TdApi.EditMessageMedia(chatId,messageId,null,content),a,edited->{
+                attachments.remove(token);
+                try{Files.deleteIfExists(item.path.toPath());}catch(Exception ignored){}
+                schedule();a.ok(true);
+            });
+        });
+    }
+    /** El medio nuevo, con el pie y las dos banderas del contenido viejo: editar el medio no borra lo escrito. */
+    private TdApi.InputMessageContent mediaContent(Attachment item,String kind,TdApi.MessageContent current){
+        TdApi.InputMessageContent built;
+        if(kind.equals(MessageMediaEdit.PHOTO))built=photoContent(item);
+        else if(kind.equals(MessageMediaEdit.ANIMATION))built=animationContent(item);
+        else if(kind.equals(MessageMediaEdit.VIDEO))built=videoContent(item);
+        else if(kind.equals(MessageMediaEdit.AUDIO))built=audioContent(item);
+        else built=documentContent(item);
+        TdApi.FormattedText caption=MessageMediaEdit.captionOf(current);
+        boolean above=MessageMediaEdit.showsCaptionAboveMedia(current),spoiler=MessageMediaEdit.hasSpoiler(current);
+        if(built instanceof TdApi.InputMessagePhoto){TdApi.InputMessagePhoto value=(TdApi.InputMessagePhoto)built;value.caption=caption;value.showCaptionAboveMedia=above;value.hasSpoiler=spoiler;}
+        else if(built instanceof TdApi.InputMessageVideo){TdApi.InputMessageVideo value=(TdApi.InputMessageVideo)built;value.caption=caption;value.showCaptionAboveMedia=above;value.hasSpoiler=spoiler;}
+        else if(built instanceof TdApi.InputMessageAnimation){TdApi.InputMessageAnimation value=(TdApi.InputMessageAnimation)built;value.caption=caption;value.showCaptionAboveMedia=above;value.hasSpoiler=spoiler;}
+        else if(built instanceof TdApi.InputMessageAudio){((TdApi.InputMessageAudio)built).caption=caption;}
+        else ((TdApi.InputMessageDocument)built).caption=caption;
+        return built;
+    }
+    /** Vídeo: la misma terna de medidas que saca el GIF y emisión continua solo si el contenedor la admite. */
+    private TdApi.InputMessageContent videoContent(Attachment item){
+        TdApi.InputVideo video=new TdApi.InputVideo();
+        video.video=new TdApi.InputFileLocal(item.path.getPath());
+        int[] box=animationBox(item.path.getPath());
+        video.width=box[0];video.height=box[1];video.duration=box[2];
+        video.supportsStreaming=MessageMediaEdit.streams(item.mime);
+        return new TdApi.InputMessageVideo(video,new TdApi.FormattedText("",new TdApi.TextEntity[0]),false,null,false);
+    }
+    /** Audio: la duración la mide el reproductor del sistema; título e intérprete los pone Telegram. */
+    private TdApi.InputMessageContent audioContent(Attachment item){
+        TdApi.InputAudio audio=new TdApi.InputAudio();
+        audio.audio=new TdApi.InputFileLocal(item.path.getPath());
+        audio.duration=mediaSeconds(item.path.getPath());
+        return new TdApi.InputMessageAudio(audio,new TdApi.FormattedText("",new TdApi.TextEntity[0]));
+    }
+    /** Documento: la construcción que antes estaba escrita dentro del propio envío suelto. */
+    private TdApi.InputMessageContent documentContent(Attachment item){
+        TdApi.InputDocument document=new TdApi.InputDocument();
+        document.document=new TdApi.InputFileLocal(item.path.getPath());
+        return new TdApi.InputMessageDocument(document,new TdApi.FormattedText("",new TdApi.TextEntity[0]));
+    }
+    /** Segundos de un archivo de audio, o cero si el sistema no los lee: la librería deja que el servidor los corrija. */
+    private static int mediaSeconds(String path){
+        android.media.MediaMetadataRetriever probe=new android.media.MediaMetadataRetriever();
+        try{
+            probe.setDataSource(path);
+            return (int)Math.round(Integer.parseInt(zero(probe.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)))/1000.0);
+        }catch(Exception ignored){return 0;}
+        finally{try{probe.release();}catch(Exception ignored){}}
+    }
     private void notes(String method,JSONObject p,Answer a){requireAccount();long user=session.selfId,chat=session.activeChat;if(!method.equals("notes.clear")&&(!dto.granted("notes")||chat==0)){a.fail("Activa notes:read y notes:write en Complementos antes de usar esta nota.");return;}String text=method.equals("notes.write")?BridgePolicy.text(p,"text",10000):"";((WrgramApplication)activity.getApplication()).storage().execute(()->{try{Object value;if(method.equals("notes.read"))value=object("text",PrivateNotes.read(activity,user,chat));else if(method.equals("notes.clear"))value=PrivateNotes.clearAccount(activity,user);else{if(!prefs.getBoolean("plugin."+user+".notes",false))throw new IllegalArgumentException();PrivateNotes.write(activity,user,chat,text);value=true;}main.post(()->{if(session.selfId==user)a.ok(value);else a.fail("La cuenta cambió.");});}catch(Exception ignored){main.post(()->a.fail("No se pudo abrir o guardar la nota cifrada."));}});}
     void picked(Uri uri){if(storyPicking!=null){if(storyVideoPicking)pickedStoryVideo(uri,storyPicking);else pickedStoryPhoto(uri,storyPicking);return;}Answer answer=picking;picking=null;if(answer==null)return;if(uri==null){answer.ok(null);return;}long user=session.selfId,chat=session.activeChat;((WrgramApplication)activity.getApplication()).storage().execute(()->{File output=null;try{String name="archivo";try(Cursor cursor=activity.getContentResolver().query(uri,new String[]{OpenableColumns.DISPLAY_NAME},null,null,null)){if(cursor!=null&&cursor.moveToFirst())name=cursor.getString(0);}name=name.replaceAll("[^\\p{L}\\p{N}._ -]","_");if(name.length()>90)name=name.substring(name.length()-90);if(name.isBlank()||name.startsWith("."))name="archivo";File folder=new File(activity.getNoBackupFilesDir(),"outbox/"+UUID.randomUUID());if(!folder.mkdirs())throw new IllegalStateException();output=new File(folder,name);long size=0;try(InputStream input=activity.getContentResolver().openInputStream(uri);OutputStream stream=Files.newOutputStream(output.toPath())){if(input==null)throw new IllegalArgumentException();byte[] buffer=new byte[32768];int count;while((count=input.read(buffer))!=-1){size+=count;if(size>32L*1024*1024)throw new IllegalArgumentException();stream.write(buffer,0,count);}}Attachment item=new Attachment();item.path=output;item.name=name;item.size=size;item.mime=activity.getContentResolver().getType(uri);item.account=user;item.chat=chat;main.post(()->{if(session.selfId!=user||session.activeChat!=chat){try{Files.deleteIfExists(item.path.toPath());}catch(Exception ignored){}answer.fail("La cuenta o conversación cambió.");return;}String token=UUID.randomUUID().toString();attachments.put(token,item);answer.ok(object("token",token,"name",item.name,"size",item.size));});}catch(Exception ignored){if(output!=null)try{Files.deleteIfExists(output.toPath());}catch(Exception skipped){}main.post(()->answer.fail("No se pudo importar el archivo. Límite: 32 MB."));}});}
     private void sendPoll(JSONObject p,Answer a)throws Exception{
@@ -4596,18 +4689,22 @@ final class NativeBridge implements TdSession.Listener {
         if(chat.type instanceof TdApi.ChatTypePrivate){long userId=((TdApi.ChatTypePrivate)chat.type).userId;TdApi.User user=session.user(userId);boolean bot=user!=null&&user.type instanceof TdApi.UserTypeBot;if(userId!=session.selfId&&!bot)throw new IllegalArgumentException("Las encuestas solo pueden enviarse a bots o a Mensajes guardados en chats privados.");}
         if(chat.permissions!=null&&!chat.permissions.canSendPolls)throw new IllegalArgumentException("Este chat no permite encuestas.");
         String question=BridgePolicy.text(p,"question",255).trim();if(question.isEmpty())throw new IllegalArgumentException("Escribe una pregunta.");
-        JSONArray values=p.getJSONArray("options");if(values.length()<2||values.length()>10)throw new IllegalArgumentException("Escribe entre 2 y 10 opciones.");
+        JSONArray values=p.getJSONArray("options");if(values.length()<2||values.length()>12)throw new IllegalArgumentException("Escribe entre 2 y 12 opciones.");
+        JSONArray media=p.optJSONArray("media");ArrayList<String> images=new ArrayList<>();if(media!=null)for(int i=0;i<media.length();i++){String token=media.optString(i,"");if(token.isEmpty())continue;Attachment item=attachments.get(token);if(item==null||item.account!=session.selfId||item.chat!=session.activeChat)throw new IllegalArgumentException("La conversación cambió. Vuelve a elegir las imágenes de las opciones.");if(item.mime==null||!(item.mime.equals("image/jpeg")||item.mime.equals("image/png")||item.mime.equals("image/webp")))throw new IllegalArgumentException("Cada opción admite una foto JPG, PNG o WebP.");images.add(token);}
+        if(!images.isEmpty()&&images.size()!=values.length())throw new IllegalArgumentException("Una encuesta con imágenes lleva una imagen en cada opción.");
         TdApi.InputPollOption[] options=new TdApi.InputPollOption[values.length()];java.util.HashSet<String> unique=new java.util.HashSet<>();
-        for(int i=0;i<values.length();i++){String text=values.getString(i).trim();if(text.isEmpty()||text.length()>100)throw new IllegalArgumentException("Cada opción debe tener entre 1 y 100 caracteres.");if(!unique.add(text.toLowerCase(java.util.Locale.ROOT)))throw new IllegalArgumentException("Las opciones no pueden repetirse.");options[i]=new TdApi.InputPollOption(new TdApi.FormattedText(text,new TdApi.TextEntity[0]),null);}
+        for(int i=0;i<values.length();i++){String text=values.getString(i).trim();if(text.isEmpty()||text.length()>100)throw new IllegalArgumentException("Cada opción debe tener entre 1 y 100 caracteres.");if(!unique.add(text.toLowerCase(java.util.Locale.ROOT)))throw new IllegalArgumentException("Las opciones no pueden repetirse.");options[i]=new TdApi.InputPollOption(new TdApi.FormattedText(text,new TdApi.TextEntity[0]),images.isEmpty()?null:new TdApi.InputPollMediaPhoto(photoInput(attachments.get(images.get(i)))));}
         boolean quiz=p.optBoolean("quiz");boolean multiple=!quiz&&p.optBoolean("multiple");
-        TdApi.InputMessagePoll poll=new TdApi.InputMessagePoll();poll.question=new TdApi.FormattedText(question,new TdApi.TextEntity[0]);poll.options=options;poll.isAnonymous=p.optBoolean("anonymous",true);poll.allowsMultipleAnswers=multiple;poll.allowsRevoting=p.optBoolean("revoting");poll.shuffleOptions=p.optBoolean("shuffle");poll.hideResultsUntilCloses=p.optBoolean("hide");poll.countryCodes=new String[0];
+        TdApi.InputMessagePoll poll=new TdApi.InputMessagePoll();poll.question=new TdApi.FormattedText(question,new TdApi.TextEntity[0]);poll.options=options;poll.description=pollDescription(p);poll.isAnonymous=p.optBoolean("anonymous",true);poll.allowsMultipleAnswers=multiple;poll.allowsRevoting=p.optBoolean("revoting");poll.shuffleOptions=p.optBoolean("shuffle");poll.hideResultsUntilCloses=p.optBoolean("hide");poll.countryCodes=new String[0];
         if(quiz){String explanation=p.optString("explanation","").trim();int correct=p.optInt("correct",-1);if(correct<0||correct>=options.length)throw new IllegalArgumentException("Elige una respuesta correcta.");poll.type=new TdApi.InputPollTypeQuiz(new int[]{correct},explanation.isEmpty()?null:new TdApi.FormattedText(NativeSnapshot.limit(explanation,200),new TdApi.TextEntity[0]),null);}
         else poll.type=new TdApi.InputPollTypeRegular();
-        session.sendContent(poll,BridgePolicy.id(p,"reply"),p.optBoolean("silent"),a::ok);
+        int period=p.optInt("duration",0);if(period<0||(period>0&&period<5)||period>2628000)throw new IllegalArgumentException("La encuesta debe cerrarse entre 5 segundos y 30 días y 1 hora después de enviarse.");
+        poll.openPeriod=period;
+        session.sendContent(poll,BridgePolicy.id(p,"reply"),p.optBoolean("silent"),sent->{for(String token:images){Attachment item=attachments.remove(token);if(item!=null)try{Files.deleteIfExists(item.path.toPath());}catch(Exception ignored){}}a.ok(sent);});
     }
     private void answerPoll(JSONObject p,Answer a)throws Exception{
         TdApi.Message message=message(p);if(!(message.content instanceof TdApi.MessagePoll))throw new IllegalArgumentException("Este mensaje no contiene una encuesta.");
-        JSONArray values=p.getJSONArray("options");if(values.length()<1||values.length()>10)throw new IllegalArgumentException();
+        JSONArray values=p.getJSONArray("options");if(values.length()<1||values.length()>12)throw new IllegalArgumentException();
         int[] ids=new int[values.length()];for(int i=0;i<values.length();i++){ids[i]=values.getInt(i);if(ids[i]<0)throw new IllegalArgumentException();}
         perform(new TdApi.SetPollAnswer(message.chatId,message.id,ids),a,ignored->{schedule();a.ok(true);});
     }
@@ -4634,6 +4731,105 @@ final class NativeBridge implements TdSession.Listener {
         if(locationAnswer!=null){a.fail("Ya hay una solicitud de ubicación en curso.");return;}
         long chatId=session.activeChat;locationAnswer=a;locationChat=chatId;locationSource=null;locationReply=BridgePolicy.id(p,"reply");locationSilent=p.optBoolean("silent");
         Dialogs.builder(activity).setTitle("Compartir ubicación").setMessage("Android pedirá permiso y luego podrás revisar la ubicación antes de enviarla a esta conversación.").setNegativeButton("Cancelar",(d,w)->{if(locationAnswer==a){locationAnswer=null;locationChat=0;locationReply=0;locationSilent=false;}a.ok(false);}).setPositiveButton("Continuar",(d,w)->{if(!currentAccount()||session.activeChat!=chatId){locationAnswer=null;locationChat=0;locationReply=0;locationSilent=false;a.fail("La conversación cambió. No se solicitó ubicación.");return;}activity.requestBotLocationPermission();}).setOnCancelListener(d->{if(locationAnswer==a){locationAnswer=null;locationChat=0;locationReply=0;locationSilent=false;}a.ok(false);}).show();
+    }
+    private void startLiveLocation(JSONObject p,Answer a)throws Exception{
+        requireAccount();if(!session.canSend())throw new IllegalArgumentException("No puedes enviar mensajes en este chat.");
+        TdApi.Chat chat=session.chat(session.activeChat);if(chat==null)throw new IllegalArgumentException();
+        if(chat.permissions!=null&&!chat.permissions.canSendOtherMessages)throw new IllegalArgumentException("Este chat no permite compartir ubicaciones.");
+        if(liveMessage!=0){a.fail(LiveLocationPolicy.ALREADY);return;}
+        if(liveAnswer!=null||locationAnswer!=null){a.fail("Ya hay una solicitud de ubicación en curso.");return;}
+        int period=LiveLocationPolicy.period(p);
+        long chatId=session.activeChat;
+        liveAnswer=a;liveChat=chatId;livePeriod=period;liveOwner=session.selfId;liveReply=BridgePolicy.id(p,"reply");liveSilent=p.optBoolean("silent");
+        Dialogs.builder(activity).setTitle("Ubicación en directo").setMessage("Android pedirá permiso y podrás revisar la ubicación antes de compartirla durante "+LiveLocationPolicy.label(period)+". WRGram renueva la ubicación mientras la app esté abierta; si la cierras, la compartida se queda donde estaba y deja de actualizarse sola.").setNegativeButton("Cancelar",(d,w)->{clearLiveRequest(a);a.ok(false);}).setPositiveButton("Continuar",(d,w)->{if(!currentAccount()||session.activeChat!=chatId||liveOwner!=session.selfId){clearLiveRequest(a);a.fail("La conversación cambió. No se solicitó ubicación.");return;}activity.requestBotLocationPermission();}).setOnCancelListener(d->{clearLiveRequest(a);a.ok(false);}).show();
+    }
+    private void clearLiveRequest(Answer a){if(a!=null&&liveAnswer!=a)return;liveAnswer=null;liveChat=0;liveReply=0;liveSilent=false;livePeriod=0;liveOwner=0;}
+    /**
+     * La lectura del fijado más reciente, la misma que hace el flujo fijo. El flujo fijo la dejó escrita en su línea
+     * y no se mueve de ahí porque las citas de otras rondas la señalan carácter a carácter.
+     */
+    private android.location.Location lastFix(){
+        android.location.LocationManager manager=(android.location.LocationManager)activity.getSystemService(Context.LOCATION_SERVICE);
+        android.location.Location latest=null;
+        if(manager!=null)for(String provider:new String[]{android.location.LocationManager.NETWORK_PROVIDER,android.location.LocationManager.GPS_PROVIDER})
+            try{android.location.Location candidate=manager.getLastKnownLocation(provider);if(candidate!=null&&(latest==null||candidate.getTime()>latest.getTime()))latest=candidate;}catch(SecurityException ignored){}
+        return latest;
+    }
+    void livePermissionResult(boolean granted){
+        Answer answer=liveAnswer;long chatId=liveChat,replyTo=liveReply,owner=liveOwner;int period=livePeriod;boolean silent=liveSilent;
+        clearLiveRequest(answer);
+        if(answer==null||answer.finished)return;
+        if(!granted){answer.fail(LiveLocationPolicy.NO_PERMISSION);return;}
+        if(!currentAccount()||!session.ready()||owner!=session.selfId||session.activeChat!=chatId){answer.fail("La conversación o la cuenta cambió. No se envió la ubicación.");return;}
+        android.location.Location fix=lastFix();
+        if(fix==null||System.currentTimeMillis()-fix.getTime()>LiveLocationPolicy.FIX_MAX_AGE_MS){answer.fail(LiveLocationPolicy.NO_FIX);return;}
+        float meters=fix.hasAccuracy()?fix.getAccuracy():0;
+        String estimate=String.format(java.util.Locale.ROOT,"%.5f, %.5f (±%.0f m)",fix.getLatitude(),fix.getLongitude(),meters);
+        TdApi.Chat chat=session.chat(chatId);
+        String destination=chat==null?"en esta conversación":"en “"+NativeSnapshot.limit(chat.title,80)+"”";
+        Dialogs.builder(activity).setTitle("Confirmar ubicación en directo").setMessage("Se compartirá "+destination+" esta ubicación reciente durante "+LiveLocationPolicy.label(period)+":\n\n"+estimate+"\n\nWRGram la renueva mientras la app esté abierta.").setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton("Compartir en directo",(d,w)->{
+            if(!currentAccount()||session.activeChat!=chatId){answer.fail("La conversación cambió. No se envió la ubicación.");return;}
+            TdApi.Location point=new TdApi.Location(fix.getLatitude(),fix.getLongitude(),meters);
+            TdApi.LiveLocation live=new TdApi.LiveLocation(point,period,LiveLocationPolicy.heading(fix.hasBearing(),fix.getBearing()),0);
+            session.sendContentMessage(new TdApi.InputMessageLiveLocation(live),replyTo,silent,message->{
+                if(message==null){answer.ok(false);return;}
+                startLiveTracking(fix,message,period);
+                answer.ok(object("id",Long.toString(message.id),"chatId",Long.toString(message.chatId),"expiresAt",LiveLocationPolicy.expiresAt(message.date,period)));
+            });
+        }).setOnCancelListener(d->answer.ok(false)).show();
+    }
+    private void startLiveTracking(android.location.Location fix,TdApi.Message message,int period){
+        liveChat=message.chatId;liveMessage=message.id;livePeriod=period;liveOwner=session.selfId;
+        liveFix=fix;livePushed=fix;
+        long now=SystemClock.elapsedRealtime();
+        livePushElapsed=now;liveStartElapsed=now;
+        main.removeCallbacks(liveTicker);main.postDelayed(liveTicker,LiveLocationPolicy.TICK_MS);
+        armLiveUpdates();
+        messagesDirty=true;schedule();
+    }
+    /** El sensor manda cuando puede; el reloj de <c>liveTicker</c> es la red por si el sensor se duerme. */
+    private void armLiveUpdates(){
+        if(liveListener!=null)return;
+        liveManager=(android.location.LocationManager)activity.getSystemService(Context.LOCATION_SERVICE);
+        if(liveManager==null)return;
+        liveListener=new android.location.LocationListener(){
+            @Override public void onLocationChanged(android.location.Location location){if(liveMessage!=0&&location!=null){liveFix=location;pushLiveLocation(location);}}
+        };
+        for(String provider:new String[]{android.location.LocationManager.GPS_PROVIDER,android.location.LocationManager.NETWORK_PROVIDER})
+            try{liveManager.requestLocationUpdates(provider,LiveLocationPolicy.TICK_MS,0f,liveListener);}catch(SecurityException|IllegalArgumentException ignored){}
+    }
+    private void dropLiveUpdates(){
+        android.location.LocationManager manager=liveManager;android.location.LocationListener listener=liveListener;
+        liveManager=null;liveListener=null;
+        if(manager!=null&&listener!=null)try{manager.removeUpdates(listener);}catch(SecurityException ignored){}
+    }
+    private void pushLiveLocation(android.location.Location fix){
+        if(fix==null||liveMessage==0||!currentAccount()||session.selfId<=0)return;
+        float moved=livePushed==null?Float.MAX_VALUE:livePushed.distanceTo(fix);
+        long now=SystemClock.elapsedRealtime();
+        if(!LiveLocationPolicy.shouldPush(now,livePushElapsed,moved))return;
+        final long chat=liveChat,message=liveMessage;final android.location.Location sent=fix;
+        float meters=fix.hasAccuracy()?fix.getAccuracy():0;
+        TdApi.Location point=new TdApi.Location(sent.getLatitude(),sent.getLongitude(),meters);
+        TdApi.LiveLocation live=new TdApi.LiveLocation(point,livePeriod,LiveLocationPolicy.heading(sent.hasBearing(),sent.getBearing()),0);
+        session.perform(new TdApi.EditMessageLiveLocation(chat,message,null,live),ignored->{
+            if(destroyed||liveMessage!=message||liveChat!=chat)return;
+            livePushed=sent;livePushElapsed=SystemClock.elapsedRealtime();
+        },error->stopLiveTracking());
+    }
+    /** Apaga el reloj y el sensor, pero no toca el mensaje: eso lo hace quien detiene la compartida. */
+    private void stopLiveTracking(){
+        liveMessage=0;liveChat=0;livePeriod=0;liveOwner=0;liveStartElapsed=0;livePushElapsed=0;liveFix=null;livePushed=null;
+        main.removeCallbacks(liveTicker);dropLiveUpdates();schedule();
+    }
+    private void stopLiveLocation(JSONObject p,Answer a)throws Exception{
+        requireAccount();
+        long id=BridgePolicy.id(p,"id");
+        TdApi.Message message=session.message(id);
+        if(message==null||!(message.content instanceof TdApi.MessageLiveLocation)||!message.isOutgoing||message.chatId!=session.activeChat){a.fail(LiveLocationPolicy.NOT_SHARING);return;}
+        if(((TdApi.MessageLiveLocation)message.content).expiresIn<=0){a.fail("La ubicación ya no está disponible.");return;}
+        if(liveMessage==id)stopLiveTracking();
+        perform(new TdApi.EditMessageLiveLocation(message.chatId,id,null,null),a,ignored->{stopLiveTracking();a.ok(true);});
     }
     private void startVoice(Answer a)throws Exception{
         requireAccount();if(!session.canSend())throw new IllegalArgumentException("No puedes enviar mensajes en este chat.");
@@ -4777,12 +4973,13 @@ final class NativeBridge implements TdSession.Listener {
     private void searchStickers(JSONObject p,Answer a)throws Exception{requireAccount();String name=BridgePolicy.text(p,"name",80).trim();if(name.contains("/"))name=name.substring(name.lastIndexOf('/')+1);if(!name.matches("[A-Za-z0-9_]{1,64}"))throw new IllegalArgumentException("Escribe el nombre corto del pack (por ejemplo, Animals).");perform(new TdApi.SearchStickerSet(name,false),a,set->{try{a.ok(stickerInfo(set));}catch(Exception ignored){a.fail("No se pudo preparar el pack.");}});}
     private void stickerSet(JSONObject p,Answer a)throws Exception{requireAccount();long id=BridgePolicy.id(p,"id");perform(new TdApi.GetStickerSet(id),a,set->{try{JSONObject value=stickerInfo(set);JSONArray stickers=new JSONArray();if(set.stickers!=null)for(int i=0;i<set.stickers.length&&i<24;i++){JSONObject media=dto.sticker(set.stickers[i]);if(media!=null)stickers.put(media);}value.put("stickers",stickers);a.ok(value);}catch(Exception ignored){a.fail("No se pudo cargar el pack de stickers.");}});}
     private void changeStickerSet(JSONObject p,Answer a)throws Exception{requireAccount();long id=BridgePolicy.id(p,"id");boolean installed=p.getBoolean("installed");perform(new TdApi.ChangeStickerSet(id,installed,false),a,ignored->{schedule();a.ok(true);});}
-    private TdApi.InputMessageContent photoContent(Attachment item){BitmapFactory.Options dimensions=new BitmapFactory.Options();dimensions.inJustDecodeBounds=true;BitmapFactory.decodeFile(item.path.getPath(),dimensions);if(dimensions.outWidth<=0||dimensions.outHeight<=0)throw new IllegalArgumentException("No se pudo leer la imagen.");TdApi.InputPhoto photo=new TdApi.InputPhoto();photo.photo=new TdApi.InputFileLocal(item.path.getPath());photo.width=dimensions.outWidth;photo.height=dimensions.outHeight;return new TdApi.InputMessagePhoto(photo,new TdApi.FormattedText("",new TdApi.TextEntity[0]),false,null,false);}
+    private TdApi.InputPhoto photoInput(Attachment item){BitmapFactory.Options dimensions=new BitmapFactory.Options();dimensions.inJustDecodeBounds=true;BitmapFactory.decodeFile(item.path.getPath(),dimensions);if(dimensions.outWidth<=0||dimensions.outHeight<=0)throw new IllegalArgumentException("No se pudo leer la imagen.");TdApi.InputPhoto photo=new TdApi.InputPhoto();photo.photo=new TdApi.InputFileLocal(item.path.getPath());photo.width=dimensions.outWidth;photo.height=dimensions.outHeight;return photo;}
+    private TdApi.InputMessageContent photoContent(Attachment item){return new TdApi.InputMessagePhoto(photoInput(item),new TdApi.FormattedText("",new TdApi.TextEntity[0]),false,null,false);}
     private void sendAttachment(JSONObject p,Answer a){requireAccount();String token=BridgePolicy.text(p,"token",80);Attachment item=attachments.get(token);if(item==null||item.account!=session.selfId||item.chat!=session.activeChat||!session.canSend())throw new IllegalArgumentException();if(session.uncertain(session.activeChat)){a.fail("Revisa el envío anterior en el historial antes de enviar otro archivo.");return;}TdApi.ChatPermissions permissions=session.chat(session.activeChat).permissions;TdApi.InputMessageContent content;
         if(item.voice){if(permissions!=null&&!permissions.canSendVoiceNotes)throw new IllegalArgumentException("Este chat no permite notas de voz.");content=new TdApi.InputMessageVoiceNote(new TdApi.InputVoiceNote(new TdApi.InputFileLocal(item.path.getPath()),item.voiceDuration,item.waveform),new TdApi.FormattedText("",new TdApi.TextEntity[0]),null);}
         else if(item.videoNote){if(permissions!=null&&!permissions.canSendVideoNotes)throw new IllegalArgumentException("Este chat no permite videomensajes.");content=new TdApi.InputMessageVideoNote(new TdApi.InputVideoNote(new TdApi.InputFileLocal(item.path.getPath()),null,item.voiceDuration,item.videoLength),null);}
         else if(item.mime!=null&&(item.mime.equals("image/jpeg")||item.mime.equals("image/png")||item.mime.equals("image/webp"))){if(permissions!=null&&!permissions.canSendPhotos)throw new IllegalArgumentException();content=photoContent(item);}
-        else if("image/gif".equals(item.mime)){if(permissions!=null&&!permissions.canSendOtherMessages)throw new IllegalArgumentException("Este chat no permite enviar GIF o stickers.");content=animationContent(item);}else{if(permissions!=null&&!permissions.canSendDocuments)throw new IllegalArgumentException();TdApi.InputDocument document=new TdApi.InputDocument();document.document=new TdApi.InputFileLocal(item.path.getPath());content=new TdApi.InputMessageDocument(document,new TdApi.FormattedText("",new TdApi.TextEntity[0]));}
+        else if("image/gif".equals(item.mime)){if(permissions!=null&&!permissions.canSendOtherMessages)throw new IllegalArgumentException("Este chat no permite enviar GIF o stickers.");content=animationContent(item);}else{if(permissions!=null&&!permissions.canSendDocuments)throw new IllegalArgumentException();content=documentContent(item);}
         session.sendContent(content,BridgePolicy.id(p,"reply"),p.optBoolean("silent"),sent->{if(sent){attachments.remove(token);try{Files.deleteIfExists(item.path.toPath());}catch(Exception ignored){}}a.ok(sent);});
     }
     private void sendAlbum(JSONObject p,Answer a)throws Exception{requireAccount();JSONArray values=p.getJSONArray("tokens");if(values.length()<2||values.length()>10)throw new IllegalArgumentException("Elige entre 2 y 10 fotos.");if(session.uncertain(session.activeChat)){a.fail("Revisa el envío anterior en el historial antes de enviar un álbum.");return;}TdApi.ChatPermissions permissions=session.chat(session.activeChat).permissions;if(permissions!=null&&!permissions.canSendPhotos)throw new IllegalArgumentException();ArrayList<Attachment> items=new ArrayList<>();ArrayList<TdApi.InputMessageContent> contents=new ArrayList<>();
@@ -5102,4 +5299,126 @@ final class NativeBridge implements TdSession.Listener {
         return 0;
     }
     private void sendReaction(TdApi.Message message,TdApi.ReactionType reaction,Answer a){perform(new TdApi.AddMessageReaction(message.chatId,message.id,reaction,false,true),a,value->a.ok(true));}
+    /** La descripción de la encuesta mide lo que mide un pie de foto: TDLib la pide hasta la opción de runtime
+     *  {@code message_caption_length_max}, que este puente usa como 1024 en {@code message.edit.caption}. Vacía o sin
+     *  clave sale como {@code null}, que es como TDLib pide «sin descripción». */
+    private static TdApi.FormattedText pollDescription(JSONObject p){
+        String text=NativeSnapshot.limit(p.optString("description","").trim(),1024);
+        return text.isEmpty()?null:new TdApi.FormattedText(text,new TdApi.TextEntity[0]);
+    }
+    /**
+     * Registro de llamadas. `SearchCallMessages` no tiene `query`: el cursor, el tamaño de página y
+     * `onlyMissed` son lo único que Telegram filtra, así que el nombre se corta aquí, sobre lo que ya
+     * bajó —y por eso la página dice lo que ve y no lo que hay—. Las filas pueden traer chats que la
+     * caché no conoce; ese hueco se rellena igual que en la búsqueda global: un `GetChat` por chat
+     * ausente, veinte como mucho, y el que sigue sin respuesta sale con el título vacío.
+     */
+    private void callLog(JSONObject p,Answer a){
+        requireAccount();
+        String offset;
+        try{offset=CallLog.offset(p.optString("offset",""));}catch(IllegalArgumentException invalid){a.fail(invalid.getMessage());return;}
+        String query=p.optString("query","").trim();boolean onlyMissed=p.optBoolean("onlyMissed");
+        if(!offset.isEmpty()&&(callLogOwner!=session.selfId||callLogMissed!=onlyMissed||!offset.equals(callLogOffset))){a.fail(CallLog.STALE_CURSOR);return;}
+        long owner=session.selfId;
+        TdApi.SearchCallMessages search=new TdApi.SearchCallMessages();search.offset=offset;search.limit=CallLog.LIMIT;search.onlyMissed=onlyMissed;
+        perform(search,a,result->{
+            java.util.List<TdApi.Message> kept=new ArrayList<>();java.util.List<Long> missing=new ArrayList<>();
+            if(result.messages!=null)for(TdApi.Message message:result.messages){
+                if(message==null||!CallLog.isCall(message.content))continue;
+                kept.add(message);
+                if(session.chat(message.chatId)==null&&!missing.contains(message.chatId)&&missing.size()<20)missing.add(message.chatId);
+            }
+            loadSearchChats(missing,0,()->{
+                if(!currentAccount()||session.selfId!=owner){a.fail("La cuenta cambió.");return;}
+                try{
+                    JSONArray rows=new JSONArray();int shown=0;
+                    for(TdApi.Message message:kept){
+                        TdApi.Chat chat=session.chat(message.chatId);String title=chat==null||chat.title==null?"":chat.title;
+                        if(!CallLog.matches(title,query))continue;
+                        rows.put(CallLog.row(message,title,ServiceMessages.text(message,session)));shown++;
+                    }
+                    callLogOwner=owner;callLogMissed=onlyMissed;callLogOffset=CallLog.more(result.nextOffset)?result.nextOffset:"";
+                    a.ok(new JSONObject().put("rows",rows).put("fetched",kept.size()).put("shown",shown).put("total",CallLog.total(result.totalCount)).put("nextOffset",callLogOffset).put("more",!callLogOffset.isEmpty()));
+                }catch(Exception ignored){a.fail("No se pudo preparar el registro de llamadas.");}
+            });
+        });
+    }
+
+    private String cloudStore(){return prefs.getString("accountBackgrounds","");}
+
+    private String chosenBackground(boolean dark){return AccountBackgrounds.chosenId(cloudStore(),String.valueOf(session.selfId),dark);}
+
+    /**
+     * Lo que acaba de avisar Telegram se guarda en los dos huecos de la tienda. `background.set` escribe la
+     * misma fila por su cuenta, así que el aviso suele confirmar lo puesto aquí; lo que el aviso añade es lo
+     * que cambió en otro aparato mientras esta sesión estaba abierta. De un modo no oído no se toca su hueco:
+     * no saber no es «sin fondo», y se compara antes de escribir para no reescribir en cada aviso repetido.
+     */
+    private void rememberCloudBackgrounds(){
+        if(!currentAccount())return;
+        String owner=String.valueOf(session.selfId);String stored=cloudStore();String next=stored;
+        try{
+            for(boolean dark:new boolean[]{false,true}){if(!session.defaultBackgroundKnown(dark))continue;
+                TdApi.Background live=session.defaultBackground(dark);
+                String row=live==null?"":AccountBackgrounds.row(live,String.valueOf(live.id)).toString();
+                if(row.equals(AccountBackgrounds.slot(stored,dark)))continue;
+                next=AccountBackgrounds.putSlot(next,owner,dark,row.isEmpty()?null:row);
+            }
+        }catch(Exception ignored){return;}
+        if(!next.equals(stored))prefs.edit().putString("accountBackgrounds",next).apply();
+    }
+
+    /**
+     * Los fondos que la cuenta tiene instalados, leídos con `GetInstalledBackgrounds`. La llamada solo
+     * cambia el orden —el campo `forDarkTheme` trae la documentación «Pass true to order returned
+     * backgrounds for a dark theme», no un filtro—, así que se pide una vez con el modo que está pintado
+     * y la oscuridad de cada fila sale de su propio `isDark`. Ninguna lectura dice cuál está puesto, así que
+     * el elegido sale de la tienda de los dos huecos: lo escribe `background.set` y lo confirma o lo corrige
+     * el aviso `UpdateDefaultBackground`, que es lo único que Telegram manda. `isDefault` —que solo dice que
+     * el fondo viene de serie— no se confunde con él. El modo pedido es el mismo para la lectura y para la
+     * marca.
+     */
+    private void backgroundsList(JSONObject p,Answer a){
+        requireAccount();
+        long owner=session.selfId;boolean dark=p.optBoolean("dark");
+        TdApi.GetInstalledBackgrounds request=new TdApi.GetInstalledBackgrounds();request.forDarkTheme=dark;
+        session.perform(request,result->{
+            if(destroyed||!currentAccount()||session.selfId!=owner){a.fail("La cuenta cambió.");return;}
+            try{a.ok(new JSONObject().put("rows",AccountBackgrounds.rows(result.backgrounds,chosenBackground(dark))));}
+            catch(Exception ignored){a.fail("No se pudieron listar los fondos de la cuenta.");}
+        },message->a.fail(message));
+    }
+
+    /**
+     * El fondo que se pone en la cuenta. Con `id` se elige uno ya instalado (`InputBackgroundRemote`, y el
+     * `type` se deja nulo porque el documento dice «pass null to use the default type of the remote
+     * background»); con `top` y `bottom` se crea un relleno nuevo, que es lo único que no necesita archivo:
+     * `background` nulo es justo lo que pide TDLib para «create a new filled background». El `Background`
+     * que devuelve la llamada se escribe en el hueco del modo pedido dentro de la tienda de la cuenta, con el
+     * `owner` delante, para que la primera pantalla —sin cuenta todavía— ya salga con ese fondo y para que el
+     * fondo de una cuenta no se pinte en la siguiente.
+     */
+    private void backgroundSet(JSONObject p,Answer a){
+        requireAccount();
+        TdApi.SetDefaultBackground set=new TdApi.SetDefaultBackground();set.forDarkTheme=p.optBoolean("dark");
+        String id=p.optString("id","").trim();String top=p.optString("top","").trim();
+        if(!id.isEmpty()){
+            try{
+                TdApi.InputBackgroundRemote remote=new TdApi.InputBackgroundRemote();remote.backgroundId=BridgePolicy.id(p,"id");
+                set.background=remote;
+            }catch(IllegalArgumentException invalid){a.fail("El identificador del fondo no vale.");return;}
+        }else if(!top.isEmpty()){
+            try{set.type=AccountBackgrounds.fillType(top,p.optString("bottom","").trim(),AccountBackgrounds.angleOf(p.optString("angle","0")));}
+            catch(IllegalArgumentException invalid){a.fail(invalid.getMessage());return;}
+        }else{a.fail(AccountBackgrounds.NOTHING);return;}
+        perform(set,a,result->{
+            try{
+                JSONObject row=AccountBackgrounds.row(result,String.valueOf(result.id));
+                String next=AccountBackgrounds.putSlot(cloudStore(),String.valueOf(session.selfId),set.forDarkTheme,row.toString());
+                prefs.edit().putString("accountBackgrounds",next).apply();
+                schedule();
+                a.ok(row);
+            }catch(Exception ignored){a.fail("No se pudo preparar el fondo.");}
+        });
+    }
 }

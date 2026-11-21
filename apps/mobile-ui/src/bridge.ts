@@ -20,7 +20,7 @@ const USER_DRIVEN = new Set([
   'account.photo.pick', 'account.photo.delete', 'chat.photo.pick', 'chat.photo.delete', 'media.export',
   'story.create.photo', 'story.create.video',
   'contacts.import', 'contacts.add', 'contacts.sync.set', 'contacts.sync.now',
-  'share.location', 'voice.start', 'bot.button', 'security.lock',
+  'share.location', 'location.live.start', 'voice.start', 'bot.button', 'security.lock',
   'folders.link', 'folders.join', 'folders.links.edit',
   'chat.invite', 'chat.subscription.create', 'chat.transfer', 'groups.member.ban', 'groups.member.unban', 'groups.member.restrict',
   // Cambiar el nombre o la descripción de una comunidad se pregunta en un `Dialogs` nativo antes de

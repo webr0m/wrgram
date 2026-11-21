@@ -10,7 +10,7 @@ using TL;
 /// La lista entera de un grupo básico en Windows, y lo que esa lista admite hacer. En Android vive repartida en dos
 /// clases puras —<c>BasicGroupRoster</c> para el orden, los estados y las cifras, y <c>BasicGroupMemberAction</c>
 /// para lo que se puede prometer de cada fila— más el cable <c>NativeBridge.basicRoster</c>/<c>writeRoster</c>
-/// (<c>NativeBridge.java:2797-2832</c>). Aquí están las dos clases juntas, porque en Windows no hay TDLib que
+/// (<c>NativeBridge.java:2817-2852</c>). Aquí están las dos clases juntas, porque en Windows no hay TDLib que
 /// ordene ni traduzca: la pregunta es una (<c>messages.getFullChat</c>) y la respuesta trae los participantes sin
 /// orden ni palabras.
 /// <para>
@@ -64,7 +64,7 @@ public static class DesktopGroupRoster
         "Primero van quien creó el grupo y la administración; el resto se ordena por identificador, no por actividad reciente.";
     public const string TooLongQuery = "La búsqueda de miembros admite hasta 80 caracteres.";
 
-    /// El <c>catch</c> de <c>writeRoster</c> (<c>NativeBridge.java:2831</c>).
+    /// El <c>catch</c> de <c>writeRoster</c> (<c>NativeBridge.java:2829</c>).
     public const string Unreadable = "No se pudo preparar la lista del grupo.";
 
     /// Una negación que en Android no existe. Allá el <c>access_hash</c> lo guarda TDLib y el puente solo
@@ -101,8 +101,8 @@ public static class DesktopGroupRoster
     public const string UnbanHint =
         "Para que vuelva, invítalo de nuevo desde la tanda: en un grupo básico no hay baneo que levantar.";
 
-    /// El título y los dos botones del <c>Dialogs</c> de <c>banBasicMember</c> (<c>NativeBridge.java:2871-2873</c>)
-    /// y las dos frases de guarda (<c>:2874</c> la cuenta, <c>:2868-2869</c> el estado).
+    /// El título y los dos botones del <c>Dialogs</c> de <c>banBasicMember</c> (<c>NativeBridge.java:2891-2893</c>)
+    /// y las dos frases de guarda (<c>:2890</c> la cuenta, <c>:2884-2885</c> el estado).
     public const string DialogAccept = "Expulsar";
     public const string ChangedAccount = "La conversación cambió. No se expulsó a nadie.";
 
@@ -194,8 +194,9 @@ public static class DesktopGroupRoster
     public static long Creator(IEnumerable<ChatParticipantBase> parts) =>
         parts.OfType<ChatParticipantCreator>().Select(part => part.user_id).FirstOrDefault();
 
-    /// El nombre de <c>rosterName</c> (<c>NativeBridge.java:2833-2839</c>): los dos nombres unidos y recortados a
-    /// noventa, el usuario con arroba si no hay nombre, y «Usuario de Telegram» si no hay nada.
+    /// El nombre de <c>rosterName</c> (<c>NativeBridge.java:2853-2859</c>), que desde la ronda BW pide a
+    /// <c>PersonName.java</c> la regla: los dos nombres unidos, el usuario con arroba si no hay nombre, y
+    /// «Usuario de Telegram» si no hay nada. Recortado a noventa en los dos primeros casos.
     public static string Name(User? user)
     {
         if (user == null) return DesktopGroupMembers.UnknownPerson;
@@ -205,7 +206,7 @@ public static class DesktopGroupRoster
         return handle == null ? DesktopGroupMembers.UnknownPerson : DesktopContact.Limit("@" + handle, DesktopGroupMembers.NameShown);
     }
 
-    /// <c>rosterUsername</c> (<c>:2754-2758</c>): el usuario editable primero y, si no, el activo. En TDLib el
+    /// <c>rosterUsername</c> (<c>:2856-2860</c>): el usuario editable primero y, si no, el activo. En TDLib el
     /// editable solo viene relleno para la propia cuenta; MTProto publica el activo de cualquiera, así que la
     /// primera rama es la que se usa y la segunda queda de respaldo.
     public static string? Username(User? user)
@@ -224,7 +225,7 @@ public static class DesktopGroupRoster
     /// administración entraron sin invitador, y un número suelto no es un nombre.
     public static long InviterId(ChatParticipantBase? part) => part is ChatParticipant inviter ? inviter.inviter_id : 0L;
 
-    /// La fila de <c>writeRoster</c> (<c>NativeBridge.java:2820-2825</c>): las once claves, en su orden.
+    /// La fila de <c>writeRoster</c> (<c>NativeBridge.java:2829-2834</c>): las once claves, en su orden.
     /// <list type="bullet">
     /// <item><description><c>since</c> es <c>joinedChatDate</c> en segundos; la fila del creador no trae fecha en
     /// MTProto y responde cero, que la pantalla ya lee como «sin fecha» (<c>groupRoster.ts:61</c>).</description>
@@ -283,16 +284,16 @@ public static class DesktopGroupRoster
     public static string Confirm(string name, bool revoke) =>
         "Se expulsará a " + name + " del grupo de forma definitiva. " + (revoke ? RevokeOn : RevokeOff);
 
-    /// El título del diálogo: <c>"Expulsar de " + chat.title</c> (<c>NativeBridge.java:2871</c>).
+    /// El título del diálogo: <c>"Expulsar de " + chat.title</c> (<c>NativeBridge.java:2891</c>).
     public static string DialogTitle(string chatTitle) => "Expulsar de " + chatTitle;
 
     /// <summary>
     /// Qué se responde cuando la pantalla pide restringir, promover, despromover o levantar un baneo sobre una fila
     /// que no es un supergrupo ni un canal. Es el orden de <c>banGroupMember</c>
-    /// (<c>NativeBridge.java:2879</c>), que entra en <c>banBasicMember</c> cuando el chat es un básico y ese método
-    /// contesta primero <c>restrictProblem</c> (<c>:2861</c>): dentro de un básico la negación es de protocolo
+    /// (<c>NativeBridge.java:2899</c>), que entra en <c>banBasicMember</c> cuando el chat es un básico y ese método
+    /// contesta primero <c>restrictProblem</c> (<c>:2878</c>): dentro de un básico la negación es de protocolo
     /// —Telegram no admite restricciones parciales, ni permisos a la carta, ni baneo que levantar—, y para el resto
-    /// de las formas que no son comunidad Android tiene una sola frase, la de <c>:2793</c>. Desde la ronda AZ las
+    /// de las formas que no son comunidad Android tiene una sola frase, la de <c>:2879</c>. Desde la ronda AZ las
     /// cuatro escrituras sí están conectadas en un supergrupo y en un canal, así que aquí no se decide ningún hueco
     /// de esta aplicación: solo la forma de la fila.
     /// </summary>

@@ -2,7 +2,7 @@
  * El espejo de `DesktopMemberSanctions.cs` (ronda AZ): las reglas y las frases con las que el puente de Windows
  * administra una fila de supergrupo o canal —`groups.member.ban`, `restrict`, `promote`, `demote` y `unban`—. No son
  * palabras de la interfaz: son las cadenas que el host devuelve, copiadas carácter a carácter de
- * `NativeBridge.java:2846`, `:2851`, `:2852`, `:2853` y `:2879`, y `rondaAZ.test.ts` las compara con el C# letra por
+ * `NativeBridge.java:2880`, `:2851`, `:2852`, `:2853` y `:2879`, y `rondaAZ.test.ts` las compara con el C# letra por
  * letra para que el andamio no enseñe nunca una frase que Windows no diría.
  *
  * Cada regla está escrita una sola vez aquí, en tres fases, igual que en el puente: `…Pre` es lo que se sabe sin

@@ -308,9 +308,9 @@ public final class MainActivity extends AccessActivity implements TdSession.List
         refreshStatus();
     }
     private void openChat(long id) {
-        TdApi.Chat chat = telegram.chat(id); String unsupported = telegram.unsupported(chat);
+        TdApi.Chat chat = telegram.chat(id);
         if(chat!=null&&(chat.type instanceof TdApi.ChatTypeSecret||chat.type instanceof TdApi.ChatTypeSupergroup&&((TdApi.ChatTypeSupergroup)chat.type).isChannel)){showInfo("Canales y chats secretos requieren la nueva interfaz con Android System WebView actualizado. Esta vista de compatibilidad no los abre.");return;}
-        if (!unsupported.isEmpty()) { showInfo(unsupported); return; }
+        if (chat == null) { showInfo(TdSession.CHAT_NOT_LOADED); return; }
         screen.messageQuery = ""; screen.messageSearch = false; shownChat = 0; telegram.open(id); screen.page = "chat"; screen.returnPage = "home"; render();
     }
     private void saved() {

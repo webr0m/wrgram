@@ -24,6 +24,13 @@ public class MessageExtrasTest {
         assertFalse(MessageExtras.card(message, null, true).getBoolean("canOpen"));
         ((TdApi.MessageLiveLocation) message.content).expiresIn = 0;
         assertEquals(0, MessageExtras.card(message, null, false).getLong("expiresAt"));
+        message.isOutgoing = true;
+        assertFalse("Sin tiempo que renovar no hay nada que dejar de compartir.",
+                MessageExtras.card(message, null, false).getBoolean("canStop"));
+        ((TdApi.MessageLiveLocation) message.content).expiresIn = 30;
+        assertTrue(MessageExtras.card(message, null, false).getBoolean("canStop"));
+        message.isOutgoing = false;
+        assertFalse(MessageExtras.card(message, null, false).getBoolean("canStop"));
     }
 
     @Test public void temporaryMessagesDoNotExposeCardPayloads() throws Exception {

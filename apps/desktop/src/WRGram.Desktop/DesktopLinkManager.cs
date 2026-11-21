@@ -11,9 +11,9 @@ using TL;
 /// La gestión de los enlaces de invitación de una comunidad en Windows. En Android son dos archivos:
 /// <c>InviteLinks.java</c> pone los cinco techos, valida el marcador, proyecta la fila y decide qué se puede
 /// cambiar; <c>NativeBridge.java</c> reparte el orden de los guardajes en cuatro métodos —<c>inviteLinks</c>
-/// (<c>:3587</c>), <c>inviteLinkForm</c> (<c>:3623</c>) para crear y editar, y <c>revokeInviteLink</c>
-/// (<c>:3681</c>), despachados en <c>:741-744</c>— más un quinto anterior, <c>createInviteLink</c>
-/// (<c>:1863</c>, despachado en <c>:681</c>), que crea un enlace sin preguntar nombre, caducidad ni límite. Aquí esas
+/// (<c>:3604</c>), <c>inviteLinkForm</c> (<c>:3640</c>) para crear y editar, y <c>revokeInviteLink</c>
+/// (<c>:3698</c>), despachados en <c>:756-759</c>— más un quinto anterior, <c>createInviteLink</c>
+/// (<c>:1881</c>, despachado en <c>:694</c>), que crea un enlace sin preguntar nombre, caducidad ni límite. Aquí esas
 /// piezas están escritas una vez, con las frases copiadas carácter a carácter y el mismo orden, y el cable solo pide.
 /// <para>
 /// La medida, hecha por reflexión sobre WTelegramClient 4.4.10 y por el esquema MTProto de la capa 232 que trae el
@@ -40,7 +40,7 @@ using TL;
 /// </para>
 /// <para>
 /// Y lo que no se copia, dicho en lugar de fingido. Android guarda el marcador que repartió
-/// (<c>linkOwner</c>, <c>linkChat</c>, <c>linkRevoked</c>, <c>linkOffsetDate</c>, <c>linkOffsetLink</c>, <c>:3594</c>)
+/// (<c>linkOwner</c>, <c>linkChat</c>, <c>linkRevoked</c>, <c>linkOffsetDate</c>, <c>linkOffsetLink</c>, <c>:3603</c>)
 /// y niega cualquier marcador que no sea el último que él dio, con «Vuelve a abrir los enlaces para continuar.». En
 /// MTProto la posición es un argumento de la petición (<c>offset_date</c> + <c>offset_link</c>), no un estado del
 /// cliente, así que no hay memoria que pueda estar vieja ni frase que decir: se valida la forma del marcador
@@ -71,12 +71,12 @@ public static class DesktopLinkManager
     public const long MaxSpan = 31_536_000;
 
     /// El <c>NativeSnapshot.limit(chat.title,80)</c> que Android aplica al título de la comunidad en los tres
-    /// cuerpos de diálogo (<c>NativeBridge.java:3639</c> y <c>:3690</c>).
+    /// cuerpos de diálogo (<c>NativeBridge.java:3658</c> y <c>:3707</c>).
     public const int ChatShown = 80;
 
     // ---- las frases ----
 
-    /// Las tres veces que <c>:3589</c>, <c>:3625</c> y <c>:3683</c> niegan la forma, con la cadena exacta.
+    /// Las tres veces que <c>:3606</c>, <c>:3642</c> y <c>:3700</c> niegan la forma, con la cadena exacta.
     public const string Unsupported = "Los enlaces de invitación solo existen en grupos y canales.";
 
     /// <c>InviteLinks.cursor</c> (<c>InviteLinks.java:32</c>, <c>:34</c> y <c>:36</c>), donde las cuatro negaciones del
@@ -84,19 +84,19 @@ public static class DesktopLinkManager
     public const string CursorProblem = "El marcador de enlaces no es válido.";
 
     /// Los cuatro permisos negados de <c>inviteLinks</c>/<c>inviteLinkForm</c>/<c>revokeInviteLink</c>
-    /// (<c>:3599</c>, <c>:3643</c>, <c>:3663</c> y <c>:3695</c>): la misma frase con cuatro verbos.
+    /// (<c>:3616</c>, <c>:3660</c>, <c>:3680</c> y <c>:3712</c>): la misma frase con cuatro verbos.
     public const string NoRightReview = "Telegram no concede a esta cuenta permiso para revisar sus enlaces de invitación.";
     public const string NoRightCreate = "Telegram no concede a esta cuenta permiso para crear enlaces de invitación.";
     public const string NoRightEdit = "Telegram no concede a esta cuenta permiso para editar sus enlaces de invitación.";
     public const string NoRightRevoke = "Telegram no concede a esta cuenta permiso para revocar sus enlaces de invitación.";
 
-    /// <c>NativeBridge.java:3630</c>, cuando el enlace llega pero no tiene ninguna de las formas que Telegram produce.
+    /// <c>NativeBridge.java:3649</c>, cuando el enlace llega pero no tiene ninguna de las formas que Telegram produce.
     public const string InvalidLink = "El enlace no es válido.";
 
-    /// <c>Indica qué enlace quieres revocar.</c> de <c>:3689</c>.
+    /// <c>Indica qué enlace quieres revocar.</c> de <c>:3706</c>.
     public const string EmptyRevoke = "Indica qué enlace quieres revocar.";
 
-    /// Las cinco frases de <c>InviteLinks.problem</c> (<c>InviteLinks.java:78-86</c>), en su orden de comprobación.
+    /// Las cinco frases de <c>InviteLinks.problem</c> (<c>InviteLinks.java:79-84</c>), en su orden de comprobación.
     public const string BadName = "El nombre del enlace no es válido.";
     public const string NameTooLong = "El nombre del enlace no puede superar 32 caracteres.";
     public const string BadExpiry = "La caducidad del enlace no es válida.";
@@ -105,25 +105,25 @@ public static class DesktopLinkManager
     public const string ApprovalLimit = "Un enlace que exige aprobación no puede limitar además el número de miembros.";
 
     /// El <c>Telegram ya no reconoce ese enlace en este chat.</c> de las dos lecturas previas
-    /// (<c>:3655</c> y <c>:3692</c>).
+    /// (<c>:3672</c> y <c>:3709</c>).
     public const string NotRecognised = "Telegram ya no reconoce ese enlace en este chat.";
 
-    /// Las tres cadenas del <c>InviteLinks.editable</c> negado (<c>:3657-3659</c>), en el orden en que Android las
+    /// Las tres cadenas del <c>InviteLinks.editable</c> negado (<c>:3674-3676</c>), en el orden en que Android las
     /// prueba: pago, primacía y revocación.
     public const string PaidLinks = "Los enlaces de suscripción se administran desde Stars.";
     public const string PrimaryEdit = "El enlace principal no admite nombre, caducidad ni límite: revócalo y Telegram creará uno nuevo.";
     public const string AlreadyRevoked = "Ese enlace ya está revocado y no se puede editar.";
 
-    /// Las dos frases de creador distinto (<c>:3664</c> y <c>:3696</c>), que en Android solo alcanzan al enlace
+    /// Las dos frases de creador distinto (<c>:3681</c> y <c>:3713</c>), que en Android solo alcanzan al enlace
     /// principal: la tabla que se lista está filtrada por esta cuenta, así que <c>admin_id</c> de las demás filas ya
     /// es el propio.
     public const string OtherCreatorEdit = "Solo el propietario puede cambiar un enlace creado por otra persona.";
     public const string OtherCreatorRevoke = "Solo el propietario puede revocar un enlace creado por otra persona.";
 
-    /// <c>confirmLink</c> (<c>:3713</c>), la guarda de cuenta dentro del botón positivo de los tres diálogos.
+    /// <c>confirmLink</c> (<c>:3730</c>), la guarda de cuenta dentro del botón positivo de los tres diálogos.
     public const string ChangedAccount = "La cuenta cambió. No se modificó ningún enlace.";
 
-    /// Los tres rótulos de <c>Dialogs.builder</c> de <c>:3644</c>, <c>:3666</c> y <c>:3698</c>. El botón positivo es
+    /// Los tres rótulos de <c>Dialogs.builder</c> de <c>:3661</c>, <c>:3683</c> y <c>:3715</c>. El botón positivo es
     /// <see cref="DesktopCommunityInfo.DialogAccept"/> y el negativo <see cref="DesktopProfilePhoto.Cancel"/>: son las
     /// mismas dos cadenas que ya viven en la capa, y repetirlas aquí sería tener dos verdades para un mismo botón.
     public const string DialogCreate = "Crear enlace de invitación";
@@ -131,37 +131,37 @@ public static class DesktopLinkManager
     public const string DialogRevoke = "Revocar enlace de invitación";
 
     /// Los dos rótulos con los que Android nombra el enlace en el diálogo: el del nombre que va a escribirse
-    /// (<c>:3641</c>) y el del nombre que ya no está (<c>:3665</c> y <c>:3697</c>).
+    /// (<c>:3658</c>) y el del nombre que ya no está (<c>:3682</c> y <c>:3714</c>).
     public const string DefaultLabel = "WRGram";
     public const string NoLabel = "sin nombre";
 
     // ---- el enlace suelto, sin formulario (`chat.invite`) ----
 
-    /// La forma que acepta <c>createInviteLink</c> (<c>NativeBridge.java:1863</c>) es la misma pareja de
+    /// La forma que acepta <c>createInviteLink</c> (<c>NativeBridge.java:1883</c>) es la misma pareja de
     /// <see cref="Supported"/>, pero su negativa es otra letra: allá «solo se crean», aquí «solo existen». Las dos se
     /// copian cada una desde su línea; igualarlas sería borrar una de las dos frases de Android. El canal entra en la
     /// pareja aunque Java no lo nombre: en TDLib un canal es un <c>ChatTypeSupergroup</c> con <c>is_channel</c>, así
     /// que su guarda ya lo estaba aceptando.
     public const string NotCreatable = "Los enlaces de invitación solo se crean para grupos y canales.";
 
-    /// El <c>setMessage</c> del diálogo de <c>:1863</c>, palabra por palabra. No es el de
+    /// El <c>setMessage</c> del diálogo de <c>:1881</c>, palabra por palabra. No es el de
     /// <see cref="FormBody"/>: aquí no hay nombre, caducidad ni límite que la persona haya elegido, así que no hay
     /// resumen que leer —lo que se le dice es lo que Telegram va a hacer por su cuenta.
     public const string QuickBody =
         "Telegram creará un enlace que cualquiera podrá reenviar. Caduca en 7 días y no limita el número de participantes. El enlace solo se comparte si luego eliges una aplicación.";
 
-    /// El <c>setPositiveButton</c> de <c>:1863</c>. Android no usa en este diálogo el «Aplicar en Telegram» de
-    /// <c>confirmLink</c> (<c>:3712</c>) con el que el formulario pregunta las otras tres escrituras: son dos
+    /// El <c>setPositiveButton</c> de <c>:1881</c>. Android no usa en este diálogo el «Aplicar en Telegram» de
+    /// <c>confirmLink</c> (<c>:3729</c>) con el que el formulario pregunta las otras tres escrituras: son dos
     /// <c>AlertDialog</c> distintos y cada uno lleva su rótulo, así que Windows también. El negativo sigue siendo
     /// <see cref="DesktopProfilePhoto.Cancel"/>, que es el «Cancelar» de los dos.
     public const string QuickAccept = "Crear enlace";
 
-    /// Los <c>7L*24*60*60</c> de <c>:1863</c>. Es lo único que este flujo fija sin preguntar, y viaja por la misma
+    /// Los <c>7L*24*60*60</c> de <c>:1881</c>. Es lo único que este flujo fija sin preguntar, y viaja por la misma
     /// regla de caducidad que el formulario (<see cref="Expires"/>).
     public const long QuickSpan = 7L * 24 * 60 * 60;
 
     /// Las dos cadenas con las que Android enseña el enlace cuando no hay ninguna aplicación a la que pasárselo
-    /// (<c>:1863</c>): el título y el mensaje del <c>AlertDialog</c> que lleva la caja seleccionable. Windows toma
+    /// (<c>:1881</c>): el título y el mensaje del <c>AlertDialog</c> que lleva la caja seleccionable. Windows toma
     /// ese camino siempre, porque no tiene <c>Intent.ACTION_SEND</c>.
     public const string DialogCreated = "Enlace creado";
     public const string CreatedBody = "Cópialo y compártelo solo con las personas que quieres invitar.";
@@ -174,8 +174,8 @@ public static class DesktopLinkManager
 
     // ---- las frases que solo existen en Windows ----
 
-    /// <c>requiredBool(p,"approval")</c> (<c>:3635</c>) es un fallo de programación en Java: su mensaje, «Missing
-    /// permission: approval», llega a la pantalla en inglés porque el despacho de <c>:742</c> reenvía el
+    /// <c>requiredBool(p,"approval")</c> (<c>:3652</c>) es un fallo de programación en Java: su mensaje, «Missing
+    /// permission: approval», llega a la pantalla en inglés porque el despacho de <c>:757</c> reenvía el
     /// <c>getMessage()</c> del <c>catch</c>. Aquí es la causa concreta en español, que es la norma de la casa desde la
     /// ronda AT.
     public const string IncompleteApproval =
@@ -190,8 +190,8 @@ public static class DesktopLinkManager
 
     // ---- la forma ----
 
-    /// <c>chat.type instanceof ChatTypeBasicGroup || chat.type instanceof ChatTypeSupergroup</c> (<c>:3589</c>,
-    /// <c>:3625</c>, <c>:3683</c>): los cuatro flujos aceptan las dos formas, y en TDLib el canal <i>es</i> un
+    /// <c>chat.type instanceof ChatTypeBasicGroup || chat.type instanceof ChatTypeSupergroup</c> (<c>:3606</c>,
+    /// <c>:3642</c>, <c>:3700</c>): los cuatro flujos aceptan las dos formas, y en TDLib el canal <i>es</i> un
     /// supergrupo con <c>isChannel</c>. Es la misma pareja que aceptan <see cref="DesktopCommunityInfo.Supported"/> y
     /// el puente de Android, y la que pone la puerta del menú en la pantalla.
     public static bool Supported(DesktopMembership.Kind kind) => kind != DesktopMembership.Kind.Unsupported;
@@ -297,8 +297,8 @@ public static class DesktopLinkManager
     private static bool On(ChatInviteExported.Flags flags, ChatInviteExported.Flags flag) => (flags & flag) != 0;
 
     /// La bandera <c>revoked</c> leída una sola vez. Android la trae como campo (<c>isRevoked</c>) y la usa en los tres
-    /// sitios: la fila (<c>InviteLinks.java:54</c>), la negación de editar (<c>:3659</c>) y el <c>false</c> de revocar
-    /// dos veces (<c>:3693</c>). Aquí es la misma lectura, escrita una vez.
+    /// sitios: la fila (<c>InviteLinks.java:54</c>), la negación de editar (<c>:3676</c>) y el <c>false</c> de revocar
+    /// dos veces (<c>:3710</c>). Aquí es la misma lectura, escrita una vez.
     public static bool Revoked(ChatInviteExported link) => On(link.flags, ChatInviteExported.Flags.revoked);
 
     /// <c>InviteLinks.page</c> (<c>InviteLinks.java:58-69</c>): <c>total</c>, las filas, la pestaña, si hay más y el
@@ -340,15 +340,15 @@ public static class DesktopLinkManager
     /// puede ocurrir.
     public static long? Expires(long now, long expiresIn) => expiresIn <= 0 ? null : now + expiresIn;
 
-    /// El <c>name.isEmpty()?"WRGram":name</c> del crear (<c>:3641</c>). Es lo que se escribe en Telegram y lo que se
+    /// El <c>name.isEmpty()?"WRGram":name</c> del crear (<c>:3658</c>). Es lo que se escribe en Telegram y lo que se
     /// lee en el diálogo.
     public static string CreateLabel(string name) => name.Length == 0 ? DefaultLabel : name;
 
-    /// El <c>name.isEmpty()?"sin nombre":name</c> del editar (<c>:3665</c>): el diálogo nombra la ausencia, pero a
+    /// El <c>name.isEmpty()?"sin nombre":name</c> del editar (<c>:3682</c>): el diálogo nombra la ausencia, pero a
     /// Telegram no llega «sin nombre» sino el vacío, que es como MTProto borra un título.
     public static string EditLabel(string name) => name.Length == 0 ? NoLabel : name;
 
-    /// <c>InviteLinks.editable</c> (<c>InviteLinks.java:98-100</c>) y las tres negaciones de <c>:3657-3659</c> en su
+    /// <c>InviteLinks.editable</c> (<c>InviteLinks.java:98-100</c>) y las tres negaciones de <c>:3674-3676</c> en su
     /// orden: pago, primacía y revocación. Devuelve la frase o <c>null</c> cuando el enlace sí se puede cambiar.
     public static string? NotEditable(ChatInviteExported link, bool primary)
     {
@@ -375,7 +375,7 @@ public static class DesktopLinkManager
         _ => ""
     };
 
-    /// <c>InviteLinks.canInviteMembers</c> (<c>NativeBridge.java:1843</c>) leído en la tabla de un grupo básico:
+    /// <c>InviteLinks.canInviteMembers</c> (<c>NativeBridge.java:1863</c>) leído en la tabla de un grupo básico:
     /// creador o administrador. <c>chatParticipantAdmin</c> de MTProto no trae tabla de derechos, y TDLib tampoco
     /// consulta uno por uno en un básico: el estado es el testigo. No es
     /// <see cref="DesktopMemberAdditions.MayInvite(ChatParticipantBase?)"/>, que vale para «añadir» personas —donde
@@ -385,7 +385,7 @@ public static class DesktopLinkManager
 
     // ---- los tres cuerpos de diálogo ----
 
-    /// <c>NativeBridge.linkDescription</c> (<c>:3675-3680</c>) palabra por palabra: la validez, la capacidad y la
+    /// <c>NativeBridge.linkDescription</c> (<c>:3692-3697</c>) palabra por palabra: la validez, la capacidad y la
     /// frase de cierre. La fecha sale en ISO porque Android usa <c>LocalDate</c> con la zona del sistema, y
     /// <c>toString()</c> de esa clase es <c>yyyy-MM-dd</c>.
     public static string FormBody(string label, long? expiration, long memberLimit, bool approval, string title)
@@ -401,7 +401,7 @@ public static class DesktopLinkManager
     private static string DateOf(long epoch) =>
         DateTimeOffset.FromUnixTimeSeconds(epoch).ToLocalTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
-    /// El mensaje de <c>:3698-3700</c>, con sus dos sufijos condicionales: el del enlace principal y el de la gente
+    /// El mensaje de <c>:3715-3717</c>, con sus dos sufijos condicionales: el del enlace principal y el de la gente
     /// que ya entró. Revocar no expulsa a nadie, y eso es lo único que la frase dice sobre el pasado.
     public static string RevokeBody(string name, string title, bool primary, long memberCount) =>
         "Dejará de funcionar el enlace «" + name + "» de «" + title + "»"
@@ -411,7 +411,7 @@ public static class DesktopLinkManager
             : "");
 
     /// El <c>current.name==null||current.name.isBlank()?"sin nombre":NativeSnapshot.limit(current.name,32)</c> de
-    /// <c>:3697</c>, con el recorte que sí lleva puntos suspensivos.
+    /// <c>:3714</c>, con el recorte que sí lleva puntos suspensivos.
     public static string RevokeName(string? title) =>
         string.IsNullOrEmpty(DesktopCommunityInfo.Prepared(title ?? "")) ? NoLabel : DesktopContact.Limit(title ?? "", MaxName);
 }

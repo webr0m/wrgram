@@ -231,6 +231,81 @@ public sealed partial class TelegramService
 
     private static readonly JsonSerializerOptions SavedFiltersJson = new(JsonSerializerDefaults.Web);
 
+    // ---- silencio por defecto de los envíos propios (ronda CJ) ----------------------------------------
+
+    /// Conversaciones cuyo envío propio sale silenciado, leído de `default-silent.json`. No es un dato de
+    /// Telegram: en Android lo guarda TDLib en el cliente, y aquí lo guarda la app.
+    private string _defaultSilentAccount = "";
+    private HashSet<string> _defaultSilents = new();
+
+    private string DefaultSilentPath => System.IO.Path.Combine(_store.Root, DesktopDefaultSilent.FileName);
+
+    /// La lista de quien está conectado, releída al cambiar de cuenta: otra cuenta, otro defecto.
+    private HashSet<string> DefaultSilentsOf(string account)
+    {
+        if (_defaultSilentAccount != account)
+        {
+            _defaultSilentAccount = account;
+            _defaultSilents = ReadDefaultSilents(account);
+        }
+        return _defaultSilents;
+    }
+
+    private HashSet<string> ReadDefaultSilents(string account)
+    {
+        try
+        {
+            if (!System.IO.File.Exists(DefaultSilentPath)) return [];
+            var file = JsonSerializer.Deserialize<DefaultSilentFileDto>(System.IO.File.ReadAllText(DefaultSilentPath), DefaultSilentJson);
+            if (file == null || file.Account != account) return [];
+            return new HashSet<string>(file.Chats ?? []);
+        }
+        catch (Exception)
+        {
+            return [];
+        }
+    }
+
+    private void WriteDefaultSilents(string account, HashSet<string> chats)
+    {
+        try
+        {
+            var temp = DefaultSilentPath + ".tmp";
+            var json = JsonSerializer.Serialize(new DefaultSilentFileDto { Account = account, Chats = [.. chats] }, DefaultSilentJson);
+            System.IO.File.WriteAllText(temp, json);
+            System.IO.File.Move(temp, DefaultSilentPath, overwrite: true);
+        }
+        catch (Exception)
+        {
+            // Es preferencia local: si el disco falla, el defecto con el que se trabaja esta sesión sigue válido.
+        }
+    }
+
+    /// El brazo de `chat.defaultSilent`: guarda el defecto y refresca la marca en las filas que ya están en pantalla.
+    private object SetDefaultSilent(JsonElement args)
+    {
+        var entry = RequireEntry(Str(args, "id"));
+        var account = DesktopDefaultSilent.AccountKey(CollectionClient().User!.id);
+        var value = Bool(args, "value");
+        var next = DesktopDefaultSilent.Toggle(DefaultSilentsOf(account), entry.Id, value);
+        WriteDefaultSilents(account, next);
+        _defaultSilents = next;
+        var mark = DesktopDefaultSilent.Mark(next, entry.Id);
+        foreach (var chat in _state.Chats) if (chat.Id == entry.Id) chat.DefaultSilent = mark;
+        return true;
+    }
+
+    /// La marca que lleva cada fila de la lista, leída del mismo sitio que escribe el brazo.
+    private bool? DefaultSilentMark(string id) =>
+        DesktopDefaultSilent.Mark(DefaultSilentsOf(DesktopDefaultSilent.AccountKey(_client?.User?.id ?? 0)), id);
+
+    /// El silencio con el que sale un envío propio: el que pidió la pantalla o el defecto que esta cuenta guardó
+    /// para la conversación. El defecto gana, como gana en Android cuando la biblioteca recibe las opciones vacías.
+    private bool SilentFor(string chatId, JsonElement args) =>
+        DesktopDefaultSilent.SilentFor(DefaultSilentsOf(DesktopDefaultSilent.AccountKey(_client?.User?.id ?? 0)), chatId, Bool(args, "silent"));
+
+    private static readonly JsonSerializerOptions DefaultSilentJson = new(JsonSerializerDefaults.Web);
+
     /// Lo que `BridgePolicy.text` entiende por «traer el campo»: una cadena, ni ausente ni de otro tipo.
     private static string? Raw(JsonElement element, string name) =>
         element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
@@ -416,7 +491,7 @@ public sealed partial class TelegramService
         var filters = await LoadFiltersAsync();
         var id = (int)Long(args, "id");
         var item = filters.FirstOrDefault(filter => filter.ID == id)
-            ?? throw new BridgeException("Esta carpeta ya no existe.");
+            ?? throw new BridgeException(DesktopFolderLinks.NoFolder);
         var plain = item as TL.DialogFilter;
         var included = new List<string>();
         var pinned = new List<string>();
@@ -490,7 +565,7 @@ public sealed partial class TelegramService
         var shareable = Bool(args, "shareable");
         var filters = await LoadFiltersAsync();
         var original = id > 0 ? filters.FirstOrDefault(item => item.ID == id) : null;
-        if (id > 0 && original == null) throw new BridgeException("Esta carpeta ya no existe.");
+        if (id > 0 && original == null) throw new BridgeException(DesktopFolderLinks.NoFolder);
 
         var keys = new Dictionary<string, TL.InputPeer>();
         void Collect(TL.InputPeer? peer)
@@ -566,7 +641,7 @@ public sealed partial class TelegramService
         var client = CollectionClient();
         var id = (int)Long(args, "id");
         var filters = await LoadFiltersAsync();
-        if (filters.All(item => item.ID != id)) throw new BridgeException("Esta carpeta ya no existe.");
+        if (filters.All(item => item.ID != id)) throw new BridgeException(DesktopFolderLinks.NoFolder);
         await client.Messages_UpdateDialogFilter(id: id, filter: null);
         _folderLinks.Remove(id);
         await LoadFoldersLocked();
@@ -579,12 +654,10 @@ public sealed partial class TelegramService
         var client = CollectionClient();
         var id = (int)Long(args, "id");
         var name = Str(args, "name").Trim();
-        if (name.Length is < 1 or > 32) throw new BridgeException("El nombre del enlace debe tener entre 1 y 32 caracteres.");
-        var filters = await LoadFiltersAsync();
-        var chatlist = filters.FirstOrDefault(item => item.ID == id) as TL.DialogFilterChatlist
-            ?? throw new BridgeException("Solo se pueden compartir las listas colaborativas, no las carpetas normales.");
+        if (!DesktopFolderLinks.NameAllowed(name)) throw new BridgeException(DesktopFolderLinks.BadLinkName);
+        var chatlist = await RequireChatlistAsync(id);
         if (chatlist.include_peers == null || chatlist.include_peers.Length == 0)
-            throw new BridgeException("Añade chats a la lista antes de compartirla.");
+            throw new BridgeException(DesktopFolderLinks.NoChatsYet);
         var result = await client.Chatlists_ExportChatlistInvite(new InputChatlistDialogFilter { filter_id = id }, name, chatlist.include_peers);
         var url = result.invite?.url;
         if (string.IsNullOrWhiteSpace(url)) throw new BridgeException("Telegram no generó el enlace de invitación.");
@@ -595,10 +668,8 @@ public sealed partial class TelegramService
     private async Task<object> FolderJoinAsync(JsonElement args)
     {
         var client = CollectionClient();
-        var link = Str(args, "link").Trim();
-        var match = Regex.Match(link, @"(?:t\.me|telegram\.me)/addlist/([A-Za-z0-9_\-]+)", RegexOptions.IgnoreCase);
-        var slug = match.Success ? match.Groups[1].Value : link.TrimStart('/');
-        if (slug.Length is < 1 or > 64) throw new BridgeException("El enlace de la lista no es válido.");
+        var slug = DesktopFolderLinks.SlugOf(Str(args, "link"))
+            ?? throw new BridgeException(DesktopFolderLinks.BadLink);
         var invite = await client.Chatlists_CheckChatlistInvite(slug);
         var peers = invite switch
         {
@@ -620,6 +691,62 @@ public sealed partial class TelegramService
         if (inputs.Length == 0)
             throw new BridgeException("No se pudo resolver el contenido de la lista. Actualiza la lista de chats e inténtalo de nuevo.");
         return inputs;
+    }
+
+    // ---- enlaces de una lista colaborativa (ronda CI) ----------------------------------
+    // Lo que se puede negar sin red se niega antes de cualquier petición, en el orden de Android
+    // medido por posición: el enlace (`NativeBridge.java:3969`) y el nombre (`:3966`) van delante y
+    // la carpeta se carga donde Android lee (`:3967`), porque su `folderId` (`:3964`) solo saca un
+    // número y aquí se comprueba además que esa carpeta es una lista colaborativa. Escribir es lo
+    // último, como `:3970`, `:3975` y `:3976`: MTProto nombra el enlace por `slug` y hay que leerlo.
+
+    private async Task<TL.DialogFilterChatlist> RequireChatlistAsync(int id)
+    {
+        var filters = await LoadFiltersAsync();
+        var folder = filters.FirstOrDefault(item => item.ID == id)
+            ?? throw new BridgeException(DesktopFolderLinks.NoFolder);
+        if (folder is not TL.DialogFilterChatlist chatlist) throw new BridgeException(DesktopFolderLinks.NotChatlist);
+        return chatlist;
+    }
+
+    private async Task<object> FolderLinksListAsync(JsonElement args)
+    {
+        var client = CollectionClient();
+        var folder = await RequireChatlistAsync((int)Long(args, "id"));
+        var listed = await client.Chatlists_GetExportedInvites(new InputChatlistDialogFilter { filter_id = folder.ID });
+        var rows = (listed.invites ?? Array.Empty<ExportedChatlistInvite>()).Select(invite => new
+        {
+            link = invite.url ?? "",
+            name = invite.title ?? "",
+            chatIds = (invite.peers ?? Array.Empty<TL.Peer>()).Select(peer => ChatIdOf(peer)).OfType<string>().ToArray()
+        }).ToArray();
+        // La marca de «con enlaces activos» la pone la lectura real, no el recuerdo de haber creado uno en esta sesión.
+        if (rows.Length == 0) _folderLinks.Remove(folder.ID); else _folderLinks.Add(folder.ID);
+        return rows;
+    }
+
+    private async Task<object> FolderLinkChangeAsync(JsonElement args, bool delete)
+    {
+        var client = CollectionClient();
+        var slug = DesktopFolderLinks.SlugOf(Str(args, "link"))
+            ?? throw new BridgeException(DesktopFolderLinks.BadLink);
+        var name = delete ? "" : Str(args, "name").Trim();
+        if (!delete && !DesktopFolderLinks.NameAllowed(name)) throw new BridgeException(DesktopFolderLinks.BadLinkName);
+        var folder = await RequireChatlistAsync((int)Long(args, "id"));
+        var input = new InputChatlistDialogFilter { filter_id = folder.ID };
+        var listed = await client.Chatlists_GetExportedInvites(input);
+        if (DesktopFolderLinks.Find(listed.invites, slug) == null) throw new BridgeException(DesktopFolderLinks.Gone);
+        if (delete)
+        {
+            if (!await client.Chatlists_DeleteExportedInvite(input, slug)) throw new BridgeException(DesktopFolderLinks.NotConfirmed);
+            if ((listed.invites?.Length ?? 0) <= 1) _folderLinks.Remove(folder.ID);
+            return true;
+        }
+        // Cambiar los chats de un enlace ya creado es un selector nativo de Android; este host no lo tiene.
+        if (Bool(args, "chooseChats")) throw new BridgeException(DesktopFolderLinks.NoPicker);
+        var edited = await client.Chatlists_EditExportedInvite(input, slug, title: name);
+        if (edited == null) throw new BridgeException(DesktopFolderLinks.NotConfirmed);
+        return true;
     }
 
     private async Task<object> FolderTagsAsync(JsonElement args)

@@ -82,9 +82,13 @@ describe('ronda BU · Android: el GIF del teléfono sale por la vía de animaci�
   });
 
   it('animationContent es la única vía de animación del puente de archivos', () => {
+    // La terna construida a mano sigue viviendo dentro de `animationContent`.
     expect(count('new TdApi.InputMessageAnimation(animation,new TdApi.FormattedText("",new TdApi.TextEntity[0]),false,false);', java)).toBe(1);
-    // Definición y llamada: no hay otro sitio por el que un archivo del teléfono se cuele como animación.
-    expect(count('animationContent(', java)).toBe(2);
+    // Definición, llamada desde el envío de archivos y llamada desde `mediaContent` (ronda CK): ningún otro sitio
+    // cuela un archivo del teléfono como animación.
+    expect(count('animationContent(', java)).toBe(3);
+    // La tercera llamada es la nueva rama de `mediaContent`, que reusa la pieza en vez de armar otra vía.
+    expect(tsRegion('private TdApi.InputMessageContent mediaContent(Attachment item,String kind,TdApi.MessageContent current)').includes('animationContent')).toBe(true);
     // El catálogo (ronda BS) arma su propia terna; aquí la pieza local entra por `InputFileLocal`.
     expect(count('animation.animation=new TdApi.InputFileLocal(item.path.getPath());', java)).toBe(1);
     expect(tsRegion('private TdApi.InputMessageContent animationContent(Attachment item)')).toContain('int[] box=animationBox(item.path.getPath());');
@@ -177,7 +181,11 @@ describe('ronda BU · la pantalla', () => {
     expect(count('gif?\'Enviar GIF\':photo?\'Enviar foto\':\'Enviar archivo\'', app)).toBe(1);
     expect(count('Telegram lo guarda como animación y lo reproduce dentro de la burbuja, no como un archivo que hay que abrir.', app)).toBe(1);
     expect(count('>Enviar {gif?\'GIF\':photo?\'foto\':\'archivo\'}<Send size={18}/>', app)).toBe(1);
-    expect(count('Límite de esta versión: 32 MB.', app)).toBe(1);
+    // La frase del límite es la misma en las dos ventanas: la de enviar y la de «Cambiar el archivo del mensaje»
+    // (ronda CK), que copia el texto carácter a carácter. Dos apariciones, ninguna nueva redactada.
+    expect(count('Límite de esta versión: 32 MB.', app)).toBe(2);
+    expect(count('Límite de esta versión: 32 MB.', appBody('function previewAttachment'))).toBe(1);
+    expect(count('Límite de esta versión: 32 MB.', appBody('function replaceMessageMedia'))).toBe(1);
   });
 
   it('el selector sigue siendo una orden con plazo de persona', () => {
@@ -207,6 +215,17 @@ function tsRegion(signature: string): string {
   const end = java.indexOf('\n    }', start);
   if (end < 0) throw new Error(`Sin cierre para ${signature}`);
   return java.slice(start, end);
+}
+
+/** Cuerpo de una función de App.tsx, desde su firma hasta la llave que la cierra. */
+function appBody(signature: string): string {
+  const start = at(signature, app);
+  let depth = 0;
+  for (let i = app.indexOf('{', start); i < app.length; i++) {
+    if (app[i] === '{') depth++;
+    else if (app[i] === '}' && --depth === 0) return app.slice(start, i + 1);
+  }
+  throw new Error(`Sin cierre para ${signature}`);
 }
 
 /** La línea, sin la sangría, en la que aparece por primera vez el texto dado. */

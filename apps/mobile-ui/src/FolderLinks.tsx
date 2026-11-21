@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { snapshot, subscribe } from './bridge';
 
 type Run = <T = unknown>(method: string, params?: Record<string, unknown>) => Promise<T | undefined>;
 type Invite = { link: string; name: string; chatIds: string[] };
 
 export function FolderLinks({ id, run }: { id: number; run: Run }) {
+  const desktop = useSyncExternalStore(subscribe, () => snapshot().platform === 'desktop');
   const [links, setLinks] = useState<Invite[]>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -49,7 +51,8 @@ export function FolderLinks({ id, run }: { id: number; run: Run }) {
         <label className="field-label">Nombre del enlace<input value={edit.name} maxLength={32} disabled={busy} onChange={event => setEdit({ ...edit, name: event.target.value })}/></label>
         <div className="settings-actions">
           <button type="submit" className="primary" disabled={busy}>Guardar nombre</button>
-          <button type="button" className="secondary" disabled={busy} onClick={() => void update('edit', invite.link, { name: edit.name, chooseChats: true })}>Cambiar chats incluidos</button>
+          {/* El brazo de Windows niega `chooseChats` por su nombre: aquí no hay selector de chats para un enlace ya creado. */}
+          {!desktop && <button type="button" className="secondary" disabled={busy} onClick={() => void update('edit', invite.link, { name: edit.name, chooseChats: true })}>Cambiar chats incluidos</button>}
           <button type="button" className="text-button" disabled={busy} onClick={() => setEdit(undefined)}>Cancelar</button>
         </div>
       </form>}

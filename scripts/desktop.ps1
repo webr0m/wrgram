@@ -72,7 +72,15 @@ if (-not (Test-Path $privateCredentials) -and (Test-Path $envFile)) {
 $dotnet = Resolve-Dotnet
 & $dotnet build $desktop -c $Configuration
 if ($LASTEXITCODE -ne 0) { throw 'La compilación de escritorio falló.' }
-if ($Task -eq 'check') { return }
+if ($Task -eq 'check') {
+    # El host de escritorio no tiene proyecto de pruebas unitarias: la sonda de .tools\cwb-probe compila el
+    # archivo real de las frases de llamada y las ejecuta con acciones sintéticas. Sin ella, el check solo
+    # probaría que el C# compila.
+    $probe = Join-Path $root '.tools\cwb-probe\CwbProbe.csproj'
+    & $dotnet run --project $probe -c $Configuration
+    if ($LASTEXITCODE -ne 0) { throw 'La sonda de las frases de llamada de escritorio falló.' }
+    return
+}
 
 $exe = Join-Path $desktop "bin\$Configuration\net8.0-windows\WRGram.Desktop.exe"
 if (-not (Test-Path $exe)) { throw "No se encontró $exe." }

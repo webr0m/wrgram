@@ -89,10 +89,10 @@ const keys = (from: string, pattern: RegExp) => [...from.matchAll(pattern)].map(
 
 describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitación', () => {
   it('el despacho de las cuatro órdenes está en las tres capas', () => {
-    expect(bridgeLine(741)).toContain('case "chat.invitelinks":inviteLinks(p,a);break;');
-    expect(bridgeLine(742)).toContain('case "chat.invitelink.create":try{inviteLinkForm(p,a,true);}catch(Exception invalid){a.fail(invalid.getMessage());}break;');
-    expect(bridgeLine(743)).toContain('case "chat.invitelink.edit":try{inviteLinkForm(p,a,false);}catch(Exception invalid){a.fail(invalid.getMessage());}break;');
-    expect(bridgeLine(744)).toContain('case "chat.invitelink.revoke":revokeInviteLink(p,a);break;');
+    expect(bridgeLine(758)).toContain('case "chat.invitelinks":inviteLinks(p,a);break;');
+    expect(bridgeLine(759)).toContain('case "chat.invitelink.create":try{inviteLinkForm(p,a,true);}catch(Exception invalid){a.fail(invalid.getMessage());}break;');
+    expect(bridgeLine(760)).toContain('case "chat.invitelink.edit":try{inviteLinkForm(p,a,false);}catch(Exception invalid){a.fail(invalid.getMessage());}break;');
+    expect(bridgeLine(761)).toContain('case "chat.invitelink.revoke":revokeInviteLink(p,a);break;');
     expect(policy).toContain('static { METHODS.addAll(Arrays.asList("chat.invitelinks","chat.invitelink.create","chat.invitelink.edit","chat.invitelink.revoke")); }');
     for (const arm of [
       '"chat.invitelinks" => await InviteLinksAsync(args),',
@@ -122,22 +122,22 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
 
   it('cada frase vive una vez por capa, con la cadena de Java delante', () => {
     // La cuenta de Java es lo que hay en el archivo, medido: `NoRightCreate` y `DialogCreate` las dice también el
-    // viejo `createInviteLink` (:1863), que comparte las dos cadenas con el formulario de la ronda G.
+    // viejo `createInviteLink` (:1881), que comparte las dos cadenas con el formulario de la ronda G.
     const measured: [string, string[], number][] = [
-      ['Unsupported', ['3589', '3625', '3683'], 3],
-      ['NoRightReview', ['3599'], 1],
-      ['NoRightCreate', ['1863', '3643'], 2],
-      ['NoRightEdit', ['3663'], 1],
-      ['NoRightRevoke', ['3695'], 1],
-      ['InvalidLink', ['3630'], 1],
-      ['EmptyRevoke', ['3689'], 1],
-      ['NotRecognised', ['3655', '3692'], 2],
-      ['PaidLinks', ['3657'], 1],
-      ['PrimaryEdit', ['3658'], 1],
-      ['AlreadyRevoked', ['3659'], 1],
-      ['OtherCreatorEdit', ['3664'], 1],
-      ['OtherCreatorRevoke', ['3696'], 1],
-      ['ChangedAccount', ['3713'], 1],
+      ['Unsupported', ['3608', '3644', '3702'], 3],
+      ['NoRightReview', ['3618'], 1],
+      ['NoRightCreate', ['1883', '3662'], 2],
+      ['NoRightEdit', ['3682'], 1],
+      ['NoRightRevoke', ['3714'], 1],
+      ['InvalidLink', ['3649'], 1],
+      ['EmptyRevoke', ['3708'], 1],
+      ['NotRecognised', ['3674', '3711'], 2],
+      ['PaidLinks', ['3676'], 1],
+      ['PrimaryEdit', ['3677'], 1],
+      ['AlreadyRevoked', ['3678'], 1],
+      ['OtherCreatorEdit', ['3683'], 1],
+      ['OtherCreatorRevoke', ['3715'], 1],
+      ['ChangedAccount', ['3732'], 1],
     ];
     for (const [name, places, occurrences] of measured) {
       const phrase = csSentence(name);
@@ -158,7 +158,7 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
       expect(count(csSentence(name), java)).toBe(0);
       expect(count(csSentence(name), cable), name).toBe(0);
     }
-    // La frase en inglés es de Java: `requiredBool` (:2757) la arma con el nombre de la clave y el despacho de `:742`
+    // La frase en inglés es de Java: `requiredBool` (:2775) la arma con el nombre de la clave y el despacho de `:756`
     // reenvía el `getMessage()` tal cual. En Windows no se lanza: el documento la cita y el cable responde en español.
     expect(java).toContain('throw new IllegalArgumentException("Missing permission: "+key)');
     expect(rules).toContain('«Missing');
@@ -167,15 +167,15 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
   });
 
   it('los diálogos dicen las tres palabras de Android y reutilizan la ventana del host', () => {
-    expect(says(bridgeLine(3644), csSentence('DialogCreate'))).toBe(true);
-    expect(says(bridgeLine(3666), csSentence('DialogEdit'))).toBe(true);
-    expect(says(bridgeLine(3698), csSentence('DialogRevoke'))).toBe(true);
-    expect(says(bridgeLine(3641), csSentence('DefaultLabel'))).toBe(true);
-    expect(says(bridgeLine(3665), csSentence('NoLabel'))).toBe(true);
-    expect(says(bridgeLine(3711), 'Cancelar')).toBe(true);
+    expect(says(bridgeLine(3663), csSentence('DialogCreate'))).toBe(true);
+    expect(says(bridgeLine(3685), csSentence('DialogEdit'))).toBe(true);
+    expect(says(bridgeLine(3717), csSentence('DialogRevoke'))).toBe(true);
+    expect(says(bridgeLine(3660), csSentence('DefaultLabel'))).toBe(true);
+    expect(says(bridgeLine(3684), csSentence('NoLabel'))).toBe(true);
+    expect(says(bridgeLine(3730), 'Cancelar')).toBe(true);
     // El botón positivo y el tope de texto ya vivían en la ficha de la comunidad: una sola verdad por cadena.
     expect(community).toContain('public const string DialogAccept = "Aplicar en Telegram";');
-    expect(says(bridgeLine(3712), 'Aplicar en Telegram')).toBe(true);
+    expect(says(bridgeLine(3731), 'Aplicar en Telegram')).toBe(true);
     expect(count('"Aplicar en Telegram"', rules + cable)).toBe(0);
     expect(count('"Ese texto es demasiado largo para enviarlo a Telegram."', rules + cable)).toBe(0);
     expect(cable).toContain('ConfirmPhoto(title, body, DesktopCommunityInfo.DialogAccept, null);');
@@ -185,18 +185,18 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
   });
 
   it('los tres cuerpos del diálogo son los de Android, palabra por palabra', () => {
-    expect(bridgeLine(3679)).toContain('"Enlace «"+name+"» en «"+title+"»: "+validity+" y "+capacity');
-    expect(bridgeLine(3679)).toContain('. Telegram aplica estos ajustes en cuanto lo confirmes; nadie se une por sí solo.');
+    expect(bridgeLine(3698)).toContain('"Enlace «"+name+"» en «"+title+"»: "+validity+" y "+capacity');
+    expect(bridgeLine(3698)).toContain('. Telegram aplica estos ajustes en cuanto lo confirmes; nadie se une por sí solo.');
     expect(rules).toContain('return "Enlace «" + label + "» en «" + title + "»: " + validity + " y " + capacity');
     expect(rules).toContain('". Telegram aplica estos ajustes en cuanto lo confirmes; nadie se une por sí solo.";');
     for (const fragment of ['no caduca', 'caduca el ', 'los nuevos tendrán que aprobarse', 'miembros a la vez', 'sin límite de miembros'])
       expect(rules).toContain(fragment);
-    expect(bridgeLine(3677)).toContain('"los nuevos tendrán que aprobarse":"sin límite de miembros"');
-    expect(bridgeLine(3678)).toContain('capacity="hasta "+memberLimit+" miembros a la vez"');
-    // El cuerpo de revocar, con sus dos sufijos condicionales (:3698-3700).
-    expect(bridgeLine(3698)).toContain('"Dejará de funcionar el enlace «"+name+"» de «"+title+"»"');
-    expect(bridgeLine(3699)).toContain(', que además es el enlace principal: Telegram creará uno nuevo.');
-    expect(bridgeLine(3700)).toContain(' Las "+current.memberCount+" personas que ya entraron seguirán en el chat.');
+    expect(bridgeLine(3696)).toContain('"los nuevos tendrán que aprobarse":"sin límite de miembros"');
+    expect(bridgeLine(3697)).toContain('capacity="hasta "+memberLimit+" miembros a la vez"');
+    // El cuerpo de revocar, con sus dos sufijos condicionales (:3714-3716).
+    expect(bridgeLine(3717)).toContain('"Dejará de funcionar el enlace «"+name+"» de «"+title+"»"');
+    expect(bridgeLine(3718)).toContain(', que además es el enlace principal: Telegram creará uno nuevo.');
+    expect(bridgeLine(3719)).toContain(' Las "+current.memberCount+" personas que ya entraron seguirán en el chat.');
     expect(rules).toContain('"Dejará de funcionar el enlace «" + name + "» de «" + title + "»"');
     expect(rules).toContain('", que además es el enlace principal: Telegram creará uno nuevo." : "."');
     expect(rules).toContain('" personas que ya entraron seguirán en el chat."');
@@ -221,7 +221,7 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
     const sheet = desktopSheet();
     expect(sheet).toContain("{(chat.supergroup===true||chat.type==='group'||chat.type==='channel')&&<MenuItem icon={<KeyRound/>} label=\"Mis enlaces de invitación\" onClick={()=>{setDialog(undefined);setLinks(chat);}}/>}");
     expect(count('label="Mis enlaces de invitación"', app)).toBe(3);
-    // La guarda es la forma de `:3589`, no `community(chat)`: el grupo básico también tiene enlace exportado.
+    // La guarda es la forma de `:3606`, no `community(chat)`: el grupo básico también tiene enlace exportado.
     expect(sheet).not.toMatch(/community\(chat\)&&<MenuItem icon=\{<KeyRound\/>\}/);
     expect(app).toContain('{links&&<InviteLinksPanel chat={links} accountId={state.selfId} close={()=>setLinks(undefined)}/>}');
     expect(panel).toContain("request<InviteLinkPage>('chat.invitelinks', marker ? { id: chat.id, revoked: showing, cursor: marker } : { id: chat.id, revoked: showing })");
@@ -281,7 +281,7 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
       'await client.Messages_EditExportedChatInvite(entry.Input, url, null, null, null, null, true);');
     // La cuenta que cambió a mitad del viaje se comprueba en cada salto, antes y después de la ventana: dos veces en
     // la lectura, ocho en el formulario (tres por el crear, cinco por el editar) y cinco en la revocación. La guarda
-    // del botón positivo es la que Android pone dentro de `confirmLink` (`:3713`), y aquí es la misma posición.
+    // del botón positivo es la que Android pone dentro de `confirmLink` (`:3730`), y aquí es la misma posición.
     expect(count('if (client.User?.id != owner) throw new BridgeException(DesktopLinkManager.ChangedAccount);', READ)).toBe(2);
     expect(count('if (client.User?.id != owner) throw new BridgeException(DesktopLinkManager.ChangedAccount);', FORM)).toBe(8);
     expect(count('if (client.User?.id != owner) throw new BridgeException(DesktopLinkManager.ChangedAccount);', REVOKE)).toBe(5);
@@ -315,8 +315,8 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
       for (const [, at] of file.matchAll(/BridgePolicy\.java:(\d+)/g)) expect(Number(at)).toBeLessThan(policy.split('\n').length);
     }
     expect(rules).toContain('InviteLinks.java:40-56');
-    expect(rules).toContain('NativeBridge.java:1843');
-    expect(cable).toContain('NativeBridge.java:741-744');
+    expect(rules).toContain('NativeBridge.java:1863');
+    expect(cable).toContain('NativeBridge.java:758-761');
     expect(cable).toContain('BridgePolicy.java:49');
     expect(cable).toContain('InviteLinksPanel.tsx:68');
     expect(line(panel.split('\n'), 68, 'InviteLinksPanel.tsx')).toContain("await load('', revoked)");
@@ -330,29 +330,38 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
     // La tabla es el cortafuegos del arrastre: cada ronda que mete líneas en el menú de escritorio descoloca
     // las que citan `App.tsx` por número. Aquí se declara una vez lo que tiene que decir cada línea citada.
     const anchors: Record<number, string> = {
-      95: 'function ContactAvatar(',
-      368: "raw.trim().replace(/^@/,'')",
-      395: 'function openSessions()',
-      736: 'const openRelated=',
+      96: 'function ContactAvatar(',
+      // Las tres de la visera de historias (ronda BZ): el host dice qué botón de los cuatro que se gatingean aquí
+      // tiene motivo para existir, así que la línea que los reparte es cita viva.
+      248: 'function showStory(',
+      253: 'async function release(story:OpenStory)',
+      291: 'story.canEdit&&<MenuItem',
+      372: "raw.trim().replace(/^@/,'')",
+      399: 'function openSessions()',
+      740: 'const openRelated=',
       // Las dos de la puerta de agenda (ronda BL): la pantalla arma la orden según el estado de la persona y, solo
       // para quitarla, confirma antes de mandar nada.
-      742: "run<boolean>(remove?'contacts.remove':'contacts.add'",
-      743: "confirm('Quitar de contactos'",
+      746: "run<boolean>(remove?'contacts.remove':'contacts.add'",
+      747: "confirm('Quitar de contactos'",
       // Las tres de la puerta de bloqueo (ronda BI): la pantalla confirma y solo entonces manda la orden.
-      744: 'changeBlock={(peer,blocked)=>{',
-      746: "confirm(label+' a '+peer.title",
-      747: "run<boolean>('profile.block'",
-      789: 'function chatInfo(chat:Chat)',
+      748: 'changeBlock={(peer,blocked)=>{',
+      750: "confirm(label+' a '+peer.title",
+      751: "run<boolean>('profile.block'",
+      793: 'function chatInfo(chat:Chat)',
       // La puerta de borrado automático de la rama de escritorio (ronda BN): la misma guarda de forma que la de
       // Android, y citada porque el andamio declara con ella que un chat secreto no se alcanza.
-      885: 'label="Borrado automático"',
-      896: 'label="Nombre y descripción"',
-      920: 'label="Añadir personas"',
-      1217: 'className="details-panel"',
-      1288: 'const MEMBER_FILTERS',
-      1379: 'Sin miembros para este filtro',
-      1422: 'disabled={contact.bot}',
-      1424: 'const GROUP_PERMISSION_FIELDS',
+      889: 'label="Borrado automático"',
+      900: 'label="Nombre y descripción"',
+      924: 'label="Añadir personas"',
+      // Las dos del botón ✨ (ronda CD): la primera pinta o no la puerta del emoji personalizado según la marca de la
+      // cuenta, y la segunda es la pregunta que el host contesta ahora también en Windows.
+      1086: '{props.allowCustom&&<button className="reaction-all"',
+      1237: 'className="details-panel"',
+      1267: "request<{premium:boolean}>('premium.state')",
+      1308: 'const MEMBER_FILTERS',
+      1399: 'Sin miembros para este filtro',
+      1442: 'disabled={contact.bot}',
+      1444: 'const GROUP_PERMISSION_FIELDS',
     };
     for (const [at, needle] of Object.entries(anchors)) expect(appLine(Number(at)), `App.tsx:${at}`).toContain(needle);
     const cited = new Set<number>();

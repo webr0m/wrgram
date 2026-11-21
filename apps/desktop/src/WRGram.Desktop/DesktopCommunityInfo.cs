@@ -7,7 +7,7 @@ namespace WRGram.Desktop;
 /// El nombre y la descripción de una comunidad en Windows. En Android son tres decisiones repartidas: la longitud la
 /// fija <c>ChatEditing</c> (`ChatEditing.java:12-13`, 128 y 255), quién puede escribirlas la decide el estado del
 /// miembro (`:35-56`, tres caminos que no se parecen entre sí) y el orden de los guardajes vive en
-/// <c>NativeBridge.setChatInfo</c> (<c>NativeBridge.java:1919-1943</c>). Aquí esas tres decisiones están escritas una
+/// <c>NativeBridge.setChatInfo</c> (<c>NativeBridge.java:1939-1963</c>). Aquí esas tres decisiones están escritas una
 /// vez, con las frases copiadas carácter a carácter, y el cable solo pide y compara.
 /// <para>
 /// La medida, hecha por reflexión sobre WTelegramClient 4.4.10: la descripción no está en el chat sino en el
@@ -22,7 +22,7 @@ namespace WRGram.Desktop;
 /// </para>
 /// <para>
 /// Y una divergencia entre capas, escrita en lugar de fingida. Android comprueba el permiso con un
-/// <c>GetChatMember</c> vivo (<c>:1845</c>) antes de escribir; MTProto no tiene una petición que pregunte «qué puedo
+/// <c>GetChatMember</c> vivo (<c>:1951</c>) antes de escribir; MTProto no tiene una petición que pregunte «qué puedo
 /// hacer yo en este chat», y el testigo son las banderas que Telegram manda con el peer:
 /// <c>Channel.admin_rights</c> y <c>Chat.admin_rights</c> con su <c>flags.change_info</c>, más <c>creator</c>,
 /// <c>left</c> y <c>default_banned_rights</c>. En la descripción ese testigo llega fresco, porque la lectura que hay
@@ -41,44 +41,44 @@ public static class DesktopCommunityInfo
     public const int MaxDescription = 255;
 
     /// El tope con el que <c>BridgePolicy.text</c> recibe los dos campos en <c>setChatInfo</c>
-    /// (<c>NativeBridge.java:1924</c> y <c>:1926</c>). El límite de Telegram es menor, pero el puente java rechaza
+    /// (<c>NativeBridge.java:1944</c> y <c>:1946</c>). El límite de Telegram es menor, pero el puente java rechaza
     /// antes, y ese rechazo es la frase <see cref="TooLong"/>.
     public const int BridgeMaximum = 1024;
 
     /// Los dos topes del <c>NativeSnapshot.limit</c> que Android aplica a los textos del diálogo
-    /// (<c>NativeBridge.java:1970</c> y <c>:1973</c>, sobre <c>NativeSnapshot.java:523</c>).
+    /// (<c>NativeBridge.java:1990</c> y <c>:1993</c>, sobre <c>NativeSnapshot.java:548</c>).
     public const int TitleShown = 64;
     public const int DescriptionShown = 96;
 
-    /// <c>COMMUNITY_UNSUPPORTED</c> (<c>NativeBridge.java:1873</c>).
+    /// <c>COMMUNITY_UNSUPPORTED</c> (<c>NativeBridge.java:1893</c>).
     public const string Unsupported = "El nombre y la descripción solo se editan en grupos, supergrupos y canales.";
 
-    /// <c>COMMUNITY_NO_RIGHT</c> (<c>NativeBridge.java:1874</c>).
+    /// <c>COMMUNITY_NO_RIGHT</c> (<c>NativeBridge.java:1894</c>).
     public const string NoRight =
         "Telegram no concede a esta cuenta permiso para cambiar la información de la comunidad.";
 
-    /// <c>COMMUNITY_CHANGED</c> (<c>NativeBridge.java:1875</c>).
+    /// <c>COMMUNITY_CHANGED</c> (<c>NativeBridge.java:1895</c>).
     public const string Changed = "La información cambió en otro dispositivo. Vuelve a abrirla antes de guardar.";
 
-    /// <c>COMMUNITY_UNREADABLE</c> (<c>NativeBridge.java:1876</c>).
+    /// <c>COMMUNITY_UNREADABLE</c> (<c>NativeBridge.java:1896</c>).
     public const string Unreadable = "Telegram no devolvió la descripción actual de la comunidad. Vuelve a intentarlo.";
 
-    /// El <c>catch</c> de <c>BridgePolicy.text(params,"value",1024)</c> (<c>NativeBridge.java:1925</c>). Es la frase
+    /// El <c>catch</c> de <c>BridgePolicy.text(params,"value",1024)</c> (<c>NativeBridge.java:1945</c>). Es la frase
     /// con la que Android cubre las dos causas —que el texto no quepa y que la clave no sea una cadena—, así que
     /// aquí tampoco se separan.
     public const string TooLong = "Ese texto es demasiado largo para enviarlo a Telegram.";
 
-    /// Las cuatro cadenas de <c>ChatEditing.problem</c> (`ChatEditing.java:64-76`), en el mismo orden de comprobación.
+    /// Las cuatro cadenas de <c>ChatEditing.problem</c> (`ChatEditing.java:68-80`), en el mismo orden de comprobación.
     public const string EmptyTitle = "Telegram no guarda comunidades sin nombre: escribe un título de al menos un carácter.";
     public const string TitleTooLong = "Telegram admite nombres de hasta 128 caracteres.";
     public const string DescriptionTooLong = "Telegram admite descripciones de hasta 255 caracteres.";
     public const string UnknownField = "Ese campo no se puede cambiar desde WRGram.";
 
     /// El <c>La cuenta cambió. No se modificó la comunidad.</c> de los dos guardadores del diálogo
-    /// (<c>NativeBridge.java:1962</c> y <c>:1978</c>).
+    /// (<c>NativeBridge.java:1982</c> y <c>:1998</c>).
     public const string ChangedAccount = "La cuenta cambió. No se modificó la comunidad.";
 
-    /// Las tres palabras del <c>AlertDialog</c> de Android (<c>NativeBridge.java:1974-1977</c>) y el sufijo que
+    /// Las tres palabras del <c>AlertDialog</c> de Android (<c>NativeBridge.java:1994-1997</c>) y el sufijo que
     /// Android pega al cuerpo en los dos casos.
     public const string DialogTitle = "Guardar en Telegram";
     public const string DialogAccept = "Aplicar en Telegram";
@@ -138,7 +138,7 @@ public static class DesktopCommunityInfo
     };
 
     /// Si la descripción que llega es la de Telegram o no llegó ninguna de las tres formas. En Android es el
-    /// <c>known</c> de <c>sendCommunity</c> (<c>NativeBridge.java:1896</c> y <c>:1902</c>): la lectura falla y el
+    /// <c>known</c> de <c>sendCommunity</c> (<c>NativeBridge.java:1926</c> y <c>:1917</c>): la lectura falla y el
     /// campo se cierra con <c>descriptionKnown=false</c> en vez de ofrecer un vacío que borraría lo que la persona no
     /// llegó a ver.
     public static bool Readable(ChatFullBase? full) => full is ChatFull or ChannelFull or CommunityFull;
@@ -203,13 +203,13 @@ public static class DesktopCommunityInfo
 
     private static bool HasRights(Chat.Flags flags, Chat.Flags present) => (flags & present) != 0;
 
-    /// El cuerpo del diálogo cuando lo que cambia es el nombre (<c>NativeBridge.java:1970</c>).
+    /// El cuerpo del diálogo cuando lo que cambia es el nombre (<c>NativeBridge.java:1990</c>).
     public static string TitleBody(string current, string prepared) =>
         $"El nombre de la comunidad pasará de «{DesktopContact.Limit(current, TitleShown)}» a "
         + $"«{DesktopContact.Limit(prepared, TitleShown)}». Todas las personas que estén dentro verán el nombre nuevo."
         + DialogSuffix;
 
-    /// Y cuando cambia la descripción: las dos caras del ternario de <c>NativeBridge.java:1971-1973</c>, que avisa
+    /// Y cuando cambia la descripción: las dos caras del ternario de <c>NativeBridge.java:1989-1993</c>, que avisa
     /// distinto según el texto nuevo borre o escriba. Allá el cuerpo no menciona la descripción vieja, así que
     /// aquí tampoco se le añade una que nadie lee.
     public static string DescriptionBody(string prepared) =>

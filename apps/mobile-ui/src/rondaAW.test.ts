@@ -73,14 +73,14 @@ function csBody(name: string, from = cable): string {
 const MAX_TITLE = Number(/MAX_TITLE\s*=\s*(\d+)/.exec(editing)![1]);
 const MAX_DESCRIPTION = Number(/MAX_DESCRIPTION\s*=\s*(\d+)/.exec(editing)![1]);
 
-/** Las seis claves del DTO, en el orden en que las escribe `sendCommunity`. */
-const ANDROID_KEYS = [...[javaLine(1908), javaLine(1909)].join(' ').matchAll(/"([a-zA-Z]+)",/g)].map(match => match[1]);
+/** Las seis claves del DTO, en el orden en que las escribe `sendCommunity` (líneas medidas: 1926 y 1927). */
+const ANDROID_KEYS = [...[javaLine(1928), javaLine(1929)].join(' ').matchAll(/"([a-zA-Z]+)",/g)].map(match => match[1]);
 
 describe('ronda AW · la ficha de la comunidad, cruzada con las tres capas', () => {
   it('las cuatro frases del puente están letra por letra en las cuatro líneas que cita la regla pura', () => {
     for (const [name, javaName, line] of [
-      ['Unsupported', 'COMMUNITY_UNSUPPORTED', 1873], ['NoRight', 'COMMUNITY_NO_RIGHT', 1874],
-      ['Changed', 'COMMUNITY_CHANGED', 1875], ['Unreadable', 'COMMUNITY_UNREADABLE', 1876],
+      ['Unsupported', 'COMMUNITY_UNSUPPORTED', 1893], ['NoRight', 'COMMUNITY_NO_RIGHT', 1894],
+      ['Changed', 'COMMUNITY_CHANGED', 1895], ['Unreadable', 'COMMUNITY_UNREADABLE', 1896],
     ] as const) {
       expect(javaLine(line)).toContain(`${javaName} = "${csSentence(name)}"`);
       // La cita del bloque es lo que hace revisable la frase: sin número, la siguiente ronda no sabe dónde mirar.
@@ -89,16 +89,16 @@ describe('ronda AW · la ficha de la comunidad, cruzada con las tres capas', () 
   });
 
   it('la frase del texto desbordado es el `catch` de Android, y la de la cuenta cambiada está en los dos guardadores', () => {
-    expect(javaLine(1925)).toContain(`a.fail("${csSentence('TooLong')}")`);
-    expect(docOf('public const string TooLong =')).toContain('1925');
+    expect(javaLine(1945)).toContain(`a.fail("${csSentence('TooLong')}")`);
+    expect(docOf('public const string TooLong =')).toContain('1945');
     // `BridgePolicy.text` cubre las dos causas con la misma cadena —que el texto no quepa y que la clave no sea una
     // cadena—, así que aquí tampoco se separan en dos frases.
     expect(policy).toContain('throw new IllegalArgumentException("Invalid text")');
     expect(csSentence('TooLong')).not.toContain('Invalid text');
-    for (const line of [1962, 1978]) {
+    for (const line of [1982, 1998]) {
       expect(javaLine(line)).toContain(`a.fail("${csSentence('ChangedAccount')}")`);
     }
-    expect(docOf('public const string ChangedAccount =')).toContain('1978');
+    expect(docOf('public const string ChangedAccount =')).toContain('1982');
   });
 
   it('las cuatro reglas de longitud dicen en C# lo que dicen en `ChatEditing.problem`', () => {
@@ -114,8 +114,8 @@ describe('ronda AW · la ficha de la comunidad, cruzada con las tres capas', () 
     expect(communityUi).toContain(`title: { min: 1, max: ${MAX_TITLE} }`);
     expect(communityUi).toContain(`description: { min: 0, max: ${MAX_DESCRIPTION} }`);
     expect(rules).toContain('public const int BridgeMaximum = 1024;');
-    expect(javaLine(1924)).toContain('BridgePolicy.text(params, "value", 1024)');
-    expect(javaLine(1926)).toContain('BridgePolicy.text(params, "previous", 1024)');
+    expect(javaLine(1944)).toContain('BridgePolicy.text(params, "value", 1024)');
+    expect(javaLine(1946)).toContain('BridgePolicy.text(params, "previous", 1024)');
   });
 
   it('recortar y contar son las reglas de Java, no las de la biblioteca de cada idioma', () => {
@@ -147,8 +147,8 @@ describe('ronda AW · la ficha de la comunidad, cruzada con las tres capas', () 
     expect(rules).toContain('CommunityFull forum => forum.about ?? "",');
     // La lectura que falla degrada el campo a ilegible en vez de ofrecer un vacío, como `sendCommunity` con `known`.
     expect(rules).toContain('public static bool Readable(ChatFullBase? full) => full is ChatFull or ChannelFull or CommunityFull;');
-    expect(javaLine(1897)).toContain('sendCommunity(chat, can, "", false, a)');
-    expect(javaLine(1903)).toContain('sendCommunity(chat, can, "", false, a)');
+    expect(javaLine(1917)).toContain('sendCommunity(chat, can, "", false, a)');
+    expect(javaLine(1923)).toContain('sendCommunity(chat, can, "", false, a)');
     expect(cable).toContain('descriptionKnown = DesktopCommunityInfo.Readable(page?.full_chat)');
     expect(cable).toContain('title = entry.Title,');
   });
@@ -168,14 +168,14 @@ describe('ronda AW · la ficha de la comunidad, cruzada con las tres capas', () 
   });
 
   it('el diálogo de confirmar dice en Windows las mismas cuatro cadenas del `AlertDialog`', () => {
-    expect(javaLine(1974)).toContain(`setTitle("${csSentence('DialogTitle')}")`);
-    expect(javaLine(1975)).toContain(`setMessage(message + "${csSentence('DialogSuffix')}")`);
-    expect(javaLine(1976)).toContain(`setNegativeButton("${csSentence('DialogCancel')}"`);
-    expect(javaLine(1977)).toContain(`setPositiveButton("${csSentence('DialogAccept')}"`);
+    expect(javaLine(1994)).toContain(`setTitle("${csSentence('DialogTitle')}")`);
+    expect(javaLine(1995)).toContain(`setMessage(message + "${csSentence('DialogSuffix')}")`);
+    expect(javaLine(1996)).toContain(`setNegativeButton("${csSentence('DialogCancel')}"`);
+    expect(javaLine(1997)).toContain(`setPositiveButton("${csSentence('DialogAccept')}"`);
     // Los dos topes del `NativeSnapshot.limit` que Android aplica a los cuerpos.
-    expect(javaLine(1970)).toContain('NativeSnapshot.limit(current, 64)');
-    expect(javaLine(1970)).toContain('NativeSnapshot.limit(prepared, 64)');
-    expect(javaLine(1973)).toContain('NativeSnapshot.limit(prepared, 96)');
+    expect(javaLine(1990)).toContain('NativeSnapshot.limit(current, 64)');
+    expect(javaLine(1990)).toContain('NativeSnapshot.limit(prepared, 64)');
+    expect(javaLine(1993)).toContain('NativeSnapshot.limit(prepared, 96)');
     expect(rules).toContain('public const int TitleShown = 64;');
     expect(rules).toContain('public const int DescriptionShown = 96;');
     expect(rules).toContain('«{DesktopContact.Limit(current, TitleShown)}»');
@@ -202,8 +202,8 @@ describe('ronda AW · la ficha de la comunidad, cruzada con las tres capas', () 
 
   it('el camino de escribir son dos peticiones para el nombre y una para la descripción', () => {
     // TDLib tiene un único `SetChatTitle`; MTProto lo parte según la forma del peer. Es lo único que el cable decide.
-    expect(javaLine(1936)).toContain('new TdApi.SetChatTitle(chat.id, prepared)');
-    expect(javaLine(1965)).toContain('new TdApi.SetChatDescription(chat.id, prepared)');
+    expect(javaLine(1956)).toContain('new TdApi.SetChatTitle(chat.id, prepared)');
+    expect(javaLine(1985)).toContain('new TdApi.SetChatDescription(chat.id, prepared)');
     expect(cable).toContain('await client.Messages_EditChatTitle(basic.chat_id, title);');
     expect(cable).toContain('await client.Channels_EditTitle(new InputChannel(peer.channel_id, peer.access_hash), title);');
     expect(cable).toContain('await client.Messages_EditChatAbout(entry.Input, prepared);');
@@ -215,8 +215,8 @@ describe('ronda AW · la ficha de la comunidad, cruzada con las tres capas', () 
   });
 
   it('el `false` es el «Cancelar» y la cuenta cambiada se comprueba en los dos caminos', () => {
-    expect(javaLine(1976)).toContain('a.ok(false)');
-    expect(javaLine(1980)).toContain('setOnCancelListener(d -> a.ok(false))');
+    expect(javaLine(1996)).toContain('a.ok(false)');
+    expect(javaLine(2000)).toContain('setOnCancelListener(d -> a.ok(false))');
     const body = csBody('SetCommunityInfoAsync');
     expect(count('if (!ConfirmCommunity(', body)).toBe(2);
     expect(count('return false;', body)).toBe(2);
@@ -226,7 +226,8 @@ describe('ronda AW · la ficha de la comunidad, cruzada con las tres capas', () 
   });
 
   it('renombrar mueve también la fila de la bandeja, que es donde Android refresca con `schedule()`', () => {
-    expect(javaLine(1936)).toContain('schedule(); a.ok(true)');
+    // Medido: el `schedule(); a.ok(true)` del nombre vive en la línea del `SetChatTitle`, no en la del `previous`.
+    expect(javaLine(1956)).toContain('schedule(); a.ok(true)');
     const body = csBody('SetCommunityInfoAsync');
     expect(body).toContain('entry.Title = prepared;');
     expect(body).toContain('foreach (var row in _state.Chats) if (row.Id == entry.Id) row.Title = prepared;');
@@ -299,8 +300,8 @@ describe('ronda AW · la ficha de la comunidad, cruzada con las tres capas', () 
   });
 
   it('las citas de Android en la regla pura y en el cable dicen eso mismo en la línea citada', () => {
-    expect(javaLine(584)).toContain('case "chat.info":chatInfo(p,a);break;');
-    expect(javaLine(585)).toContain('case "chat.info.set":setChatInfo(p,a);break;');
+    expect(javaLine(597)).toContain('case "chat.info":chatInfo(p,a);break;');
+    expect(javaLine(598)).toContain('case "chat.info.set":setChatInfo(p,a);break;');
     for (const file of [rules, cable]) {
       for (const [, start, end] of file.matchAll(/NativeBridge\.java:(\d+)(?:-(\d+))?/g)) {
         expect(lines.length).toBeGreaterThan(Number(start) - 1);

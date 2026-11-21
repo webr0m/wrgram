@@ -36,15 +36,15 @@ function csSentence(name: string, from: string): string {
   return match[1];
 }
 
-// La fila del básico se escribe en cinco líneas (2820-2824) y el `answer.ok` empieza en la 2826: la ronda AY
-// metió su clave dentro de la 2823 a propósito, porque abrir una línea nueva correría todas las agujas que
+// La fila del básico se escribe en cinco líneas (2840-2844) y el `answer.ok` empieza en la 2846: la ronda AY
+// metió su clave dentro de la 2843 a propósito, porque abrir una línea nueva correría todas las agujas que
 // otras rondas tienen puestas por número.
-const rowLines = `${line(lines, 2820, 'NativeBridge')} ${line(lines, 2821, 'NativeBridge')} ` +
-  `${line(lines, 2822, 'NativeBridge')} ${line(lines, 2823, 'NativeBridge')} ${line(lines, 2824, 'NativeBridge')}`;
+const rowLines = `${line(lines, 2840, 'NativeBridge')} ${line(lines, 2841, 'NativeBridge')} ` +
+  `${line(lines, 2842, 'NativeBridge')} ${line(lines, 2843, 'NativeBridge')} ${line(lines, 2844, 'NativeBridge')}`;
 
 describe('ronda AY · la firma de la invitación', () => {
   it('Android resuelve al invitador con su regla pura y no con el número que trae TDLib', () => {
-    expect(line(lines, 2823, 'NativeBridge')).toContain(
+    expect(line(lines, 2843, 'NativeBridge')).toContain(
       '"invitedByName",BasicGroupRoster.invitedName(member.inviterUserId,rosterName(session.user(member.inviterUserId)))');
     expect(basicJava).toContain('static String invitedName(long inviterUserId, String name) {');
     expect(line(rosterLines, rosterLines.findIndex(one => one.includes('return inviterUserId == 0')) + 1, 'BasicGroupRoster'))

@@ -8,7 +8,7 @@ using WTelegram;
 /// <summary>
 /// El cable de la familia S06 en Windows: <c>privacy.autoDelete</c> y <c>chat.autoDelete</c> para leer,
 /// <c>privacy.autoDelete.set</c> y <c>chat.autoDelete.set</c> para escribir. Las cuatro llevan en el puente de
-/// Android desde <c>BridgePolicy.java:44</c> y se atienden en <c>NativeBridge.java:549-552</c>; en el host de
+/// Android desde <c>BridgePolicy.java:44</c> y se atienden en <c>NativeBridge.java:562-565</c>; en el host de
 /// escritorio las cuatro caían en el <c>_ =&gt; throw</c> genérico del despacho, que decía «no disponible en
 /// escritorio (beta)» de una función que la librería tiene resuelta desde siempre: el número viaja en las tres
 /// respuestas <c>*getFull*</c> —<c>users.getFullUser</c>, <c>messages.getFullChat</c> y
@@ -16,7 +16,7 @@ using WTelegram;
 /// <c>messages.setDefaultHistoryTTL</c> y su lectura <c>messages.getDefaultHistoryTTL</c>, todo medido por reflexión
 /// sobre la 4.4.10. Reglas y frases, en <see cref="DesktopAutoDelete"/>; aquí solo el orden de las peticiones.
 /// <para>
-/// El orden de la escritura es el de <c>autoDeleteSet</c> (<c>NativeBridge.java:1352-1376</c>) línea por línea: la
+/// El orden de la escritura es el de <c>autoDeleteSet</c> (<c>NativeBridge.java:1372-1396</c>) línea por línea: la
 /// cuenta, la duración, el estado de antes, el derecho, la ventana, la segunda mirada al estado y solo entonces
 /// <c>messages.setHistoryTTL</c>. No es cosmético: si el derecho se mirara después de la ventana, un grupo donde no
 /// se puede cambiar nada enseñaría primero un «¿aplicar en Telegram?» que no se va a poder cumplir, y la norma de la
@@ -30,7 +30,7 @@ using WTelegram;
 /// (<see cref="DesktopCommunityInfo.CanChange"/>) —la misma diferencia de frescura que declaró la ronda AW, con la
 /// misma consecuencia: si la bandera estuviera vieja, lo cobra Telegram con su rechazo, no este puente con un
 /// «no tienes permiso» inventado—. Y la guarda de cuenta: Android la repite al entrar en cada respuesta asíncrona
-/// (<c>NativeBridge.java:475</c>)
+/// (<c>NativeBridge.java:488</c>)
 /// además de en el botón positivo (<c>:1392</c>); aquí la sesión no puede cambiarse a mitad de una petición —la
 /// multitarea de cuentas se niega en el propio despacho—, así que basta la del botón, que es la que nombra al
 /// temporizador.
@@ -52,7 +52,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>autoDeleteGet</c> (<c>NativeBridge.java:1337-1351</c>). El modo predeterminado es una sola pregunta y
+    /// <c>autoDeleteGet</c> (<c>NativeBridge.java:1357-1371</c>). El modo predeterminado es una sola pregunta y
     /// <c>canChange:true</c>, igual que <c>:1340</c>: el ajuste vive en la cuenta, no en un chat, y no hay derecho que
     /// comprobar. El modo por conversación son las dos formas de <see cref="AutoDeleteStateAsync"/>.
     /// </summary>
@@ -66,7 +66,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>autoDeleteSet</c> (<c>NativeBridge.java:1352-1376</c>) más sus dos confirmaciones
+    /// <c>autoDeleteSet</c> (<c>NativeBridge.java:1372-1396</c>) más sus dos confirmaciones
     /// (<c>confirmChatAutoDelete</c>, <c>:1378</c>, y <c>confirmAutoDelete</c>, <c>:1387</c>). El <c>false</c> es el
     /// «Cancelar» de la ventana (<c>:1390</c>) y su cierre por la equis (<c>:1394</c>): la interfaz ya lo traduce por
     /// «en Telegram no ha cambiado nada» y conserva el número que la persona había escrito.
@@ -139,7 +139,7 @@ public sealed partial class TelegramService
         return (period, DesktopCommunityInfo.CanChange(Renewed(page, entry) ?? _chats.GetValueOrDefault(Number(entry))));
     }
 
-    /// La ventana de <c>confirmAutoDelete</c> (<c>NativeBridge.java:1387-1395</c>) con la misma WPF que ya levantan
+    /// La ventana de <c>confirmAutoDelete</c> (<c>NativeBridge.java:1407-1415</c>) con la misma WPF que ya levantan
     /// la foto del perfil y el rename de la comunidad: el título lleva el recorte de <c>:1389</c>, el cuerpo es el de
     /// <c>:1388</c> y los dos botones, los rótulos de <c>:1390</c> y <c>:1391</c>.
     private static bool ConfirmAutoDelete(string title, int seconds) =>
