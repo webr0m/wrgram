@@ -82,6 +82,16 @@ describe('política pública de Android aprobada', () => {
     expect(policy).toContain('no guarda el texto que publicas');
     expect(policy).not.toContain('sacarlo del chat borra');
   });
+  it('cubre el fondo de la cuenta que sí viaja a Telegram y la ubicación en directo', () => {
+    expect(policy).toContain('<strong>Fondo de la cuenta.</strong>');
+    expect(policy).toContain('hueco independiente para el modo claro y para el oscuro');
+    expect(policy).toContain('no se sube ningún archivo');
+    expect(policy).not.toContain('El fondo se puede reemplazar desde Temas y no se transmite a Telegram');
+    expect(policy).toContain('<strong>Ubicación en directo.</strong>');
+    expect(policy).toContain('quince minutos, una hora, ocho horas o veinticuatro horas');
+    expect(policy).toContain('seis segundos o te has movido doce metros');
+    expect(policy).toContain('al cerrarla deja de actualizarse sola');
+  });
   it('anuncia la versión de Android que está empaquetada ahora mismo', () => {
     expect(versionName).toMatch(/^\d+\.\d+\.\d+/);
     expect(policy).toContain(`${versionName} (código ${versionCode})`);
