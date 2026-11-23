@@ -33,7 +33,7 @@ Los chats en la nube de Telegram **no tienen cifrado de extremo a extremo**. Est
 
 ### Archivos, stickers y GIF
 
-Los archivos que selecciones mediante el selector del sistema se copian al almacenamiento privado de la app para preparar su envío; se envían a Telegram cuando confirmas. La recepción o descarga de multimedia también utiliza Telegram. Alpha03 permite seleccionar archivos de hasta 32 MB para enviar.
+Los archivos que selecciones mediante el selector del sistema se copian al almacenamiento privado de la app para preparar su envío; se envían a Telegram cuando confirmas. La recepción o descarga de multimedia también utiliza Telegram. WRGram permite seleccionar archivos de hasta 2 GB para enviar, o 4 GB si tu cuenta tiene Telegram Premium.
 
 Las búsquedas de stickers se realizan mediante Telegram. Una búsqueda de GIF en línea transmite el término al bot de GIF configurado por Telegram. Los bots y servicios externos pueden tratar esos datos bajo sus propias condiciones; no escribas información sensible en las búsquedas.
 

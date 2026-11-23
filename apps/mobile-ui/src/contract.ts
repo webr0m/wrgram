@@ -156,7 +156,7 @@ export interface CacheDetails {
 export interface StorageStatus { filesSize:number;fileCount:number;databaseSize:number;languagePackDatabaseSize:number;logSize:number;total:number;policy:CachePolicy }
 export type TextEntityType = 'bold'|'italic'|'underline'|'strikethrough'|'spoiler'|'code'|'pre'|'preCode'|'blockquote'|'expandableBlockquote'|'link'|'mention'|'mentionName'|'hashtag'|'cashtag'|'botCommand'|'email'|'phone'|'bankCard'|'tonAddress'|'customEmoji'|'mediaTimestamp'|'dateTime';
 export interface TextEntity { type:TextEntityType; offset:number; length:number; url?:string; userId?:string; customEmojiId?:string; mediaTimestamp?:number; unixTime?:number; dateTimeType?:'relative'|'absolute'; language?:string }
-export interface Message { entities?:TextEntity[]; albumId?:string; forumTopicId?:number }
+export interface Message { entities?:TextEntity[]; albumId?:string; forumTopicId?:number; replyQuote?:{text:string;position:number;entities?:TextEntity[]} }
 export interface ServiceInfo { kind:string; text:string; photo?:Media; messageId?:string; chatId?:string; userId?:string; currency?:string; amount?:number; date?:number; duration?:number; count?:number }
 export interface Message { service?:ServiceInfo }
 export type MessageExtra =

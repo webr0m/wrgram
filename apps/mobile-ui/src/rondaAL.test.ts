@@ -10,6 +10,7 @@ const app = text('./App.tsx');
 const preview = text('./preview.ts');
 const policy = text('../../mobile/android/app/src/main/java/cc/webrom/wrgram/BridgePolicy.java');
 const java = text('../../mobile/android/app/src/main/java/cc/webrom/wrgram/NativeBridge.java');
+const upload = text('../../mobile/android/app/src/main/java/cc/webrom/wrgram/UploadPolicy.java');
 
 /** El literal que una capa asigna a una constante de C#. */
 function csSentence(name: string, from = albumRules): string {
@@ -89,9 +90,13 @@ describe('ronda AL · las reglas del álbum viven fuera del puente', () => {
   });
 
   it('las ocho frases del lote son literales de Android y la de las fotos es la única de Windows', () => {
-    for (const name of ['NoPicker', 'TooFew', 'TooMany', 'ImportFailed', 'Prepare', 'Batch', 'Uncertain', 'ChangedPieces']) {
+    for (const name of ['NoPicker', 'TooFew', 'TooMany', 'Prepare', 'Batch', 'Uncertain', 'ChangedPieces']) {
       expect(java).toContain(`"${csSentence(name)}"`);
     }
+    // La de importación la escribe `UploadPolicy` desde la ronda CP, con las dos orillas de la cuenta.
+    expect(upload).toContain(`"${csSentence('ImportFailed')}"`);
+    expect(upload).toContain(`"${csSentence('ImportFailedPremium')}"`);
+    expect(java).toContain('answer.fail(UploadPolicy.albumTooBig(premium))');
     // La terna de fotos la decide aquí el puente; Android no puede volver con otra cosa que `image/*`.
     expect(java).not.toContain(csSentence('NotPhoto'));
   });
@@ -107,10 +112,11 @@ describe('ronda AL · las reglas del álbum viven fuera del puente', () => {
   });
 
   it('la frase de importación lleva el tope escrito dentro, como en Android', () => {
-    // Allá el `catch` de `pickedAlbum` mete en una sola negativa el archivo que no se lee y el que pasa de 32 MB,
-    // porque desde la pantalla las dos se ven igual: el álbum no se preparó.
-    expect(csSentence('ImportFailed')).toContain('10 imágenes de 32 MB');
-    expect(rules).toContain('public const long MaxBytes = 32L * 1024 * 1024;');
+    // Allá el `catch` de `pickedAlbum` mete en una sola negativa el archivo que no se lee y el que pasa del tope
+    // de la cuenta, porque desde la pantalla las dos se ven igual: el álbum no se preparó.
+    expect(csSentence('ImportFailed')).toContain('10 imágenes de 2 GB');
+    expect(csSentence('ImportFailedPremium', albumRules)).toContain('10 imágenes de 4 GB');
+    expect(rules).toContain('public static long MaxBytes(bool premium) => premium ? PremiumMaxBytes : FreeMaxBytes;');
     expect(csSentence('ImportFailed')).not.toBe(csSentence('TooBig', rules));
   });
 });
@@ -175,8 +181,8 @@ describe('ronda AL · elegir y mandar un lote en Windows', () => {
 
   it('la copia que falla no deja un lote a medias', () => {
     const body = csBody('AttachmentAlbumAsync');
-    expect(body).toContain('size = await ImportCopyAsync(target, source);');
-    expect(body).toContain('throw new BridgeException(DesktopAlbum.ImportFailed, ex);');
+    expect(body).toContain('size = await ImportCopyAsync(target, source, DesktopEmojiCatalog.IsPremium(client.User!));');
+    expect(body).toContain('throw new BridgeException(DesktopAlbum.ImportFailedOf(DesktopEmojiCatalog.IsPremium(client.User!)), ex);');
     expect(count('DeleteFolder(folder);', body)).toBe(1);
     // Y lo que ya estaba copiado de las fotos anteriores se tira antes de decir que no.
     expect(count('foreach (var token in issued) DropOutbox(token);', service)).toBe(1);
@@ -306,7 +312,7 @@ describe('ronda AL · la pantalla de Windows puede pedir el álbum', () => {
 type DesignCall = (method: string, params?: Record<string, unknown>) => Promise<unknown>;
 type Piece = { kind: string; name: string; mime: string; size: number; ready: boolean };
 type Row = { id: string; text: string; outgoing: boolean; date: number; albumId?: string; media?: Piece };
-type Snap = { active: string; selfId: string; uncertain: boolean; messages: Row[]; chats: { id: string }[] };
+type Snap = { active: string; selfId: string; uncertain: boolean; messages: Row[]; chats: { id: string }[]; wallet?: { premium?: boolean } };
 type Vale = { token: string; name: string; size: number };
 
 describe('ronda AL · medido con las manos, no con agujas', () => {
@@ -373,10 +379,18 @@ describe('ronda AL · medido con las manos, no con agujas', () => {
   });
 
   it('una foto que pasa del tope tira el lote entero', async () => {
-    await expect(call('attachment.album', { names: many(3), size: 33 * 1024 * 1024 }))
+    await expect(call('attachment.album', { names: many(3), size: 2 * 1024 * 1024 * 1024 + 1 }))
       .rejects.toThrow(tsProperty('importFailed', albumRefusals));
     // La siguiente selección vuelve a empezar en el primer vale: la negativa no deja nada por el medio.
     expect(tokensOf(await album())).toEqual(['a1', 'a2', 'a3']);
+  });
+
+  it('con Premium el lote admite fotos de tres gigas y niega las de cinco con la otra frase', async () => {
+    set({ wallet: { premium: true } });
+    expect(tokensOf(await call('attachment.album', { names: many(3), size: 3 * 1024 * 1024 * 1024 }) as Vale[]))
+      .toEqual(['a1', 'a2', 'a3']);
+    await expect(call('attachment.album', { names: many(3), size: 5 * 1024 * 1024 * 1024 }))
+      .rejects.toThrow(tsProperty('importFailedPremium', albumRefusals));
   });
 
   it('el lote comparte la cola con el archivo suelto y no le pisa el vale', async () => {

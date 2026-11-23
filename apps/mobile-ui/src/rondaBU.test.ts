@@ -183,14 +183,18 @@ describe('ronda BU · la pantalla', () => {
     expect(count('>Enviar {gif?\'GIF\':photo?\'foto\':\'archivo\'}<Send size={18}/>', app)).toBe(1);
     // La frase del límite es la misma en las dos ventanas: la de enviar y la de «Cambiar el archivo del mensaje»
     // (ronda CK), que copia el texto carácter a carácter. Dos apariciones, ninguna nueva redactada.
-    expect(count('Límite de esta versión: 32 MB.', app)).toBe(2);
-    expect(count('Límite de esta versión: 32 MB.', appBody('function previewAttachment'))).toBe(1);
-    expect(count('Límite de esta versión: 32 MB.', appBody('function replaceMessageMedia'))).toBe(1);
+    expect(count("Límite: {state.wallet?.premium?'4 GB':'2 GB'}.", app)).toBe(2);
+    expect(count("Límite: {state.wallet?.premium?'4 GB':'2 GB'}.", appBody('function previewAttachment'))).toBe(1);
+    expect(count("Límite: {state.wallet?.premium?'4 GB':'2 GB'}.", appBody('function replaceMessageMedia'))).toBe(1);
   });
 
   it('el selector sigue siendo una orden con plazo de persona', () => {
     expect(bridge).toContain("'attachment.pick'");
     expect(count('USER_DRIVEN.has(method) ? 300000', bridge)).toBe(1);
+    // La ronda CP le dio plazo de copia porque copiar gigas puede pasar de los 300 s del diálogo; la ronda CO
+    // añadió `share.import`, que también copia. El selector sigue en la lista de las que esperan a la persona.
+    expect(bridge).toContain("const IMPORT_COPY = new Set(['attachment.pick', 'attachment.album', 'share.import']);");
+    expect(count('IMPORT_COPY.has(method) ? 900000', bridge)).toBe(1);
   });
 
   it('el andamio de escritorio reproduce el filtro', () => {

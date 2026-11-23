@@ -768,14 +768,14 @@ function desktopScheduledWrite(params: Record<string, unknown>, state: State, ki
 }
 /**
  * Las cinco negaciones del adjunto en Windows, copiadas carácter a carácter de `DesktopAttachment.cs`. Cuatro son
- * las que Android ya dice en `NativeBridge` —el selector que falta, el tope de 32 MB, la conversación cambiada y
+ * las que Android ya dice en `NativeBridge` —el selector que falta, el tope de la cuenta, la conversación cambiada y
  * el envío sin confirmar—; `notPrepared` es la única que añade este puente, porque allí un vale que no está en el
  * mapa lanza una excepción sin mensaje. `picker` no la lanza el esqueleto —aquí el selector nunca falla, porque no
  * hay selector—, igual que `SCHEDULED_REFUSALS.prepare`.
  */
 const ATTACH_REFUSALS = {
   picker: 'No hay un selector de archivos disponible.',
-  tooBig: 'No se pudo importar el archivo. Límite: 32 MB.',
+  tooBig: 'No se pudo importar el archivo. Límite: 2 GB.', tooBigPremium: 'No se pudo importar el archivo. Límite: 4 GB.',
   changed: 'La cuenta o conversación cambió.',
   uncertain: 'Revisa el envío anterior en el historial antes de enviar otro archivo.',
   notPrepared: 'Ese archivo ya no está preparado para enviar. Vuelve a elegirlo.',
@@ -794,7 +794,7 @@ const ALBUM_REFUSALS = {
   picker: 'No hay un selector de fotos disponible.',
   tooFew: 'Elige al menos 2 fotos para crear un álbum.',
   tooMany: 'Puedes elegir hasta 10 fotos por álbum.',
-  importFailed: 'No se pudieron importar las fotos. Límite: 10 imágenes de 32 MB.',
+  importFailed: 'No se pudieron importar las fotos. Límite: 10 imágenes de 2 GB.', importFailedPremium: 'No se pudieron importar las fotos. Límite: 10 imágenes de 4 GB.',
   prepare: 'No se pudo preparar el álbum.',
   batch: 'Elige entre 2 y 10 fotos.',
   uncertain: 'Revisa el envío anterior en el historial antes de enviar un álbum.',
@@ -807,8 +807,8 @@ const ALBUM_REFUSALS = {
 /** Las dos orillas de `DesktopAlbum.Min` y `DesktopAlbum.Max`. */
 const ALBUM_MIN = 2;
 const ALBUM_MAX = 10;
-/** El tope con el que `NativeBridge.picked` corta la copia, y que la pantalla anuncia en español. */
-const ATTACH_MAX_BYTES = 32 * 1024 * 1024;
+/** Las dos orillas de `UploadPolicy.maxBytes`, que `NativeBridge.picked` pregunta con la cuenta que eligió. */
+const attachMaxBytes = (premium: boolean) => premium ? 4 * 1024 * 1024 * 1024 : 2 * 1024 * 1024 * 1024;
 /** La tabla extensión → MIME de `DesktopAttachment.MimeOf`, pareja por pareja. */
 const ATTACH_TYPES: Record<string, string> = {
   jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif',
@@ -857,7 +857,7 @@ const desktopOutbox: DesktopOutbox[] = [];
 let desktopAttachSeq = 0;
 /**
  * `attachment.pick`. El andamio no puede abrir el selector de Windows, así que lo que se reproduce aquí son las
- * tres normas que el puente aplica sobre lo que la persona elija: el saneado del nombre, el tope de 32 MB y el
+ * tres normas que el puente aplica sobre lo que la persona elija: el saneado del nombre, el tope de la cuenta y el
  * MIME por extensión. El archivo se le dice al espejo por parámetros —nombre y tamaño— y, cuando la pantalla lo
  * pide sin decir nada, se usa un sustituto fijo. Lo que no se puede simular es cancelar: el puente devuelve
  * `null` y la pantalla no abre la confirmación.
@@ -869,11 +869,11 @@ function desktopAttachmentPick(params: Record<string, unknown>, state: State) {
   const gif = String(params.kind ?? '') === 'gif';
   const named = typeof params.name === 'string' && (!gif || params.name.toLowerCase().endsWith('.gif'));
   const raw = named ? String(params.name) : (gif ? 'Animacion de la barra.gif' : 'Informe mensual de la barra.pdf');
-  const size = Number(params.size ?? 512 * 1024);
+  const size = Number(params.size ?? 512 * 1024); const premium = state.wallet?.premium === true;
   // El nombre se sana antes de mirar el tamaño, que es el orden del puente: la copia se hace con el nombre ya
   // decidido y el tope se comprueba mientras se escribe, no después.
   const name = attachmentNameOf(raw);
-  if (size > ATTACH_MAX_BYTES) throw new Error(ATTACH_REFUSALS.tooBig);
+  if (size > attachMaxBytes(premium)) throw new Error(premium ? ATTACH_REFUSALS.tooBigPremium : ATTACH_REFUSALS.tooBig);
   const token = `a${++desktopAttachSeq}`;
   desktopOutbox.push({ token, name, mime: attachmentMimeOf(name), size, account: state.selfId, chat: state.active });
   return { token, name, size };
@@ -926,18 +926,18 @@ let desktopAlbumSeq = 0;
  * dicen por parámetros —`names` y un `size` común para todas— y sin parámetros se reproduce un lote fijo de tres.
  * Volver con las manos vacías es cancelar y responde `undefined`, igual que el `answer.ok(null)` de Android.
  * El orden es el del puente: primero las dos orillas del recuento, después el tipo de cada pieza y al final el
- * tope, todo antes de reservar un solo vale —una foto de más de 32 MB no deja seis mitades en el outbox—.
+ * tope, todo antes de reservar un solo vale —una foto que pasa del tope de la cuenta no deja seis mitades en el outbox—.
  */
 function desktopAttachmentAlbum(params: Record<string, unknown>, state: State) {
   const raw = Array.isArray(params.names) ? (params.names as unknown[]).map(String) : ['verano-01.jpg', 'verano-02.png', 'verano-03.webp'];
   if (raw.length === 0) return undefined;
   const refusal = albumCountError(raw.length);
   if (refusal) throw new Error(refusal);
-  const size = Number(params.size ?? 640 * 1024);
+  const size = Number(params.size ?? 640 * 1024); const premium = state.wallet?.premium === true;
   const names = raw.map(name => attachmentNameOf(name, 'foto'));
   const mimes = names.map(attachmentMimeOf);
   if (mimes.some(mime => !attachmentIsPhoto(mime))) throw new Error(ALBUM_REFUSALS.notPhoto);
-  if (size > ATTACH_MAX_BYTES) throw new Error(ALBUM_REFUSALS.importFailed);
+  if (size > attachMaxBytes(premium)) throw new Error(premium ? ALBUM_REFUSALS.importFailedPremium : ALBUM_REFUSALS.importFailed);
   return names.map((name, index) => {
     const token = `a${++desktopAttachSeq}`;
     desktopOutbox.push({ token, name, mime: mimes[index], size, account: state.selfId, chat: state.active });
@@ -2432,7 +2432,7 @@ export async function designRequest(method: string, params: Record<string, unkno
   // Elegir un archivo, enviarlo y descartarlo vuelve a Windows con sus tres brazos. En Android los resuelve
   // TDLib contra el selector del sistema y el espejo no tiene con qué elegir, así que se queda con la negativa
   // de siempre.
-  if (method === 'attachment.pick' && state.platform === 'desktop') return desktopAttachmentPick(params, state);
+  if (method === 'attachment.pick' && state.platform === 'desktop') return desktopAttachmentPick(params, state); if (method === 'share.import' && state.platform === 'desktop') return desktopShareImport(params, state);
   if (method === 'attachment.discard' && state.platform === 'desktop') return desktopAttachmentDiscard(params);
   if (method === 'send.attachment' && state.platform === 'desktop') return desktopAttachmentSend(params, state);
   // El álbum es la misma pareja de órdenes con lote: `attachment.album` devuelve un vale por foto y `send.album`
@@ -2942,10 +2942,10 @@ let previewPrivacyRules: Record<string, PrivacyRule[]> = {
   calls: [{ kind: 'allowContacts' }, { kind: 'disallowBots' }],
   voiceMessages: [{ kind: 'allowAll' }, { kind: 'disallowAll' }, { kind: 'allowPremium' }, { kind: 'disallowChatMembers', chats: [] }],
   invites: [{ kind: 'allowAll' }],
-  findPhone: [{ kind: 'allowContacts' }],
+  findPhone: [{ kind: 'allowContacts' }], p2p: [{ kind: 'allowContacts' }, { kind: 'disallowBots' }], noPaidMessages: [{ kind: 'allowAll' }], savedMusic: [{ kind: 'allowAll' }], starGiftsAutoSave: [{ kind: 'allowAll' }],
 };
 
-/** `privacyGet` (`NativeBridge.java:3867-3878`): las diez claves proyectadas, en el orden de `PRIVACY_KEYS`. */
+/** `privacyGet` (`NativeBridge.java:3867-3878`): las catorce claves proyectadas, en el orden de `PRIVACY_KEYS`. */
 function designPrivacyGet() {
   return PRIVACY_KEYS.map(key => projectPrivacy(key, previewPrivacyRules[key] ?? []));
 }
@@ -3050,7 +3050,7 @@ const channelPosts:Message[]=[
 const threadComments:Record<string,Message[]>={
   '401':[
     {id:'503',chatId:'23',sender:'Sofía López',text:'La barra se siente mucho más clara 👏',date:serviceSeed-2400,...plain,authorKind:'user',authorId:'503'},
-    {id:'502',chatId:'23',sender:'María Fernández',text:'',date:serviceSeed-3000,...plain,authorKind:'user',authorId:'502',reply:'Nueva barra inferior y temas del sistema',media:{id:0,ready:true,kind:'image',mime:'image/jpeg',name:'Boceto',size:0,minithumbnail:'/bots/snake.jpg'}},
+    {id:'502',chatId:'23',sender:'María Fernández',text:'',date:serviceSeed-3000,...plain,authorKind:'user',authorId:'502',reply:'Nueva barra inferior y temas del sistema',replyQuote:{text:'temas del sistema',position:23},media:{id:0,ready:true,kind:'image',mime:'image/jpeg',name:'Boceto',size:0,minithumbnail:'/bots/snake.jpg'}},
     {id:'501',chatId:'23',sender:'Álex Moreno',text:'El contraste nocturno quedó perfecto.',date:serviceSeed-3600,...plain,authorKind:'user',authorId:'501'},
   ],
 };
@@ -3342,4 +3342,32 @@ function designCallPage(params: Record<string, unknown>, state: State): CallLogP
   const page = callLogPage(pool, start, query, onlyMissed, pool.length, CALL_LOG_DESIGN_PAGE);
   designCalls = { owner: state.selfId, onlyMissed, cursor: page.nextOffset };
   return page;
+}
+/**
+ * `share.import`. El puente Android mueve lo ya copiado en `share-inbox` al outbox de la cuenta y la
+ * conversación elegidas; el andamio no recibe intents de Android, así que reproduce las normas del brazo:
+ * entre 1 y 10 piezas, conversación existente, nombre saneado, MIME acotado y el tope de la cuenta por
+ * pieza. El contenido se dice por parámetros —nombre, tamaño, mime— igual que en `attachment.pick`; si una
+ * pieza falla no se registra ninguna, que es el retroceso del brazo real.
+ */
+function desktopShareImport(params: Record<string, unknown>, state: State) {
+  const chat = String(params.chat ?? '');
+  if (!state.chats.some(entry => entry.id === chat)) throw new Error('La conversación ya no está disponible.');
+  const items = Array.isArray(params.items) ? params.items : [];
+  if (items.length < 1 || items.length > 10) throw new Error('Comparte entre 1 y 10 archivos.');
+  const premium = state.wallet?.premium === true;
+  const staged: DesktopOutbox[] = [];
+  for (const raw of items) {
+    const entry = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+    const fromPath = typeof entry.path === 'string' ? entry.path.split(/[\/]/).pop() ?? '' : '';
+    const name = attachmentNameOf(typeof entry.name === 'string' ? entry.name : fromPath);
+    const size = Number(entry.size ?? 512 * 1024);
+    if (size > attachMaxBytes(premium)) throw new Error(premium ? ATTACH_REFUSALS.tooBigPremium : ATTACH_REFUSALS.tooBig);
+    const declared = typeof entry.mime === 'string' ? entry.mime : '';
+    if (declared.length > 100) throw new Error('El tipo del archivo compartido no es válido.');
+    const mime = declared === '' ? attachmentMimeOf(name) : declared;
+    staged.push({ token: `a${++desktopAttachSeq}`, name, mime, size, account: state.selfId, chat });
+  }
+  desktopOutbox.push(...staged);
+  return staged.map(item => ({ token: item.token, name: item.name, size: item.size, mime: item.mime }));
 }

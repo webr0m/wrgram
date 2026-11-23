@@ -142,6 +142,7 @@ public sealed class MessageDto
     public bool Edited { get; set; }
     public string? Reply { get; set; }
     public ReplyTargetDto? ReplyTo { get; set; }
+    public ReplyQuoteDto? ReplyQuote { get; set; }
     public MediaDto? Media { get; set; }
     public bool Transcribable { get; set; }
     public List<ReactionDto> Reactions { get; set; } = new();

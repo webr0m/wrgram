@@ -104,7 +104,10 @@ describe('plazos del puente con la interfaz nativa', () => {
     const { requestTimeoutMs } = await loadBridge();
     const methods = userDriven();
     expect(methods.length).toBeGreaterThan(20);
-    for (const method of methods) expect(requestTimeoutMs(method)).toBe(300000);
+    // Los dos que copian lo elegido al almacén privado tienen plazo de copia (ronda CP): un archivo de gigas
+    // puede tardar más que la persona en volver del selector, y cortar la promesa dejaría la copia a medias.
+    const importCopy = ['attachment.pick', 'attachment.album'];
+    for (const method of methods) expect(requestTimeoutMs(method)).toBe(importCopy.includes(method) ? 900000 : 300000);
     for (const method of ['state', 'chats.list', 'send.text', 'history.older', 'media.load', 'media.play', 'contacts.remove', 'apps.open']) {
       expect(requestTimeoutMs(method)).toBe(35000);
     }
@@ -127,6 +130,18 @@ describe('plazos del puente con la interfaz nativa', () => {
     const pending = bridge.request('media.export');
     const rejected = expect(pending).rejects.toThrow('No se confirmó la operación');
     await vi.advanceTimersByTimeAsync(300000);
+    await rejected;
+  });
+
+  it('la copia de lo elegido aguanta más que el diálogo y corta a los quince minutos', async () => {
+    const bridge = await loadBridge();
+    const pending = bridge.request('attachment.pick');
+    let settled = false;
+    void pending.then(() => { settled = true; }, () => { settled = true; });
+    const rejected = expect(pending).rejects.toThrow('No se confirmó la operación');
+    await vi.advanceTimersByTimeAsync(300000);
+    expect(settled).toBe(false);
+    await vi.advanceTimersByTimeAsync(600000);
     await rejected;
   });
 

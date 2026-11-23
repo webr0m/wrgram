@@ -16,10 +16,17 @@ namespace WRGram.Desktop;
 /// </summary>
 public static class DesktopAttachment
 {
-    /// Copiado de <c>NativeBridge.picked</c> (<c>size&gt;32L*1024*1024</c>), que es también el tope que la
-    /// pantalla anuncia en español («Límite de esta versión: 32 MB.»). Se comprueba mientras se copia, no
-    /// después: un vídeo de 4 GB no tiene por qué caber dos veces en el disco de la persona.
-    public const long MaxBytes = 32L * 1024 * 1024;
+    /// Copiado de <c>UploadPolicy</c>, que es la regla que <c>NativeBridge.picked</c> pregunta con
+    /// <c>UploadPolicy.maxBytes(premium)</c>: Telegram acepta 2 GB por archivo y 4 GB con Premium, y TDLib no
+    /// publica ese número en <c>PremiumLimitType</c>. Se comprueba mientras se copia, no después: un vídeo de
+    /// 4 GB no tiene por qué caber dos veces en el disco de la persona.
+    public const long FreeMaxBytes = 2L * 1024 * 1024 * 1024;
+
+    /// La otra orilla, la de la cuenta con Premium (<c>UploadPolicy.PREMIUM_MAX_BYTES</c>).
+    public const long PremiumMaxBytes = 4L * 1024 * 1024 * 1024;
+
+    /// El tope de la cuenta que eligió el archivo, no un número escrito en el puente.
+    public static long MaxBytes(bool premium) => premium ? PremiumMaxBytes : FreeMaxBytes;
 
     /// El mismo búfer con el que <c>NativeBridge.picked</c> copia en trozos de 32 KiB y va contando bytes.
     public const int BufferBytes = 32768;
@@ -29,9 +36,16 @@ public static class DesktopAttachment
     /// diálogo lanza; el espejo la comparte para que las dos capas nieguen igual.
     public const string NoPicker = "No hay un selector de archivos disponible.";
 
-    /// Literal de <c>NativeBridge.picked</c> cuando la copia se pasa del tope o cuando el archivo no se puede
-    /// leer. Es una sola frase para las dos cosas porque las dos se ven igual desde la pantalla.
-    public const string TooBig = "No se pudo importar el archivo. Límite: 32 MB.";
+    /// Literal de <c>UploadPolicy.TOO_BIG</c>, que es lo que <c>NativeBridge.picked</c> devuelve cuando la copia
+    /// se pasa del tope o cuando el archivo no se puede leer. Es una sola frase para las dos cosas porque las dos
+    /// se ven igual desde la pantalla.
+    public const string TooBig = "No se pudo importar el archivo. Límite: 2 GB.";
+
+    /// La misma negativa con la orilla de Premium (<c>UploadPolicy.TOO_BIG_PREMIUM</c>).
+    public const string TooBigPremium = "No se pudo importar el archivo. Límite: 4 GB.";
+
+    /// La frase que toca según la cuenta, igual que <c>UploadPolicy.tooBig</c>.
+    public static string TooBigOf(bool premium) => premium ? TooBigPremium : TooBig;
 
     /// Literal de <c>NativeBridge.picked</c>: Android apunta la cuenta y la conversación en el momento de elegir
     /// y, si al terminar la copia han cambiado, tira el archivo. Aquí el selector es sincrónico, pero el salto
@@ -136,7 +150,7 @@ public static class DesktopAttachment
         ["pptx"] = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
     };
 
-    /// El corte de Android, que copia y comprueba a la vez: deja de escribir en cuanto se pasa del tope y quien
-    /// llama borra lo que llevaba copiado.
-    public static bool Exceeds(long transmitted) => transmitted > MaxBytes;
+    /// El corte de Android, que copia y comprueba a la vez: deja de escribir en cuanto se pasa del tope de la
+    /// cuenta y quien llama borra lo que llevaba copiado.
+    public static bool Exceeds(long transmitted, bool premium) => transmitted > MaxBytes(premium);
 }

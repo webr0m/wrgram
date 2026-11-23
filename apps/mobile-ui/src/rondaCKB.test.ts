@@ -58,7 +58,7 @@ import { desktopGapRefusal } from './desktopGap';
  * donde estaba; si cuaja, `TelegramService.cs:1878` la tira porque la fila ya apunta a otro archivo.
  *
  * **Cómo sabe Windows de qué tipo es el adjunto sin preguntar la red cada vez.** La conversión de la fila anota la
- * clase real del objeto de Telegram en `TelegramService.cs:3451` y la guarda en `DesktopState.cs:193`, y la anota por
+ * clase real del objeto de Telegram en `TelegramService.cs:3451` y la guarda en `DesktopState.cs:194`, y la anota por
  * el mismo motivo que `HasCaption`: es la única mirada que ve la clase. La marca no viaja —`[JsonIgnore]`—, así que el
  * cable entre el host y la pantalla es
  * exactamente el de antes; lo que se añade es una respuesta dentro del host (`TelegramService.cs:3207`) y su bandera
@@ -525,7 +525,7 @@ describe('ronda CK-B · las citas de los archivos de la ronda', () => {
     'NativeBridge.java:4326': '"editMedia",props.canEditMedia&&!MessageMediaEdit.currentKind(message.content).isEmpty()',
     // La cita la escribió la ronda CD en el comentario de `PropertiesAsync`, dentro del archivo que esta ronda vigila.
     'NativeBridge.java:4329': 'result.put("allowCustom",value.allowCustomEmoji)',
-    'DesktopState.cs:193': 'public string MediaKind { get; set; } = "";',
+    'DesktopState.cs:194': 'public string MediaKind { get; set; } = "";',
     'App.tsx:1078': '{props.editMedia&&<MenuItem icon={<FileText/>} label="Cambiar el archivo del mensaje"',
     'desktopScope.ts:28': "'message.edit', 'message.edit.caption', 'message.edit.media',",
     'preview.ts:402': 'editMedia: own && !!message?.media,',
@@ -624,12 +624,12 @@ describe('ronda CK-B · las citas de los archivos de la ronda', () => {
     // más: ocho por las dos ramas del despacho que la CH-B cableó en Windows y tres por leer los dos huecos al entrar.
     expect(service).toHaveLength(4313);
     expect(mirror).toHaveLength(166);
-    expect(stateCs).toHaveLength(759);
+    expect(stateCs).toHaveLength(760);
     expect(pure).toHaveLength(136);
     expect(java).toHaveLength(5512);
     expect(app).toHaveLength(1561);
     expect(scope).toHaveLength(118);
-    expect(preview).toHaveLength(3346);
+    expect(preview).toHaveLength(3374);
     expect(contract).toHaveLength(250);
   });
 });

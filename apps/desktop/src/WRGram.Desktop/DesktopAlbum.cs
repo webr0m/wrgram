@@ -46,9 +46,15 @@ public static class DesktopAlbum
     public const string TooMany = "Puedes elegir hasta 10 fotos por álbum.";
 
     /// Literal del <c>catch</c> de <c>pickedAlbum</c>: Android mete en la misma frase el archivo que no se puede
-    /// leer y el que pasa de 32 MB, porque desde la pantalla las dos se ven igual —el álbum no se preparó—, y por
-    /// eso el tope se dice dentro de la frase en vez de repetir <see cref="DesktopAttachment.TooBig"/>.
-    public const string ImportFailed = "No se pudieron importar las fotos. Límite: 10 imágenes de 32 MB.";
+    /// leer y el que pasa del tope, porque desde la pantalla las dos se ven igual —el álbum no se preparó—, y por
+    /// eso el tope se dice dentro de la frase en vez de repetir <see cref="DesktopAttachment.TooBigOf"/>.
+    public const string ImportFailed = "No se pudieron importar las fotos. Límite: 10 imágenes de 2 GB.";
+
+    /// La otra orilla, la de la cuenta con Premium (<c>UploadPolicy.ALBUM_TOO_BIG_PREMIUM</c>).
+    public const string ImportFailedPremium = "No se pudieron importar las fotos. Límite: 10 imágenes de 4 GB.";
+
+    /// La frase que toca según la cuenta, igual que <c>UploadPolicy.albumTooBig</c>.
+    public static string ImportFailedOf(bool premium) => premium ? ImportFailedPremium : ImportFailed;
 
     /// Literal de <c>pickedAlbum</c> para el fallo raro: las fotos están copiadas y algo impide devolver los
     /// vales. En Windows no hay JSON que montar, así que queda escrita por si el disco se queja tarde.

@@ -261,9 +261,9 @@ describe('ronda BD · la foto de la comunidad, cruzada con las tres capas', () =
     expect(cable).toContain('ChoosePhoto(DesktopChatPhoto.PickFile)');
     // La firma con título es la que ya usaba la foto de perfil: un solo selector para los dos flujos.
     expect(count('private static string? ChoosePhoto(string title)', text('../../desktop/src/WRGram.Desktop/DesktopAccountPhoto.cs'))).toBe(1);
-    expect(shellLine(110)).toContain('chatPhotoPicker');
-    expect(shellLine(110)).toContain('bridge.pickedChatPhoto(uri)');
-    expect(shellLine(121)).toContain('void chooseChatPhoto(){chatPhotoPicker.launch("image/*");}');
+    expect(shellLine(117)).toContain('chatPhotoPicker');
+    expect(shellLine(117)).toContain('bridge.pickedChatPhoto(uri)');
+    expect(shellLine(128)).toContain('void chooseChatPhoto(){chatPhotoPicker.launch("image/*");}');
     // Dos apariciones y las dos suyas: la declaración del lanzador y su único `launch`, sin cables cruzados con el
     // lanzador del avatar, que es el otro `GetContent` de la misma pantalla.
     expect(count('chatPhotoPicker', shell)).toBe(2);

@@ -40,8 +40,27 @@ final class PushNotifications {
         TdApi.Chat settings=session.chat(group.notificationSettingsChatId!=0?group.notificationSettingsChatId:group.chatId);if(settings!=null&&ChatNotificationPolicy.explicitlyMuted(settings.notificationSettings)){manager.cancel(tag,1);return;}
         NotificationChannel audible=new NotificationChannel(CHANNEL,"Mensajes de Telegram",NotificationManager.IMPORTANCE_DEFAULT);NotificationChannel silent=new NotificationChannel(SILENT,"Mensajes silenciosos",NotificationManager.IMPORTANCE_LOW);silent.setSound(null,null);manager.createNotificationChannel(audible);manager.createNotificationChannel(silent);
         long message=lastMessage(group);
+        int topic=lastTopic(group);
         Intent intent=new Intent(c,NotificationOpenActivity.class).putExtra("slot",session.slot).putExtra("chat",group.chatId).putExtra("message",message).setData(android.net.Uri.parse("wrgram-notification://"+session.slot+"/"+group.chatId+(message!=0?"/"+message:"")));PendingIntent open=PendingIntent.getActivity(c,0,intent,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-        Notification notification=new Notification.Builder(c,group.notificationSoundId==0?SILENT:CHANNEL).setSmallIcon(cc.webrom.wrgram.R.drawable.brand_foreground).setColor(Palette.get(c).accent).setContentTitle("WRGram").setContentText("Tienes mensajes nuevos en Telegram").setNumber(group.totalCount).setContentIntent(open).setAutoCancel(true).setVisibility(Notification.VISIBILITY_SECRET).setCategory(Notification.CATEGORY_MESSAGE).build();
+        Notification.Builder builder=new Notification.Builder(c,group.notificationSoundId==0?SILENT:CHANNEL).setSmallIcon(cc.webrom.wrgram.R.drawable.brand_foreground).setColor(Palette.get(c).accent).setContentTitle("WRGram").setContentText("Tienes mensajes nuevos en Telegram").setNumber(group.totalCount).setContentIntent(open).setAutoCancel(true).setVisibility(Notification.VISIBILITY_SECRET).setCategory(Notification.CATEGORY_MESSAGE);
+        TdApi.Chat target=session.chat(group.chatId);
+        boolean secret=target!=null&&target.type instanceof TdApi.ChatTypeSecret;
+        if(NotificationActions.replyAllowed(AppLock.enabled(c),secret))builder.addAction(replyAction(c,session,group.chatId,topic,tag));
+        if(NotificationActions.markReadAllowed(message))builder.addAction(markReadAction(c,session,group.chatId,topic,message,tag));
+        Notification notification=builder.build();
         try{manager.notify(tag,1,notification);}catch(SecurityException ignored){}
+    }
+    private static int lastTopic(TdApi.UpdateNotificationGroup group){int topic=0;long id=0;if(group.addedNotifications==null)return 0;for(TdApi.Notification item:group.addedNotifications){if(item!=null&&item.type instanceof TdApi.NotificationTypeNewMessage){TdApi.Message message=((TdApi.NotificationTypeNewMessage)item.type).message;if(message!=null&&message.id>id){id=message.id;topic=message.topicId instanceof TdApi.MessageTopicForum?((TdApi.MessageTopicForum)message.topicId).forumTopicId:0;}}}return topic;}
+    private static Intent actionIntent(Context c,TdSession session,String action,long chat,int topic,long message,String tag){return new Intent(c,NotificationActionReceiver.class).setAction(action).putExtra("slot",session.slot).putExtra("chat",chat).putExtra("topic",topic).putExtra("message",message).putExtra("tag",tag).setData(android.net.Uri.parse("wrgram-notification-action://"+action+"/"+session.slot+"/"+chat+"/"+message));}
+    private static Notification.Action replyAction(Context c,TdSession session,long chat,int topic,String tag){
+        RemoteInput input=new RemoteInput.Builder(NotificationActions.EXTRA_TEXT).setLabel("Responder").build();
+        // RemoteInput exige un PendingIntent mutable; antes de API 31 ya lo era por defecto.
+        int flags=PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=31?PendingIntent.FLAG_MUTABLE:0);
+        PendingIntent reply=PendingIntent.getBroadcast(c,0,actionIntent(c,session,NotificationActions.REPLY,chat,topic,0,tag),flags);
+        return new Notification.Action.Builder(android.graphics.drawable.Icon.createWithResource(c,cc.webrom.wrgram.R.drawable.brand_foreground),"Responder",reply).addRemoteInput(input).setAllowGeneratedReplies(false).build();
+    }
+    private static Notification.Action markReadAction(Context c,TdSession session,long chat,int topic,long message,String tag){
+        PendingIntent read=PendingIntent.getBroadcast(c,0,actionIntent(c,session,NotificationActions.MARK_READ,chat,topic,message,tag),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+        return new Notification.Action.Builder(android.graphics.drawable.Icon.createWithResource(c,cc.webrom.wrgram.R.drawable.brand_foreground),"Marcar leído",read).build();
     }
 }

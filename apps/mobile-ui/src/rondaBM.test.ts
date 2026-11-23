@@ -113,6 +113,13 @@ const anchors: Record<number, string> = {
   1652: '_state.Uncertain = true;',
   2071: 'private async Task<object?> AttachmentPickAsync(string kind)',
   2209: 'attributes = DesktopAttachment.AttributesFor(file.Name, file.Mime)',
+  // Las cuatro líneas del tope real de la copia privada (ronda CP), citadas en la fila F01 del mapa y en la hoja
+  // de validación: las dos copias con la bandera de la cuenta, la firma que recibe esa bandera y el corte durante
+  // la copia, no después.
+  2103: 'size = await ImportCopyAsync(target, chosen, DesktopEmojiCatalog.IsPremium(client.User!));',
+  2123: 'private static async Task<long> ImportCopyAsync(string target, string source, bool premium)',
+  2133: 'if (DesktopAttachment.Exceeds(written, premium)) throw new BridgeException(DesktopAttachment.TooBigOf(premium));',
+  2310: 'size = await ImportCopyAsync(target, source, DesktopEmojiCatalog.IsPremium(client.User!));',
   // Las nueve citas de la ronda CN-B: la hoja de validación y la fila P01 del mapa señalan la subida de la foto por
   // opción, la clave que ya no se inventa y el registro de la lectura.
   2511: 'var pictures = DesktopPoll.Photos(Arr(args, "media"));',
@@ -249,6 +256,7 @@ const anchors: Record<number, string> = {
   3781: 'private static string LinkUrlOf(JsonElement item)',
   3790: 'private static long FaceIdOf(JsonElement item) =>',
   3429: 'dto.Entities = ConvertEntities(message.entities, dto.Text);',
+  3437: 'dto.ReplyQuote = DesktopReplyQuote.Receive(header, ConvertEntities);',
   1473: 'var entities = ParseEntities(args, text);',
   1782: 'var entities = ParseEntities(args, value);',
   1794: 'row.Entities = ConvertEntities(entities, value);',

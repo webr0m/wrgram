@@ -320,7 +320,7 @@ describe('ronda CE · las agujas de las capas tocadas', () => {
     // huecos del fondo al entrar, como hizo la CH-B en Windows.
     expect(rules).toHaveLength(134);
     expect(service).toHaveLength(4313);
-    expect(stateCs.split(/\r?\n/)).toHaveLength(759);
+    expect(stateCs.split(/\r?\n/)).toHaveLength(760);
     expect(java).toHaveLength(5512);
     expect(snapshot).toHaveLength(554);
     expect(policy.split(/\r?\n/)).toHaveLength(61);

@@ -23,7 +23,7 @@ import { DESKTOP_NAMED_IN_SCAFFOLD, desktopGenericRefusal } from './desktopGap';
  *
  * Hacia arriba viaja una sola clave nueva, `closesAt`, en segundo de época: la escribe Android en
  * `NativeSnapshot.java:203`, la declara el contrato en `contract.ts:124`, la guarda Windows en
- * `DesktopState.cs:264` desde `TelegramService.cs:2972`, la pinta la tarjeta en `BatchPanels.tsx:39` y la calcula
+ * `DesktopState.cs:265` desde `TelegramService.cs:2972`, la pinta la tarjeta en `BatchPanels.tsx:39` y la calcula
  * el espejo en `preview.ts:1124`. El select con las ocho salidas está en `BatchPanels.tsx:108`, y la nota que la
  * ronda dejó en `DesktopPoll.cs:112` sigue apuntando a `BatchPanels.tsx:35`, que es de donde sale el límite de la
  * página de votantes.
@@ -415,7 +415,7 @@ describe('ronda CF · las citas de los archivos de la ronda', () => {
     'DesktopPoll.cs:192': 'CloseRange = "La encuesta debe cerrarse entre 5 segundos',
     'DesktopPoll.cs:331': 'public static bool ClosesInRange(int seconds)',
     'DesktopPoll.cs:451': 'public static bool HasCloseDate(TL.Poll poll)',
-    'DesktopState.cs:264': 'public long? ClosesAt { get; set; }',
+    'DesktopState.cs:265': 'public long? ClosesAt { get; set; }',
     'contract.ts:124': 'closesAt?:number',
     'BatchPanels.tsx:35': 'limit:50',
     'BatchPanels.tsx:39': 'Cierra el ',
@@ -529,9 +529,9 @@ describe('ronda CF · las citas de los archivos de la ronda', () => {
     expect(snapshot).toHaveLength(554);
     expect(service).toHaveLength(4313);
     expect(pollCs).toHaveLength(500);
-    expect(stateCs).toHaveLength(759);
+    expect(stateCs).toHaveLength(760);
     expect(contract).toHaveLength(250);
     expect(batch).toHaveLength(351);
-    expect(preview).toHaveLength(3346);
+    expect(preview).toHaveLength(3374);
   });
 });

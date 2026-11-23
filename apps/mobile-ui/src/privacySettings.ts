@@ -1,7 +1,7 @@
 import type { PrivacySetting } from './contract';
 
 /**
- * El espejo de `PrivacyRules.java` y de `DesktopPrivacy.cs` (ronda BH): las diez claves de la privacidad de la
+ * El espejo de `PrivacyRules.java` y de `DesktopPrivacy.cs` (ronda BH): las catorce claves de la privacidad de la
  * cuenta, los doce tipos de regla que devuelven TDLib y MTProto —medidos por reflexión sobre `WTelegramClient`
  * 4.4.10—, la proyección que la pantalla pinta y la reconstrucción que se envía. Son las cadenas que el puente
  * devuelve, copiadas carácter a carácter de `NativeBridge.java:3847-3893` y de `PrivacyRules.java`;
@@ -13,9 +13,10 @@ import type { PrivacySetting } from './contract';
  * la provoque. Se lista en `PRIVACY_REFUSALS` con esa marca, no para que el andamio la tire.
  */
 
-/** Las diez de `PRIVACY_KEYS` (`NativeBridge.java:3848`), en el orden del array que la pantalla recorre. */
+/** Las catorce de `PRIVACY_KEYS` (`NativeBridge.java:3848`), en el orden del array que la pantalla recorre. */
 export const PRIVACY_KEYS = [
   'status', 'profilePhoto', 'phone', 'bio', 'birthdate', 'forwards', 'calls', 'voiceMessages', 'invites', 'findPhone',
+  'p2p', 'noPaidMessages', 'savedMusic', 'starGiftsAutoSave',
 ] as const;
 
 /** Las tres bases que la pantalla sabe elegir (`SettingsPage.tsx:123`) y que `validate` acepta (`PrivacyRules.java:89`). */

@@ -51,8 +51,8 @@ const USER_DRIVEN = new Set([
   // una aprobación de bot de seguridad: con el plazo corto la promesa moriría con el diálogo abierto.
   'chat.join', 'chat.leave',
 ]);
-const STORAGE_SCAN = new Set(['storage.details', 'storage.optimize']);
-export const requestTimeoutMs = (method: string) => USER_DRIVEN.has(method) ? 300000 : STORAGE_SCAN.has(method) ? 130000 : 35000;
+const STORAGE_SCAN = new Set(['storage.details', 'storage.optimize']); const IMPORT_COPY = new Set(['attachment.pick', 'attachment.album', 'share.import']); // Copiar gigas al almacén privado puede pasar de los 300 s del diálogo.
+export const requestTimeoutMs = (method: string) => IMPORT_COPY.has(method) ? 900000 : USER_DRIVEN.has(method) ? 300000 : STORAGE_SCAN.has(method) ? 130000 : 35000;
 export function request<T = unknown>(method: string, params: Record<string, unknown> = {}): Promise<T> {
   return sendRequest(method, params, requestTimeoutMs(method));
 }

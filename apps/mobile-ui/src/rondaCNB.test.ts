@@ -28,7 +28,7 @@ import { readFileSync } from 'node:fs';
  * Al leer manda la bandera: `DesktopPoll.cs:427` solo da por hecha una foto si `has_media` está puesta, y
  * `DesktopPoll.cs:437` devuelve el `photo` cuando el medio es una foto y `null` en cualquier otro caso. Los demás
  * tipos que la librería declara para su `PollMedia` se quedan sin pintar y no se disfraza ninguno, que es justo lo
- * que hace Android en `NativeSnapshot.java:441`. La fila del DTO (`DesktopState.cs:298`) lleva la foto registrada
+ * que hace Android en `NativeSnapshot.java:441`. La fila del DTO (`DesktopState.cs:299`) lleva la foto registrada
  * con el nombre de la opción (`TelegramService.cs:2986`), la misma palabra que pone Android en
  * `NativeSnapshot.java:435`.
  *
@@ -340,7 +340,7 @@ describe('ronda CN-B · las citas de los archivos de la ronda', () => {
     'TelegramService.cs:2986': '? _media.RegisterPhoto(picture, DesktopPoll.OptionPhotoName, exportable)',
     'DesktopPoll.cs:427': 'public static bool HasPhoto(PollAnswer answer)',
     'DesktopPoll.cs:437': 'public static Photo? PhotoOf(PollAnswer answer) =>',
-    'DesktopState.cs:298': 'public MediaDto? Media { get; set; }',
+    'DesktopState.cs:299': 'public MediaDto? Media { get; set; }',
     'NativeSnapshot.java:435': 'if(value instanceof TdApi.PollMediaPhoto)',
     'NativeSnapshot.java:441': '        return null;',
     'NativeBridge.java:4693': 'JSONArray media=p.optJSONArray("media")',
@@ -354,7 +354,7 @@ describe('ronda CN-B · las citas de los archivos de la ronda', () => {
 
   /** Las citas que solo son únicas dentro de su bloque, con el bloque medido por contenido. */
   const dentro: Record<string, [number, number]> = {
-    'DesktopState.cs:298': [STATE_CLASE, Number.POSITIVE_INFINITY],
+    'DesktopState.cs:299': [STATE_CLASE, Number.POSITIVE_INFINITY],
     'NativeSnapshot.java:441': [SNAP_REPARTO, SNAP_SALIDA],
   };
 
@@ -426,11 +426,11 @@ describe('ronda CN-B · las citas de los archivos de la ronda', () => {
     // que la CH-B cableó en el despacho con su comentario y la lectura de los dos huecos al entrar.
     expect(service).toHaveLength(4313);
     expect(pollCs).toHaveLength(500);
-    expect(stateCs).toHaveLength(759);
+    expect(stateCs).toHaveLength(760);
     expect(registry).toHaveLength(281);
     expect(java).toHaveLength(5512);
     expect(snapshot).toHaveLength(554);
-    expect(preview).toHaveLength(3346);
+    expect(preview).toHaveLength(3374);
     expect(batch).toHaveLength(351);
     expect(app).toHaveLength(1561);
     expect(contract).toHaveLength(250);

@@ -1094,10 +1094,10 @@ final class TdSession {
     void sendText(String text, long replyTo, long scheduleAt, boolean silent, Consumer<Boolean> completed) { sendText(text, new TdApi.TextEntity[0], replyTo, scheduleAt, silent, false, completed); }
 
     void sendText(String text, TdApi.TextEntity[] entities, long replyTo, long scheduleAt, boolean silent, boolean clearDraft, Consumer<Boolean> completed) {
-        sendText(text,entities,replyTo,scheduleAt,0,silent,clearDraft,completed);
+        sendText(text,entities,replyTo,null,scheduleAt,0,silent,clearDraft,completed);
     }
 
-    void sendText(String text, TdApi.TextEntity[] entities, long replyTo, long scheduleAt, int repeatPeriod, boolean silent, boolean clearDraft, Consumer<Boolean> completed) {
+    void sendText(String text, TdApi.TextEntity[] entities, long replyTo, TdApi.InputTextQuote quote, long scheduleAt, int repeatPeriod, boolean silent, boolean clearDraft, Consumer<Boolean> completed) {
         if (entities == null) entities = new TdApi.TextEntity[0];
         if (!canSend() || text.trim().isEmpty() || text.length() > 4096 || sending.contains(activeChat)) { fail("Revisa el texto, los permisos y el estado del envío."); completed.accept(false); return; }
         TdApi.Chat current = chats.get(activeChat);
@@ -1123,7 +1123,7 @@ final class TdSession {
             if (scheduleAt < 0) send.options.schedulingState = new TdApi.MessageSchedulingStateSendWhenOnline();
             else if (scheduleAt != 0) send.options.schedulingState = new TdApi.MessageSchedulingStateSendAtDate((int)scheduleAt,repeatPeriod);
         }
-        if (replyTo != 0) { TdApi.InputMessageReplyToMessage reply = new TdApi.InputMessageReplyToMessage(); reply.messageId = replyTo; send.replyTo = reply; }
+        if (replyTo != 0) { TdApi.InputMessageReplyToMessage reply = new TdApi.InputMessageReplyToMessage(); reply.messageId = replyTo; reply.quote = current != null && current.type instanceof TdApi.ChatTypeSecret ? null : quote; send.replyTo = reply; }
         request("send:" + chat, 25_000, send, message -> {
             sending.remove(chat); uncertainSends.remove(chat, attempt); putMessage(message); emit("sending"); completed.accept(true);
         }, value -> {
@@ -1406,4 +1406,20 @@ final class TdSession {
 
     /** Si el aviso de este modo llegó en esta sesión: la llave ausente no es «sin fondo», es «no lo sé». */
     boolean defaultBackgroundKnown(boolean dark){return defaultBackgrounds.containsKey(dark);}
+
+    /** Ronda CQ · N03: respuesta desde la notificación, sin depender de activeChat y sin reintento automático. */
+    void replyFromNotification(long chat,int topic,String text,Consumer<Boolean> completed){
+        TdApi.Chat known=chats.get(chat);
+        if(!ready()||chat==0||NotificationActions.replyProblem(text)!=null||(known!=null&&known.type instanceof TdApi.ChatTypeSecret)){completed.accept(false);return;}
+        TdApi.InputMessageText content=new TdApi.InputMessageText();content.text=new TdApi.FormattedText(NotificationActions.cleanedReply(text),new TdApi.TextEntity[0]);
+        TdApi.SendMessage send=new TdApi.SendMessage();send.chatId=chat;send.inputMessageContent=content;
+        if(topic!=0)send.topicId=new TdApi.MessageTopicForum(topic);
+        request("notify-reply:"+(++requestSerial),25_000,send,message->{putMessage(message);completed.accept(true);},value->completed.accept(false),this::putMessage);
+    }
+
+    void markReadFromNotification(long chat,int topic,long messageId){
+        if(!ready()||chat==0||!NotificationActions.markReadAllowed(messageId))return;
+        TdApi.ViewMessages view=new TdApi.ViewMessages();view.chatId=chat;view.messageIds=new long[]{messageId};view.forceRead=true;view.source=topic==0?new TdApi.MessageSourceChatHistory():new TdApi.MessageSourceForumTopicHistory();
+        request(view,ignored->{});
+    }
 }

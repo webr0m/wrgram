@@ -376,7 +376,7 @@ describe('ronda CM · las citas de los archivos de la ronda', () => {
     expect(pollCs).toHaveLength(500);
     expect(contract).toHaveLength(250);
     expect(batch).toHaveLength(351);
-    expect(preview).toHaveLength(3346);
+    expect(preview).toHaveLength(3374);
     expect(app).toHaveLength(1561);
   });
 });

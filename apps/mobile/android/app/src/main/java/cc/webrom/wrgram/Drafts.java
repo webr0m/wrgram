@@ -13,8 +13,8 @@ final class Drafts {
 
     /**
      * El borrador solo cita un mensaje del mismo chat. TDLib declara `inputMessageReplyToStory`
-     * como no soportado en borradores y la cita de texto (M02) todavía no se modela en WRGram, así
-     * que `quote` va a null y el efecto y el post sugerido no se rellenan nunca por nuestra cuenta.
+     * como no soportado en borradores y la cita de texto (M02) no viaja en el borrador: se decide
+     * al enviar, así que `quote` va a null y el efecto y el post sugerido no se rellenan nunca por nuestra cuenta.
      */
     static TdApi.InputMessageReplyTo target(long replyTo) {
         return replyTo == 0L ? null : new TdApi.InputMessageReplyToMessage(replyTo, null, 0, "");

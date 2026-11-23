@@ -98,6 +98,7 @@ const cables: Record<number, string[]> = {
   732: ['chat.defaultSilent'],
   741: ['groups.add.info'],
   743: ['history.byDate'],
+  748: ['send.text'],
   749: ['messages.forward'],
   753: ['calls.list'],
   754: ['backgrounds.list'],
@@ -127,7 +128,8 @@ const cables: Record<number, string[]> = {
   857: ['location.live.start'],
   858: ['location.live.stop'],
   882: ['native.assistant'],
-  883: ['attachment.recents', 'attachment.photos.permission', 'attachment.photo', 'attachment.recents.close', 'composer.focus', 'groups.stats'],
+  883: ['attachment.recents', 'attachment.photos.permission', 'attachment.photo', 'attachment.recents.close', 'composer.focus', 'groups.stats', 'share.import'],
+  3860: ['findPhone', 'p2p', 'noPaidMessages', 'savedMusic', 'starGiftsAutoSave'],
   4527: ['underline'],
   4539: ['link'],
 };
@@ -171,8 +173,8 @@ describe('citas nativas · el despacho de Android, medido por línea', () => {
     expect(huerfanas, 'citas nuevas sobre el despacho: re-ancla o reimprime la tabla').toEqual([]);
   });
 
-  it('la tabla tiene sus ochenta y seis filas medidas', () => {
-    expect(Object.keys(cables).length).toBe(86);
+  it('la tabla tiene sus ochenta y ocho filas medidas', () => {
+    expect(Object.keys(cables).length).toBe(88);
     expect(cited.size).toBeGreaterThanOrEqual(414);
   });
 
@@ -181,8 +183,8 @@ describe('citas nativas · el despacho de Android, medido por línea', () => {
     expect(fuera, `${java.length} líneas tiene hoy el puente`).toEqual([]);
   });
 
-  it('la tabla tiene sus ochenta y seis filas medidas', () => {
-    expect(Object.keys(cables).length).toBe(86);
+  it('la tabla tiene sus ochenta y ocho filas medidas', () => {
+    expect(Object.keys(cables).length).toBe(88);
     expect(cited.size).toBeGreaterThanOrEqual(414);
   });
 

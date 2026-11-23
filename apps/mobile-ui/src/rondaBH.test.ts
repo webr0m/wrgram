@@ -74,13 +74,13 @@ const csSet = body('private async Task<object?> SetPrivacyAsync', cable, '\n    
 const csGet = body('private async Task<object?> PrivacyAsync', cable, '\n    /// <summary>');
 
 describe('ronda BH · medido en el cable de las tres capas', () => {
-  it('las diez claves son las mismas en Java, en C# y en el espejo, y en el mismo orden', () => {
+  it('las catorce claves son las mismas en Java, en C# y en el espejo, y en el mismo orden', () => {
     const row = javaLine(3848);
     expect(row).toContain('private static final String[] PRIVACY_KEYS=');
-    const declared = [...row.matchAll(/"([A-Za-z]+)"/g)].map(found => found[1]);
+    const declared = [...row.matchAll(/"([A-Za-z0-9]+)"/g)].map(found => found[1]);
     expect(declared).toEqual([...PRIVACY_KEYS]);
     const table = body('public static readonly (string Key, InputPrivacyKey Setting)[] Keys', rules, '\n    /// <summary>');
-    expect([...table.matchAll(/\("([A-Za-z]+)", InputPrivacyKey\./g)].map(found => found[1])).toEqual([...PRIVACY_KEYS]);
+    expect([...table.matchAll(/\("([A-Za-z0-9]+)", InputPrivacyKey\./g)].map(found => found[1])).toEqual([...PRIVACY_KEYS]);
     expect(mirror).toContain('export const PRIVACY_KEYS = [');
   });
 
@@ -89,17 +89,18 @@ describe('ronda BH · medido en el cable de las tres capas', () => {
       ['status', 'StatusTimestamp'], ['profilePhoto', 'ProfilePhoto'], ['phone', 'PhoneNumber'], ['bio', 'About'],
       ['birthdate', 'Birthday'], ['forwards', 'Forwards'], ['calls', 'PhoneCall'],
       ['voiceMessages', 'VoiceMessages'], ['invites', 'ChatInvite'], ['findPhone', 'AddedByPhone'],
+      ['p2p', 'PhoneP2P'], ['noPaidMessages', 'NoPaidMessages'], ['savedMusic', 'SavedMusic'], ['starGiftsAutoSave', 'StarGiftsAutoSave'],
     ];
     for (const [key, setting] of pairs) {
       expect(rules).toContain(`("${key}", InputPrivacyKey.${setting})`);
       expect(java).toContain(`case "${key}":return new TdApi.UserPrivacySetting`);
     }
-    expect([...rules.matchAll(/\("([A-Za-z]+)", InputPrivacyKey\./g)].map(found => found[1])).toHaveLength(pairs.length);
-    // Las cuatro claves que la pantalla no ofrece no se leen ni se escriben en ninguna capa.
-    for (const unused of ['SavedMusic', 'NoPaidMessages', 'PhoneP2P', 'StarGiftsAutoSave']) {
-      expect(rules).not.toContain(`InputPrivacyKey.${unused}`);
-      expect(java).not.toContain(`case "${unused.toLowerCase()}"`);
-    }
+    expect([...rules.matchAll(/\("([A-Za-z0-9]+)", InputPrivacyKey\./g)].map(found => found[1])).toHaveLength(pairs.length);
+    // La ronda CR cerró el hueco: las cuatro claves que antes no se ofrecían ahora se leen y se escriben en las
+    // dos capas, y con ellas el enum medido de catorce queda cubierto entero, sin ninguna clave fuera.
+    const measured = ['StatusTimestamp', 'ProfilePhoto', 'PhoneNumber', 'About', 'Birthday', 'Forwards', 'PhoneCall',
+      'VoiceMessages', 'ChatInvite', 'AddedByPhone', 'PhoneP2P', 'NoPaidMessages', 'SavedMusic', 'StarGiftsAutoSave'];
+    expect(pairs.map(([, setting]) => setting).sort()).toEqual([...measured].sort());
   });
 
   it('los cuatro techos están medidos en las tres capas, con el número dentro de la frase cuando Java lo dice', () => {
@@ -206,7 +207,7 @@ describe('ronda BH · medido en el cable de las tres capas', () => {
       .toContain('var refusal = Problem(value, allow, restrict);');
   });
 
-  it('la lectura es diez viajes en el mismo orden por capa, y la cuenta se mira dentro del bucle', () => {
+  it('la lectura es catorce viajes en el mismo orden por capa, y la cuenta se mira dentro del bucle', () => {
     expect(javaGet).toContain('if(index>=PRIVACY_KEYS.length)');
     expect(javaGet).toContain('privacyGet(result,index+1,a)');
     expect(javaGet).toContain('privacySetting(key)');
@@ -279,11 +280,12 @@ describe('ronda BH · medido con las manos en el andamio', () => {
     call = designRequest as Request;
   });
 
-  it('lee las diez claves en su orden, con la fila que la pantalla pinta', async () => {
+  it('lee las catorce claves en su orden, con la fila que la pantalla pinta', async () => {
     const rows = await call('privacy.get') as { key: string; value: string }[];
     expect(rows.map(row => row.key)).toEqual([...PRIVACY_KEYS]);
     expect(rows.map(row => row.value)).toEqual([
       'contacts', 'everyone', 'contacts', 'everyone', 'nobody', 'everyone', 'contacts', 'custom', 'everyone', 'contacts',
+      'contacts', 'everyone', 'everyone', 'everyone',
     ]);
   });
 
@@ -330,7 +332,7 @@ describe('ronda BH · medido con las manos en el andamio', () => {
     expect(voice.preserved).toEqual(['suscriptores de Premium permitidos', 'miembros de chats restringidos']);
   });
 
-  it('una clave que no es de las diez se niega con la frase de privacySetting', async () => {
+  it('una clave que no es de las catorce se niega con la frase de privacySetting', async () => {
     await expect(call('privacy.set', { key: 'stories', value: 'everyone', allowUsers: [], restrictUsers: [] }))
       .rejects.toThrow(PRIVACY_REFUSALS.unknownSetting);
   });

@@ -77,7 +77,7 @@ import {
  * y el andamio modela las dos caras (`preview.ts:2470-2475`), con la creación por color negada por el nombre que
  * pronuncia el brazo de Windows —`DesktopBackgrounds.NoCreate`— en vez de caer en el rechazo genérico de la beta.
  * Lo que el escritorio sabe por su cuenta de «wallpaper» sigue siendo otro sitio: el campo local de la apariencia
- * (`DesktopState.cs:510`, leído en `TelegramService.cs:3284`), que no es el fondo de la cuenta. Las reglas de esa
+ * (`DesktopState.cs:511`, leído en `TelegramService.cs:3284`), que no es el fondo de la cuenta. Las reglas de esa
  * capa —los tres nombres de tipo, el giro, la marca que no se puede saber y el orden de las negativas— las mide
  * CH-B y no se duplican aquí.
  *
@@ -156,7 +156,7 @@ const fila = (par: Partial<CloudBackground>): CloudBackground =>
 
 describe('ronda CH-A · el puente de Android', () => {
   it('las dos claves están declaradas y los dos brazos entran entre el registro y los hilos', () => {
-    expect(policy).toContain(`static { METHODS.addAll(Arrays.asList("${LEER}","${PONER}","bot.commands","bot.menu.open")); }`);
+    expect(policy).toContain(`static { METHODS.addAll(Arrays.asList("${LEER}","${PONER}","bot.commands","bot.menu.open","share.import")); }`);
     expect(policy).toContain('static { METHODS.add("calls.list"); }');
     const brazos = [atJava(`case "${LEER}":`), atJava(`case "${PONER}":`)];
     expect(bridge[brazos[0] - 1]).toContain('backgroundsList(p,a);break;');
@@ -611,7 +611,7 @@ describe('ronda CH-A · las citas', () => {
     'NativeBridge.java:5418': 'prefs.edit().putString("accountBackgrounds",next).apply();',
     'NativeBridge.java:5419': 'schedule();',
     'BridgePolicy.java:54': 'static { METHODS.add("calls.list"); }',
-    'BridgePolicy.java:55': 'static { METHODS.addAll(Arrays.asList("backgrounds.list","background.set","bot.commands","bot.menu.open")); }',
+    'BridgePolicy.java:55': 'static { METHODS.addAll(Arrays.asList("backgrounds.list","background.set","bot.commands","bot.menu.open","share.import")); }',
     'AccountBackgroundsTest.java:48': 'onlyTheFourKnownTypesGetAName',
     'AccountBackgroundsTest.java:56': 'aWallpaperAndAChatThemeHaveNothingToPaint',
     'AccountBackgroundsTest.java:71': 'theGradientAngleIsReadFromTheTopByTelegramAndFromTheBottomByCss',
@@ -657,7 +657,7 @@ describe('ronda CH-A · las citas', () => {
     'preview.ts:2470': "if (method === 'backgrounds.list') return designBackgrounds(params, state);",
     'TelegramService.cs:500': '"backgrounds.list" => await BackgroundsListAsync(args),',
     'TelegramService.cs:3284': 'args.TryGetProperty("wallpaper"',
-    'DesktopState.cs:510': 'public string Wallpaper { get; set; } = "none";',
+    'DesktopState.cs:511': 'public string Wallpaper { get; set; } = "none";',
   };
 
   /** La última línea de cada rango citado, con lo que dice. */

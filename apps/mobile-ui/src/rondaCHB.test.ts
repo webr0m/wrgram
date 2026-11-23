@@ -16,7 +16,7 @@ import type { CloudBackground } from './cloud-backgrounds';
  * que aquí `selected` viene en la lista y `stock` no viene en ninguna parte. La regla está dicha una sola vez, en
  * `DesktopBackgrounds.cs:136`, y la pantalla omite la palabra cuando la capa manda nulo (`CloudBackgrounds.tsx:113`).
  * El nombre tampoco lo trae MTProto —`slug` es la dirección opaca de los enlaces de fondo—, así que la fila sale
- * vacía (`DesktopState.cs:547`) y el título lo saca la pantalla del tipo (`cloud-backgrounds.ts:49`).
+ * vacía (`DesktopState.cs:548`) y el título lo saca la pantalla del tipo (`cloud-backgrounds.ts:49`).
  *
  * **El hueco, por su nombre.** Crear un fondo de color no es que falte tiempo: la única escritura de un fondo nuevo
  * es `account.uploadWallPaper`, que pide un archivo, y `wallPaperNoFile` no tiene petición que lo fabrique. Lo dice
@@ -462,7 +462,7 @@ describe('ronda CH-B · las citas de los archivos de la ronda', () => {
     'DesktopBackgrounds.cs:136': 'public static bool? Stock(',
     'DesktopBackgroundsFlow.cs:70': 'throw new BridgeException(DesktopBackgrounds.Nothing);',
     'DesktopBackgroundsFlow.cs:88': '/// Los dos huecos del estado',
-    'DesktopState.cs:547': 'Name = "",',
+    'DesktopState.cs:548': 'Name = "",',
     // La pantalla, en las dos capas.
     'CloudBackgrounds.tsx:13': 'export function CloudBackgroundSettings({ dark, accent, canvas, platform, run }',
     'CloudBackgrounds.tsx:40': "if (answer?.rows) setRows(answer.rows); else setError(",
@@ -550,9 +550,9 @@ describe('ronda CH-B · las citas de los archivos de la ronda', () => {
     ];
     expect(medidas).toEqual([
       ['DesktopBackgrounds.cs', 213], ['DesktopBackgroundsFlow.cs', 110], ['TelegramService.cs', 4313],
-      ['DesktopState.cs', 759], ['AccountBackgrounds.java', 215], ['cloud-backgrounds.ts', 97],
+      ['DesktopState.cs', 760], ['AccountBackgrounds.java', 215], ['cloud-backgrounds.ts', 97],
       ['CloudBackgrounds.tsx', 144], ['AppearanceSettings.tsx', 379], ['desktopScope.ts', 118],
-      ['preview.ts', 3346], ['Program.cs', 293],
+      ['preview.ts', 3374], ['Program.cs', 293],
     ]);
   });
 });

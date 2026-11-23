@@ -6,6 +6,7 @@ import { ChatOptions, ChatOptionSection, optionSections } from './ChatOptions';
 import { ReplyQuote } from './ReplyQuote';
 
 vi.mock('./language',()=>({useLanguage:()=>({t:(text:string)=>text})}));
+vi.mock('./bridge',()=>({native:false,request:vi.fn(),snapshot:()=>({}),subscribe:vi.fn()}));
 const source=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
 const section=(id:string,children:React.ReactNode)=>h(ChatOptionSection,{id,title:id,description:'Descripción',icon:h('span',null,'•'),children});
 

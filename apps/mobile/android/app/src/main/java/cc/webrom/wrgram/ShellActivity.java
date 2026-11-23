@@ -2,9 +2,11 @@ package cc.webrom.wrgram;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.view.View;
 import android.view.Gravity;
 import android.view.WindowInsets;
@@ -32,7 +34,11 @@ import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.Collections;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 /** Bundled React/Vite UI, not a remotely hosted website. TDLib and keys remain native. */
@@ -51,6 +57,7 @@ public final class ShellActivity extends AccessActivity {
     private AppLockScreen lockScreen;
     private String pendingDeepLink;
     private String pendingThemeLink;
+    private String pendingShare;
     private String pendingInlineQuery;
     private String pendingMiniAppShortcut;
     private android.webkit.ValueCallback<Uri[]> fileChooserCallback;
@@ -101,7 +108,7 @@ public final class ShellActivity extends AccessActivity {
     void requestContactsImportPermission(){if(androidx.core.content.ContextCompat.checkSelfPermission(this,android.Manifest.permission.READ_CONTACTS)==android.content.pm.PackageManager.PERMISSION_GRANTED){if(bridge!=null)bridge.contactsImportPermissionResult(true);return;}contactsPermission.launch(android.Manifest.permission.READ_CONTACTS);}
     @Override boolean handlesAccessGate(){return true;}
     @Override void onAccessGateRefresh(){if(bridge!=null)bridge.refreshAccessGate();}
-    void accessGranted(){dispatchPendingInlineQuery();dispatchPendingMiniAppShortcut();dispatchPendingThemeLink();}
+    void accessGranted(){dispatchPendingInlineQuery();dispatchPendingMiniAppShortcut();dispatchPendingThemeLink();dispatchPendingShare();}
     static boolean canHostBundledUi(android.content.Context context){return WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)&&bundledUiCompatible(context);}
     void clearSensitiveGateFields(){if(web!=null)web.evaluateJavascript("window.dispatchEvent(new Event('wrgram:clear-sensitive'))",null);}
     final ActivityResultLauncher<String[]> picker = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> { if (bridge != null) bridge.picked(uri); });
@@ -149,7 +156,7 @@ public final class ShellActivity extends AccessActivity {
     private void onAppUnlocked(){
         if(bridge!=null)bridge.changed("security");
         dispatchPendingDeepLink();
-        dispatchPendingInlineQuery();dispatchPendingMiniAppShortcut();dispatchPendingThemeLink();
+        dispatchPendingInlineQuery();dispatchPendingMiniAppShortcut();dispatchPendingThemeLink();dispatchPendingShare();
         showIncomingCall();
     }
     private void showIncomingCall(){
@@ -192,6 +199,69 @@ public final class ShellActivity extends AccessActivity {
         String link=pendingThemeLink;pendingThemeLink=null;
         try{web.evaluateJavascript("window.dispatchEvent(new CustomEvent('wrgram:theme-link',{detail:"+org.json.JSONObject.quote(link)+"}))",null);}catch(Exception ignored){}
     }
+    // La cesión de lectura de la URI que trae ACTION_SEND vive mientras esta tarea siga viva: la copia
+    // privada se hace al recibir, no cuando la persona elija chat, y el selector trabaja sobre rutas propias.
+    private void captureShare(Intent intent){
+        if(intent==null)return;
+        String action=intent.getAction();
+        if(!ShareInbox.SEND.equals(action)&&!ShareInbox.SEND_MULTIPLE.equals(action))return;
+        java.util.ArrayList<String> uris=new java.util.ArrayList<>();
+        if(ShareInbox.SEND_MULTIPLE.equals(action)){
+            java.util.ArrayList<Uri> streams=Build.VERSION.SDK_INT>=33?intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM,Uri.class):intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+            if(streams!=null)for(Uri uri:streams)if(uri!=null)uris.add(uri.toString());
+        }else{
+            Uri stream=Build.VERSION.SDK_INT>=33?intent.getParcelableExtra(Intent.EXTRA_STREAM,Uri.class):intent.getParcelableExtra(Intent.EXTRA_STREAM);
+            if(stream!=null)uris.add(stream.toString());
+        }
+        org.json.JSONObject payload;
+        try{payload=ShareInbox.payload(action,intent.getType(),intent.getStringExtra(Intent.EXTRA_TEXT),uris);}catch(Exception ignored){return;}
+        if(payload==null)return;
+        stageShare(payload);
+    }
+    private void stageShare(org.json.JSONObject payload){
+        WrgramApplication app=(WrgramApplication)getApplication();
+        TdSession session=app.telegram();
+        boolean premium=UploadPolicy.premium(session.user(session.selfId));
+        org.json.JSONArray items=payload.optJSONArray("items");
+        if(items==null||items.length()==0){pendingShare=payload.toString();dispatchPendingShare();return;}
+        app.storage().execute(()->{
+            File base=new File(getNoBackupFilesDir(),"share-inbox");
+            File[] stale=base.listFiles();
+            if(stale!=null){long cutoff=System.currentTimeMillis()-3600000L;for(File folder:stale)if(folder.isDirectory()&&folder.lastModified()<cutoff)deleteTree(folder);}
+            File folder=new File(base,UUID.randomUUID().toString());
+            org.json.JSONArray staged=new org.json.JSONArray();
+            try{
+                if(!folder.mkdirs())throw new IllegalStateException();
+                for(int i=0;i<items.length();i++){
+                    Uri uri=Uri.parse(items.getString(i));
+                    String name="archivo";
+                    try(Cursor cursor=getContentResolver().query(uri,new String[]{OpenableColumns.DISPLAY_NAME},null,null,null)){if(cursor!=null&&cursor.moveToFirst())name=cursor.getString(0);}
+                    name=ShareInbox.nameOf(name);
+                    File output=new File(folder,name);
+                    if(output.exists())output=new File(folder,(i+1)+"-"+name);
+                    long size=0;
+                    try(InputStream input=getContentResolver().openInputStream(uri);OutputStream stream=Files.newOutputStream(output.toPath())){
+                        if(input==null)throw new IllegalArgumentException();
+                        byte[] buffer=new byte[32768];int count;
+                        while((count=input.read(buffer))!=-1){size+=count;if(size>UploadPolicy.maxBytes(premium))throw new IllegalArgumentException();stream.write(buffer,0,count);}
+                    }
+                    String mime=getContentResolver().getType(uri);
+                    staged.put(new org.json.JSONObject().put("path",output.getPath()).put("name",name).put("size",size).put("mime",mime==null?"application/octet-stream":mime));
+                }
+                org.json.JSONObject ready=new org.json.JSONObject().put("text",payload.optString("text")).put("items",staged);
+                runOnUiThread(()->{pendingShare=ready.toString();dispatchPendingShare();});
+            }catch(Exception ignored){
+                deleteTree(folder);
+                runOnUiThread(()->android.widget.Toast.makeText(this,UploadPolicy.tooBig(premium),android.widget.Toast.LENGTH_LONG).show());
+            }
+        });
+    }
+    private static void deleteTree(File file){File[] children=file.listFiles();if(children!=null)for(File child:children)deleteTree(child);file.delete();}
+    private void dispatchPendingShare(){
+        if(pendingShare==null||web==null||!uiReady||!AppLock.isUnlocked())return;
+        String payload=pendingShare;pendingShare=null;
+        try{web.evaluateJavascript("window.dispatchEvent(new CustomEvent('wrgram:share-in',{detail:"+payload+"}))",null);}catch(Exception ignored){}
+    }
     void applyContentInsets(int bottomPx){
         insetBottomPx=bottomPx;
         if(!uiReady||web==null)return;
@@ -200,7 +270,7 @@ public final class ShellActivity extends AccessActivity {
     }
     @SuppressLint("SetJavaScriptEnabled")
     @Override public void onCreate(Bundle state) {
-        super.onCreate(state); getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);pendingDeepLink=TelegramLinks.normalize(getIntent()==null?null:getIntent().getDataString());captureThemeLink(getIntent());captureIntentExtras(getIntent());
+        super.onCreate(state); getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);pendingDeepLink=TelegramLinks.normalize(getIntent()==null?null:getIntent().getDataString());captureThemeLink(getIntent());captureIntentExtras(getIntent());captureShare(getIntent());
         if (!requireAccess()) return;
         if (!canHostBundledUi(this)) {
             startActivity(new Intent(this, MainActivity.class)); finish(); return;
@@ -233,7 +303,7 @@ public final class ShellActivity extends AccessActivity {
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) { return !ENTRY.equals(request.getUrl().toString()); }
             @Override public void onPageFinished(WebView view, String url) {
-                if (view==web&&ENTRY.equals(url)) { uiReady = true; applyContentInsets(insetBottomPx); dispatchPendingDeepLink(); dispatchPendingInlineQuery(); dispatchPendingMiniAppShortcut(); dispatchPendingThemeLink(); }
+                if (view==web&&ENTRY.equals(url)) { uiReady = true; applyContentInsets(insetBottomPx); dispatchPendingDeepLink(); dispatchPendingInlineQuery(); dispatchPendingMiniAppShortcut(); dispatchPendingThemeLink(); dispatchPendingShare(); }
             }
             @Override public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
                 showInterfaceRecovery(view);
@@ -317,13 +387,13 @@ public final class ShellActivity extends AccessActivity {
         if(lockScreen!=null&&AppLock.disableIfUnavailable(this)){android.widget.Toast.makeText(this,R.string.app_lock_removed,android.widget.Toast.LENGTH_LONG).show();if(bridge!=null)bridge.changed("security");}
         if(lockScreen!=null){if(AppLock.isUnlocked())lockScreen.hide();else lockScreen.show(false);}
         dispatchPendingDeepLink();
-        if(AppLock.isUnlocked()){dispatchPendingInlineQuery();dispatchPendingMiniAppShortcut();dispatchPendingThemeLink();}
+        if(AppLock.isUnlocked()){dispatchPendingInlineQuery();dispatchPendingMiniAppShortcut();dispatchPendingThemeLink();dispatchPendingShare();}
     }
     @Override protected void onNewIntent(Intent intent){
-        super.onNewIntent(intent);setIntent(intent);captureThemeLink(intent);captureIntentExtras(intent);
+        super.onNewIntent(intent);setIntent(intent);captureThemeLink(intent);captureIntentExtras(intent);captureShare(intent);
         String link=TelegramLinks.normalize(intent==null?null:intent.getDataString());
         if(link!=null){pendingDeepLink=link;dispatchPendingDeepLink();}
-        if(AppLock.isUnlocked()){dispatchPendingInlineQuery();dispatchPendingMiniAppShortcut();dispatchPendingThemeLink();}
+        if(AppLock.isUnlocked()){dispatchPendingInlineQuery();dispatchPendingMiniAppShortcut();dispatchPendingThemeLink();dispatchPendingShare();}
     }
     @Override public void onConfigurationChanged(android.content.res.Configuration configuration){
         super.onConfigurationChanged(configuration);applyThemeBars();if(bridge!=null)bridge.changed("appearance");

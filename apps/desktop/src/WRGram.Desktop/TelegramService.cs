@@ -338,7 +338,7 @@ public sealed partial class TelegramService : IAsyncDisposable
                 "scheduled.delete" => await ScheduledDeleteAsync(args),
                 // Elegir un archivo, enviarlo y descartarlo. Las tres estaban en la lista de métodos del puente
                 // Android y en ninguna de las dos capas de escritorio: el botón «Archivo o foto» existía, avisaba
-                // del límite de 32 MB y al confirmar caía en el «No disponible en escritorio (beta)». La librería
+                // del tope de la beta y al confirmar caía en el «No disponible en escritorio (beta)». La librería
                 // tiene todo lo que hace falta —`UploadFileAsync` y `sendMedia`—; lo que faltaba era el cable.
                 "attachment.pick" => await AttachmentPickAsync(Str(args, "kind")),
                 "attachment.discard" => AttachmentDiscardAsync(args),
@@ -1470,13 +1470,13 @@ public sealed partial class TelegramService : IAsyncDisposable
         if (scheduleProblem != null) throw new BridgeException(scheduleProblem);
         // El formato se decide antes de marcar el envío como en curso: una entidad que no pasa no es un
         // mensaje que pueda haber salido, y Android la niega también antes de tocar la red.
-        var entities = ParseEntities(args, text);
+        var entities = ParseEntities(args, text); var reply = await DesktopReplyQuote.ForAsync(_client, entry.Input, replyId, args);
         _state.Sending = true;
         _state.Uncertain = false;
         Push();
         try
         {
-            InputReplyTo? reply = replyId > 0 ? new InputReplyToMessage { reply_to_msg_id = replyId } : null;
+            // La cita ya se resolvió antes de marcar el envío: una cita que no pasa no es un mensaje que quizá salió.
             DateTime? scheduleDate = DesktopSchedule.Date(schedule);
             await _client.Messages_SendMessage(entry.Input, text, Random.Shared.NextInt64(1, long.MaxValue),
                 reply_to: reply, entities: entities, schedule_date: scheduleDate, silent: silent, clear_draft: true);
@@ -2060,7 +2060,7 @@ public sealed partial class TelegramService : IAsyncDisposable
     /// Por qué una copia: el <c>OpenFileDialog</c> devuelve una ruta del disco de la persona y, entre elegirla y
     /// confirmar el envío, esa ruta puede cambiar —la app que la creó la mueve, alguien la renombra, un antivirus
     /// la deja escrita a medias—. Android copia por el mismo motivo en <c>NativeBridge.picked</c>, con el tope de
-    /// 32 MB comprobado mientras se escribe y no después; aquí se hace lo mismo sobre <c>outbox</c> de la carpeta
+    /// la cuenta comprobado mientras se escribe y no después; aquí se hace lo mismo sobre <c>outbox</c> de la carpeta
     /// de datos de la aplicación.
     /// </para>
     /// <para>
@@ -2100,7 +2100,7 @@ public sealed partial class TelegramService : IAsyncDisposable
         try
         {
             Directory.CreateDirectory(folder);
-            size = await ImportCopyAsync(target, chosen);
+            size = await ImportCopyAsync(target, chosen, DesktopEmojiCatalog.IsPremium(client.User!));
         }
         catch (BridgeException)
         {
@@ -2110,7 +2110,7 @@ public sealed partial class TelegramService : IAsyncDisposable
         catch (Exception ex)
         {
             DeleteFolder(folder);
-            throw new BridgeException(DesktopAttachment.TooBig, ex);
+            throw new BridgeException(DesktopAttachment.TooBigOf(DesktopEmojiCatalog.IsPremium(client.User!)), ex);
         }
         var token = Guid.NewGuid().ToString("N");
         _outbox[token] = new OutboxFile(target, name, DesktopAttachment.MimeOf(name), client.User!.id, _active);
@@ -2120,7 +2120,7 @@ public sealed partial class TelegramService : IAsyncDisposable
     /// Copiar con el corte de Android: se cuenta cada bloque y en cuanto se pasa del tope se deja de escribir y
     /// se lanza, porque un vídeo de 4 GB no tiene por qué caber dos veces en el disco antes de saber que no cabe.
     /// Va en asincronía porque el hilo del puente es el de la interfaz y una unidad de red puede tardar.
-    private static async Task<long> ImportCopyAsync(string target, string source)
+    private static async Task<long> ImportCopyAsync(string target, string source, bool premium)
     {
         var written = 0L;
         await using var input = File.OpenRead(source);
@@ -2130,7 +2130,7 @@ public sealed partial class TelegramService : IAsyncDisposable
         while ((read = await input.ReadAsync(buffer)) > 0)
         {
             written += read;
-            if (DesktopAttachment.Exceeds(written)) throw new BridgeException(DesktopAttachment.TooBig);
+            if (DesktopAttachment.Exceeds(written, premium)) throw new BridgeException(DesktopAttachment.TooBigOf(premium));
             await output.WriteAsync(buffer.AsMemory(0, read));
         }
         return written;
@@ -2249,7 +2249,7 @@ public sealed partial class TelegramService : IAsyncDisposable
     /// Android descubre el tipo con <c>ContentResolver.getType</c> y además no puede traer otra cosa porque abre
     /// el selector con <c>image/*</c>; aquí la extensión es lo único que hay y el diálogo ofrece «Todos los
     /// archivos», así que la comprobación va delante de la copia para no dejar en el disco siete fotos de un lote
-    /// que se iba a rechazar por la octava. Lo mismo aplica al tope: si una pasa de 32 MB se tira el lote entero,
+    /// que se iba a rechazar por la octava. Lo mismo aplica al tope: si una pasa del límite de la cuenta se tira el lote entero,
     /// que es lo que hace el <c>catch</c> de <c>pickedAlbum</c> con su frase de las diez imágenes.
     /// </para>
     /// <para>
@@ -2307,12 +2307,12 @@ public sealed partial class TelegramService : IAsyncDisposable
                 try
                 {
                     Directory.CreateDirectory(folder);
-                    size = await ImportCopyAsync(target, source);
+                    size = await ImportCopyAsync(target, source, DesktopEmojiCatalog.IsPremium(client.User!));
                 }
                 catch (Exception ex)
                 {
                     DeleteFolder(folder);
-                    throw new BridgeException(DesktopAlbum.ImportFailed, ex);
+                    throw new BridgeException(DesktopAlbum.ImportFailedOf(DesktopEmojiCatalog.IsPremium(client.User!)), ex);
                 }
                 var token = Guid.NewGuid().ToString("N");
                 _outbox[token] = new OutboxFile(target, name, mime, account, chat);
@@ -3434,7 +3434,7 @@ public sealed partial class TelegramService : IAsyncDisposable
             {
                 // Una cita puede venir de otro chat: el destino se resuelve con su propio peer, no con el chat actual.
                 var originChat = PeerKey(header.reply_to_peer_id) ?? entry.Id;
-                dto.Reply = CachedText(originChat, header.reply_to_msg_id) ?? "Mensaje anterior";
+                dto.Reply = CachedText(originChat, header.reply_to_msg_id) ?? "Mensaje anterior"; dto.ReplyQuote = DesktopReplyQuote.Receive(header, ConvertEntities);
                 dto.ReplyTo = new ReplyTargetDto { ChatId = originChat, MessageId = header.reply_to_msg_id.ToString() };
             }
 

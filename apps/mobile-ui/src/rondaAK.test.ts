@@ -12,6 +12,7 @@ const app = text('./App.tsx');
 const preview = text('./preview.ts');
 const policy = text('../../mobile/android/app/src/main/java/cc/webrom/wrgram/BridgePolicy.java');
 const java = text('../../mobile/android/app/src/main/java/cc/webrom/wrgram/NativeBridge.java');
+const upload = text('../../mobile/android/app/src/main/java/cc/webrom/wrgram/UploadPolicy.java');
 
 /** El literal que una capa asigna a una constante de C#. */
 function csSentence(name: string, from = rules): string {
@@ -82,12 +83,12 @@ const attachRefusals = /const ATTACH_REFUSALS = \{([\s\S]*?)\};/.exec(preview)?.
 
 describe('ronda AK · elegir un archivo deja de ser cosa de un teléfono', () => {
   it('el tope y el búfer son los números con los que Android corta la copia', () => {
-    expect(rules).toContain('public const long MaxBytes = 32L * 1024 * 1024;');
-    expect(java).toContain('size>32L*1024*1024');
+    expect(rules).toContain('public const long FreeMaxBytes = 2L * 1024 * 1024 * 1024;');
+    expect(java).toContain('if(size>UploadPolicy.maxBytes(premium))throw new IllegalArgumentException();');
     expect(rules).toContain('public const int BufferBytes = 32768;');
     expect(java).toContain('byte[] buffer=new byte[32768]');
     // El puente no vuelve a escribir el tope: lo pregunta a la regla.
-    expect(rules).toContain('public static bool Exceeds(long transmitted) => transmitted > MaxBytes;');
+    expect(rules).toContain('public static bool Exceeds(long transmitted, bool premium) => transmitted > MaxBytes(premium);');
     expect(count('DesktopAttachment.MaxBytes', service)).toBe(0);
   });
 
@@ -117,9 +118,14 @@ describe('ronda AK · elegir un archivo deja de ser cosa de un teléfono', () =>
   });
 
   it('las cuatro frases que ya están en Android se copian, no se reescriben', () => {
-    for (const name of ['NoPicker', 'TooBig', 'ChangedChat', 'Uncertain']) {
+    for (const name of ['NoPicker', 'ChangedChat', 'Uncertain']) {
       expect(java).toContain(`"${csSentence(name)}"`);
     }
+    // La del tope la escribe `UploadPolicy` desde la ronda CP, con sus dos orillas: el puente ya no la lleva
+    // dentro, la pregunta con la cuenta que eligió el archivo.
+    expect(upload).toContain(`"${csSentence('TooBig')}"`);
+    expect(upload).toContain(`"${csSentence('TooBigPremium')}"`);
+    expect(java).toContain('answer.fail(UploadPolicy.tooBig(premium))');
     // La quinta no la dice Android: allí un vale que no está en el mapa lanza una excepción sin mensaje.
     expect(java).not.toContain(csSentence('NotPrepared'));
   });
@@ -173,7 +179,7 @@ describe('ronda AK · elegir un archivo deja de ser cosa de un teléfono', () =>
 
   it('el tope se corta mientras se copia, antes de escribir el bloque que lo pasa', () => {
     const body = csBody('ImportCopyAsync');
-    expect(at('if (DesktopAttachment.Exceeds(written)) throw new BridgeException(DesktopAttachment.TooBig);', body))
+    expect(at('if (DesktopAttachment.Exceeds(written, premium)) throw new BridgeException(DesktopAttachment.TooBigOf(premium));', body))
       .toBeLessThan(at('await output.WriteAsync(buffer.AsMemory(0, read));', body));
     // Y se tira lo que llevaba copiado: un archivo que no cabe no deja media copia en el disco de la persona.
     expect(count('DeleteFolder(folder);', csBody('AttachmentPickAsync'))).toBe(2);
@@ -296,8 +302,8 @@ describe('ronda AK · el acceso de Windows y lo que hay detrás', () => {
     // La misma petición con el argumento opcional que la ronda BU añadió para la fila de GIF: sin `kind` sigue
     // siendo la llamada de siempre.
     expect(app).toContain("run<PickedAttachment>(method,kind?{kind}:{})");
-    // La pantalla ya avisaba del tope que ahora cumple el host.
-    expect(app).toContain('Límite de esta versión: 32 MB.');
+    // La pantalla anuncia el tope de la cuenta, que desde la ronda CP es el de Telegram y no el de la beta.
+    expect(app).toContain("Límite: {state.wallet?.premium?'4 GB':'2 GB'}.");
   });
 
   it('los tres brazos del espejo entran por la puerta de la plataforma', () => {
@@ -343,7 +349,7 @@ describe('ronda AK · el acceso de Windows y lo que hay detrás', () => {
 type DesignCall = (method: string, params?: Record<string, unknown>) => Promise<unknown>;
 type Piece = { kind: string; name: string; mime: string; size: number; ready: boolean };
 type Row = { id: string; text: string; outgoing: boolean; media?: Piece };
-type Snap = { active: string; selfId: string; uncertain: boolean; messages: Row[]; chats: { id: string }[] };
+type Snap = { active: string; selfId: string; uncertain: boolean; messages: Row[]; chats: { id: string }[]; wallet?: { premium?: boolean } };
 
 describe('ronda AK · medido con las manos, no con agujas', () => {
   let call: DesignCall = async () => undefined;
@@ -390,10 +396,18 @@ describe('ronda AK · medido con las manos, no con agujas', () => {
   });
 
   it('lo que pasa del tope se niega con la frase de Android y no deja vale por el medio', async () => {
-    await expect(call('attachment.pick', { name: 'vídeo de la reunión.mp4', size: 33 * 1024 * 1024 }))
+    await expect(call('attachment.pick', { name: 'vídeo de la reunión.mp4', size: 2 * 1024 * 1024 * 1024 + 1 }))
       .rejects.toThrow(tsProperty('tooBig', attachRefusals));
     // El siguiente vale vuelve a ser el primero: la negativa no reserva nada que haya que limpiar.
     expect((await pick()).token).toBe('a1');
+  });
+
+  it('la cuenta con Premium tiene la otra orilla, y la negativa dice cuál es', async () => {
+    set({ wallet: { premium: true } });
+    const grande = await pick({ name: 'vídeo de la reunión.mp4', size: 3 * 1024 * 1024 * 1024 });
+    expect(grande.size).toBe(3 * 1024 * 1024 * 1024);
+    await expect(call('attachment.pick', { name: 'otro vídeo.mp4', size: 4 * 1024 * 1024 * 1024 + 1 }))
+      .rejects.toThrow(tsProperty('tooBigPremium', attachRefusals));
   });
 
   it('un vale que no existe se niega con nombre propio y no escribe', async () => {

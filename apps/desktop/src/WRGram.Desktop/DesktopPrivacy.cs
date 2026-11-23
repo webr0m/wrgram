@@ -53,10 +53,10 @@ using TL;
 /// el de cien por lista, y lo hace antes que la clave: <c>NativeBridge.java:3882</c> va delante de <c>:3883</c>.
 /// </para>
 /// <para>
-/// <b>Lo que la pantalla no ofrece no se toca.</b> El enum medido de <c>InputPrivacyKey</c> trae catorce claves y
-/// esta tabla usa diez: <c>PhoneP2P</c> (llamadas entre iguales), <c>NoPaidMessages</c>, <c>SavedMusic</c> y
-/// <c>StarGiftsAutoSave</c> no tienen fila en <c>SettingsPage.tsx:77</c> ni en <c>UserMenu.tsx</c>, así que
-/// Windows no las lee ni las escribe. Tampoco se llama a <c>account.getGlobalPrivacySettings</c> ni a
+/// <b>La ronda CR cerró el hueco de las cuatro claves.</b> El enum medido de <c>InputPrivacyKey</c> trae catorce
+/// claves y esta tabla ya usa las catorce: <c>PhoneP2P</c> (llamadas entre iguales), <c>NoPaidMessages</c>,
+/// <c>SavedMusic</c> y <c>StarGiftsAutoSave</c> tienen fila en <c>SettingsPage.tsx:77</c> y se leen y se escriben
+/// igual que las diez de BH. Lo que sigue sin tocarse es <c>account.getGlobalPrivacySettings</c> y
 /// <c>account.setGlobalPrivacySettings</c>: esa es otra superficie —el bloqueo por historias y los regalos— que
 /// ninguna pantalla de la app ofrece hoy.
 /// </para>
@@ -64,14 +64,16 @@ using TL;
 public static class DesktopPrivacy
 {
     /// <summary>
-    /// Las diez claves de <c>PRIVACY_KEYS</c> (<c>NativeBridge.java:3848</c>) en el orden de esa tabla, cada una con
-    /// su <c>InputPrivacyKey</c>. El orden no es cosmético: es el del array que la pantalla recorre y el de la
-    /// recursión de <c>:3871-3877</c>. El emparejamiento sale de los diez <c>case</c> de
+    /// Las catorce claves de <c>PRIVACY_KEYS</c> (<c>NativeBridge.java:3848</c>) en el orden de esa tabla, cada una con
+    /// su <c>InputPrivacyKey</c>. El orden no es cosmético: es del array que la pantalla recorre y el de la
+    /// recursión de <c>:3871-3877</c>. El emparejamiento sale de los catorce <c>case</c> de
     /// <c>privacySetting</c> (<c>:3851-3860</c>): <c>ShowStatus</c> es la marca de estar en línea,
     /// <c>ShowProfilePhoto</c> la foto, <c>ShowPhoneNumber</c> el número, <c>ShowBio</c> el «About» de MTProto,
     /// <c>ShowBirthdate</c> el «Birthday», <c>ShowLinkInForwardedMessages</c> los reenvíos, <c>AllowCalls</c> la
     /// llamada, <c>AllowPrivateVoiceAndVideoNoteMessages</c> la nota de voz y de vídeo, <c>AllowChatInvites</c> la
-    /// invitación a grupos y <c>AllowFindingByPhoneNumber</c> el «AddedByPhone» de MTProto.
+    /// invitación a grupos y <c>AllowFindingByPhoneNumber</c> el «AddedByPhone» de MTProto. Las cuatro de CR:
+    /// <c>AllowPeerToPeerCalls</c> la conexión directa en llamadas, <c>AllowUnpaidMessages</c> los mensajes sin
+    /// pago, <c>ShowProfileAudio</c> la música del perfil y <c>AutosaveGifts</c> el guardado de regalos.
     /// </summary>
     public static readonly (string Key, InputPrivacyKey Setting)[] Keys =
     [
@@ -85,6 +87,10 @@ public static class DesktopPrivacy
         ("voiceMessages", InputPrivacyKey.VoiceMessages),
         ("invites", InputPrivacyKey.ChatInvite),
         ("findPhone", InputPrivacyKey.AddedByPhone),
+        ("p2p", InputPrivacyKey.PhoneP2P),
+        ("noPaidMessages", InputPrivacyKey.NoPaidMessages),
+        ("savedMusic", InputPrivacyKey.SavedMusic),
+        ("starGiftsAutoSave", InputPrivacyKey.StarGiftsAutoSave),
     ];
 
     /// <summary>

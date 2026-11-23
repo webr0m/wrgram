@@ -122,9 +122,9 @@ describe('ronda CG · la rama muerta de TdSession.unsupported() no vuelve a ment
 
   it('ninguna capa vecina se movió de su aguja y los tres huecos que declaró la ronda están ya cableados', () => {
     // Medido hoy con `wc -l`: la ronda CH-A puso el bloque de los fondos al final del puente (veinticuatro líneas) y la
-    // CH-A2 sumó nueve a la sesión y cuatro a la instantánea; `MainActivity` no se movió.
+    // CH-A2 sumó nueve a la sesión y cuatro a la instantánea; la CQ añadió dieciséis al final de la sesión; `MainActivity` no se movió.
     expect(bridge.split('\n').length - 1).toBe(5511);
-    expect(session.split('\n').length - 1).toBe(1409);
+    expect(session.split('\n').length - 1).toBe(1425);
     expect(snapshot.split('\n').length - 1).toBe(553);
     expect(activity.split('\n').length - 1).toBe(609);
     expect(read('./desktopScope.ts')).toContain("'notes.write', 'notes.read', 'notes.clear'");

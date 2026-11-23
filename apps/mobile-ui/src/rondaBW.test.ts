@@ -111,9 +111,9 @@ describe('ronda BW · una persona sin nombre deja de ser un relleno para siempre
     const calls = java('TelegramCalls');
     // Los hosts C# y las notas citan líneas de estos archivos por su número: el total es la invariant.
     // Medido hoy con `wc -l`: la ronda CH-A puso el bloque de los fondos al final del puente y la CH-A2 sumó
-    // nueve líneas a la sesión, así que las dos agujas de longitud van con lo que dice el disco de hoy.
+    // nueve líneas a la sesión; la CQ añadió al final los dos brazos de notificación (dieciséis más).
     expect(bridge.split('\n').length - 1).toBe(5511);
-    expect(session.split('\n').length - 1).toBe(1409);
+    expect(session.split('\n').length - 1).toBe(1425);
     expect(calls.split('\n').length - 1).toBe(289);
     // Las cuatro superficies que pintan un nombre llaman a la misma función.
     expect(line(bridge, 2784)).toContain('PersonName.of(user)');

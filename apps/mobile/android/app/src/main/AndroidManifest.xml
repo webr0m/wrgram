@@ -79,6 +79,17 @@
                 <data android:host="telegram.me" />
                 <data android:host="telegram.dog" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
         </activity>
+        <receiver android:name=".NotificationActionReceiver" android:exported="false" />
     </application>
 </manifest>
