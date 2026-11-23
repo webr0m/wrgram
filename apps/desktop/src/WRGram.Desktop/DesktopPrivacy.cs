@@ -9,16 +9,16 @@ using TL;
 
 /// <summary>
 /// Las reglas de la privacidad de la cuenta: las diez claves que Android define en
-/// <c>NativeBridge.java:3847</c> (<c>PRIVACY_KEYS</c>) y traduce a un ajuste de TDLib en
-/// <c>privacySetting</c> (<c>:3830-3844</c>), la proyección de sus reglas (<c>PrivacyRules.project</c>,
+/// <c>NativeBridge.java:3848</c> (<c>PRIVACY_KEYS</c>) y traduce a un ajuste de TDLib en
+/// <c>privacySetting</c> (<c>:3849-3863</c>), la proyección de sus reglas (<c>PrivacyRules.project</c>,
 /// <c>PrivacyRules.java:33-49</c>) y la reconstrucción que se envía (<c>PrivacyRules.merge</c>,
 /// <c>:56-70</c>). No hay aquí ninguna norma nueva: hay la misma norma escrita una vez en la capa de Windows.
 /// <para>
 /// <b>Por qué la lectura son diez peticiones.</b> MTProto no tiene un «todas mis reglas»:
 /// <c>account.getPrivacy</c> pide <b>una</b> <c>InputPrivacyKey</c> y contesta <c>account.privacyRules</c>.
 /// TDLib tampoco tiene una lectura global, y Android lo resuelve con una recursión que va de clave en clave
-/// (<c>privacyGet(result,index,a)</c>, <c>:3852-3858</c>). Windows recorre la misma tabla en el mismo orden, así
-/// que el array que ve la pantalla sale con las diez claves en el mismo orden que desde Android.
+/// (<c>privacyGet(result,index,a)</c>, <c>NativeBridge.java:3871-3877</c>). Windows recorre la misma tabla en el
+/// mismo orden, así que el array que ve la pantalla sale con las diez claves en el mismo orden que desde Android.
 /// </para>
 /// <para>
 /// <b>El orden de las reglas importa, y por eso no se reescribe todo.</b> Telegram aplica la primera regla que
@@ -41,15 +41,16 @@ using TL;
 /// </para>
 /// <para>
 /// <b>Tres techos, y el tercero no se alcanza.</b> <c>BridgePolicy.text(p,"key",20)</c> y <c>.text(p,"value",12</c>)
-/// (<c>:3862</c>), <c>optionalIds(…,"allowUsers",100)</c> y su hermana <c>restrictUsers</c> (los dos techos por
-/// lista, <c>:3863</c> más <c>:3875</c>) y el tope conjunto de <c>PrivacyRules.MAX_USER_EXCEPTIONS</c> (<c>:20</c>).
-/// Escrito el tercero, hecha la cuenta: por lista entran como mucho cien permitidas y cien restringidas, o sea
-/// doscientas excepciones, y <c>validate</c> niega <b>más</b> de doscientas. Con los topes de <c>:3863</c> delante,
-/// esa negación no puede ocurrir por el puente en ninguna de las dos capas —medido, no supuesto: la prueba de la
-/// ronda pasa las dos listas llenas y devuelve <c>true</c>—. Se conserva igual, por dos motivos: es la norma que
-/// Java escribe y la frase que la pantalla promete en <c>SettingsPage.tsx:123</c>, y si algún día el tope por lista
-/// subiera, la suma sigue cortada. Lo que sí corta es el de cien por lista, y lo hace antes que la clave:
-/// <c>:3863</c> va delante de <c>:3864</c>.
+/// (<c>NativeBridge.java:3881</c>), <c>optionalIds(…,"allowUsers",100)</c> y su hermana <c>restrictUsers</c> (los
+/// dos techos por lista, <c>:3882</c> más <c>:3894</c>) y el tope conjunto de
+/// <c>PrivacyRules.MAX_USER_EXCEPTIONS</c> (<c>PrivacyRules.java:20</c>). Escrito el tercero, hecha la cuenta: por
+/// lista entran como mucho cien permitidas y cien restringidas, o sea doscientas excepciones, y el
+/// <c>validate</c> de <c>PrivacyRules.java:88-92</c> niega <b>más</b> de doscientas. Con los topes de
+/// <c>NativeBridge.java:3882</c> delante, esa negación no puede ocurrir por el puente en ninguna de las dos capas
+/// —medido, no supuesto: la prueba de la ronda pasa las dos listas llenas y devuelve <c>true</c>—. Se conserva
+/// igual, por dos motivos: es la norma que Java escribe y la frase que la pantalla promete en
+/// <c>SettingsPage.tsx:123</c>, y si algún día el tope por lista subiera, la suma sigue cortada. Lo que sí corta es
+/// el de cien por lista, y lo hace antes que la clave: <c>NativeBridge.java:3882</c> va delante de <c>:3883</c>.
 /// </para>
 /// <para>
 /// <b>Lo que la pantalla no ofrece no se toca.</b> El enum medido de <c>InputPrivacyKey</c> trae catorce claves y
@@ -63,10 +64,10 @@ using TL;
 public static class DesktopPrivacy
 {
     /// <summary>
-    /// Las diez claves de <c>PRIVACY_KEYS</c> (<c>:3829</c>) en el orden de <c>:3829</c>, cada una con su
-    /// <c>InputPrivacyKey</c>. El orden no es cosmético: es el del array que la pantalla recorre y el de la
-    /// recursión de <c>:3852-3858</c>. El emparejamiento sale de los diez <c>case</c> de
-    /// <c>privacySetting</c> (<c>:3832-3841</c>): <c>ShowStatus</c> es la marca de estar en línea,
+    /// Las diez claves de <c>PRIVACY_KEYS</c> (<c>NativeBridge.java:3848</c>) en el orden de esa tabla, cada una con
+    /// su <c>InputPrivacyKey</c>. El orden no es cosmético: es el del array que la pantalla recorre y el de la
+    /// recursión de <c>:3871-3877</c>. El emparejamiento sale de los diez <c>case</c> de
+    /// <c>privacySetting</c> (<c>:3851-3860</c>): <c>ShowStatus</c> es la marca de estar en línea,
     /// <c>ShowProfilePhoto</c> la foto, <c>ShowPhoneNumber</c> el número, <c>ShowBio</c> el «About» de MTProto,
     /// <c>ShowBirthdate</c> el «Birthday», <c>ShowLinkInForwardedMessages</c> los reenvíos, <c>AllowCalls</c> la
     /// llamada, <c>AllowPrivateVoiceAndVideoNoteMessages</c> la nota de voz y de vídeo, <c>AllowChatInvites</c> la
@@ -87,9 +88,10 @@ public static class DesktopPrivacy
     ];
 
     /// <summary>
-    /// <c>privacySetting</c> (<c>:3830-3844</c>): la tabla de arriba leída por nombre, con el <c>default</c> de
-    /// <c>:3842</c> dicho con su causa. Busca exacto, sin recortar ni ignorar mayúsculas, porque la pantalla manda
-    /// las claves del propio <c>PRIVACY_KEYS</c> y cualquier otra cosa es una llamada que no se sabe qué pide.
+    /// <c>privacySetting</c> (<c>NativeBridge.java:3849-3863</c>): la tabla de arriba leída por nombre, con el
+    /// <c>default</c> de <c>:3861</c> dicho con su causa. Busca exacto, sin recortar ni ignorar mayúsculas, porque la
+    /// pantalla manda las claves del propio <c>PRIVACY_KEYS</c> y cualquier otra cosa es una llamada que no se sabe
+    /// qué pide.
     /// </summary>
     public static InputPrivacyKey Setting(string key)
     {
@@ -97,7 +99,8 @@ public static class DesktopPrivacy
         throw new BridgeException(UnknownSetting);
     }
 
-    /// <summary>Las tres bases que la pantalla sabe elegir, literales de <c>SettingsPage.tsx:123</c> y de <c>PrivacyRules.base</c> (<c>:74-84</c>).</summary>
+    /// <summary>Las tres bases que la pantalla sabe elegir, literales de <c>SettingsPage.tsx:123</c> y de
+    /// <c>PrivacyRules.base</c> (<c>PrivacyRules.java:72-86</c>).</summary>
     public const string Everyone = "everyone";
     public const string ContactsValue = "contacts";
     public const string Nobody = "nobody";
@@ -105,13 +108,15 @@ public static class DesktopPrivacy
     /// <summary>El <c>custom</c> de <c>PrivacyRules.java:47</c>: más de una base en la lista, o ninguna, y no se puede reescribir.</summary>
     public const string Custom = "custom";
 
-    /// <summary>Los topes de <c>BridgePolicy.text</c> sobre las dos cadenas del argumento (<c>NativeBridge.java:3880</c>).</summary>
+    /// <summary>Los topes de <c>BridgePolicy.text</c> sobre las dos cadenas del argumento
+    /// (<c>NativeBridge.java:3881</c>).</summary>
     public const int MaxKey = 20;
 
     /// <summary>El mismo tope para el valor elegido.</summary>
     public const int MaxValue = 12;
 
-    /// <summary>El tope por lista de <c>optionalIds(p,"allowUsers",100)</c> y su hermana (<c>:3863-3864</c>, <c>:3874</c>).</summary>
+    /// <summary>El tope por lista de <c>optionalIds(p,"allowUsers",100)</c> y su hermana, llamado en
+    /// <c>NativeBridge.java:3882</c> y definido en <c>:3894</c>.</summary>
     public const int MaxPerList = 100;
 
     /// <summary>El tope conjunto de <c>PrivacyRules.MAX_USER_EXCEPTIONS</c> (<c>PrivacyRules.java:20</c>), que la pantalla anuncia en <c>SettingsPage.tsx:123</c>.</summary>
@@ -119,13 +124,18 @@ public static class DesktopPrivacy
 
     // ---- las negaciones, una por fuente, con la cadena de Java delante ----
 
-    /// <summary>El <c>default</c> de <c>privacySetting</c> (<c>NativeBridge.java:3849</c>). Allá es un <c>throw</c> que el despacho genérico (<c>:152</c>) convierte en un «función no disponible»; aquí es la causa concreta.</summary>
+    /// <summary>El <c>default</c> de <c>privacySetting</c> (<c>NativeBridge.java:3849-3863</c>). Allá ese
+    /// <c>throw</c> lo convierte el <c>catch</c> del despacho genérico (<c>:167</c>) en un «función no disponible»;
+    /// aquí es la causa concreta.</summary>
     public const string UnknownSetting = "Ajuste de privacidad no válido.";
 
-    /// <summary>El primer <c>throw</c> de <c>PrivacyRules.validate</c> (<c>PrivacyRules.java:90</c>), que en Android sí llega a la pantalla porque el <c>catch</c> de <c>:3869</c> lo reenvía.</summary>
+    /// <summary>El primer <c>throw</c> de <c>PrivacyRules.validate</c> (<c>PrivacyRules.java:90</c>), que en Android
+    /// sí llega a la pantalla porque el <c>catch</c> de <c>NativeBridge.java:3888</c> lo reenvía.</summary>
     public const string BadValue = "Valor de privacidad no válido.";
 
-    /// <summary>El segundo <c>throw</c> de <c>validate</c> (<c>:92</c>), escrito con el número en la frase, igual que allá. Por el puente no se alcanza: cien permitidas más cien restringidas son doscientas y la negación pide <b>más</b> de doscientas.</summary>
+    /// <summary>El segundo <c>throw</c> de <c>validate</c> (<c>PrivacyRules.java:92</c>), escrito con el número en la
+    /// frase, igual que allá. Por el puente no se alcanza: cien permitidas más cien restringidas son doscientas y la
+    /// negación pide <b>más</b> de doscientas.</summary>
     public const string TooMany = "Máximo 200 excepciones por ajuste.";
 
     /// <summary>El tercero (<c>:94</c>): la misma persona dos veces en el lado de permitir.</summary>
@@ -134,9 +144,9 @@ public static class DesktopPrivacy
     /// <summary>El cuarto (<c>:95</c>): la misma persona permitida y restringida a la vez.</summary>
     public const string BothWays = "Un usuario no puede estar permitido y restringido a la vez.";
 
-    /// <summary>La guarda de <c>:3871</c>, entre la lectura y la escritura. Allá, a mitad de las diez lecturas de
-    /// <c>privacy.get</c> lo que corta es la frase genérica del <c>perform</c> (<c>:475</c>); aquí la causa se dice
-    /// concreta en las dos órdenes, que es la norma que fijó la ronda AT.</summary>
+    /// <summary>La guarda de <c>NativeBridge.java:3890</c>, entre la lectura y la escritura. Allá, a mitad de las
+    /// diez lecturas de <c>privacy.get</c> lo que corta es la frase genérica del <c>perform</c> (<c>:488</c>); aquí
+    /// la causa se dice concreta en las dos órdenes, que es la norma que fijó la ronda AT.</summary>
     public const string ChangedAccount = "La cuenta cambió; no se modificó la privacidad.";
 
     /// <summary>
@@ -315,13 +325,14 @@ public static class DesktopPrivacy
     /// <summary>
     /// La forma de las dos cadenas del argumento: <c>BridgePolicy.text</c> (<c>BridgePolicy.java:59</c>) niega el
     /// <see langword="null"/> y lo que pase del tope. Es <see cref="BadText"/> y no la causa concreta inglesa
-    /// porque allá ese <c>throw</c> se pierde en el despacho genérico (<c>NativeBridge.java:165</c>); aquí se dice.
+    /// porque allá ese <c>throw</c> lo traga el <c>catch</c> del despacho genérico (<c>NativeBridge.java:167</c>);
+    /// aquí se dice.
     /// </summary>
     public static bool Shaped(string? raw, int maximum) => raw != null && raw.Length <= maximum;
 
     /// <summary>
-    /// <c>optionalIds</c> (<c>:3875</c>): ausencia o array vacío es la lista vacía, y lo demás pasa por la regla
-    /// de <c>BridgePolicy.ids</c> (<c>BridgePolicy.java:58</c>) —como mucho 100 elementos, todos cadenas con la
+    /// <c>optionalIds</c> (<c>NativeBridge.java:3894</c>): ausencia o array vacío es la lista vacía, y lo demás pasa
+    /// por la regla de <c>BridgePolicy.ids</c> (<c>BridgePolicy.java:58</c>) —como mucho 100 elementos, todos cadenas con la
     /// forma de un entero firmado de hasta diecinueve dígitos—. El desbordamiento no es un caso aparte: la propia
     /// expresión lo acota, y <c>long.TryParse</c> hace el resto, que es lo que allá hace <c>Long.parseLong</c>
     /// cuando el número pasa de <c>9223372036854775807</c>.

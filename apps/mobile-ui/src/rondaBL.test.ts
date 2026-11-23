@@ -306,7 +306,7 @@ describe('ronda BL · medido llamando de verdad', () => {
   });
 
   it('la identidad que pregunta la pantalla es la de la fila, no la de la persona', async () => {
-    // `App.tsx:749` manda `peer.id`, que es la clave de la conversación; el brazo la resuelve con `RequireEntry`.
+    // `App.tsx:753` manda `peer.id`, que es la clave de la conversación; el brazo la resuelve con `RequireEntry`.
     expect(app).toContain("run<boolean>(remove?'contacts.remove':'contacts.add',{id:peer.id})");
     expect(csBody('ContactTarget')).toContain('RequireEntry(Str(args, "id"))');
     await expect(desktop.call('contacts.add', { id: '13' })).resolves.toBe(true);

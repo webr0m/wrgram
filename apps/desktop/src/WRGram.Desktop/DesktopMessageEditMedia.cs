@@ -26,10 +26,10 @@ using TL;
 /// la restricción del álbum.
 /// </para>
 /// <para>
-/// Lo que Android mide y este host no puede medir se queda dicho, no imitado: el <c>supportsStreaming</c> de
-/// <c>MessageMediaEdit.java:131</c> sale de leer el contenedor con el extractor del sistema, y en Windows el
-/// archivo se manda con las mismas dos cosas con las que lo manda <c>send.attachment</c> —su nombre y, si es
-/// GIF, su marca de animación—. El servidor rellena lo demás.
+/// Lo que Android mide y este host no puede medir se queda dicho, no imitado: <c>supportsStreaming</c> se escribe en
+/// <c>NativeBridge.java:4658</c> a partir de <c>streams</c> (<c>MessageMediaEdit.java:131</c>), que mira el tipo MIME
+/// y no el contenedor; en Windows el archivo se manda con las mismas dos cosas con las que lo manda
+/// <c>send.attachment</c> —su nombre y, si es GIF, su marca de animación—. El servidor rellena lo demás.
 /// </para>
 /// </summary>
 public static class DesktopMessageEditMedia

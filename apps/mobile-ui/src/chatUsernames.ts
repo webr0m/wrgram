@@ -12,8 +12,8 @@
  */
 
 /**
- * `DesktopChatUsernames.Unsupported` (`NativeBridge.java:1890` y `:1889` —los dos métodos dicen la misma cadena—)
- * y `DesktopChatUsernames.NoRight` (`answer.fail` de `:1889`).
+ * `DesktopChatUsernames.Unsupported` es la cadena que dicen los dos métodos —`chatUsername` (`NativeBridge.java:1890`)
+ * y `setChatUsername` (`:1892`)—, y `DesktopChatUsernames.NoRight` el `answer.fail` de `:1892`.
  */
 export const CHAT_USERNAME_REFUSALS = {
   unsupported: 'Los nombres públicos solo están disponibles en supergrupos y canales.',

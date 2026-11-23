@@ -9,7 +9,8 @@ using WTelegram;
 
 /// <summary>
 /// El cable de la privacidad de la cuenta en Windows: <c>privacy.get</c> (<c>NativeBridge.java:552</c> →
-/// <c>privacyGet</c>, <c>:3848-3859</c>) y <c>privacy.set</c> (<c>:542</c> → <c>privacySet</c>, <c>:3860-3874</c>).
+/// <c>privacyGet</c>, <c>:3867-3878</c>) y <c>privacy.set</c> (<c>:555</c> → <c>privacySet</c>,
+/// <c>:3879-3893</c>).
 /// Las claves, la proyección, la reconstrucción y las frases están en <see cref="DesktopPrivacy"/>; aquí está el
 /// hilo, que es lo que faltaba. Las dos órdenes están en la lista del puente desde la ronda B
 /// (<c>BridgePolicy.java:23</c>) y la pantalla las pide desde entonces en dos sitios —
@@ -26,22 +27,22 @@ using WTelegram;
 /// negaciones y los tres techos— es la misma norma de <c>PrivacyRules.java</c> dicha una vez en esta capa.
 /// </para>
 /// <para>
-/// La otra diferencia es que aquí el <c>catch</c> de <c>:3870</c> («No se pudo leer la privacidad actual de este
-/// ajuste. No se cambió nada.») no tiene de qué escapar. Allá ese <c>catch</c> atrapa lo que se rompa <i>armado</i>
-/// la lista de reglas; aquí la lista se arma a partir de valores ya validados, así que no hay fallo posible que
-/// merezca esa frase y no se copia: una negación que no puede ocurrir es peor que un hueco. La de <c>:3869</c>, en
-/// cambio, sí tiene gemelo, porque el <c>IllegalArgumentException</c> de <c>validate</c> viaja con su propio
-/// mensaje hasta la pantalla en las dos capas.
+/// La otra diferencia es que aquí el <c>catch</c> de <c>NativeBridge.java:3889</c> («No se pudo leer la
+/// privacidad actual de este ajuste. No se cambió nada.») no tiene de qué escapar. Allá ese <c>catch</c> atrapa lo
+/// que se rompa <i>armado</i> la lista de reglas; aquí la lista se arma a partir de valores ya validados, así que no
+/// hay fallo posible que merezca esa frase y no se copia: una negación que no puede ocurrir es peor que un hueco.
+/// La de <c>:3887-3888</c>, en cambio, sí tiene gemelo, porque el <c>IllegalArgumentException</c> de la
+/// <c>merge</c> viaja con su propio mensaje hasta la pantalla en las dos capas.
 /// </para>
 /// </summary>
 public sealed partial class TelegramService
 {
     /// <summary>
-    /// <c>privacyGet</c> (<c>:3848-3859</c>). Diez lecturas seguidas, en el orden de <c>PRIVACY_KEYS</c>, que es el
-    /// orden en el que la pantalla recorre el array. Allá la recursión va de clave en clave; aquí el mismo recorrido
-    /// es un <c>foreach</c>, y el orden sale idéntico.
+    /// <c>privacyGet</c> (<c>NativeBridge.java:3867-3878</c>). Diez lecturas seguidas, en el orden de
+    /// <c>PRIVACY_KEYS</c>, que es el orden en el que la pantalla recorre el array. Allá la recursión va de clave en
+    /// clave; aquí el mismo recorrido es un <c>foreach</c>, y el orden sale idéntico.
     /// <para>
-    /// Dos cosas que Android hace y aquí no pueden repetirse tal cual. La primera: el <c>try/catch</c> de <c>:3856</c>
+    /// Dos cosas que Android hace y aquí no pueden repetirse tal cual. La primera: el <c>try/catch</c> de <c>:3875</c>
     /// se traga el fallo de proyección de una clave y sigue con la siguiente, de modo que su array puede venir con
     /// nueve elementos cuando una falla. Aquí no hay nada que atrapar —la proyección se arma sobre un <c>switch</c>
     /// cerrado sobre los doce tipos que devolvió la reflexión—, así que el array de Windows tiene siempre los diez.
@@ -58,8 +59,8 @@ public sealed partial class TelegramService
         foreach (var (key, setting) in DesktopPrivacy.Keys)
         {
             var answer = await client.Account_GetPrivacy(setting);
-            // La pasada del `perform` de `:475` sobre cada una de las diez lecturas: la respuesta es de la sesión
-            // que la pidió, y el array que se estaría armando mezclaría reglas de dos cuentas.
+            // La pasada del `perform` de `NativeBridge.java:488` sobre cada una de las diez lecturas: la respuesta es
+            // de la sesión que la pidió, y el array que se estaría armando mezclaría reglas de dos cuentas.
             if (client.User?.id != owner) throw new BridgeException(DesktopPrivacy.ChangedAccount);
             MergePeers(answer.users?.Values, answer.chats?.Values);
             rows.Add(DesktopPrivacy.Row(key, answer.rules));
@@ -68,10 +69,10 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>privacySet</c> (<c>:3860-3874</c>). El orden es el de Java línea por línea y no es cosmético: si la
-    /// reconstrucción se intentara antes de mirar la forma, un argumento mal formado se confundiría con un ajuste
-    /// que Telegram no deja reescribir. La lectura previa va en medio porque la norma de conservar las reglas que la
-    /// pantalla no sabe expresar (<c>PrivacyRules.java:12-18</c>) exige saber cuáles había.
+    /// <c>privacySet</c> (<c>NativeBridge.java:3879-3893</c>). El orden es el de Java línea por línea y no es
+    /// cosmético: si la reconstrucción se intentara antes de mirar la forma, un argumento mal formado se confundiría
+    /// con un ajuste que Telegram no deja reescribir. La lectura previa va en medio porque la norma de conservar las
+    /// reglas que la pantalla no sabe expresar (<c>PrivacyRules.java:12-18</c>) exige saber cuáles había.
     /// </summary>
     private async Task<object?> SetPrivacyAsync(JsonElement args)
     {
@@ -88,19 +89,20 @@ public sealed partial class TelegramService
         if (client.User?.id != owner) throw new BridgeException(DesktopPrivacy.ChangedAccount);
         MergePeers(current.users?.Values, current.chats?.Values);
         var rules = DesktopPrivacy.Merge(current.rules, value!, allow, restrict, PrivacyInput);
-        // La guarda escrita de su puño y letra en `:3871`, entre la reconstrucción y la petición: llega después del
-        // `merge` porque allá el `merge` vive dentro del `perform` de la lectura, y el orden de las negaciones es el
-        // de esa línea.
+        // La guarda escrita de su puño y letra en `NativeBridge.java:3890`, entre la reconstrucción y la petición:
+        // llega después del `merge` porque allá el `merge` vive dentro del `perform` de la lectura, y el orden de las
+        // negaciones es el de esa línea.
         if (client.User?.id != owner) throw new BridgeException(DesktopPrivacy.ChangedAccount);
         await client.Account_SetPrivacy(setting, rules);
         return true;
     }
 
     /// <summary>
-    /// Los dos <c>optionalIds(p, …, 100)</c> de <c>:3863</c>. La ausencia y el array vacío son la lista vacía, igual
-    /// que allá; lo que no está bien formado se corta con la causa dicha en español, porque en Android ese rechazo
-    /// lo produce <c>BridgePolicy.ids</c> (<c>BridgePolicy.java:58</c>) fuera de cualquier <c>catch</c> propio: sube
-    /// al general de <c>NativeBridge.java:165</c> y la pantalla lee «Solicitud no válida o función no disponible».
+    /// Los dos <c>optionalIds(p, …, 100)</c> de <c>NativeBridge.java:3882</c>. La ausencia y el array vacío son la
+    /// lista vacía, igual que allá; lo que no está bien formado se corta con la causa dicha en español, porque en
+    /// Android ese rechazo lo produce <c>BridgePolicy.ids</c> (<c>BridgePolicy.java:58</c>) fuera de cualquier
+    /// <c>catch</c> propio: sube al general de <c>NativeBridge.java:167</c> y la pantalla lee «Solicitud no válida o
+    /// función no disponible».
     /// </summary>
     private static long[] PrivacyIds(JsonElement args, string name)
     {

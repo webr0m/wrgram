@@ -35,11 +35,15 @@ import { cloudBackgroundFor, type CloudBackground, type CloudBackgroundSlots } f
  * `NativeBridge.java:133`).
  *
  * **Por qué el modo lo decide la interfaz.** El nativo no sabe qué modo está pintado: el tema resuelto vive
- * en TypeScript. Por eso viajan los dos huecos y elige la raíz (`cloud-backgrounds.ts:54-56` con el tipo en
- * `cloud-backgrounds.ts:48`), nunca uno por delante del otro: un fondo puesto para claro no pinta en
+ * en TypeScript. Por eso viajan los dos huecos y elige la raíz (`cloud-backgrounds.ts:79-81` con el tipo en
+ * `cloud-backgrounds.ts:73`), nunca uno por delante del otro: un fondo puesto para claro no pinta en
  * oscuro, y cruzarlos cambiaría el fondo de la cuenta al girar el modo del sistema. La pantalla dice de
- * dónde sale la marca (`CloudBackgrounds.tsx:59`) y el aviso de cada puesto se conserva
- * (`CloudBackgrounds.tsx:40`).
+ * dónde sale la marca (`CloudBackgrounds.tsx:96-98`) y el aviso de cada puesto se conserva
+ * (`CloudBackgrounds.tsx:65`).
+ *
+ * **Lo que CH-B cambió del contrato.** La marca de serie pasa a poder ser `null`, porque el cable de Windows no
+ * trae el `isDefault` de TDLib (`TdApi.java:4982-4990`) en ninguna de sus dos hojas y aproximarla sería afirmar.
+ * Android la sigue mandando como booleano; lo que mide esa ronda es la omisión en la fila, no esta.
  *
  * **Lo que sigue abierto.** El aviso no se reenvía: lo cambiado con WRGram cerrado se desconoce hasta el
  * siguiente aviso o hasta el siguiente puesto desde aquí. Borrar el puesto sí tiene función propia
@@ -345,13 +349,16 @@ describe('ronda CH-A2 · la interfaz', () => {
     expect(linea).not.toContain('accountBackgrounds])');
   });
 
-  it('la pantalla dice de dónde sale la marca y el aviso del puesto se conserva', () => {
-    const nota = panel[atPanel('La marca de elegido la pone Telegram') - 1];
+  it('la pantalla dice de dónde sale la marca, en cada capa con su frase, y el aviso del puesto se conserva', () => {
+    // Desde CH-B la nota se parte: en Windows la marca la dice la lista que se lee, y aquí el aviso escuchado.
+    expect(panel[atPanel("const chosen = platform === 'desktop'") - 1]).toContain("platform === 'desktop'");
+    expect(panel[atPanel('en la lista que se lee') - 1]).toContain('cada lectura la trae fresca');
+    const nota = panel[atPanel('cuando la cuenta avisa un cambio') - 1];
     expect(nota).toContain('si el fondo se cambió con WRGram cerrado, la marca no se entera hasta el siguiente aviso');
-    expect(nota).not.toContain('es el último que puso WRGram');
+    expect(panel.join('\n')).not.toContain('es el último que puso WRGram');
     // El aviso lo pone `load`, que antes se borraba a sí mismo en el `finally`.
     expect(panel[atPanel('load(isPaintable(answer)') - 1]).toContain('load(isPaintable(answer)');
-    expect(count('setNotice(', panel)).toBe(1);
+    expect(count('setNotice(', panel)).toBe(2);
     expect(count('load(`Fondo', panel)).toBe(1);
   });
 });
@@ -401,10 +408,11 @@ describe('ronda CH-A2 · las citas', () => {
     'NativeSnapshot.java:539': 'static JSONObject appearanceDto(SharedPreferences prefs,Context context,String account)throws Exception{',
     'NativeSnapshot.java:545': 'value.put("accountBackgrounds",AccountBackgrounds.slots(',
     'NativeSnapshot.java:39': 'data.put("appearance",appearanceDto(prefs,session.context(),String.valueOf(session.selfId)));',
-    'backgrounds.ts:48': 'export type CloudBackgroundSlots = {',
-    'backgrounds.ts:54': 'export function cloudBackgroundFor(',
-    'CloudBackgrounds.tsx:59': 'La marca de elegido la pone Telegram',
-    'CloudBackgrounds.tsx:40': 'load(isPaintable(answer)',
+    'backgrounds.ts:73': 'export type CloudBackgroundSlots = {',
+    'backgrounds.ts:79': 'export function cloudBackgroundFor(',
+    'CloudBackgrounds.tsx:96': "const chosen = platform === 'desktop'",
+    'CloudBackgrounds.tsx:65': 'load(isPaintable(answer)',
+    'TdApi.java:4982': 'public static class Background extends Object {',
     'AccountBackgroundsTest.java:214': 'theStoreKeepsOneRowPerModeAndNamesItsOwner',
     'AccountBackgroundsTest.java:232': 'aSlotPutToNullFreesItsModeAndKeepsTheOther',
     'AccountBackgroundsTest.java:251': 'anotherAccountDoesNotGetTheRowsOfThisOne',
@@ -422,7 +430,9 @@ describe('ronda CH-A2 · las citas', () => {
     'AccountBackgrounds.java:151': [157, '}'],
     'NativeBridge.java:5357': [5369, '}'],
     'NativeSnapshot.java:539': [551, '}'],
-    'backgrounds.ts:54': [56, '}'],
+    'backgrounds.ts:79': [81, '}'],
+    'CloudBackgrounds.tsx:96': [98, 'la marca no se entera hasta el siguiente aviso'],
+    'TdApi.java:4982': [4990, 'public boolean isDefault;'],
   };
 
   const lineOf = (file: string, at: number): string => {

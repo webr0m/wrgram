@@ -14,17 +14,17 @@ import { DESKTOP_NAMED_IN_SCAFFOLD, desktopGenericRefusal } from './desktopGap';
  *
  * Lo otro que faltaba era el cierre. Android lo pide en segundos y se lo da a TDLib en `NativeBridge.java:4702`,
  * que es la forma relativa; MTProto pide una fecha absoluta dentro del propio `TL.Poll` y por eso
- * `TelegramService.cs:2547` la calcula contra el reloj de la petición y le pone su bandera en la línea de arriba,
- * en `TelegramService.cs:2546`, dentro del mismo bloque. La franja —de 5 segundos a 2.628.000, con el cero dicho
+ * `TelegramService.cs:2558` la calcula contra el reloj de la petición y le pone su bandera en la línea de arriba,
+ * en `TelegramService.cs:2557`, dentro del mismo bloque. La franja —de 5 segundos a 2.628.000, con el cero dicho
  * aparte porque en la pantalla significa «sin cierre»— es la que publica Telegram y la comprueba la regla de
  * `DesktopPoll.cs:331`; su frase está en la constante de `DesktopPoll.cs:192`. La guarda es la décima negación del
  * envío y va la última en las tres capas porque fue la última que se añadió: `NativeBridge.java:4701`,
- * `TelegramService.cs:2520` y `preview.ts:1102`.
+ * `TelegramService.cs:2531` y `preview.ts:1103`.
  *
  * Hacia arriba viaja una sola clave nueva, `closesAt`, en segundo de época: la escribe Android en
  * `NativeSnapshot.java:203`, la declara el contrato en `contract.ts:124`, la guarda Windows en
- * `DesktopState.cs:262` desde `TelegramService.cs:2961`, la pinta la tarjeta en `BatchPanels.tsx:39` y la calcula
- * el espejo en `preview.ts:1123`. El select con las ocho salidas está en `BatchPanels.tsx:108`, y la nota que la
+ * `DesktopState.cs:264` desde `TelegramService.cs:2972`, la pinta la tarjeta en `BatchPanels.tsx:39` y la calcula
+ * el espejo en `preview.ts:1124`. El select con las ocho salidas está en `BatchPanels.tsx:108`, y la nota que la
  * ronda dejó en `DesktopPoll.cs:112` sigue apuntando a `BatchPanels.tsx:35`, que es de donde sale el límite de la
  * página de votantes.
  *
@@ -405,23 +405,23 @@ describe('ronda CF · las citas de los archivos de la ronda', () => {
     'NativeBridge.java:4702': 'poll.openPeriod=period;',
     'NativeBridge.java:4707': 'values.length()<1||values.length()>12',
     'NativeSnapshot.java:203': 'value.put("closesAt",poll.closeDate)',
-    'TelegramService.cs:2520': 'DesktopPoll.ClosesInRange(duration)',
-    'TelegramService.cs:2546': 'poll.flags |= TL.Poll.Flags.has_close_date;',
-    'TelegramService.cs:2547': 'poll.close_date = DesktopPoll.CloseDate(Unix(DateTime.UtcNow), duration);',
-    'TelegramService.cs:2961': 'dto.ClosesAt = Unix(poll.close_date)',
+    'TelegramService.cs:2531': 'DesktopPoll.ClosesInRange(duration)',
+    'TelegramService.cs:2557': 'poll.flags |= TL.Poll.Flags.has_close_date;',
+    'TelegramService.cs:2558': 'poll.close_date = DesktopPoll.CloseDate(Unix(DateTime.UtcNow), duration);',
+    'TelegramService.cs:2972': 'dto.ClosesAt = Unix(poll.close_date)',
     'DesktopPoll.cs:91': 'public const int MaxOptions = 12;',
     'DesktopPoll.cs:99': 'public const int MaxVotes = 12;',
     'DesktopPoll.cs:112': 'BatchPanels.tsx:35',
     'DesktopPoll.cs:192': 'CloseRange = "La encuesta debe cerrarse entre 5 segundos',
     'DesktopPoll.cs:331': 'public static bool ClosesInRange(int seconds)',
     'DesktopPoll.cs:451': 'public static bool HasCloseDate(TL.Poll poll)',
-    'DesktopState.cs:262': 'public long? ClosesAt { get; set; }',
+    'DesktopState.cs:264': 'public long? ClosesAt { get; set; }',
     'contract.ts:124': 'closesAt?:number',
     'BatchPanels.tsx:35': 'limit:50',
     'BatchPanels.tsx:39': 'Cierra el ',
     'BatchPanels.tsx:108': 'Cierre automático de la encuesta',
-    'preview.ts:1102': 'duration >= POLL_MIN_CLOSE',
-    'preview.ts:1123': 'closesAt: Math.floor(Date.now() / 1000) + duration',
+    'preview.ts:1103': 'duration >= POLL_MIN_CLOSE',
+    'preview.ts:1124': 'closesAt: Math.floor(Date.now() / 1000) + duration',
     // Las seis que entraron en el ámbito con la ronda CN-B: los comentarios de `DesktopPoll` citan el todo o nada y
     // el montaje de Android, y la lectura de la foto queda en el `return null;` del reparto. Medidas hoy, una por una.
     'NativeBridge.java:4693': 'JSONArray media=p.optJSONArray("media")',
@@ -522,14 +522,16 @@ describe('ronda CF · las citas de los archivos de la ronda', () => {
     // vuelta de la entidad con la cifra del emoji y la dirección materializada, y el parseo por delante de la marca de
     // envío— y tres a `DesktopState.cs` con la `CustomEmojiId` del DTO y su comentario; doce más, los dos ayudantes de la ronda CW-D.
     // Veinticuatro más, repartidas entre la CH-A —el bloque de los fondos, al final del puente— y la CH-A2 —el aviso
-    // `UpdateDefaultBackground`—, y cuatro en la instantánea con el `appearance` que publica los dos huecos.
-    expect(java).toHaveLength(5425);
+    // `UpdateDefaultBackground`—, y cuatro en la instantánea con el `appearance` que publica los dos huecos. Once más:
+    // ocho por las dos ramas `backgrounds.list`/`background.set` del despacho con su comentario, y tres por leer los
+    // dos huecos del fondo al entrar, como hizo la CH-B en Windows.
+    expect(java).toHaveLength(5512);
     expect(snapshot).toHaveLength(554);
-    expect(service).toHaveLength(4301);
+    expect(service).toHaveLength(4313);
     expect(pollCs).toHaveLength(500);
-    expect(stateCs).toHaveLength(691);
+    expect(stateCs).toHaveLength(759);
     expect(contract).toHaveLength(250);
     expect(batch).toHaveLength(351);
-    expect(preview).toHaveLength(3252);
+    expect(preview).toHaveLength(3346);
   });
 });

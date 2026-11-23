@@ -330,38 +330,41 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
     // La tabla es el cortafuegos del arrastre: cada ronda que mete líneas en el menú de escritorio descoloca
     // las que citan `App.tsx` por número. Aquí se declara una vez lo que tiene que decir cada línea citada.
     const anchors: Record<number, string> = {
-      96: 'function ContactAvatar(',
-      // Las tres de la visera de historias (ronda BZ): el host dice qué botón de los cuatro que se gatingean aquí
+      98: 'function ContactAvatar(',
+      // Las cuatro de la visera de historias (ronda BZ): el host dice qué botón de los cuatro que se gatingean aquí
       // tiene motivo para existir, así que la línea que los reparte es cita viva.
-      248: 'function showStory(',
-      253: 'async function release(story:OpenStory)',
-      291: 'story.canEdit&&<MenuItem',
-      372: "raw.trim().replace(/^@/,'')",
-      399: 'function openSessions()',
-      740: 'const openRelated=',
+      251: 'function showStory(',
+      257: "await run('story.close',{id:story.chatId,storyId:story.id})",
+      268: "await run<OpenStory>('story.open',{id:chat.id,storyId})",
+      294: 'story.canEdit&&<MenuItem',
+      375: "raw.trim().replace(/^@/,'')",
+      402: 'function openSessions()',
+      744: 'const openRelated=',
+      // La línea por la que las dos pestañas de la ficha saltan a su perfil (la cita la ronda BW en el host).
+      747: "openPeer={(id,from)=>openRelated('profile.peer',id,from)}",
       // Las dos de la puerta de agenda (ronda BL): la pantalla arma la orden según el estado de la persona y, solo
       // para quitarla, confirma antes de mandar nada.
-      746: "run<boolean>(remove?'contacts.remove':'contacts.add'",
-      747: "confirm('Quitar de contactos'",
+      750: "run<boolean>(remove?'contacts.remove':'contacts.add'",
+      751: "confirm('Quitar de contactos'",
       // Las tres de la puerta de bloqueo (ronda BI): la pantalla confirma y solo entonces manda la orden.
-      748: 'changeBlock={(peer,blocked)=>{',
-      750: "confirm(label+' a '+peer.title",
-      751: "run<boolean>('profile.block'",
-      793: 'function chatInfo(chat:Chat)',
+      752: 'changeBlock={(peer,blocked)=>{',
+      754: "confirm(label+' a '+peer.title",
+      755: "run<boolean>('profile.block'",
+      797: 'function chatInfo(chat:Chat)',
       // La puerta de borrado automático de la rama de escritorio (ronda BN): la misma guarda de forma que la de
       // Android, y citada porque el andamio declara con ella que un chat secreto no se alcanza.
-      889: 'label="Borrado automático"',
-      900: 'label="Nombre y descripción"',
-      924: 'label="Añadir personas"',
+      893: 'label="Borrado automático"',
+      904: 'label="Nombre y descripción"',
+      928: 'label="Añadir personas"',
       // Las dos del botón ✨ (ronda CD): la primera pinta o no la puerta del emoji personalizado según la marca de la
       // cuenta, y la segunda es la pregunta que el host contesta ahora también en Windows.
-      1086: '{props.allowCustom&&<button className="reaction-all"',
-      1237: 'className="details-panel"',
-      1267: "request<{premium:boolean}>('premium.state')",
-      1308: 'const MEMBER_FILTERS',
-      1399: 'Sin miembros para este filtro',
-      1442: 'disabled={contact.bot}',
-      1444: 'const GROUP_PERMISSION_FIELDS',
+      1090: '{props.allowCustom&&<button className="reaction-all"',
+      1241: 'className="details-panel"',
+      1271: "request<{premium:boolean}>('premium.state')",
+      1312: 'const MEMBER_FILTERS',
+      1403: 'Sin miembros para este filtro',
+      1446: 'disabled={contact.bot}',
+      1448: 'const GROUP_PERMISSION_FIELDS',
     };
     for (const [at, needle] of Object.entries(anchors)) expect(appLine(Number(at)), `App.tsx:${at}`).toContain(needle);
     const cited = new Set<number>();

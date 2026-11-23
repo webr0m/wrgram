@@ -695,10 +695,10 @@ public sealed partial class TelegramService
 
     // ---- enlaces de una lista colaborativa (ronda CI) ----------------------------------
     // Lo que se puede negar sin red se niega antes de cualquier petición, en el orden de Android
-    // medido por posición: el enlace (`NativeBridge.java:3969`) y el nombre (`:3966`) van delante y
-    // la carpeta se carga donde Android lee (`:3967`), porque su `folderId` (`:3964`) solo saca un
+    // medido por posición: el enlace (`NativeBridge.java:3969`) y el nombre (`:3970`) van delante y
+    // la carpeta se carga donde Android lee (`:3968`), porque su `folderId` (`:3896`) solo saca un
     // número y aquí se comprueba además que esa carpeta es una lista colaborativa. Escribir es lo
-    // último, como `:3970`, `:3975` y `:3976`: MTProto nombra el enlace por `slug` y hay que leerlo.
+    // último, como `:3974`, `:3979` y `:3980`: MTProto nombra el enlace por `slug` y hay que leerlo.
 
     private async Task<TL.DialogFilterChatlist> RequireChatlistAsync(int id)
     {

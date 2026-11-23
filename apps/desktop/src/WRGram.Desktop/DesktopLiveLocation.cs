@@ -53,7 +53,7 @@ public static class DesktopLiveLocation
     public static bool CanStop(bool outgoing, int period) => outgoing && period > 0;
 
     /// Si la fila es del propio usuario: <c>Message.Flags.out_</c>, la misma bandera con la que
-    /// <c>ConvertMessage</c> arma <c>MessageDto.Outgoing</c> (<c>TelegramService.cs:3408</c>).
+    /// <c>ConvertMessage</c> arma <c>MessageDto.Outgoing</c> (<c>TelegramService.cs:3419</c>).
     public static bool IsOutgoing(TL.Message message) => (message.flags & TL.Message.Flags.out_) != 0;
 
     /// El tiempo que la ubicación sigue anunciando, con el orden de la librería en la cabeza:

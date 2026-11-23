@@ -40,8 +40,10 @@ import {
  * la cuenta avisa se guarda por modo y por dueño, de modo que `selected` (`AccountBackgrounds.java:94`) ya no es
  * el recuerdo de una pulsación sino lo último que Telegram dijo. `isDefault` (`TdApi.java:4988-4990`) sigue
  * significando «de los que trae Telegram» y no «el elegido», y eso sigue escrito en la pantalla
- * (`CloudBackgrounds.tsx:59`). Lo que no se cierra es lo que ocurrió con WRGram cerrado: el aviso no se replay,
- * así que la marca llega con el siguiente aviso o con el siguiente puesto.
+ * (`CloudBackgrounds.tsx:96-98`), partida desde CH-B en dos frases: la de Android dice el aviso, la de Windows dice
+ * la lista que se lee, porque el bit `default_` de MTProto es el puesto y no hay tienda que consultar. Lo que no se
+ * cierra es lo que ocurrió con WRGram cerrado: el aviso no se replay, así que la marca llega con el siguiente aviso
+ * o con el siguiente puesto.
  *
  * **Dónde vive cada regla.** Una sola vez, en `AccountBackgrounds.java`: los cuatro nombres del tipo
  * (`AccountBackgrounds.java:26-29`), las tres negaciones (`AccountBackgrounds.java:31-33`), el constructor
@@ -53,9 +55,9 @@ import {
  * con su puerta en `AccountBackgrounds.java:202`) y el giro con el que CSS pinta lo mismo (`AccountBackgrounds.java:207`).
  * La tienda de los dos huecos —el aviso guardado por modo y por dueño— vive en la misma clase y se mide en la ronda
  * CH-A2, junto con la rama que la alimenta.
- * En TypeScript solo hay reglas propias de presentación: el aviso por tipo (`cloud-backgrounds.ts:17-23`), el orden
- * del listado (`cloud-backgrounds.ts:39`), los ocho giros que ofrece la pantalla (`cloud-backgrounds.ts:45`) y lo que
- * se manda para crear (`cloud-backgrounds.ts:66-71`). Lo que Telegram admite o rechaza lo dice Java, y la pantalla
+ * En TypeScript solo hay reglas propias de presentación: el aviso por tipo (`cloud-backgrounds.ts:22-28`), el orden
+ * del listado (`cloud-backgrounds.ts:64`), los ocho giros que ofrece la pantalla (`cloud-backgrounds.ts:70`) y lo que
+ * se manda para crear (`cloud-backgrounds.ts:91-96`). Lo que Telegram admite o rechaza lo dice Java, y la pantalla
  * se limita a no enviar lo que ese ya niega.
  *
  * **El orden de los dos cuerpos, medido línea por línea.** `backgroundsList` (`NativeBridge.java:5381-5390`) pide
@@ -69,11 +71,15 @@ import {
  * delante (`NativeBridge.java:5417`), y se escribe en las preferencias (`NativeBridge.java:5418`) antes de avisar
  * a la instantánea (`NativeBridge.java:5419`) y antes de responder: ese orden es aguja de batería.
  *
- * **Windows y el andamio.** Las dos claves están declaradas pendientes (`desktopScope.ts:96`) y no hay ninguna
- * otra aparición de los dos nombres en el host C#: lo único que el escritorio sabe de «wallpaper» es el campo
- * local de la apariencia (`DesktopState.cs:508`, leído en `TelegramService.cs:3273`), que no es el fondo de la
- * cuenta. El andamio tampoco las despacha: aquí se prueba que `preview.ts` no tiene rama. La cara de Windows es
- * la ronda CH-B.
+ * **Windows y el andamio, desde la ronda CH-B.** Las dos claves ya no viven en «Pendiente» sino en «Disponible»
+ * (`desktopScope.ts:75`), y la puerta de BK (`desktopGap.ts:43`) deja de negarlas porque saca su lista del propio
+ * aviso: negarlas sería prometer dos veces un hueco ya cerrado. El host las despacha (`TelegramService.cs:500-501`)
+ * y el andamio modela las dos caras (`preview.ts:2470-2475`), con la creación por color negada por el nombre que
+ * pronuncia el brazo de Windows —`DesktopBackgrounds.NoCreate`— en vez de caer en el rechazo genérico de la beta.
+ * Lo que el escritorio sabe por su cuenta de «wallpaper» sigue siendo otro sitio: el campo local de la apariencia
+ * (`DesktopState.cs:510`, leído en `TelegramService.cs:3284`), que no es el fondo de la cuenta. Las reglas de esa
+ * capa —los tres nombres de tipo, el giro, la marca que no se puede saber y el orden de las negativas— las mide
+ * CH-B y no se duplican aquí.
  *
  * Como en CF, CL, CM, CN, CJ, CK y CW: la última prueba mide las citas.
  */
@@ -101,6 +107,7 @@ const scope = rows('./desktopScope.ts');
 const preview = rows('./preview.ts');
 const desktopState = rows(`${csDir}DesktopState.cs`);
 const host = rows(`${csDir}TelegramService.cs`);
+const flow = rows(`${csDir}DesktopBackgroundsFlow.cs`);
 const tdlib = rows(tdlibPath);
 
 /** La línea —1-based— de la primera fila que dice la aguja. Medida, nunca copiada de la hoja de ronda. */
@@ -149,7 +156,7 @@ const fila = (par: Partial<CloudBackground>): CloudBackground =>
 
 describe('ronda CH-A · el puente de Android', () => {
   it('las dos claves están declaradas y los dos brazos entran entre el registro y los hilos', () => {
-    expect(policy).toContain(`static { METHODS.addAll(Arrays.asList("${LEER}","${PONER}")); }`);
+    expect(policy).toContain(`static { METHODS.addAll(Arrays.asList("${LEER}","${PONER}","bot.commands","bot.menu.open")); }`);
     expect(policy).toContain('static { METHODS.add("calls.list"); }');
     const brazos = [atJava(`case "${LEER}":`), atJava(`case "${PONER}":`)];
     expect(bridge[brazos[0] - 1]).toContain('backgroundsList(p,a);break;');
@@ -368,12 +375,14 @@ describe('ronda CH-A · la clase pura y su prueba JVM', () => {
 });
 
 describe('ronda CH-A · la pantalla', () => {
-  it('el bloque solo se monta en Android, que es la capa que lo sabe hacer', () => {
+  it('el bloque se monta en las dos capas que ya tienen quién conteste las dos claves', () => {
     expect(appearance[en("import { CloudBackgroundSettings } from './CloudBackgrounds'", appearance, 'AppearanceSettings.tsx') - 1])
       .toContain("from './CloudBackgrounds'");
-    const montaje = en("<CloudBackgroundSettings", appearance, 'AppearanceSettings.tsx');
-    expect(appearance[montaje - 1]).toContain("{state.platform === 'android' && <CloudBackgroundSettings");
+    const montaje = en('<CloudBackgroundSettings', appearance, 'AppearanceSettings.tsx');
+    expect(appearance[montaje - 1]).toContain("{(state.platform === 'android' || state.platform === 'desktop') && <CloudBackgroundSettings");
     expect(appearance[montaje - 1]).toContain("dark={active.scheme === 'dark'}");
+    // La capa viaja como dato: la nota del elegido y el formulario de colores dependen de cuál conteste.
+    expect(appearance[montaje - 1]).toContain('platform={state.platform}');
     expect(count('<CloudBackgroundSettings', appearance)).toBe(1);
   });
 
@@ -387,16 +396,21 @@ describe('ronda CH-A · la pantalla', () => {
     expect(count('if (answer === undefined)', panel)).toBe(2);
     expect(panel.join('\n')).toContain('La cuenta no ha aceptado el fondo.');
     // Lo que se avisa se lee al final del repaso: si el aviso viajara aparte, `load()` lo borraría al terminar.
-    expect(count('setNotice(', panel)).toBe(1);
+    expect(count('setNotice(', panel)).toBe(2);
     expect(panel[atPanel('load(isPaintable(answer)') - 1]).toContain('load(isPaintable(answer)');
     expect(count('load(`Fondo', panel)).toBe(1);
   });
 
-  it('la marca de elegido se explica en la propia nota, no al final de la pantalla', () => {
-    const nota = atPanel('La marca de elegido la pone Telegram');
-    expect(panel[nota - 1]).toContain('si el fondo se cambió con WRGram cerrado, la marca no se entera hasta el siguiente aviso');
-    expect(panel[nota - 1]).toContain('A diferencia del fondo del chat');
-    expect(panel[nota - 1]).not.toContain('es el último que puso WRGram');
+  it('la marca de elegido se explica en la propia nota, con la frase de la capa que contesta', () => {
+    const nota = atPanel("'A diferencia del fondo del chat");
+    expect(panel[nota - 1]).toContain('+ chosen)');
+    expect(panel[nota - 1]).toContain("Se ponen para el modo ' + (dark ? 'oscuro' : 'claro')");
+    // Dos frases desde CH-B: aquí la marca sale del aviso escuchado, en Windows de la lista que se lee.
+    expect(atPanel("const chosen = platform === 'desktop'")).toBeLessThan(nota);
+    expect(panel[atPanel('cuando la cuenta avisa un cambio') - 1])
+      .toContain('si el fondo se cambió con WRGram cerrado, la marca no se entera hasta el siguiente aviso');
+    expect(panel[atPanel('en la lista que se lee') - 1]).toContain('cada lectura la trae fresca');
+    expect(panel.join('\n')).not.toContain('es el último que puso WRGram');
     // El aviso va delante del listado: quien baje a las filas ya lo ha leído.
     expect(panel.slice(nota - 1).join('\n')).toContain('sortCloudBackgrounds(rows)');
     expect(panel[atPanel('aria-pressed={row.selected}') - 1]).toContain('aria-pressed={row.selected}');
@@ -406,7 +420,14 @@ describe('ronda CH-A · la pantalla', () => {
   it('lo no pintable se dice en la fila en vez de ocultarse, con las palabras de la lista compartida', () => {
     expect(panel[atPanel('{!isPaintable(row) && <small className="cloud-background-note">') - 1])
       .toContain('{!isPaintable(row) && <small className="cloud-background-note">');
-    expect(panel[atPanel('{[row.dark ? t(\'Oscuro\')') - 1]).toContain("row.stock ? t('de serie') : t('de la cuenta')");
+    expect(panel[atPanel("const marks = [row.dark ? t('Oscuro')") - 1]).toContain("row.dark ? t('Oscuro') : t('Claro')");
+    // La palabra de serie solo se escribe donde la capa la sabe: en Windows `stock` llega nulo y la fila la omite.
+    expect(panel[atPanel('if (row.stock !== null)') - 1]).toContain("row.stock ? t('de serie') : t('de la cuenta')");
+    expect(panel[atPanel('marks.push(isPaintable(row)') - 1]).toContain("isPaintable(row) ? t('se pinta') : t('no se pinta')");
+    // Dos menciones de `row.stock` y las dos en la misma fila: fuera de esa guarda nadie puede escribir la palabra.
+    expect(count('row.stock', panel)).toBe(2);
+    expect(panel.filter(row => row.includes('row.stock')).length).toBe(1);
+    expect(atPanel("t('de serie')")).toBe(atPanel('if (row.stock !== null)'));
     expect(cloudBackgroundNotice(fila({ kind: 'wallpaper' }))).toBe(CLOUD_KIND_NOTES.wallpaper);
     expect(cloudBackgroundNotice(fila({ kind: 'chatTheme' }))).toBe(CLOUD_KIND_NOTES.chatTheme);
     expect(cloudBackgroundNotice(fila({ kind: 'pattern' }))).toBe('Solo se pinta su relleno; el estampado no se descarga en WRGram.');
@@ -454,26 +475,47 @@ describe('ronda CH-A · la pantalla', () => {
   });
 });
 
-describe('ronda CH-A · Windows y el andamio', () => {
-  it('las dos claves están declaradas pendientes y el andamio no tiene rama ninguna', () => {
-    const pendiente = en(`'${PONER}'`, scope, 'desktopScope.ts');
-    expect(scope[pendiente - 1]).toContain("label: 'fondos guardados en tu cuenta de Telegram'");
-    expect(scope[pendiente - 1]).toContain(`methods: ['${LEER}', '${PONER}']`);
-    expect(scope.slice(0, pendiente).join('\n')).toContain('DESKTOP_PENDING');
+describe('ronda CH-A · Windows y el andamio, con el hueco ya cerrado por CH-B', () => {
+  it('las dos claves pasaron de «Pendiente» a «Disponible» y la puerta de BK dejó de negarlas', () => {
+    const disponible = en(`methods: ['${LEER}', '${PONER}'] },`, scope, 'desktopScope.ts');
+    expect(scope[disponible - 1]).toContain("label: 'leer y poner los fondos que la cuenta ya tiene (crear uno por color, no)'");
+    // Está en la lista de disponibles: por eso el pendiente todavía no ha empezado cuando esta línea aparece.
+    expect(scope.slice(0, disponible).join('\n')).toContain('export const DESKTOP_AVAILABLE');
+    expect(scope.slice(0, disponible).join('\n')).not.toContain('export const DESKTOP_PENDING');
     expect(count(`'${LEER}'`, scope)).toBe(1);
-    expect(desktopGapRefusal(LEER)).toBe(`No disponible en escritorio (beta): ${LEER}`);
-    expect(desktopGapRefusal(PONER)).toBe(`No disponible en escritorio (beta): ${PONER}`);
-    expect(preview.join('\n')).not.toContain(`'${LEER}'`);
-    expect(preview.join('\n')).not.toContain(`'${PONER}'`);
+    // La puerta saca su lista del aviso, así que al cerrarse el hueco se cierra sola: ya no hay nada que negar.
+    expect(desktopGapRefusal(LEER)).toBeUndefined();
+    expect(desktopGapRefusal(PONER)).toBeUndefined();
   });
 
-  it('el host de escritorio no conoce las dos claves y lo suyo es el wallpaper local de la apariencia', () => {
-    const cs = [...desktopState, ...host].join('\n');
-    expect(cs).not.toContain(LEER);
-    expect(cs).not.toContain(PONER);
+  it('el host despacha las dos y la creación por color se niega por su nombre, no por el de la beta', () => {
+    const brazos = [
+      en(`"${LEER}" => await BackgroundsListAsync(args),`, host, 'TelegramService.cs'),
+      en(`"${PONER}" => await BackgroundSetAsync(args),`, host, 'TelegramService.cs'),
+    ];
+    expect(brazos[1] - brazos[0]).toBe(1);
+    expect(count(`"${LEER}" =>`, host)).toBe(1);
+    expect(count(`"${PONER}" =>`, host)).toBe(1);
+    // De las tres ramas del puente, el brazo de Windows recorre dos y la de colores es la única que se niega.
+    expect(count('throw new BridgeException(DesktopBackgrounds.NoCreate);', flow)).toBe(1);
+  });
+
+  it('el andamio modela las dos caras y deja la de colores en su negativa con nombre', () => {
+    // La lectura se despacha una vez; la escritura dos: por identificador se modela, por color se niega.
+    expect(count(`'${LEER}'`, preview)).toBe(1);
+    expect(count(`'${PONER}'`, preview)).toBe(2);
+    expect(preview.join('\n')).toContain("if (method === 'backgrounds.list') return designBackgrounds(params, state);");
+    expect(preview.join('\n')).toContain('if (method === \'background.set\' && !designCloudColors(params)) return designBackgroundSet(params, state);');
+    expect(preview.join('\n')).toContain("if (method === 'background.set' && state.platform === 'desktop') throw new Error(CLOUD_REFUSALS.noCreate);");
+  });
+
+  it('lo que el escritorio llama «wallpaper» sigue siendo el fondo local del tema, no el de la cuenta', () => {
     expect(desktopState[en('public string Wallpaper { get; set; } = "none";', desktopState, 'DesktopState.cs') - 1])
       .toContain('Wallpaper { get; set; } = "none"');
     expect(host[en('args.TryGetProperty("wallpaper"', host, 'TelegramService.cs') - 1]).toContain('appearance.Wallpaper');
+    // Y la pantalla los separa con su propia frase: el formulario de colores solo se ofrece donde la orden existe.
+    expect(panel[atPanel("{platform === 'android' && <>") - 1]).toContain("platform === 'android'");
+    expect(panel[atPanel('Windows solo pone fondos que la cuenta ya tiene') - 1]).toContain('Elige uno de la lista.');
   });
 
   it('las dos caras dicen lo mismo del color, cada una con su frase', () => {
@@ -569,7 +611,7 @@ describe('ronda CH-A · las citas', () => {
     'NativeBridge.java:5418': 'prefs.edit().putString("accountBackgrounds",next).apply();',
     'NativeBridge.java:5419': 'schedule();',
     'BridgePolicy.java:54': 'static { METHODS.add("calls.list"); }',
-    'BridgePolicy.java:55': 'static { METHODS.addAll(Arrays.asList("backgrounds.list","background.set")); }',
+    'BridgePolicy.java:55': 'static { METHODS.addAll(Arrays.asList("backgrounds.list","background.set","bot.commands","bot.menu.open")); }',
     'AccountBackgroundsTest.java:48': 'onlyTheFourKnownTypesGetAName',
     'AccountBackgroundsTest.java:56': 'aWallpaperAndAChatThemeHaveNothingToPaint',
     'AccountBackgroundsTest.java:71': 'theGradientAngleIsReadFromTheTopByTelegramAndFromTheBottomByCss',
@@ -585,34 +627,37 @@ describe('ronda CH-A · las citas', () => {
     'AccountBackgroundsTest.java:181': 'anUnpaintableRowStillShowsItsNameWithTheCssAbsent',
     'AccountBackgroundsTest.java:195': 'theListKeepsEveryRowAndSurvivesWithoutNada',
     'backgrounds.ts:1': 'export type CloudBackground = {',
-    'backgrounds.ts:17': 'export const CLOUD_KIND_NOTES: Record<CloudBackground[',
-    'backgrounds.ts:25': 'export function cloudBackgroundNotice(',
-    'backgrounds.ts:29': 'export function isPaintable(',
-    'backgrounds.ts:34': 'export function cloudBackgroundCss(',
-    'backgrounds.ts:39': 'export function sortCloudBackgrounds(',
-    'backgrounds.ts:45': 'export const BACKGROUND_ANGLES =',
-    'backgrounds.ts:60': 'return /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value);',
-    'backgrounds.ts:66': 'export function cloudBackgroundParams(',
-    'backgrounds.ts:68': 'if (!draft.gradient) return { top: draft.top, dark };',
-    'CloudBackgrounds.tsx:12': 'export function CloudBackgroundSettings({ dark, accent, canvas, run }',
-    'CloudBackgrounds.tsx:28': "run<{ rows?: CloudBackground[] }>('backgrounds.list', { dark })",
-    'CloudBackgrounds.tsx:38': "run<CloudBackground>('background.set', { id: row.id, dark })",
-    'CloudBackgrounds.tsx:47': 'const params = cloudBackgroundParams(draft, dark);',
-    'CloudBackgrounds.tsx:48': "setError('Los colores tienen que estar en el formato de Telegram.')",
-    'CloudBackgrounds.tsx:51': "run<CloudBackground>('background.set', { ...params })",
-    'CloudBackgrounds.tsx:59': 'La marca de elegido la pone Telegram',
-    'CloudBackgrounds.tsx:66': 'sortCloudBackgrounds(rows).map(row',
-    'CloudBackgrounds.tsx:74': '{!isPaintable(row) && <small className="cloud-background-note">',
-    'CloudBackgrounds.tsx:88': 'Sin degradado se crea un fondo de un solo color',
+    'backgrounds.ts:22': 'export const CLOUD_KIND_NOTES: Record<CloudBackground[',
+    'backgrounds.ts:30': 'export function cloudBackgroundNotice(',
+    'backgrounds.ts:54': 'export function isPaintable(',
+    'backgrounds.ts:59': 'export function cloudBackgroundCss(',
+    'backgrounds.ts:64': 'export function sortCloudBackgrounds(',
+    'backgrounds.ts:70': 'export const BACKGROUND_ANGLES =',
+    'backgrounds.ts:85': 'return /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value);',
+    'backgrounds.ts:91': 'export function cloudBackgroundParams(',
+    'backgrounds.ts:93': 'if (!draft.gradient) return { top: draft.top, dark };',
+    'CloudBackgrounds.tsx:13': 'export function CloudBackgroundSettings({ dark, accent, canvas, platform, run }',
+    'CloudBackgrounds.tsx:38': "run<{ rows?: CloudBackground[] }>('backgrounds.list', { dark })",
+    'CloudBackgrounds.tsx:62': "run<CloudBackground>('background.set', { id: row.id, dark })",
+    'CloudBackgrounds.tsx:76': 'const params = cloudBackgroundParams(draft, dark);',
+    'CloudBackgrounds.tsx:77': "setError('Los colores tienen que estar en el formato de Telegram.')",
+    'CloudBackgrounds.tsx:83': "run<CloudBackground>('background.set', { ...params })",
+    'CloudBackgrounds.tsx:96': "const chosen = platform === 'desktop'",
+    'CloudBackgrounds.tsx:109': 'sortCloudBackgrounds(rows).map(row',
+    'CloudBackgrounds.tsx:121': '{!isPaintable(row) && <small className="cloud-background-note">',
+    'CloudBackgrounds.tsx:136': 'Sin degradado se crea un fondo de un solo color',
     'AppearanceSettings.tsx:14': "import { CloudBackgroundSettings } from './CloudBackgrounds'",
-    'AppearanceSettings.tsx:117': "{state.platform === 'android' && <CloudBackgroundSettings",
-    'App.tsx:47': "import { cloudBackgroundCss, cloudBackgroundFor } from './cloud-backgrounds'",
-    'App.tsx:445': 'const cloud=cloudBackgroundCss(cloudBackgroundFor(',
+    'AppearanceSettings.tsx:117': "{(state.platform === 'android' || state.platform === 'desktop') && <CloudBackgroundSettings",
+    'App.tsx:49': "import { cloudBackgroundCss, cloudBackgroundFor } from './cloud-backgrounds'",
+    'App.tsx:448': 'const cloud=cloudBackgroundCss(cloudBackgroundFor(',
     'contract.ts:2': "import type { CloudBackgroundSlots } from './cloud-backgrounds'",
     'contract.ts:210': 'accountBackgrounds?: CloudBackgroundSlots',
-    'desktopScope.ts:96': "label: 'fondos guardados en tu cuenta de Telegram'",
-    'DesktopState.cs:508': 'public string Wallpaper { get; set; } = "none";',
-    'TelegramService.cs:3273': 'args.TryGetProperty("wallpaper"',
+    'desktopScope.ts:75': "methods: ['backgrounds.list', 'background.set'] },",
+    'desktopGap.ts:43': 'export function desktopGapRefusal(method: string)',
+    'preview.ts:2470': "if (method === 'backgrounds.list') return designBackgrounds(params, state);",
+    'TelegramService.cs:500': '"backgrounds.list" => await BackgroundsListAsync(args),',
+    'TelegramService.cs:3284': 'args.TryGetProperty("wallpaper"',
+    'DesktopState.cs:510': 'public string Wallpaper { get; set; } = "none";',
   };
 
   /** La última línea de cada rango citado, con lo que dice. */
@@ -629,8 +674,11 @@ describe('ronda CH-A · las citas', () => {
     'AccountBackgrounds.java:165': [174, '}'],
     'NativeBridge.java:5381': [5390, '}'],
     'NativeBridge.java:5401': [5423, '}'],
-    'backgrounds.ts:66': [71, '}'],
-    'backgrounds.ts:17': [23, '};'],
+    'backgrounds.ts:91': [96, '}'],
+    'backgrounds.ts:22': [28, '};'],
+    'CloudBackgrounds.tsx:96': [98, 'la marca no se entera hasta el siguiente aviso'],
+    'preview.ts:2470': [2475, 'throw new Error(CLOUD_REFUSALS.noCreate)'],
+    'TelegramService.cs:500': [501, '"background.set" => await BackgroundSetAsync(args),'],
   };
 
   const lineOf = (file: string, at: number): string => {
@@ -641,7 +689,8 @@ describe('ronda CH-A · las citas', () => {
             : file === 'AppearanceSettings.tsx' ? appearance
               : file === 'contract.ts' ? rows('./contract.ts')
                 : file === 'desktopScope.ts' ? scope
-                  : file === 'preview.ts' ? preview
+                  : file === 'desktopGap.ts' ? rows('./desktopGap.ts')
+                    : file === 'preview.ts' ? preview
                     : file === 'AccountBackgroundsTest.java' ? jvm
                       : file === 'NativeSnapshot.java' ? snapshot
                         : file === 'TdSession.java' ? session

@@ -34,7 +34,7 @@ describe('richDraft · normalizar y leer el modelo',()=>{
   });
 
   it('lo que el compositor puede escribir es lo que los dos puentes aceptan',()=>{
-    expect([...COMPOSER_TYPES]).toEqual(['bold','italic','underline','strikethrough','spoiler','code','pre','blockquote','link','customEmoji']);
+    expect([...COMPOSER_TYPES]).toEqual(['bold','italic','underline','strikethrough','spoiler','code','pre','blockquote','link','customEmoji','botCommand']);
     expect(MAX_LENGTH).toBe(4096);
     expect(MAX_ENTITIES).toBe(100);
   });

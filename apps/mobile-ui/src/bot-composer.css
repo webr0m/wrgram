@@ -1,0 +1,16 @@
+.bot-composer-tools{display:flex;align-items:center;gap:8px;padding:4px 0 9px;min-width:0}
+.rich-field .text-botCommand{color:var(--accent)}
+.bot-composer-tools button{display:inline-flex;align-items:center;gap:7px;min-height:34px;max-width:100%;padding:7px 12px;border:1px solid var(--line);border-radius:18px;background:var(--surface);color:var(--text);font:inherit;font-size:13px;cursor:pointer}
+.bot-composer-tools button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bot-composer-tools .bot-miniapp-button{background:var(--accent);border-color:transparent;color:var(--on-accent);font-weight:600}
+.bot-composer-tools button:disabled{opacity:.6;cursor:wait}
+.bot-command-list{max-height:min(320px,38dvh);overflow:auto;overscroll-behavior:contain;padding:5px;margin-bottom:8px;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:0 8px 24px #00000018}
+.bot-command-list button{display:flex;align-items:center;gap:11px;width:100%;padding:10px;border:0;border-radius:11px;background:transparent;color:var(--text);text-align:left;font:inherit;cursor:pointer}
+.bot-command-list button.selected,.bot-command-list button:hover{background:var(--hover)}
+.bot-command-icon{display:grid;place-items:center;flex:0 0 34px;height:34px;border-radius:11px;background:var(--canvas);color:var(--accent)}
+.bot-command-copy{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.bot-command-copy strong{font-size:14px;color:var(--accent);overflow-wrap:anywhere}
+.bot-command-copy small{font-size:12px;line-height:1.35;color:var(--muted);overflow-wrap:anywhere}
+.bot-command-copy .bot-command-author{font-size:11px}
+.bot-composer-error{display:flex;align-items:center;gap:8px;padding:5px 2px;color:var(--muted);font-size:12px}
+.bot-composer-error button{border:0;background:none;color:var(--accent);font:inherit;cursor:pointer}

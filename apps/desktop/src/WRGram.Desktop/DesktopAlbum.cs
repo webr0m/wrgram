@@ -7,11 +7,11 @@ using TL;
 /// petición y leer las piezas que lo forman para poder escribirles un texto. Viven fuera del puente por lo mismo que
 /// las de <see cref="DesktopAttachment"/>: casi todas son literales que el espejo del andamio copia carácter a
 /// carácter de <c>NativeBridge</c> —de <c>pickedAlbum</c> (<c>NativeBridge.java:5031-5048</c>), de
-/// <c>sendAlbum</c> (<c>:4786-4789</c>) y de <c>album</c> (<c>:4011-4017</c>)— y hace falta leerlas sin abrir un
+/// <c>sendAlbum</c> (<c>:4985-4988</c>) y de <c>album</c> (<c>:4032-4038</c>)— y hace falta leerlas sin abrir un
 /// selector ni conectar una cuenta.
 /// <para>
 /// Este host no tiene la frase «Ya hay un selector de álbum abierto.», que en Android sí existe
-/// (<c>NativeBridge.java:847</c>): allá el selector es asíncrono y puede quedar una solicitud colgando mientras
+/// (<c>NativeBridge.java:848</c>): allá el selector es asíncrono y puede quedar una solicitud colgando mientras
 /// llega otra. Aquí el diálogo de Windows es modal y sincrónico sobre el hilo de la interfaz, así que dos
 /// selectores abiertos a la vez no son un estado alcanzable. Se cuenta aquí para que no se lea como un olvido.
 /// </para>

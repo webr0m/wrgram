@@ -52,15 +52,15 @@ describe('ronda CA · las estadísticas de una comunidad las dice una sola vez e
     expect(cs('TelegramService')).toContain('"groups.stats" => await GroupStatsAsync(args)');
     // La entrada que la pide, sin guarda de plataforma: las dos capas contestan.
     const app = read('./App.tsx');
-    expect(line(app, 930)).toContain("chat.supergroup===true||chat.type==='channel'");
-    expect(line(app, 930)).toContain('label="Estadísticas"');
-    expect(line(app, 930)).toContain('setStatsChat(chat)');
-    expect(line(app, 1241)).toContain('<GroupStatsPanel chat={statsChat}');
+    expect(line(app, 934)).toContain("chat.supergroup===true||chat.type==='channel'");
+    expect(line(app, 934)).toContain('label="Estadísticas"');
+    expect(line(app, 934)).toContain('setStatsChat(chat)');
+    expect(line(app, 1245)).toContain('<GroupStatsPanel chat={statsChat}');
     // Y ningún archivo se movió de su aguja: la ronda añade línea, no la muda. Medido hoy con `wc -l`: el puente lleva
     // encima las veinticuatro líneas de los fondos (CH-A) y su aviso (CH-A2).
-    expect(bridge.split('\n').length - 1).toBe(5424);
+    expect(bridge.split('\n').length - 1).toBe(5511);
     expect(policy.split('\n').length - 1).toBe(60);
-    expect(app.split('\n').length - 1).toBe(1556);
+    expect(app.split('\n').length - 1).toBe(1560);
     expect(read('./contract.ts').split('\n').length - 1).toBe(249);
   });
 

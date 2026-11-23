@@ -104,6 +104,17 @@ public sealed class MediaRegistry
         }
     }
 
+    public void Reset()
+    {
+        lock (_sync)
+        {
+            foreach (var pending in _tasks.Values) pending.TrySetResult(null);
+            _tasks.Clear();
+            _entries.Clear();
+            _failed.Clear();
+        }
+    }
+
     private MediaDto? Register(Entry entry)
     {
         // Telegram IDs are 64-bit. Keep them for disk paths and give the WebView a safe alias.
@@ -226,7 +237,7 @@ public sealed class MediaRegistry
         return File.Exists(path);
     }
 
-    public List<long> ReadyIds() { lock (_sync) return _entries.Where(pair => File.Exists(PathFor(pair.Value.Id))).Select(pair => pair.Key).Take(1500).ToList(); }
+    public List<long> ReadyIds() { lock (_sync) return _entries.Where(pair => File.Exists(PathFor(pair.Value.Id))).Select(pair => pair.Key).ToList(); }
     public List<long> LoadingIds() { lock (_sync) return _tasks.Keys.ToList(); }
     public List<long> FailedIds() { lock (_sync) return _failed.ToList(); }
 

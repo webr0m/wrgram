@@ -291,9 +291,9 @@ public static class DesktopGroupRoster
     /// Qué se responde cuando la pantalla pide restringir, promover, despromover o levantar un baneo sobre una fila
     /// que no es un supergrupo ni un canal. Es el orden de <c>banGroupMember</c>
     /// (<c>NativeBridge.java:2899</c>), que entra en <c>banBasicMember</c> cuando el chat es un básico y ese método
-    /// contesta primero <c>restrictProblem</c> (<c>:2878</c>): dentro de un básico la negación es de protocolo
-    /// —Telegram no admite restricciones parciales, ni permisos a la carta, ni baneo que levantar—, y para el resto
-    /// de las formas que no son comunidad Android tiene una sola frase, la de <c>:2879</c>. Desde la ronda AZ las
+    /// contesta primero <c>restrictProblem</c> (<c>:2881</c>): dentro de un básico la negación es de protocolo
+    /// —Telegram no admite restricciones parciales, ni permisos a la carta, ni baneo que levantar—, y para las formas
+    /// que <c>applicable</c> niega en <c>:2899</c> Android tiene una sola frase. Desde la ronda AZ las cuatro
     /// cuatro escrituras sí están conectadas en un supergrupo y en un canal, así que aquí no se decide ningún hueco
     /// de esta aplicación: solo la forma de la fila.
     /// </summary>

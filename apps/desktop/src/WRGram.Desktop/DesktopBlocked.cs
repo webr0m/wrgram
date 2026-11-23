@@ -9,22 +9,23 @@ namespace WRGram.Desktop;
 /// de red: el cable (<see cref="DesktopBlockedFlow"/>)) les lleva lo que Telegram contestó y se lleva lo que hay
 /// que mandar.
 /// <para>
-/// <b>Qué hay al otro lado.</b> Android atiende <c>privacy.blocked</c> en <c>:540</c> → <c>blockedSenders</c>
-/// (<c>:1507-1530</c>) y <c>privacy.unblock</c> en <c>:541</c> → <c>unblockSender</c> (<c>:1531-1542</c>), y las
+/// <b>Qué hay al otro lado.</b> Android atiende <c>privacy.blocked</c> en <c>:553</c> → <c>blockedSenders</c>
+/// (<c>:1527-1550</c>) y <c>privacy.unblock</c> en <c>:554</c> → <c>unblockSender</c> (<c>:1551-1562</c>), y las
 /// dos órdenes están en la lista del puente desde hace rondas (<c>BridgePolicy.java:42</c>). La de desbloquear
 /// además está en la de las que esperan a la persona (<c>bridge.ts:41</c>), y con razón: abre un cuadro nativo de
-/// confirmar (<c>:1535-1541</c>) antes de escribir. La de leer no espera a nadie.
+/// confirmar (<c>NativeBridge.java:1555-1561</c>) antes de escribir. La de leer no espera a nadie.
 /// </para>
 /// <para>
 /// <b>Las dos bibliotecas bloquean cosas distintas, y esa diferencia es media ronda.</b> TDLib bloquea un
 /// <c>MessageSender</c>: o una persona (<c>MessageSenderUser</c>) o un chat (<c>MessageSenderChat</c>), y desbloquear
-/// es <c>SetMessageSenderBlockList(sender,null)</c> (<c>:1540</c>) —la lista se quita, no se manda nada a Telegram
+/// es <c>SetMessageSenderBlockList(sender,null)</c> (<c>:1560</c>) —la lista se quita, no se manda nada a Telegram
 /// por otro camino—. MTProto bloquea <b>pares</b> (<c>PeerUser</c>, <c>PeerChat</c>, <c>PeerChannel</c>) y desbloquear
 /// es <c>contacts.unblockPeer</c> con un <c>InputPeer</c>, medido por reflexión sobre WTelegramClient 4.4.10. De ahí
 /// salen tres consecuencias que están todas en este archivo:
 /// (a) los tres subtipos de <c>Peer</c> caben en los dos <c>kind</c> que la pantalla conoce —<c>user</c> y
 /// <c>chat</c>—, así que <see cref="Kind"/> funde canal y grupo básico en <c>chat</c>, exactamente como
-/// <c>BlockedSendersPolicy.kind</c> (<c>:26-30</c>) funda en una sola palabra lo que TDLib también tiene en dos;
+/// <c>BlockedSendersPolicy.kind</c> (<c>BlockedSendersPolicy.java:26-30</c>) funda en una sola palabra lo que TDLib
+/// también tiene en dos;
 /// (b) el número suelto no basta, porque un <c>chat_id</c> de grupo básico y un <c>channel_id</c> viven en
 /// namespaces distintos y pueden coincidir: <c>PeerChat(5)</c> y <c>PeerChannel(5)</c> son dos personas diferentes y
 /// la pantalla no tiene ninguna campo para decir cuál de los dos es. Por eso el cable relee la lista y busca el
@@ -51,8 +52,8 @@ namespace WRGram.Desktop;
 /// medidas (<c>Contacts_GetBlocked</c>, <c>Contacts_Block</c> y <c>Contacts_Unblock</c>, las tres con esa bandera en
 /// su firma). Ninguna pantalla de WRGram ofrece la lista de historias, así que el cable manda <c>false</c> siempre
 /// y la otra lista no se lee ni se escribe. El <b>bloqueo</b>, en cambio, sí vive aquí aunque la orden sea de otra
-/// puerta: Android lo atiende desde la ficha de la persona (<c>profile.block</c>, <c>:527</c> → <c>:1280</c>) y la
-/// pantalla lo pide con su propio cuadro de confirmar dentro de la interfaz (<c>App.tsx:748-751</c>), por eso
+/// puerta: Android lo atiende desde la ficha de la persona (<c>profile.block</c>, <c>:540</c> → <c>:1300</c>) y la
+/// pantalla lo pide con su propio cuadro de confirmar dentro de la interfaz (<c>App.tsx:752-755</c>), por eso
 /// <c>profile.block</c> no está en las órdenes que esperan a un diálogo nativo (<c>bridge.ts</c>) y por eso el cable
 /// de Windows no abre ventana ninguna: confirma la pantalla, escribe el host.
 /// </para>
@@ -148,7 +149,7 @@ public static class DesktopBlocked
     public const string SelfBlock = "Esta es tu propia cuenta.";
 
     /// <summary>
-    /// El <c>params.getBoolean("value")</c> de <c>:1285</c>. Allá la ausencia lanza un <c>JSONException</c> que sube
+    /// El <c>params.getBoolean("value")</c> de <c>:1305</c>. Allá la ausencia lanza un <c>JSONException</c> que sube
     /// al <c>catch</c> general de <c>NativeBridge.java:167</c> y la pantalla lee la frase genérica de siempre; aquí el
     /// motivo se dice en concreto desde la ronda AT, y es el mismo criterio con el que la ronda BF negó la
     /// aprobación que no venía (<c>DesktopJoinRequests.MissingApprove</c>).
@@ -259,7 +260,8 @@ public static class DesktopBlocked
 
     private const string Identifier = @"^-?(0|[1-9][0-9]{0,18})$";
 
-    /// El <c>BridgePolicy.id(params,"id")</c> de <c>:19</c> contra la litera de <c>BridgePolicy.java:57</c>:
+    /// El <c>BridgePolicy.id(params,"id")</c> de <c>BlockedSendersPolicy.java:19</c> contra la litera de
+    /// <c>BridgePolicy.java:57</c>:
     /// tiene que llegar como cadena y con forma de entero largo, y un número sin comas se niega igual que allí.
     private static long RequestedId(JsonElement args)
     {

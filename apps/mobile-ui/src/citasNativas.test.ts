@@ -21,7 +21,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
  * La tabla se reimprime con `.tools/c315-tabla.mjs` y se injerta con `.tools/c315-injerta.mjs --aplicar` después de
  * cualquier tanda que mueva líneas del puente; el injertador es el que ajusta las tres agujas de cuenta de abajo.
  *
- * El enlace con número en la etiqueta es la otra clase que ningún cribado de palabras ve: `[App.tsx:1228](#L572)`
+ * El enlace con número en la etiqueta es la otra clase que ningún cribado de palabras ve: `[App.tsx:1232](#L572)`
  * dice dos cosas distintas y las dos salen bien en cualquier búsqueda. La última comprobación obliga a que la
  * etiqueta y la ancla coincidan, a que la ruta exista y a que el número quepa en el archivo apuntado.
  */
@@ -48,6 +48,7 @@ const cables: Record<number, string[]> = {
   534: ['account.profile'],
   535: ['chat.profile'],
   538: ['profile.related'],
+  539: ['profile.peer'],
   541: ['profile.sender'],
   542: ['profile.contact'],
   543: ['clipboard.copy'],
@@ -70,6 +71,7 @@ const cables: Record<number, string[]> = {
   576: ['contacts.add', 'contacts.remove'],
   577: ['contacts.open'],
   580: ['groups.members'],
+  581: ['groups.members.page'],
   584: ['groups.member.ban'],
   585: ['groups.member.restrict'],
   587: ['groups.member.promote'],
@@ -110,6 +112,7 @@ const cables: Record<number, string[]> = {
   783: ['message.link'],
   784: ['link.open'],
   785: ['message.react'],
+  787: ['message.react.custom'],
   797: ['emojiStatus.state'],
   799: ['emojiStatus.set'],
   808: ['bot.status'],
@@ -168,8 +171,8 @@ describe('citas nativas · el despacho de Android, medido por línea', () => {
     expect(huerfanas, 'citas nuevas sobre el despacho: re-ancla o reimprime la tabla').toEqual([]);
   });
 
-  it('la tabla tiene sus ochenta y tres filas medidas', () => {
-    expect(Object.keys(cables).length).toBe(83);
+  it('la tabla tiene sus ochenta y seis filas medidas', () => {
+    expect(Object.keys(cables).length).toBe(86);
     expect(cited.size).toBeGreaterThanOrEqual(414);
   });
 
@@ -178,8 +181,8 @@ describe('citas nativas · el despacho de Android, medido por línea', () => {
     expect(fuera, `${java.length} líneas tiene hoy el puente`).toEqual([]);
   });
 
-  it('la tabla tiene sus ochenta y tres filas medidas', () => {
-    expect(Object.keys(cables).length).toBe(83);
+  it('la tabla tiene sus ochenta y seis filas medidas', () => {
+    expect(Object.keys(cables).length).toBe(86);
     expect(cited.size).toBeGreaterThanOrEqual(414);
   });
 

@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 
 /**
  * La ronda CW-B lleva a Windows los mensajes de servicio de llamada que la ronda CW midió y dejó sin escribir.
- * El despacho de `TelegramService.cs:3645` caía con los cuatro tipos de llamada bajo el paraguas
- * (`TelegramService.cs:3660`) —hoy tiene sus cinco brazos en `TelegramService.cs:3655-3659`—, así que una llamada
+ * El despacho de `TelegramService.cs:3656` caía con los cuatro tipos de llamada bajo el paraguas
+ * (`TelegramService.cs:3671`) —hoy tiene sus cinco brazos en `TelegramService.cs:3666-3670`—, así que una llamada
  * quedaba como «Mensaje de servicio de Telegram» en el historial de escritorio mientras la misma conversación la
  * nombraba en Android. La corrección no copia la frase de Android: `ServiceMessages.java:125` y
  * `ServiceMessages.java:126` sacan el sustantivo de `isVideo`, y en MTProto ese bit solo lo traen
@@ -18,7 +18,7 @@ import { readFileSync } from 'node:fs';
  * campo y la otra no. No es un empate que se pueda cerrar desde el puente.
  *
  * **Lo que sigue sin poder decirse.** MTProto no tiene un motivo «rechazada» en la llamada de uno a uno, y eso
- * también lo mide la sonda (`Program.cs:138`) en vez de afirmarse de memoria: busy y hangup caen en «finalizada»,
+ * también lo mide la sonda (`.tools/cwb-probe/Program.cs:179`) en vez de afirmarse de memoria: busy y hangup caen en «finalizada»,
  * igual que caen en Android. La otra ausencia es la que ya midió la ronda CW y sigue en pie: entrar en un chat de
  * voz exige el `payload` que solo fabrica tgcalls, y ningún brazo de texto lo arregla.
  */
@@ -223,8 +223,10 @@ describe('ronda CW-B · la sonda ejecuta la clase real', () => {
 
   it('la sonda cuenta sus casos y sale roja si alguno discrepa', () => {
     // Eran 20 con la invitación en cifra; la ronda CW-D cambió los tres casos de cifra por diecisiete nombrados y le
-    // añadió el caso que ejecuta el orden de las cuatro formas (propio delante de yo-entre-invitados).
-    expect(count('Caso("', sonda)).toBe(34);
+    // añadió el caso que ejecuta el orden de las cuatro formas (propio delante de yo-entre-invitados). Veinticinco más
+    // los midió la CH-B sobre `DesktopBackgrounds`: el tipo que sale de cada hoja, el giro pasado a CSS, el color y
+    // su alfa, la fila con la que se pide un fondo y lo que no es número.
+    expect(count('Caso("', sonda)).toBe(59);
     expect(cuerpo(sonda)).toContain('return fallos == 0 ? 0 : 1;');
   });
 });
@@ -232,9 +234,9 @@ describe('ronda CW-B · la sonda ejecuta la clase real', () => {
 describe('ronda CW-B · las citas se miden', () => {
   /** Cada número citado en este archivo, con la frase que afirma. */
   const anchors: Record<string, string> = {
-    'TelegramService.cs:3645': 'private string ServiceText(MessageService service, string actor = "") => service.action switch',
-    'TelegramService.cs:3655': 'MessageActionPhoneCall call => DesktopServiceCalls.PhoneCall(call),',
-    'TelegramService.cs:3660': '_ => "Mensaje de servicio de Telegram"',
+    'TelegramService.cs:3656': 'private string ServiceText(MessageService service, string actor = "") => service.action switch',
+    'TelegramService.cs:3666': 'MessageActionPhoneCall call => DesktopServiceCalls.PhoneCall(call),',
+    'TelegramService.cs:3671': '_ => "Mensaje de servicio de Telegram"',
     'DesktopServiceCalls.cs:19': 'video ? "Videollamada" : "Llamada";',
     'DesktopServiceCalls.cs:22': 'video ? "Videollamada" : "Llamada de voz";',
     'DesktopServiceCalls.cs:25': 'public const string GroupNoun = "Llamada de grupo";',
@@ -244,14 +246,14 @@ describe('ronda CW-B · las citas se miden', () => {
     'ServiceMessages.java:125': 'String type=a.isVideo?"Videollamada":"Llamada";',
     'ServiceMessages.java:126': 'String type=a.isVideo?"Videollamada":"Llamada de voz";',
     'ServiceMessages.java:186': 'static String duration(int seconds){',
-    'Program.cs:138': 'Caso("el esquema no conoce el motivo «rechazada»",',
-    'Program.cs:142': 'Caso("qué tipos traen bit de vídeo, medido sobre los Flags anidados",',
-    'Program.cs:150': 'Caso("qué banderas trae la acción de grupo, medidas una por una",',
+    'Program.cs:179': 'Caso("el esquema no conoce el motivo «rechazada»",',
+    'Program.cs:183': 'Caso("qué tipos traen bit de vídeo, medido sobre los Flags anidados",',
+    'Program.cs:191': 'Caso("qué banderas trae la acción de grupo, medidas una por una",',
   };
 
   /** El final de cada rango escrito, con lo que esa línea tiene que decir. */
   const ends: Record<string, [number, string]> = {
-    'TelegramService.cs:3655': [3659, 'MessageActionInviteToGroupCall call => DesktopServiceCalls.Invitation(call, actor, UserName,'],
+    'TelegramService.cs:3666': [3670, 'MessageActionInviteToGroupCall call => DesktopServiceCalls.Invitation(call, actor, UserName,'],
   };
 
   const lineOf = (file: string, at: number): string => {

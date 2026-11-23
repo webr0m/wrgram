@@ -22,10 +22,10 @@ import { readFileSync } from 'node:fs';
  * **El defecto gana al interruptor de la pantalla, en las dos capas.** En Android no lo decide este cliente:
  * `sendOptions` devuelve `null` cuando la pantalla pidió avisar (`NativeBridge.java:174`) y TDLib aplica entonces su
  * defecto. En Windows el brazo (`TelegramService.cs:219`) llama al guardador (`DesktopParity.cs:285-296`), la marca
- * sale hacia la interfaz por el DTO de la fila (`DesktopState.cs:126`) y los seis envíos que llevan flag preguntan
+ * sale hacia la interfaz por el DTO de la fila (`DesktopState.cs:128`) y los seis envíos que llevan flag preguntan
  * por el defecto antes de mandar. La regla está dicha una sola vez, en `DesktopDefaultSilent.SilentFor`, y el
- * interruptor se siembra con la marca de la fila (`App.tsx:169`) mientras la orden y sus dos avisos viven en
- * `setDefaultSilent` (`App.tsx:1147`).
+ * interruptor se siembra con la marca de la fila (`App.tsx:172`) mientras la orden y sus dos avisos viven en
+ * `setDefaultSilent` (`App.tsx:1151`).
  *
  * **Dos huecos declarados por su nombre, no un pudridero.** `business.quick.send` no puede heredar el defecto en
  * Windows: el ayuda de la librería se llama `Messages_SendQuickReplyMessages(for_peer, shortcut_id, ids, random_id)`
@@ -283,9 +283,9 @@ describe('ronda CJ · las citas', () => {
     'TdSession.java:434': 'chats.get(value.chatId).defaultDisableNotification = value.defaultDisableNotification; emit("chats");',
     'TelegramService.cs:219': '"chat.defaultSilent" => SetDefaultSilent(args),',
     'DesktopParity.cs:285': 'private object SetDefaultSilent(JsonElement args)',
-    'DesktopState.cs:126': 'public bool? DefaultSilent { get; set; }',
-    'App.tsx:169': 'useEffect(()=>{setSilent(active?.defaultSilent===true);',
-    'App.tsx:1147': 'function setDefaultSilent(chat:Chat,value:boolean)',
+    'DesktopState.cs:128': 'public bool? DefaultSilent { get; set; }',
+    'App.tsx:172': 'useEffect(()=>{setSilent(active?.defaultSilent===true);',
+    'App.tsx:1151': 'function setDefaultSilent(chat:Chat,value:boolean)',
   };
 
   /** La última línea de cada rango citado, con lo que dice. */

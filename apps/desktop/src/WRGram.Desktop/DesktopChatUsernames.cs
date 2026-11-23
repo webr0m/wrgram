@@ -7,7 +7,7 @@ using TL;
 
 /// <summary>
 /// El nombre público de una comunidad en Windows. En Android son dos métodos seguidos —<c>chatUsername</c>
-/// (<c>NativeBridge.java:1892</c>) lee y <c>setChatUsername</c> (<c>:1872</c>) escribe— y todo lo que deciden cabe
+/// (<c>NativeBridge.java:1890</c>) lee y <c>setChatUsername</c> (<c>:1892</c>) escribe— y todo lo que deciden cabe
 /// en cinco líneas: la forma del chat, el tope del puente, el patrón del nombre, el derecho propio y la petición.
 /// Aquí está escrito una vez, con las frases copiadas carácter a carácter y el mismo orden, y el cable solo pide.
 /// <para>
@@ -17,7 +17,7 @@ using TL;
 /// <c>deletable</c>=4, <c>expired</c>=8— y es lo que TDLib traduce como <c>Usernames.activeUsernames</c> y
 /// <c>Usernames.editableUsername</c> (<c>TdApi.java:106245-106257</c>). El legado es el campo suelto <c>username</c>,
 /// que solo vale con <c>flags.has_username</c> y que es justamente lo que ya usa este host al construir la fila de la
-/// bandeja (<c>TelegramService.cs:3829</c>, <c>Username = channel.MainUsername</c>). Cuando viene el vector manda el
+/// bandeja (<c>TelegramService.cs:3840</c>, <c>Username = channel.MainUsername</c>). Cuando viene el vector manda el
 /// vector; cuando no viene, no hay otro dato que el campo suelto, y <see cref="Active"/> y <see cref="Editable"/> lo
 /// dicen en lugar de responder un vacío que la pantalla leería como «sin nombre público».
 /// </para>
@@ -25,10 +25,11 @@ using TL;
 /// Escribir es una sola petición —<c>Channels_UpdateUsername(Client, InputChannelBase, string) -&gt;
 /// Task&lt;Boolean&gt;</c>— y su respuesta no dice nombre: en esta capa no existe ningún <c>channels.ChannelLink</c>,
 /// así que el host no puede aprender de la respuesta cómo quedó el chat y refresca su propio espejo
-/// (<see cref="Apply"/>) después del <c>true</c>. Eso es lo que Android hace con <c>schedule()</c> (<c>:1786</c>) por
-/// otra vía: TDLib recibe el update de Telegram y la interfaz vuelve a pedir lo suyo. La cadena vacía quita el
-/// nombre, que es lo que promete <c>SetSupergroupUsername</c> (<c>TdApi.java:155940</c>, «use an empty string to
-/// remove the username») y lo que la pantalla ya avisa antes de confirmar.
+/// (<see cref="Apply"/>) después del <c>true</c>. Eso es lo que Android hace con <c>schedule()</c> en
+/// <c>NativeBridge.java:1892</c> por otra vía: TDLib recibe el update de Telegram y la interfaz vuelve a pedir lo
+/// suyo. La cadena vacía quita el nombre, que es lo que promete <c>SetSupergroupUsername</c>
+/// (<c>TdApi.java:155934-155940</c>, «use an empty string to remove the username») y lo que la pantalla ya avisa
+/// antes de confirmar.
 /// </para>
 /// <para>
 /// Dos palabras que en las dos librerías no son la misma y aquí se dicen, no se disimulan. TDLib llama <i>editable</i>
@@ -41,22 +42,22 @@ using TL;
 /// </para>
 /// <para>
 /// Y una diferencia de capas que ya decidió la ronda AT en lugar de improvisarla aquí. En Android,
-/// <c>setChatUsername</c> comunica el formato malo y el chat que no es comunidad con <c>throw</c>, y el despacho
-/// genérico (<c>:152</c>) convierte cualquier <c>throw</c> en «Solicitud no válida o función no disponible.», así que
-/// esas dos frases están escritas en Java pero no llegan a la pantalla. Windows y el andamio dicen la causa con la
-/// cadena concreta, igual que dijeron <c>account.username</c> cuando Android respondía <c>Invalid text</c>. Lo que no
-/// cambia es la norma ni la frase: solo el camino por el que llega.
+/// <c>setChatUsername</c> comunica el formato malo y el chat que no es comunidad con <c>throw</c>, y el
+/// <c>catch</c> genérico del despacho (<c>NativeBridge.java:167</c>) convierte cualquier <c>Exception</c> en «Solicitud
+/// no válida o función no disponible.», así que esas dos frases están escritas en Java pero no llegan a la pantalla.
+/// Windows y el andamio dicen la causa con la cadena concreta, igual que dijeron <c>account.username</c> cuando
+/// Android respondía <c>Invalid text</c>. Lo que no cambia es la norma ni la frase: solo el camino por el que llega.
 /// </para>
 /// </summary>
 public static class DesktopChatUsernames
 {
-    /// <c>chatUsername</c> (<c>NativeBridge.java:1890</c>) y <c>setChatUsername</c> (<c>:1872</c>) dicen la misma
+    /// <c>chatUsername</c> (<c>NativeBridge.java:1890</c>) y <c>setChatUsername</c> (<c>:1892</c>) dicen la misma
     /// cadena, y por el mismo motivo: en MTProto el nombre público vive en <c>TL.Channel</c>, así que un grupo básico
     /// no tiene de dónde leerlo ni petición con la que escribirlo. La negación la pone la forma de la clave de la
     /// fila, igual que en Android la pone <c>chat.type instanceof ChatTypeSupergroup</c>.
     public const string Unsupported = "Los nombres públicos solo están disponibles en supergrupos y canales.";
 
-    /// El <c>answer.fail</c> de <c>setChatUsername</c> (<c>NativeBridge.java:1891</c>) cuando
+    /// El <c>answer.fail</c> de <c>setChatUsername</c> (<c>NativeBridge.java:1892</c>) cuando
     /// <c>grantedAdminRight(actor,"canChangeInfo")</c> sale en falso.
     public const string NoRight = "Telegram no concede a esta cuenta permiso para cambiar el nombre público.";
 
@@ -67,10 +68,10 @@ public static class DesktopChatUsernames
     /// ninguna, y la que aplica es la genérica del <c>perform</c>, que es la que la persona vería.
     public const string ChangedAccount = "La cuenta cambió. Vuelve a abrir la conversación.";
 
-    /// <c>chat.type instanceof ChatTypeSupergroup</c> de los dos métodos (<c>:1784</c> y <c>:1786</c>). En Windows el
-    /// canal y el supergrupo comparten la forma <c>Kind.Channel</c> —TDLib guarda el canal dentro de
-    /// <c>ChatTypeSupergroup</c> con <c>isChannel</c>— y el básico y el uno a uno se niegan, que es justo al revés que
-    /// en <c>chat.info</c>, donde un básico sí tiene nombre que editar.
+    /// <c>chat.type instanceof ChatTypeSupergroup</c> de los dos métodos (<c>NativeBridge.java:1890</c> y
+    /// <c>:1892</c>). En Windows el canal y el supergrupo comparten la forma <c>Kind.Channel</c> —TDLib guarda el
+    /// canal dentro de <c>ChatTypeSupergroup</c> con <c>isChannel</c>— y el básico y el uno a uno se niegan, que es
+    /// justo al revés que en <c>chat.info</c>, donde un básico sí tiene nombre que editar.
     public static bool Supported(DesktopMembership.Kind kind) => kind == DesktopMembership.Kind.Channel;
 
     /// <c>grantedAdminRight(actor,"canChangeInfo")</c> (<c>NativeBridge.java:1892</c>), leído con la tabla que ya
@@ -78,17 +79,19 @@ public static class DesktopChatUsernames
     /// añade ningún derecho propio: el que faltaba aquí es el que Telegram no da, y eso se dice, no se escribe.
     public static bool CanChange(DesktopGroupMembers.Actor actor) => actor.Granted("change_info");
 
-    /// <c>session.supergroup(id)</c> de <c>:1784</c>: si el objeto cacheado ya trae nombres, Android responde sin
-    /// preguntar; si no los trae, hace un <c>GetSupergroup</c>. Aquí es la misma decisión y la misma causa: un peer
-    /// recortado (<c>flags.min</c>) no sabe nada de nombres, y un peer sin ninguna de las dos banderas tampoco.
+    /// <c>session.supergroup(id)</c> de <c>NativeBridge.java:1890</c>: si el objeto cacheado ya trae nombres, Android
+    /// responde sin preguntar; si no los trae, hace un <c>GetSupergroup</c>. Aquí es la misma decisión y la misma
+    /// causa: un peer recortado (<c>flags.min</c>) no sabe nada de nombres, y un peer sin ninguna de las dos banderas
+    /// tampoco.
     public static bool Known(ChatBase? peer) => peer is Channel channel
         && (channel.flags & Channel.Flags.min) == 0
         && ((Has(channel.flags2, Channel.Flags2.has_usernames) && channel.usernames != null)
             || Has(channel.flags, Channel.Flags.has_username));
 
     /// La lista <c>active</c> del DTO: los nombres marcados como activos, en el orden en que Telegram los devolvió
-    /// (<c>sendChatUsername</c>, <c>:1785</c>, recorre <c>names.activeUsernames</c> sin reordenar). Con vector, esa es
-    /// la respuesta y el campo suelto no se consulta; sin vector, el nombre principal es el único que hay.
+    /// (<c>sendChatUsername</c>, <c>NativeBridge.java:1891</c>, recorre <c>names.activeUsernames</c> sin reordenar). Con
+    /// vector, esa es la respuesta y el campo suelto no se consulta; sin vector, el nombre principal es el único que
+    /// hay.
     public static string[] Active(ChatBase? peer)
     {
         if (peer is not Channel channel) return Array.Empty<string>();
@@ -96,10 +99,10 @@ public static class DesktopChatUsernames
         return Legacy(peer);
     }
 
-    /// La clave <c>editable</c> del DTO: <c>names.editableUsername</c> de <c>sendChatUsername</c> (<c>:1785</c>), que
-    /// es la marca <c>editable</c> del vector. Sin vector, lo editable es el nombre principal, porque
-    /// <c>channels.updateUsername</c> cambia exactamente ese —y lo que la pantalla prellena con <c>initial</c> es el
-    /// nombre que se está reemplazando, no un adorno—.
+    /// La clave <c>editable</c> del DTO: <c>names.editableUsername</c> de <c>sendChatUsername</c>
+    /// (<c>NativeBridge.java:1891</c>), que es la marca <c>editable</c> del vector. Sin vector, lo editable es el
+    /// nombre principal, porque <c>channels.updateUsername</c> cambia exactamente ese —y lo que la pantalla prellena
+    /// con <c>initial</c> es el nombre que se está reemplazando, no un adorno—.
     public static string Editable(ChatBase? peer)
     {
         if (peer is not Channel channel) return "";
@@ -108,7 +111,7 @@ public static class DesktopChatUsernames
     }
 
     /// Las dos caras de la misma cadena vacía: <c>MainUsername</c> puede venir nula, y el puente de Android convierte
-    /// el nulo en <c>""</c> antes de meterlo en el JSON (<c>:1785</c>).
+    /// el nulo en <c>""</c> antes de meterlo en el JSON (<c>NativeBridge.java:1891</c>).
     private static string[] Legacy(ChatBase? peer)
     {
         var main = peer?.MainUsername;
@@ -125,7 +128,7 @@ public static class DesktopChatUsernames
     /// Los dos campos se mueven siempre juntos, y la medida lo exige: sobre WTelegramClient 4.4.10,
     /// <c>Channel.MainUsername</c> lee el <b>legado</b> (<c>username</c> con <c>has_username</c>) haga lo que haga el
     /// vector, y es ese valor —no el del DTO— el que la bandeja ya usa para la fila
-    /// (<c>TelegramService.cs:3829</c>) y para el rótulo «@nombre» (<c>TelegramService.cs:3869</c>). Actualizar solo el vector dejaría
+    /// (<c>TelegramService.cs:3840</c>) y para el rótulo «@nombre» (<c>TelegramService.cs:3880</c>). Actualizar solo el vector dejaría
     /// la pantalla del chat con el nombre viejo mientras la pregunta de <c>chat.username</c> respondería el nuevo,
     /// que es justo la incoherencia que la ronda AE decidió no dejar nunca más en el andamio.
     /// </remarks>
@@ -162,8 +165,8 @@ public static class DesktopChatUsernames
 
     private static bool Has(Channel.Flags2 flags, Channel.Flags2 present) => (flags & present) != 0;
 
-    /// Las cuatro claves del DTO de Android, en el orden de <c>sendChatUsername</c> (<c>:1785</c>): primero
-    /// <c>editable</c> y después <c>active</c>.
+    /// Las dos claves del DTO de Android, en el orden de <c>sendChatUsername</c> (<c>NativeBridge.java:1891</c>):
+    /// primero <c>editable</c> y después <c>active</c>.
     public static object Dto(ChatBase? peer) => new
     {
         editable = Editable(peer),

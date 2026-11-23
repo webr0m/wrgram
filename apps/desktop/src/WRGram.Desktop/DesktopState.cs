@@ -84,6 +84,8 @@ public sealed class DesktopState
         ProfilePhoto = null;
         EmojiStatus = null;
         Wallet = null;
+        // Los fondos los lee la cuenta, así que con otra cuenta no hay ninguno que pintar.
+        Appearance.AccountBackgrounds = null;
         MediaReady = new();
         MediaLoading = new();
         MediaFailed = new();
@@ -216,8 +218,8 @@ public sealed class LinkPreviewDto
 }
 
 /// <summary>
-/// Una encuesta ya convertida para la pantalla. Los nombres salen en camelCase por la política de
-/// <c>DesktopBridge.cs:18</c>, y coinciden campo a campo con <c>Poll</c> de <c>contract.ts:120</c>; el orden no
+/// Una encuesta ya convertida para la pantalla. Los nombres salen en camelCase por el <c>PropertyNamingPolicy</c>
+/// de <c>DesktopBridge.cs:31</c>, y coinciden campo a campo con <c>Poll</c> de <c>contract.ts:124</c>; el orden no
 /// importa pero la ausencia sí, así que los cuatro que Android rellena con estado del cliente —los dos
 /// <c>can*</c>, <c>closed</c> y <c>chosen</c> de cada opción— llevan aquí su comentario cuando no son lo que
 /// parecen.
@@ -324,7 +326,7 @@ public sealed class PollVoterDto
 /// <para>
 /// Falta el quinto campo de Android, <c>photo</c>, y falta a propósito: la orden de TDLib ya traía las miniaturas
 /// descargadas y esta capa tendría que pedir cada una por su cuenta para una lista de hasta 50 personas. La
-/// pantalla tiene respaldo con iniciales (<c>ContactAvatar</c>, <c>App.tsx:96</c>), así que lo que se pierde es un
+/// pantalla tiene respaldo con iniciales (<c>ContactAvatar</c>, <c>App.tsx:98</c>), así que lo que se pierde es un
 /// retrato y no información.
 /// </para>
 /// </summary>
@@ -512,6 +514,72 @@ public sealed class AppearanceDto
     public JsonElement? Gestures { get; set; }
     public string Navigation { get; set; } = "bar";
     public ChromeDto? Chrome { get; set; }
+    /// Los dos fondos que la cuenta tiene puestos, uno por modo, leídos de Telegram. En Android los escribe la
+    /// tienda local y el aviso <c>UpdateDefaultBackground</c>; aquí los saca la marca <c>default_</c> de la lista
+    /// (<c>DesktopBackgrounds.cs</c>), y por eso puede estar en nulo: sin lectura todavía no hay fondo de cuenta.
+    public BackgroundSlotsDto? AccountBackgrounds { get; set; }
+}
+
+/// <summary>
+/// La fila de un fondo de la cuenta tal y como la espera el contrato compartido (<c>CloudBackground</c> en
+/// <c>cloud-backgrounds.ts</c>) y tal y como la escribe Android desde <c>AccountBackgrounds.row</c>
+/// (<c>AccountBackgrounds.java:87</c>): las siete claves, ninguna más. Viaja en texto el identificador porque un
+/// <c>long</c> de Telegram no cabe en JavaScript sin redondearse.
+/// </summary>
+public sealed class BackgroundRowDto
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public bool Dark { get; set; }
+    /// <c>null</c> en todo lo que lee este host: MTProto no tiene la marca de «de serie» de TDLib, y
+    /// <c>creator</c> no lo es. La pantalla omite la palabra cuando no hay marca.
+    public bool? Stock { get; set; }
+    public bool Selected { get; set; }
+    public string Kind { get; set; } = "";
+    public string? Css { get; set; }
+
+    /// La fila de una respuesta de Telegram, con las siete claves dichas arriba. La conversión vive aquí, como la de
+    /// <c>EmojiStatusDto.Of</c>, y lo que se mide con la sonda son las reglas de <c>DesktopBackgrounds</c>, que no
+    /// conocen estos tipos. <c>Css</c> puede salir nulo: la pantalla lo trata como «no se pinta».
+    public static BackgroundRowDto Of(TL.WallPaperBase wallpaper) => new()
+    {
+        Id = DesktopBackgrounds.IdOf(wallpaper),
+        Name = "",
+        Dark = DesktopBackgrounds.IsDark(wallpaper),
+        Stock = DesktopBackgrounds.Stock(wallpaper),
+        Selected = DesktopBackgrounds.IsChosen(wallpaper),
+        Kind = DesktopBackgrounds.KindOf(wallpaper),
+        Css = DesktopBackgrounds.Css(wallpaper),
+    };
+
+    /// Las filas de la respuesta, sin recortar ninguna: <c>backgrounds.list</c> manda el modo pedido y el resto lo
+    /// decide la pantalla. Una <c>wallpapers</c> sin filas es una cuenta sin fondos, no un fallo.
+    public static List<BackgroundRowDto> Rows(TL.WallPaperBase[]? wallpapers)
+    {
+        var rows = new List<BackgroundRowDto>();
+        if (wallpapers == null) return rows;
+        foreach (var wallpaper in wallpapers) if (wallpaper != null) rows.Add(Of(wallpaper));
+        return rows;
+    }
+}
+
+/// <summary>
+/// Los dos huecos que la raíz pinta, uno por modo. Cada uno puede estar en nulo —la lista no trae ningún puesto en
+/// ese modo— y la pantalla entonces se queda con el fondo del tema.
+/// </summary>
+public sealed class BackgroundSlotsDto
+{
+    public BackgroundRowDto? Light { get; set; }
+    public BackgroundRowDto? Dark { get; set; }
+
+    /// Los dos huecos sacados de la misma lista de filas. En Android esos dos huecos los escribe la tienda local
+    /// porque su lectura no dice cuál está puesto; aquí es la marca <c>default_</c> la que los dice, así que no hay
+    /// estado que mantener entre arranques.
+    public static BackgroundSlotsDto Of(List<BackgroundRowDto> rows) => new()
+    {
+        Light = rows.Find(row => row.Selected && !row.Dark),
+        Dark = rows.Find(row => row.Selected && row.Dark),
+    };
 }
 
 public sealed class ChromeDto
@@ -579,7 +647,7 @@ public sealed class FolderDto
 
 public static class DesktopInfo
 {
-    public const string Version = "0.1.0-desktop2";
+    public const string Version = "0.1.0-desktop3";
 }
 
 /// <summary>
@@ -610,7 +678,7 @@ public sealed class OpenStoryDto
     public MediaDto Media { get; set; } = new();
 
     /// Los cuatro mandos de escritura: salen en falso mientras el host no tenga el brazo que los obedezca, y la
-    /// pantalla los gatingea uno a uno (<c>App.tsx:291</c>) para que no aparezca un botón muerto.
+    /// pantalla los gatingea uno a uno (<c>App.tsx:294</c>) para que no aparezca un botón muerto.
     public bool CanEdit { get; set; }
     public bool CanDelete { get; set; }
     public bool CanToggleProfile { get; set; }
@@ -650,9 +718,9 @@ public sealed class WalletDto
 
 /// <summary>
 /// La fila de un pack de stickers o emojis personalizados. Las nueve primeras claves son las de <c>stickerInfo</c>
-/// (<c>NativeBridge.java:4899</c>), que es la forma común de las cuatro lecturas; las tres siguientes son las que
-/// solo trae un pack ya abierto: la portada y el caracter del <c>emojiPackList</c> (<c>:4714</c>) y la lista de
-/// dentro de <c>emojiPacks.get</c> (<c>:4765</c>) o <c>stickers.get</c> (<c>:4784</c>).
+/// (<c>NativeBridge.java:4900-4901</c>), que es la forma común de las cuatro lecturas; las tres siguientes son las
+/// que solo trae un pack ya abierto: la portada y el caracter que arma <c>emojiPackList</c> (<c>:4906</c>) y la
+/// lista de dentro de <c>emojiPack</c> (<c>:4953</c>) o <c>stickerSet</c> (<c>:4974</c>).
 /// </summary>
 public sealed class StickerPackDto
 {

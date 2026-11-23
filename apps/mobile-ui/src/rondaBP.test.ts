@@ -9,9 +9,10 @@ import { desktopGapRefusal } from './desktopGap';
  * prueba vigila es lo que esa conexión promete, en las cuatro piezas que la forman y en los tres estados que puede
  * dar la orden.
  *
- * Primero las frases: `senderProfile` de Android solo sabe negar de dos maneras —la guarda agrupada de `:1618`, que
- * comparte la literal del chat secreto ya escrita en `DesktopPeerProfile.cs:39`, y la del autor que la fila no trae,
- * en `:1629`— y ninguna de las dos se vuelve a escribir en el cable, en el andamio ni en la pantalla. Segundo el
+ * Primero las frases: `senderProfile` (`NativeBridge.java:1620`, con su `answer.fail` en `:1621`) solo sabe negar de
+ * dos maneras —la guarda agrupada, que comparte la literal del chat secreto ya escrita en `DesktopPeerProfile.cs:39`,
+ * y la del autor que la fila no trae, en `NativeBridge.java:1631`— y ninguna de las dos se vuelve a escribir en el
+ * cable, en el andamio ni en la pantalla. Segundo el
  * orden: las guardas del cable tienen que caer en las mismas posiciones relativas que las de Java, con la lectura del
  * temporizador por delante de la negación que produce y con el `access_hash` por delante de la fila devuelta, porque
  * una ficha inventada con el número suelto es peor que un aviso (norma BI). Tercero la puerta: BO había vuelto texto

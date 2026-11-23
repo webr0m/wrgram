@@ -7,7 +7,7 @@ import { desktopGapRefusal } from './desktopGap';
  *
  * TDLib cambia el contenido de un mensaje con `EditMessageMedia` (`TdApi.java:120729`) y admite **cinco** tipos:
  * animación, audio, documento, foto y vídeo (`TdApi.java:120743`). Las otras dos funciones que editan medio —
- * `EditBusinessMessageMedia` (`TdApi.java:119451`) y `EditInlineMessageMedia` (`TdApi.java:120385`)— repiten la misma
+ * `EditBusinessMessageMedia` (`TdApi.java:119433`) y `EditInlineMessageMedia` (`TdApi.java:120375`)— repiten la misma
  * lista, así que la nota de voz y el videomensaje no se pueden ni meter ni sacar editando: no es un recorte de esta
  * ronda, es lo que hay. Si el mensaje admite el cambio lo decide Telegram con `MessageProperties.canEditMedia`
  * (`TdApi.java:54711`, campo en `TdApi.java:54713`), y dentro de un álbum solo caben los cambios de foto a vídeo y
@@ -30,11 +30,11 @@ import { desktopGapRefusal } from './desktopGap';
  * de TDLib llegan al hilo principal, y decodificar una foto o medir un vídeo delante de ellos congelaría la pantalla.
  *
  * **Windows, por su nombre.** La ronda CK dejó un hueco dicho con nombre: la clave estaba declarada pendiente y el
- * ítem se cortaba con la puerta del escritorio (`App.tsx:1074`), porque en MTProto `messages.editMessage` sí tiene
+ * ítem se cortaba con la puerta del escritorio (`App.tsx:1078`), porque en MTProto `messages.editMessage` sí tiene
  * parámetro `media`. El hueco era una ronda sin hacer, no un límite de la librería, y la CK-B la hizo: brazo, subida
  * y negativas sobre los objetos de Telegram. Hoy la clave está en la lista de disponibles (`desktopScope.ts:28`) y la
  * pantalla pinta el ítem sin distinguir capa.
- * El andamio sigue publicando la bandera con la forma de la fila (`preview.ts:401`) y la negación pendiente ya no toca
+ * El andamio sigue publicando la bandera con la forma de la fila (`preview.ts:402`) y la negación pendiente ya no toca
  * esta clave: lo que no está en `DESKTOP_PENDING` pasa al cable. La otra cara —lo que el host afirma, niega y manda—
  * la mide `rondaCKB.test.ts`.
  *
@@ -280,9 +280,12 @@ describe('ronda CK · las citas', () => {
   const anchors: Record<string, string> = {
     'TdApi.java:120729': 'public static class EditMessageMedia extends Function<Message> {',
     'TdApi.java:120743': 'New content of the message. Must be one of the following types:',
-    'TdApi.java:119451': 'New content of the message. Must be one of the following types:',
-    'TdApi.java:120385': 'New content of the message. Must be one of the following types:',
+    'TdApi.java:119433': 'public static class EditBusinessMessageMedia extends Function<BusinessMessage> {',
+    'TdApi.java:120375': 'public static class EditInlineMessageMedia extends Function<Ok> {',
     'TdApi.java:120725': "The type of message content in an album can't be changed with exception",
+    // El rango que el barrido CITA-D escribió para la nota del álbum: abre el bloque de documentación de la clase, y el
+    // dueño por cabecera es la propia `EditMessageMedia`, que es donde cierra (véase `ends`).
+    'TdApi.java:120724': '/**',
     'TdApi.java:54711': 'True, if the message can be edited using the method editMessageMedia.',
     'TdApi.java:54713': 'public boolean canEditMedia;',
     'BridgePolicy.java:53': 'static { METHODS.add("message.edit.media"); }',
@@ -306,17 +309,18 @@ describe('ronda CK · las citas', () => {
     'MessageMediaEdit.java:111': 'static boolean showsCaptionAboveMedia(TdApi.MessageContent content) {',
     'MessageMediaEdit.java:119': 'static boolean hasSpoiler(TdApi.MessageContent content) {',
     'MessageMediaEdit.java:131': 'static boolean streams(String mime) {',
-    'App.tsx:1074': '{props.editMedia&&<MenuItem icon={<FileText/>} label="Cambiar el archivo del mensaje"',
-    'App.tsx:1138': 'function replaceMessageMedia(message:Message,props:Properties)',
+    'App.tsx:1078': '{props.editMedia&&<MenuItem icon={<FileText/>} label="Cambiar el archivo del mensaje"',
+    'App.tsx:1142': 'function replaceMessageMedia(message:Message,props:Properties)',
     'contract.ts:213': 'export interface Properties {',
     'desktopScope.ts:28': "'message.edit', 'message.edit.caption', 'message.edit.media',",
-    'preview.ts:401': 'editMedia: own && !!message?.media,',
+    'preview.ts:402': 'editMedia: own && !!message?.media,',
   };
 
   /** La última línea de cada rango citado, con lo que dice. */
   const ends: Record<string, [number, string]> = {
     'NativeBridge.java:4616': [4634, '}'],
     'NativeBridge.java:4636': [4651, '}'],
+    'TdApi.java:120724': [120729, 'public static class EditMessageMedia extends Function<Message> {'],
   };
 
   const lineOf = (file: string, at: number): string => {

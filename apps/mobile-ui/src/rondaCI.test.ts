@@ -8,7 +8,7 @@ import { DESKTOP_AVAILABLE, DESKTOP_PENDING } from './desktopScope';
  * La CG midió por reflexión que WTelegramClient 4.4.10 tiene con qué (`Chatlists_GetExportedInvites`,
  * `Chatlists_EditExportedInvite`, `Chatlists_DeleteExportedInvite`), así que estas tres claves no estaban pendientes
  * por falta de biblioteca sino por falta de brazo: `desktopScope.ts:24` las llevaba en «pendiente» junto a las notas,
- * que ésas sí siguen sin con qué (`desktopScope.ts:102`). Android las atiende desde hace rondas —listar en
+ * que ésas sí siguen sin con qué (`desktopScope.ts:107`). Android las atiende desde hace rondas —listar en
  * `NativeBridge.java:3955`, editar y borrar en la misma función `NativeBridge.java:3966`— y la pantalla ya tenía su
  * panel, que en Windows solo podía leer el vacío porque ningún brazo contestaba.
  *
@@ -343,7 +343,7 @@ describe('ronda CI · las citas de los archivos de la ronda', () => {
     'FolderLinks.tsx:8': "const desktop = useSyncExternalStore(subscribe, () => snapshot().platform === 'desktop');",
     'FolderLinks.tsx:55': '{!desktop && <button type="button" className="secondary" disabled={busy} onClick={() => void update(',
     'desktopScope.ts:24': "{ label: 'lista de chats, carpetas con sus enlaces e historial'",
-    'desktopScope.ts:102': "{ label: 'notas privadas por chat', methods: ['notes.write', 'notes.read', 'notes.clear'] },",
+    'desktopScope.ts:107': "{ label: 'notas privadas por chat', methods: ['notes.write', 'notes.read', 'notes.clear'] },",
     'NativeBridge.java:3955': 'private void folderLinks(JSONObject params,Answer answer){',
     'NativeBridge.java:3958': 'perform(new TdApi.GetChatFolderInviteLinks(id),answer,result->{',
     'NativeBridge.java:3966': 'private void folderLinkChange(JSONObject params,Answer answer,boolean delete){',
@@ -412,12 +412,13 @@ describe('ronda CI · las citas de los archivos de la ronda', () => {
     // ayudantes de negativa, la vuelta de la entidad con la cifra del emoji y la dirección materializada, y el parseo
     // por delante de la marca de envío— y no tocó ninguna otra capa de esta hoja; doce líneas más subió después el despacho con los dos ayudantes de la ronda CW-D.
     // Veinticuatro más, repartidas entre los fondos de la CH-A y el aviso `UpdateDefaultBackground` de la CH-A2, que
-    // además sumó nueve a la sesión y cuatro a la instantánea.
-    expect(service).toHaveLength(4301);
+    // además sumó nueve a la sesión y cuatro a la instantánea. Once más: ocho por las dos ramas del despacho que la
+    // CH-B cableó en Windows y tres por leer los dos huecos del fondo al entrar.
+    expect(service).toHaveLength(4313);
     expect(parity).toHaveLength(1217);
     expect(links).toHaveLength(118);
-    expect(java).toHaveLength(5425);
+    expect(java).toHaveLength(5512);
     expect(panel).toHaveLength(68);
-    expect(scope).toHaveLength(113);
+    expect(scope).toHaveLength(118);
   });
 });

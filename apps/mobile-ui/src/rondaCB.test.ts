@@ -541,7 +541,10 @@ describe('ronda CB · las citas de los archivos de la ronda', () => {
   /** Lo que tiene que decir la primera línea de cada cita. Medido hoy, línea por línea. */
   const anchors: Record<string, string> = {
     'LiveLocationPolicy.java:29': 'int[] DURATIONS = {900, 3600, 28800, 86400}',
+    'LiveLocationPolicy.java:48': 'ALREADY =',
     'LiveLocationPolicy.java:50': 'NOT_SHARING =',
+    'LiveLocationPolicy.java:52': 'BAD_PERIOD =',
+    'LiveLocationPolicy.java:87': 'public static long expiresAt(long sentAt, int period)',
     'MessageExtras.java:42': 'live.expiresIn <= 0 || live.location == null',
     'MessageExtras.java:44': 'put("canStop", message.isOutgoing && live.expiresIn > 0)',
     'NativeBridge.java:421': 'answer.fail("La ubicación ya no está disponible.")',
@@ -557,24 +560,28 @@ describe('ronda CB · las citas de los archivos de la ronda', () => {
     'NativeBridge.java:4831': 'if(liveMessage==id)stopLiveTracking();',
     'NativeBridge.java:4832': 'new TdApi.EditMessageLiveLocation(message.chatId,id,null,null)',
     'MainWindow.xaml.cs:134': 'Web.CoreWebView2.Environment',
-    'TelegramService.cs:3408': 'Outgoing = (message.flags & TL.Message.Flags.out_) != 0,',
+    'TelegramService.cs:3419': 'Outgoing = (message.flags & TL.Message.Flags.out_) != 0,',
     'TdApi.java:35709': 'between 60 and 86400',
     'TdApi.java:46978': '1-360; 0 if unknown',
     'WRGram.Desktop.csproj:5': '<TargetFramework>net8.0-windows</TargetFramework>',
+    // Las dos que trajo la CH-B: su comentario del andamio vive entre las dos agujas de `preview.ts` que esta ronda
+    // vigila, así que la cita es escrita y aquí tiene que estar anclada.
+    'DesktopBackgroundsFlow.cs:70': 'if (raw.Length == 0 && top.Length == 0) throw new BridgeException(DesktopBackgrounds.Nothing);',
+    'DesktopBackgroundsFlow.cs:88': '/// Los dos huecos del estado, escritos con la lista que se acaba de leer.',
   };
 
   /** La última línea de cada rango citado, con lo que dice. */
   const ends: Record<string, [number, string]> = {
     'NativeBridge.java:4825': [4833, '}'],
+    'LiveLocationPolicy.java:87': [90, '}'],
+    'DesktopBackgroundsFlow.cs:70': [85, 'return after.Find(row => row.Id == raw) ?? throw new BridgeException(DesktopBackgrounds.Gone);'],
+    'DesktopBackgroundsFlow.cs:88': [91, 'private void PublishCloudSlots(List<BackgroundRowDto> rows)'],
   };
 
   /** Las cifras sueltas entre contras: el archivo al que pertenecen, y lo que dice hoy su línea. */
   const sueltas: Record<string, string> = {
-    'LiveLocationPolicy.java:48': 'ALREADY =',
-    'LiveLocationPolicy.java:50': 'NOT_SHARING =',
-    'LiveLocationPolicy.java:52': 'BAD_PERIOD =',
-    'LiveLocationPolicy.java:87': 'public static long expiresAt(long sentAt, int period)',
-    'LiveLocationPolicy.java:90': '}',
+    // Las tres constantes (`:48`, `:50`, `:52`) ganaron su archivo delante en el barrido CITA-C, así que ya no son
+    // sueltas: están medidas en la tabla de arriba como citas con nombre.
     'LiveLocationPolicy.java:100': 'public static String label(int period)',
     'LiveLocationPolicy.java:111': '}',
     'TdApi.java:35709': 'between 60 and 86400',
@@ -611,6 +618,7 @@ describe('ronda CB · las citas de los archivos de la ronda', () => {
         : file === 'LiveLocationPolicy.java' ? live
           : file === 'TdApi.java' ? tdlib
             : file === 'WRGram.Desktop.csproj' || file === 'MainWindow.xaml.cs' || file === 'TelegramService.cs'
+              || file === 'DesktopBackgroundsFlow.cs'
               ? rows(`${host}${file}`)
               : rows(`./${file}`);
     const row = body[n - 1];
@@ -654,7 +662,10 @@ describe('ronda CB · las citas de los archivos de la ronda', () => {
       expect(needle, `${donde} cita ${citation}, que no está medido`).toBeTypeOf('string');
       expect(lineOf(file, Number(n)), `${donde} cita ${citation}`).toContain(needle);
     }
-    expect(loose.size).toBeGreaterThanOrEqual(11);
+    // Antes era un suelo (`>= 11`) y por eso se pudría sin avisar: cuando una cifra suelta gana su archivo delante —lo
+    // que hizo la ronda CITA-C con `LiveLocationPolicy.java:87-90` del andamio— la tabla envejecía por arriba y el
+    // suelo seguía contento. Ahora se compara el conjunto: ni una cifra suelta sin medir ni una medida sin cita.
+    expect([...loose.keys()].sort()).toEqual(Object.keys(sueltas).sort());
   });
 
   it('toda cita escrita tiene su ancla y toda ancla está citada en algún lado', () => {

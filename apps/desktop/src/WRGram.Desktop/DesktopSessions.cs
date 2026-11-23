@@ -40,7 +40,7 @@ public static class DesktopSessions
     public const string NotRead = "No se pudieron consultar las sesiones.";
 
     /// El respaldo de <c>item.deviceModel==null?"Dispositivo":item.deviceModel</c> (<c>NativeBridge.java:1786</c>).
-    /// No es decoración: sin <c>device</c> la fila de la pantalla (<c>App.tsx:399</c>) queda sin título.
+    /// No es decoración: sin <c>device</c> la fila de la pantalla (<c>App.tsx:402</c>) queda sin título.
     public const string NoDevice = "Dispositivo";
 
     /// Lo que Android lanza como <c>Invalid identifier</c> desde <c>BridgePolicy.id</c>

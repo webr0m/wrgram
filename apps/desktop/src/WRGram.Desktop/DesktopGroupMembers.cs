@@ -26,7 +26,7 @@ using TL;
 /// (<c>ChannelParticipant</c>, <c>…Self</c>, <c>…Admin</c>, <c>…Banned</c>, <c>…Creator</c>, <c>…Left</c>) y los
 /// dos últimos no traen <c>user_id</c> sino <c>peer</c>, que puede ser un canal hablando como identidad. Esas
 /// filas se descartan igual que allá se descarta todo lo que no sea <c>MessageSenderUser</c>
-/// (<c>:2802</c>).</description></item>
+/// (<c>:2804</c>).</description></item>
 /// <item><description>El baneo y la restricción son el mismo constructor
 /// (<c>ChannelParticipantBanned</c> + <c>ChatBannedRights</c>); lo que los separa es la bandera
 /// <c>view_messages</c>. TDLib lo separa en dos estados.</description></item>
@@ -89,7 +89,7 @@ public static class DesktopGroupMembers
     /// debería seguirle; la corrección de aquella fila es una ronda de Android con la pantalla delante.
     public const string StatusLeft = "Salió";
 
-    /// Las seis teclas que la pantalla manda (<c>App.tsx:1308</c>, <c>MEMBER_FILTERS</c>).
+    /// Las seis teclas que la pantalla manda (<c>App.tsx:1312</c>, <c>MEMBER_FILTERS</c>).
     public static readonly string[] FilterKeys =
         { "recent", "administrators", "restricted", "banned", "bots", "contacts" };
 

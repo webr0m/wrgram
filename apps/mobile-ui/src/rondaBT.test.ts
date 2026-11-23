@@ -77,7 +77,7 @@ describe('ronda BT · el modelo', () => {
   });
 
   it('el conjunto que el compositor escribe está cerrado y en el orden de anidamiento', () => {
-    expect([...COMPOSER_TYPES].join(',')).toBe('bold,italic,underline,strikethrough,spoiler,code,pre,blockquote,link,customEmoji');
+    expect([...COMPOSER_TYPES].join(',')).toBe('bold,italic,underline,strikethrough,spoiler,code,pre,blockquote,link,customEmoji,botCommand');
     expect(model).toContain("const LINES=new Set<TextEntityType>(['blockquote','pre'])");
     expect(model).toContain('const SAFE_URL=/^(https?:\\/\\/|tg:\\/\\/)/i;');
   });

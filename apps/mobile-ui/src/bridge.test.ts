@@ -90,6 +90,16 @@ describe('contenido del teclado',()=>{
 });
 
 describe('plazos del puente con la interfaz nativa', () => {
+  it('deja que Telegram detecte los comandos y conserva las entidades manuales del borrador', async () => {
+    const bridge = await loadBridge();
+    const entities = [{ type: 'botCommand', offset: 0, length: 5 }, { type: 'bold', offset: 6, length: 4 }];
+    const sending = bridge.request('send.text', { text: '/help hola', entities });
+    const message = JSON.parse(post.mock.calls.at(-1)![0]);
+    expect(message.params.entities).toEqual([{ type: 'bold', offset: 6, length: 4 }]);
+    expect(entities).toHaveLength(2);
+    reply({ id: message.id, result: true });
+    await sending;
+  });
   it('da cinco minutos a quien está en un selector, la cámara o un diálogo, y 35 s al resto', async () => {
     const { requestTimeoutMs } = await loadBridge();
     const methods = userDriven();

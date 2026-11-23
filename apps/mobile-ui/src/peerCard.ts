@@ -24,9 +24,9 @@ export const PEER_REFUSALS = {
 } as const;
 
 export const PEER_PRESENCE = {
-  /** `presence` (`NativeBridge.java:1578`). */
+  /** `presence` (`NativeBridge.java:1564`). */
   online: 'En línea',
-  /** El prefijo de `:1547`; detrás va la fecha, cuyo molde sí difiere entre capas. */
+  /** El prefijo de `:1567`; detrás va la fecha, cuyo molde sí difiere entre capas. */
   offline: 'Última vez ',
   /** `:1549`. */
   recently: 'Últ. vez recientemente',

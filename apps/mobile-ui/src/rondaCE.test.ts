@@ -315,11 +315,13 @@ describe('ronda CE · las agujas de las capas tocadas', () => {
     // líneas—, sumó treinta y siete al despacho y tres al estado con la `CustomEmojiId` del DTO. Las capas que solo
     // miró no se movieron: Android ya tenía las reglas y el modelo, el contrato y la pantalla ya las usaban; doce líneas más subió después el despacho, los dos ayudantes de la ronda CW-D.
     // Veinticuatro más, repartidas entre la CH-A —el bloque de los fondos, al final del puente— y la CH-A2 —el aviso
-    // `UpdateDefaultBackground`—, que además sumó nueve líneas a la sesión y cuatro a la instantánea.
+    // `UpdateDefaultBackground`—, que además sumó nueve líneas a la sesión y cuatro a la instantánea. Once más: ocho
+    // por las dos ramas `backgrounds.list`/`background.set` del despacho con su comentario, y tres por leer los dos
+    // huecos del fondo al entrar, como hizo la CH-B en Windows.
     expect(rules).toHaveLength(134);
-    expect(service).toHaveLength(4301);
-    expect(stateCs.split(/\r?\n/)).toHaveLength(691);
-    expect(java).toHaveLength(5425);
+    expect(service).toHaveLength(4313);
+    expect(stateCs.split(/\r?\n/)).toHaveLength(759);
+    expect(java).toHaveLength(5512);
     expect(snapshot).toHaveLength(554);
     expect(policy.split(/\r?\n/)).toHaveLength(61);
     expect(model.split(/\r?\n/)).toHaveLength(202);

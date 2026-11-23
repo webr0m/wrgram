@@ -8,11 +8,11 @@ using TL;
 using WTelegram;
 
 /// <summary>
-/// El cable de las cinco escrituras sobre una fila de supergrupo o canal: <c>groups.member.ban</c> y
-/// <c>groups.member.restrict</c> (<c>NativeBridge.java:585</c> → <c>banGroupMember</c>, <c>:2879</c>),
-/// <c>groups.member.unban</c> (<c>:572</c> → <c>unbanGroupMember</c>, <c>:2846</c>), <c>groups.member.promote</c>
-/// (<c>:573</c> → <c>promoteGroupMember</c>, <c>:2765</c>) y <c>groups.member.demote</c> (<c>:570</c> →
-/// <c>demoteGroupMember</c>, <c>:2766</c>). Las reglas, las frases y el orden de las guardas están en
+/// El cable de las cinco escrituras sobre una fila de supergrupo o canal: <c>groups.member.ban</c>
+/// (<c>NativeBridge.java:584</c>) y <c>groups.member.restrict</c> (<c>:585</c> → <c>banGroupMember</c>, <c>:2899</c>),
+/// <c>groups.member.unban</c> (<c>:586</c> → <c>unbanGroupMember</c>, <c>:2866</c>), <c>groups.member.promote</c>
+/// (<c>:587</c> → <c>promoteGroupMember</c>, <c>:2871</c>) y <c>groups.member.demote</c> (<c>:588</c> →
+/// <c>demoteGroupMember</c>, <c>:2872</c>). Las reglas, las frases y el orden de las guardas están en
 /// <see cref="DesktopMemberSanctions"/> y en <see cref="DesktopGroupMembers"/>; aquí solo se lee, se pregunta y se
 /// escribe, en las tres fases que marca Android.
 /// <para>
@@ -29,8 +29,8 @@ using WTelegram;
 /// banderas, y promover y despromover son la otra (<c>channels.editAdmin</c>) —la despromoción es esa petición con
 /// los derechos vacíos, no un método aparte—. La tercera: borrar el historial de una persona no es un argumento de
 /// la sanción sino una petición posterior (<c>channels.deleteParticipantHistory</c>), que es exactamente la
-/// situación del <c>DeleteChatMessagesBySender</c> de <c>:2793</c> y el motivo de que allí la sanción pueda quedar
-/// aplicada con el borrado fallido.
+/// situación del <c>DeleteChatMessagesBySender</c> de <c>NativeBridge.java:2899</c> y el motivo de que allí la
+/// sanción pueda quedar aplicada con el borrado fallido.
 /// </para>
 /// <para>
 /// Y una diferencia de interfaz: Android abre su <c>Dialogs</c> nativo dentro del puente; aquí el cuadro lo abre el
@@ -44,7 +44,7 @@ public sealed partial class TelegramService
 {
     /// <summary>
     /// <c>groups.member.restrict</c>: el mismo brazo que el baneo con la bandera de restricción puesta, menos el
-    /// básico, que aquí no se sanciona: <c>banBasicMember</c> contesta <c>restrictProblem</c> (<c>:2775</c>) y esa
+    /// básico, que aquí no se sanciona: <c>banBasicMember</c> contesta <c>restrictProblem</c> (<c>:2881</c>) y esa
     /// es <see cref="DesktopGroupRoster.NoRestrict"/>.
     /// </summary>
     private async Task<object?> RestrictMemberAsync(JsonElement args)
@@ -59,13 +59,13 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// Las tres fases de <c>:2793</c>: lo que se sabe sin red (cuenta, plazo, canal), lo que manda leer la fila
+    /// Las tres fases de <c>:2899</c>: lo que se sabe sin red (cuenta, plazo, canal), lo que manda leer la fila
     /// propia (los dos derechos) y lo que manda leer la ajena (el estado). Después el cuadro, y solo después la
     /// escritura; el borrado de mensajes, al final y como petición aparte.
     /// </summary>
     private async Task<object?> SanctionAsync(JsonElement args, bool restrict, Client client, ChatEntry entry, long owner)
     {
-        // La guarda de forma es lo primero de `:2793`, y aquí solo puede venir lo que `BanMemberAsync` no encaminó
+        // La guarda de forma es lo primero de `:2899`, y aquí solo puede venir lo que `BanMemberAsync` no encaminó
         // a su casa: un canal, un supergrupo o una fila que no es comunidad ninguna.
         if (DesktopMembership.Of(entry.Id) != DesktopMembership.Kind.Channel)
             throw new BridgeException(DesktopMemberSanctions.RequiresSupergroup);
@@ -88,7 +88,7 @@ public sealed partial class TelegramService
         await client.Channels_EditBanned(input, PeerOf(userId, hash), DesktopMemberSanctions.BanRights(restrict, duration));
         if (!deleteMessages) return true;
         // La sanción ya está puesta: si Telegram no deja borrar, se dice el fallo encima de lo que sí pasó, que es
-        // literalmente lo que hace el <c>error</c> del <c>:2793</c>.
+        // literalmente lo que hace el <c>error</c> del <c>:2899</c>.
         try
         {
             await client.Channels_DeleteParticipantHistory(input, PeerOf(userId, hash));
@@ -101,7 +101,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>groups.member.unban</c> (<c>:568</c> → <c>:2760</c>). En MTProto levantar el baneo y levantar la
+    /// <c>groups.member.unban</c> (<c>:586</c> → <c>:2866</c>). En MTProto levantar el baneo y levantar la
     /// restricción son la misma escritura con <c>chatBannedRights</c> vacío; lo que cambia es el rótulo del cuadro,
     /// que sigue diciendo <c>IsBanned</c> de la fila, y el aviso de que no se envía invitación.
     /// </summary>
@@ -130,7 +130,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>groups.member.promote</c> (<c>:569</c> → <c>:2765</c>). La fila propia decide qué se puede delegar, la
+    /// <c>groups.member.promote</c> (<c>:587</c> → <c>:2871</c>). La fila propia decide qué se puede delegar, la
     /// fila ajena decide si se nombra o se edita, y <c>requestedAdminRights</c> decide el conjunto entero con la
     /// puerta del tipo de chat. Aquí eso se traduce en que <c>current</c> son los derechos que Telegram ya tenía
     /// escritos en el <c>channelParticipantAdmin</c>, no los que la pantalla recuerda.
@@ -168,7 +168,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>groups.member.demote</c> (<c>:570</c> → <c>:2766</c>). Volver a ser miembro normal es
+    /// <c>groups.member.demote</c> (<c>:588</c> → <c>:2872</c>). Volver a ser miembro normal es
     /// <c>channels.editAdmin</c> con los derechos vacíos: la despromoción no existe como petición, y por eso la
     /// guarda de Android exige una administración editable antes de escribir nada.
     /// </summary>
@@ -231,7 +231,7 @@ public sealed partial class TelegramService
         _ => null
     };
 
-    /// El <c>isAnonymous</c> que Android hereda al editar (<c>:2765</c>, última argumento del constructor): la
+    /// El <c>isAnonymous</c> que Android hereda al editar (<c>:2869</c>, último argumento del constructor): la
     /// bandera de MTProto en la fila actual.
     private static bool HasAnonymous(ChannelParticipantBase? part) => part switch
     {
@@ -240,7 +240,7 @@ public sealed partial class TelegramService
     };
 
     /// Las dieciséis casillas que manda <c>AdminRightsEditor</c>. Android las exige todas
-    /// (<c>requiredBool</c>, <c>:2671</c>) y la pantalla las manda todas porque arranca el objeto de
+    /// (<c>requiredBool</c>, <c>:2777</c>) y la pantalla las manda todas porque arranca el objeto de
     /// <c>NO_ADMIN_RIGHTS</c>; una ausente solo puede venir de un llamador viejo y vale «no se pide», que es el
     /// lado seguro: se escriben menos derechos, nunca más.
     private static Dictionary<string, bool> RequestedMap(JsonElement args) =>

@@ -11,10 +11,11 @@ using TL;
 /// La gestión de los enlaces de invitación de una comunidad en Windows. En Android son dos archivos:
 /// <c>InviteLinks.java</c> pone los cinco techos, valida el marcador, proyecta la fila y decide qué se puede
 /// cambiar; <c>NativeBridge.java</c> reparte el orden de los guardajes en cuatro métodos —<c>inviteLinks</c>
-/// (<c>:3604</c>), <c>inviteLinkForm</c> (<c>:3640</c>) para crear y editar, y <c>revokeInviteLink</c>
-/// (<c>:3698</c>), despachados en <c>:756-759</c>— más un quinto anterior, <c>createInviteLink</c>
-/// (<c>:1881</c>, despachado en <c>:694</c>), que crea un enlace sin preguntar nombre, caducidad ni límite. Aquí esas
-/// piezas están escritas una vez, con las frases copiadas carácter a carácter y el mismo orden, y el cable solo pide.
+/// (<c>:3606</c>), <c>inviteLinkForm</c> (<c>:3642</c>) para crear y editar, y <c>revokeInviteLink</c>
+/// (<c>:3700</c>), despachados en <c>:758-761</c>— más un quinto anterior, <c>createInviteLink</c>
+/// (<c>:1883</c>, despachado en <c>:694</c>), que crea un enlace sin preguntar nombre, caducidad ni límite. Aquí
+/// esas piezas están escritas una vez, con las frases copiadas carácter a carácter y el mismo orden, y el cable solo
+/// pide.
 /// <para>
 /// La medida, hecha por reflexión sobre WTelegramClient 4.4.10 y por el esquema MTProto de la capa 232 que trae el
 /// paquete <c>@mtcute/core</c> del propio repositorio. Las dos librerías no guardan el mismo objeto: TDLib tiene
@@ -40,8 +41,9 @@ using TL;
 /// </para>
 /// <para>
 /// Y lo que no se copia, dicho en lugar de fingido. Android guarda el marcador que repartió
-/// (<c>linkOwner</c>, <c>linkChat</c>, <c>linkRevoked</c>, <c>linkOffsetDate</c>, <c>linkOffsetLink</c>, <c>:3603</c>)
-/// y niega cualquier marcador que no sea el último que él dio, con «Vuelve a abrir los enlaces para continuar.». En
+/// (<c>linkOwner</c>, <c>linkChat</c>, <c>linkRevoked</c>, <c>linkOffsetDate</c>, <c>linkOffsetLink</c>,
+/// declarados en <c>NativeBridge.java:61</c> y que <c>clearLinkCursor</c> borra en <c>:3605</c>) y niega
+/// cualquier marcador que no sea el último que él dio, con «Vuelve a abrir los enlaces para continuar.». En
 /// MTProto la posición es un argumento de la petición (<c>offset_date</c> + <c>offset_link</c>), no un estado del
 /// cliente, así que no hay memoria que pueda estar vieja ni frase que decir: se valida la forma del marcador
 /// (<see cref="CursorProblem"/>) y se manda. También queda fuera la segunda parte del <c>expiration</c> de Android
@@ -297,8 +299,8 @@ public static class DesktopLinkManager
     private static bool On(ChatInviteExported.Flags flags, ChatInviteExported.Flags flag) => (flags & flag) != 0;
 
     /// La bandera <c>revoked</c> leída una sola vez. Android la trae como campo (<c>isRevoked</c>) y la usa en los tres
-    /// sitios: la fila (<c>InviteLinks.java:54</c>), la negación de editar (<c>:3676</c>) y el <c>false</c> de revocar
-    /// dos veces (<c>:3710</c>). Aquí es la misma lectura, escrita una vez.
+    /// sitios: la fila (<c>InviteLinks.java:54</c>), la negación de editar (<c>NativeBridge.java:3676</c>) y el
+    /// <c>false</c> de revocar dos veces (<c>NativeBridge.java:3712</c>). Aquí es la misma lectura, escrita una vez.
     public static bool Revoked(ChatInviteExported link) => On(link.flags, ChatInviteExported.Flags.revoked);
 
     /// <c>InviteLinks.page</c> (<c>InviteLinks.java:58-69</c>): <c>total</c>, las filas, la pestaña, si hay más y el
@@ -340,16 +342,17 @@ public static class DesktopLinkManager
     /// puede ocurrir.
     public static long? Expires(long now, long expiresIn) => expiresIn <= 0 ? null : now + expiresIn;
 
-    /// El <c>name.isEmpty()?"WRGram":name</c> del crear (<c>:3658</c>). Es lo que se escribe en Telegram y lo que se
-    /// lee en el diálogo.
+    /// El <c>name.isEmpty()?"WRGram":name</c> del crear (<c>NativeBridge.java:3660</c>). Es lo que se escribe en
+    /// Telegram y lo que se lee en el diálogo.
     public static string CreateLabel(string name) => name.Length == 0 ? DefaultLabel : name;
 
-    /// El <c>name.isEmpty()?"sin nombre":name</c> del editar (<c>:3682</c>): el diálogo nombra la ausencia, pero a
-    /// Telegram no llega «sin nombre» sino el vacío, que es como MTProto borra un título.
+    /// El <c>name.isEmpty()?"sin nombre":name</c> del editar (<c>NativeBridge.java:3684</c>): el diálogo nombra la
+    /// ausencia, pero a Telegram no llega «sin nombre» sino el vacío, que es como MTProto borra un título.
     public static string EditLabel(string name) => name.Length == 0 ? NoLabel : name;
 
-    /// <c>InviteLinks.editable</c> (<c>InviteLinks.java:98-100</c>) y las tres negaciones de <c>:3674-3676</c> en su
-    /// orden: pago, primacía y revocación. Devuelve la frase o <c>null</c> cuando el enlace sí se puede cambiar.
+    /// <c>InviteLinks.editable</c> (<c>InviteLinks.java:98-100</c>) y las tres negaciones de
+    /// <c>NativeBridge.java:3676-3678</c> en su orden: pago, primacía y revocación. Devuelve la frase o <c>null</c>
+    /// cuando el enlace sí se puede cambiar.
     public static string? NotEditable(ChatInviteExported link, bool primary)
     {
         if (link.subscription_pricing != null) return PaidLinks;

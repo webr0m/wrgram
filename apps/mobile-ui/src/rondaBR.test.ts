@@ -272,11 +272,13 @@ describe('ronda BR · la tarjeta del enlace y su botón también en Windows', ()
     // escribió el brazo de `message.edit.media` (`TelegramService.cs:325`), movió su fila del aviso pendiente al de
     // disponible y sumó su clave a lo afirmado: eran 164 vivos y 123 pendientes. La ronda CD partió la fila de
     // Premium: sacó `premium.state` de la pendiente —la cableó en Windows (`TelegramService.cs:399`)— y la declaró
-    // sola como la marca de la cuenta: hoy son 165 vivos y 124 pendientes.
+    // sola como la marca de la cuenta: eran 165 vivos y 124 pendientes. La CH-B escribió los dos brazos de los fondos
+    // (`TelegramService.cs:500` y `TelegramService.cs:501`) y pasó su fila de pendientes a afirmada: hoy son 167 vivos
+    // y 122 pendientes.
     const available = new Set(DESKTOP_AVAILABLE.flatMap(claim => claim.methods));
     const pending = new Set(DESKTOP_PENDING.flatMap(claim => claim.methods));
-    expect(available.size).toBe(165);
-    expect(pending.size).toBe(124);
+    expect(available.size).toBe(168);
+    expect(pending.size).toBe(122);
     expect([...available].filter(method => pending.has(method))).toEqual([]);
   });
 });

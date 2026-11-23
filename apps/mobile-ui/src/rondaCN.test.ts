@@ -34,11 +34,11 @@ import { readFileSync } from 'node:fs';
  * pintando encuestas sin imágenes.
  *
  * Windows ya puede, desde la ronda CN-B: el brazo de escritorio guarda las respuestas en un `PollAnswerBase[]`
- * (`TelegramService.cs:2528`) y, si hay fotos, sube cada archivo con `messages.uploadMedia`
- * (`TelegramService.cs:2580`) y engancha el `inputPhoto` al `InputPollAnswer` de su opción. Al leer, la fila del DTO
- * lleva el medio que saca `DesktopPoll.PhotoOf` (`TelegramService.cs:2974`), y `DesktopPoll.cs:423` sigue filtrando
+ * (`TelegramService.cs:2539`) y, si hay fotos, sube cada archivo con `messages.uploadMedia`
+ * (`TelegramService.cs:2591`) y engancha el `inputPhoto` al `InputPollAnswer` de su opción. Al leer, la fila del DTO
+ * lleva el medio que saca `DesktopPoll.PhotoOf` (`TelegramService.cs:2985`), y `DesktopPoll.cs:423` sigue filtrando
  * `PollAnswer` porque es el único de los dos constructores que declara campo `option`. El andamio copia esa realidad
- * —la fila espejo de `preview.ts:1124` ya escribe su `media`— y `App.tsx:1142` dejó de apagar el botón en
+ * —la fila espejo de `preview.ts:1125` ya escribe su `media`— y `App.tsx:1146` dejó de apagar el botón en
  * escritorio: lo que sigue fuera es el chat sin abrir y el que no es comunidad. Los tres rechazos nuevos, el orden de
  * las guardas y las dos banderas los mide su propia ronda en `rondaCNB.test.ts`. Tampoco lleva medio la encuesta que
  * se crea desde el teclado de un bot (`NativeBridge.java:1201`), que es el otro brazo que monta opciones.
@@ -349,12 +349,12 @@ describe('ronda CN · las citas de los archivos de la ronda', () => {
     'BatchPanels.tsx:99': 'Imagen de la opción',
     'contract.ts:119': 'choosing:boolean;media?:Media',
     'batch.css:8': '.poll-option-media{flex:none;width:46px',
-    'App.tsx:1142': 'images={active!==undefined&&community(active)}',
-    'TelegramService.cs:2528': 'var answers = new PollAnswerBase[options.Length];',
-    'TelegramService.cs:2580': 'var stored = await client.Messages_UploadMedia(',
-    'TelegramService.cs:2974': 'Media = DesktopPoll.PhotoOf(answers[position]) is { } picture',
+    'App.tsx:1146': 'images={active!==undefined&&community(active)}',
+    'TelegramService.cs:2539': 'var answers = new PollAnswerBase[options.Length];',
+    'TelegramService.cs:2591': 'var stored = await client.Messages_UploadMedia(',
+    'TelegramService.cs:2985': 'Media = DesktopPoll.PhotoOf(answers[position]) is { } picture',
     'DesktopPoll.cs:423': 'public static PollAnswer[] Options(TL.Poll poll)',
-    'preview.ts:1124': 'options: options.map((text, index) => ({ index,',
+    'preview.ts:1125': 'options: options.map((text, index) => ({ index,',
   };
 
   /** Los trozos que la ronda tocó, con el mismo recorte que usan CF, CB, CM, BM y BY. */
@@ -450,11 +450,11 @@ describe('ronda CN · las citas de los archivos de la ronda', () => {
     // línea de caso con su bloque en el puente y cuatro en `contract.ts`. Las restantes no las tocó ninguna. Después, la
     // ronda CH-A puso el bloque de los fondos al final del puente y la CH-A2 le sumó el aviso: veinticuatro entre las
     // dos; cuatro más en la instantánea por el `appearance` que publica los dos huecos.
-    expect(java).toHaveLength(5425);
+    expect(java).toHaveLength(5512);
     expect(snapshot).toHaveLength(554);
     expect(jvm).toHaveLength(58);
     expect(batch).toHaveLength(351);
-    expect(app).toHaveLength(1557);
+    expect(app).toHaveLength(1561);
     expect(contract).toHaveLength(250);
     expect(css).toHaveLength(125);
   });

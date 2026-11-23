@@ -287,7 +287,7 @@ describe('ronda BG · las cuatro capas dicen lo mismo de la cola de ingreso', ()
       for (const [, at] of file.matchAll(/<c>:(\d{3,4})-(\d{3,4})<\/c>/g)) expect(javaLines.length, `:${at}`).toBeGreaterThan(Number(at));
     }
     expect(rules).toContain('NativeBridge.java:757');
-    expect(rules).toContain('JoinRequests.java:26-31');
+    expect(rules).toContain('JoinRequests.java:23-28');
     expect(cable).toContain('BridgePolicy.java:48');
     expect(cable).toContain('JoinRequestsPanel.tsx:65');
     // El abanico de nombres y el cierre de página, que son las dos idas que Android hace y Windows no.

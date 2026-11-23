@@ -10,12 +10,12 @@ import org.drinkless.tdlib.TdApi;
  * La librería cambia el contenido de un mensaje con <c>EditMessageMedia</c> (<c>TdApi.java:120729</c>) y admite
  * <b>cinco</b> tipos, ni uno más: animación, audio, documento, foto o vídeo (<c>TdApi.java:120743</c>). La nota de
  * voz y el videomensaje no están ahí, y no es un descuido de esta función: las otras dos que editan medio —
- * <c>EditBusinessMessageMedia</c> (<c>TdApi.java:119451</c>) y <c>EditInlineMessageMedia</c>
- * (<c>TdApi.java:120385</c>)— repiten la misma lista de cinco. Editar un mensaje propio no puede convertirlo en
- * nota de voz ni dejarlo en una. La pregunta de si el mensaje admite el cambio la decide Telegram con
- * <c>MessageProperties.canEditMedia</c> (<c>TdApi.java:54711</c>), y la restricción del álbum está escrita en la
- * propia documentación de la función: «The type of message content in an album can't be changed with exception
- * of replacing a photo with a video or vice versa» (<c>TdApi.java:120725</c>).
+ * <c>EditBusinessMessageMedia</c> (<c>TdApi.java:119433</c>) y <c>EditInlineMessageMedia</c>
+ * (<c>TdApi.java:120375</c>)— repiten la misma lista de cinco. Editar un mensaje propio no puede convertirlo en
+ * nota de voz ni dejarlo en una. La pregunta de si el mensaje admite el cambio la decide Telegram con el
+ * <c>canEditMedia</c> (<c>TdApi.java:54713</c>) de las propiedades del mensaje, y la restricción del álbum está escrita
+ * en la documentación de <c>EditMessageMedia</c> (<c>TdApi.java:120724-120729</c>): «The type of message content in
+ * an album can't be changed with exception of replacing a photo with a video or vice versa».
  * </p>
  *
  * <p>

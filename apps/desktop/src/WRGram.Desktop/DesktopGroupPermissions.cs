@@ -8,14 +8,14 @@ using TL;
 /// <summary>
 /// Los permisos predeterminados de una comunidad en Windows: las dieciséis reglas que Telegram aplica a quien es
 /// miembro normal de un supergrupo o de un canal. En Android son dos métodos —<c>groupPermissions</c>
-/// (<c>NativeBridge.java:1888</c>) lee y <c>setGroupPermissions</c> (<c>:2394</c>) escribe, los dos despachados en
-/// <c>:589</c> y <c>:590</c>— y todo lo que deciden cabe en cinco líneas: la forma del chat, el derecho propio, la
+/// (<c>NativeBridge.java:1888</c>) lee y <c>setGroupPermissions</c> (<c>:2396</c>) escribe, despachados uno tras otro
+/// en <c>:589-590</c>— y todo lo que deciden cabe en cinco líneas: la forma del chat, el derecho propio, la
 /// tabla de lo que hay, la ventana de confirmar y la escritura. Aquí eso está escrito una vez, con las frases copiadas
 /// carácter a carácter y el mismo orden, y el cable solo pide.
 /// <para>
 /// La medida, hecha por reflexión sobre WTelegramClient 4.4.10 y por el esquema MTProto de la capa 232 que trae el
 /// paquete <c>@mtcute/core</c> del propio repositorio. Las dos librerías no guardan lo mismo: TDLib guarda lo
-/// permitido (<c>TdApi.ChatPermissions</c>, <c>TdApi.java:17663-17723</c>, dieciséis campos cuyo orden de constructor
+/// permitido (<c>ChatPermissions</c>, <c>TdApi.java:17659-17723</c>, dieciséis campos cuyo orden de constructor
 /// es el de <c>:17751</c> y el del DTO de Android) y MTProto guarda lo <b>prohibido</b> (<c>TL.ChatBannedRights</c>,
 /// un solo constructor con veintitrés banderas y un <c>until_date</c>). El esquema lo dice con todas sus letras:
 /// «In this case, the flags are inverted: if set, a flag does not allow a user to do X». Todo este archivo es esa
@@ -47,9 +47,10 @@ using TL;
 /// foto de la cuenta.
 /// </para>
 /// <para>
-/// Última diferencia de capas, y es la que fijó la ronda AT. En Android el <c>throw</c> de <c>:2393</c> (la forma) y
-/// el de <c>requiredBool</c> (<c>:2774</c>, «Missing permission: X», en inglés) nunca llegan a la pantalla: el despacho
-/// genérico (<c>:167</c>) convierte cualquier <c>throw</c> en «Solicitud no válida o función no disponible.». Windows
+/// Última diferencia de capas, y es la que fijó la ronda AT. En Android el <c>throw</c> de la forma
+/// (<c>NativeBridge.java:2396</c>) y el de <c>requiredBool</c> (<c>:2777</c>, «Missing permission: X», en inglés) nunca
+/// llegan a la pantalla: el <c>catch</c> del despacho genérico (<c>:167</c>) convierte cualquier fallo en «Solicitud no
+/// válida o función no disponible.». Windows
 /// dice la causa en español, que es la norma de la casa para lo que en Java es un fallo de programación y no un aviso.
 /// La norma y el orden no cambian; solo el camino por el que llegan.
 /// </para>
@@ -97,11 +98,12 @@ public static class DesktopGroupPermissions
     private const ChatBannedRights.Flags Media = ChatBannedRights.Flags.send_media;
 
     /// <summary>
-    /// Las dieciséis claves del DTO de Android, en el orden exacto de su <c>object(...)</c> (<c>:1885</c>) y del
-    /// constructor de <c>TdApi.ChatPermissions</c> (<c>TdApi.java:17751</c>). <c>Denied</c> son las banderas que este
-    /// panel escribe; <c>Covers</c> son las que no escribe pero que también prohíben lo mismo, y por eso entran en la
-    /// lectura. Cada emparejamiento está sacado de la glosa del campo de TDLib y del comentario de la bandera en el
-    /// esquema de la capa 232, que son las dos únicas fuentes que hay en el repositorio.
+    /// Las dieciséis claves del DTO de Android, en el orden exacto de su <c>object(...)</c>
+    /// (<c>NativeBridge.java:1888</c>) y del constructor de <c>TdApi.ChatPermissions</c> (<c>TdApi.java:17751</c>).
+    /// <c>Denied</c> son las banderas que este panel escribe; <c>Covers</c> son las que no escribe pero que también
+    /// prohíben lo mismo, y por eso entran en la lectura. Cada emparejamiento está sacado de la glosa del campo de
+    /// TDLib y del comentario de la bandera en el esquema de la capa 232, que son las dos únicas fuentes que hay en
+    /// el repositorio.
     /// </summary>
     public static readonly (string Key, ChatBannedRights.Flags Denied, ChatBannedRights.Flags Covers)[] Fields =
     {

@@ -148,7 +148,7 @@ public final class ShellActivity extends AccessActivity {
 
     private void onAppUnlocked(){
         if(bridge!=null)bridge.changed("security");
-        if(pendingDeepLink!=null&&bridge!=null){String link=pendingDeepLink;pendingDeepLink=null;bridge.openSystemLink(link);}
+        dispatchPendingDeepLink();
         dispatchPendingInlineQuery();dispatchPendingMiniAppShortcut();dispatchPendingThemeLink();
         showIncomingCall();
     }
@@ -233,7 +233,7 @@ public final class ShellActivity extends AccessActivity {
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) { return !ENTRY.equals(request.getUrl().toString()); }
             @Override public void onPageFinished(WebView view, String url) {
-                if (view==web&&ENTRY.equals(url)) { uiReady = true; applyContentInsets(insetBottomPx); dispatchPendingInlineQuery(); dispatchPendingMiniAppShortcut(); dispatchPendingThemeLink(); }
+                if (view==web&&ENTRY.equals(url)) { uiReady = true; applyContentInsets(insetBottomPx); dispatchPendingDeepLink(); dispatchPendingInlineQuery(); dispatchPendingMiniAppShortcut(); dispatchPendingThemeLink(); }
             }
             @Override public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
                 showInterfaceRecovery(view);
@@ -316,13 +316,13 @@ public final class ShellActivity extends AccessActivity {
         if (bridge != null && requireAccess()) {if(!bridge.currentAccount()){bridge.detach();recreate();return;}bridge.attach();if(((WrgramApplication)getApplication()).ageAccess().allowed()&&updateController!=null)updateController.check(false);}
         if(lockScreen!=null&&AppLock.disableIfUnavailable(this)){android.widget.Toast.makeText(this,R.string.app_lock_removed,android.widget.Toast.LENGTH_LONG).show();if(bridge!=null)bridge.changed("security");}
         if(lockScreen!=null){if(AppLock.isUnlocked())lockScreen.hide();else lockScreen.show(false);}
-        if(AppLock.isUnlocked()&&pendingDeepLink!=null&&bridge!=null){String link=pendingDeepLink;pendingDeepLink=null;bridge.openSystemLink(link);}
+        dispatchPendingDeepLink();
         if(AppLock.isUnlocked()){dispatchPendingInlineQuery();dispatchPendingMiniAppShortcut();dispatchPendingThemeLink();}
     }
     @Override protected void onNewIntent(Intent intent){
         super.onNewIntent(intent);setIntent(intent);captureThemeLink(intent);captureIntentExtras(intent);
         String link=TelegramLinks.normalize(intent==null?null:intent.getDataString());
-        if(link!=null){if(bridge!=null&&AppLock.isUnlocked()){bridge.openSystemLink(link);}else pendingDeepLink=link;}
+        if(link!=null){pendingDeepLink=link;dispatchPendingDeepLink();}
         if(AppLock.isUnlocked()){dispatchPendingInlineQuery();dispatchPendingMiniAppShortcut();dispatchPendingThemeLink();}
     }
     @Override public void onConfigurationChanged(android.content.res.Configuration configuration){
@@ -365,4 +365,5 @@ public final class ShellActivity extends AccessActivity {
     @Override protected void onPause(){resumed=false;super.onPause();}
     @Override protected void onStop() { ((WrgramApplication)getApplication()).calls().removeObserver(incomingCall);AppLock.activityStopped(!isChangingConfigurations()&&(lockScreen==null||!lockScreen.authenticating()));if (bridge != null) bridge.detach(); super.onStop(); }
     @Override protected void onDestroy() { if(fileChooserCallback!=null){fileChooserCallback.onReceiveValue(null);fileChooserCallback=null;}if (bridge != null) bridge.destroy();if(updateController!=null)updateController.close(); if (web != null) { web.stopLoading(); web.destroy(); } super.onDestroy(); }
+    void dispatchPendingDeepLink(){if(pendingDeepLink!=null&&bridge!=null&&uiReady&&AppLock.isUnlocked()&&((WrgramApplication)getApplication()).telegram().ready()){String link=pendingDeepLink;pendingDeepLink=null;bridge.openSystemLink(link);}}
 }

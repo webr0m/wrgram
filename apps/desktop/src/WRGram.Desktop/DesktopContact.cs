@@ -5,7 +5,7 @@ using TL;
 
 /// <summary>
 /// Reglas de «compartir un contacto» en Windows. Android arma un <c>TdApi.Contact</c> y lo mete en
-/// <c>InputMessageContact</c> (<c>NativeBridge.java:4722</c>); en MTProto el contacto viaja como adjunto —
+/// <c>InputMessageContact</c> (<c>NativeBridge.java:4725</c>); en MTProto el contacto viaja como adjunto —
 /// <c>InputMediaContact</c> dentro de la misma <c>messages.sendMedia</c> que ya usa el archivo suelto—, así que el
 /// puente no necesita el <c>access_hash</c> de la persona compartida: solo su número y sus dos nombres. Las cuatro
 /// frases que se ven cuando algo falla son literales copiados carácter a carácter de <c>shareContact</c> y de
@@ -26,21 +26,21 @@ using TL;
 /// </summary>
 public static class DesktopContact
 {
-    /// Literal de <c>session.canSend()</c> en <c>shareContact</c> (<c>NativeBridge.java:4978</c>). Es la misma frase
+    /// Literal de <c>session.canSend()</c> en <c>shareContact</c> (<c>NativeBridge.java:4721-4722</c>). Es la misma frase
     /// que la encuesta ya decía para el mismo comprobante de Android, así que se referencia y no se copia: si
     /// cambia, cambia en las dos capas a la vez.
     public const string CannotSend = DesktopPoll.Sending;
 
-    /// Literal de <c>chat.permissions.canSendOtherMessages</c> (<c>NativeBridge.java:4721</c>).
+    /// Literal de <c>chat.permissions.canSendOtherMessages</c> (<c>NativeBridge.java:4724</c>).
     public const string NotAllowed = "Este chat no permite compartir contactos.";
 
     /// Literal del <c>a.fail</c> cuando <c>user.phoneNumber</c> sale vacío
-    /// (<c>NativeBridge.java:4722</c>). Es la única de las cuatro que no es un permiso: es la privacidad de Telegram
+    /// (<c>NativeBridge.java:4725</c>). Es la única de las cuatro que no es un permiso: es la privacidad de Telegram
     /// diciendo que el número no está expuesto, y no hay forma de rodearla.
     public const string NoPhone =
         "Telegram no comparte el número de teléfono de este usuario. Solo puedes compartir contactos cuyo número ya está visible.";
 
-    /// Literal del <c>answer.fail</c> de <c>contacts</c> (<c>NativeBridge.java:1786</c>), la lista y la búsqueda.
+    /// Literal del <c>answer.fail</c> de <c>contacts</c> (<c>NativeBridge.java:1787</c>), la lista y la búsqueda.
     public const string Prepare = "No se pudieron preparar los contactos.";
 
     /// Lo que <c>BridgePolicy.text(params,"query",80)</c> lanza cuando el texto no cabe: «Invalid text» en inglés.
@@ -77,7 +77,7 @@ public static class DesktopContact
     /// <c>new TdApi.SearchContacts(query,50)</c>: el tope de resultados de la búsqueda.
     public const int MaxResults = 50;
 
-    /// Copia de <c>NativeSnapshot.limit</c> (<c>NativeSnapshot.java:545</c>) incluido el punto suspensivo:
+    /// Copia de <c>NativeSnapshot.limit</c> (<c>NativeSnapshot.java:552</c>) incluido el punto suspensivo:
     /// <c>text.length()>size ? text.substring(0,size)+"…" : text</c>. No es el <c>Clip</c> del host, que corta sin
     /// nada; usar el equivocado cambiaría el nombre que la otra persona lee.
     public static string Limit(string value, int maximum) => value.Length > maximum ? value[..maximum] + "…" : value;

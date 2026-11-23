@@ -13,7 +13,7 @@ import type { PrivacySetting } from './contract';
  * la provoque. Se lista en `PRIVACY_REFUSALS` con esa marca, no para que el andamio la tire.
  */
 
-/** Las diez de `PRIVACY_KEYS` (`NativeBridge.java:3847`), en el orden del array que la pantalla recorre. */
+/** Las diez de `PRIVACY_KEYS` (`NativeBridge.java:3848`), en el orden del array que la pantalla recorre. */
 export const PRIVACY_KEYS = [
   'status', 'profilePhoto', 'phone', 'bio', 'birthdate', 'forwards', 'calls', 'voiceMessages', 'invites', 'findPhone',
 ] as const;
@@ -36,7 +36,7 @@ export const PRIVACY_MAX_EXCEPTIONS = 200;
 
 /** Las negaciones, con su fuente al lado. Son las que el puente dice, no las que la pantalla inventa. */
 export const PRIVACY_REFUSALS = {
-  /** El `default` de `privacySetting` (`NativeBridge.java:3875`). */
+  /** El `default` de `privacySetting` (`NativeBridge.java:3861`). */
   unknownSetting: 'Ajuste de privacidad no válido.',
   /** El `default` de `BridgePolicy.text` sobre la clave o el valor (`BridgePolicy.java:59`). */
   badText: 'El ajuste y el valor de privacidad tienen que llegar como texto corto.',
@@ -122,7 +122,7 @@ export const shapedText = (raw: unknown, maximum: number): boolean =>
   typeof raw === 'string' && raw.length <= maximum;
 
 /**
- * La forma de `optionalIds` (`NativeBridge.java:3908`) con `BridgePolicy.ids` (`BridgePolicy.java:57`) dentro:
+ * La forma de `optionalIds` (`NativeBridge.java:3894`) con `BridgePolicy.ids` (`BridgePolicy.java:58`) dentro:
  * ausencia o array vacío es la lista vacía; lo demás, como mucho cien elementos y todos con la pinta de un entero
  * firmado. La expresión de Java ancla los dos extremos sola con `matches`; en JS `$` tampoco deja pasar un salto de
  * línea final, así que las dos capas rechazan exactamente lo mismo.

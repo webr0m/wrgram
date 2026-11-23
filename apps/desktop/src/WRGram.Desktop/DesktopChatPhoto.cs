@@ -11,15 +11,15 @@ namespace WRGram.Desktop;
 /// la descripción de la comunidad (<see cref="DesktopCommunityInfo.Supported"/> y
 /// <see cref="DesktopCommunityInfo.CanChange"/>), porque Android también las comparte —<c>ChatEditing.supported</c>
 /// y <c>ChatEditing.canChange</c>, con las mismas dos constantes <c>COMMUNITY_UNSUPPORTED</c>
-/// (<c>NativeBridge.java:1893</c>) y <c>COMMUNITY_NO_RIGHT</c> (<c>:1891</c>)— y una norma que vive dos veces en la
+/// (<c>NativeBridge.java:1893</c>) y <c>COMMUNITY_NO_RIGHT</c> (<c>:1894</c>)— y una norma que vive dos veces en la
 /// misma capa se pudre la primera vez que cambia. Lo mismo con el descarte de la imagen y con «Cancelar»: son
 /// <see cref="DesktopProfilePhoto.NoImage"/> y <see cref="DesktopProfilePhoto.Cancel"/>.
 /// </para>
 /// <para>
 /// Y hay una orden que no se copia, dicho en lugar de fingido. Android borra la foto con el mismo método con que la
-/// pone: <c>SetChatPhoto(chatId,null)</c> (<c>:1780</c>), porque TDLib documenta que un <c>photo</c> vacío deja la
-/// comunidad sin imagen. MTProto no expresa ese vacío: medido por reflexión sobre WTelegramClient 4.4.10,
-/// <c>TL.InputChatPhotoBase</c> tiene exactamente dos derivados —<c>TL.InputChatUploadedPhoto</c> y
+/// pone: <c>SetChatPhoto(chat.id,null)</c> (<c>NativeBridge.java:1782</c>), porque TDLib documenta que un
+/// <c>photo</c> vacío deja la comunidad sin imagen. MTProto no expresa ese vacío: medido por reflexión sobre
+/// WTelegramClient 4.4.10, <c>TL.InputChatPhotoBase</c> tiene dos derivados —<c>TL.InputChatUploadedPhoto</c> y
 /// <c>TL.InputChatPhoto</c>— y el constructor <c>inputChatPhotoEmpty</c> no está generado, así que no hay objeto
 /// que meter en el campo <c>photo</c> de <c>TL.Methods.Channels_EditPhoto</c>. Tampoco vale construir un
 /// <c>InputChatPhoto</c> a partir de lo que la fila trae: <c>TL.ChatPhoto</c> solo tiene <c>photo_id</c>,
@@ -29,11 +29,12 @@ namespace WRGram.Desktop;
 /// </para>
 /// <para>
 /// La otra diferencia es de gesto, no de norma. Android deja la petición abierta mientras la galería y el
-/// <c>AlertDialog</c> están delante (<c>chatPhotoPicking</c>, <c>:1740</c>) y por eso necesita la negativa «Ya hay
-/// un selector de imagen abierto» (<c>PHOTO_BUSY</c>, <c>:1719</c>); aquí las dos ventanas son modales del propio
-/// proceso y no se abultan, así que esa frase no tiene dónde aparecer. Lo que sí se conserva es el orden: la forma
-/// y el derecho se comprueban <b>antes</b> de abrir el selector (<c>:1735</c> y <c>:1738</c>), porque pedirle a la
-/// persona que busque una foto para luego decirle que no puede usarla es hacerle un trabajo que no era suyo.
+/// <c>AlertDialog</c> están delante (<c>chatPhotoPicking</c> se asigna en <c>NativeBridge.java:1742</c>) y por eso
+/// necesita la negativa «Ya hay un selector de imagen abierto» (<c>PHOTO_BUSY</c>, <c>:1721</c>); aquí las dos
+/// ventanas son modales del propio proceso y no se abultan, así que esa frase no tiene dónde aparecer. Lo que sí se
+/// conserva es el orden: <c>ChatEditing.supported</c> (<c>:1738</c>) y <c>ChatEditing.canChange</c> (<c>:1741</c>) se
+/// comprueban <b>antes</b> de abrir el selector, porque pedirle a la persona que busque una foto para luego decirle
+/// que no puede usarla es hacerle un trabajo que no era suyo.
 /// </para>
 /// </summary>
 public static class DesktopChatPhoto

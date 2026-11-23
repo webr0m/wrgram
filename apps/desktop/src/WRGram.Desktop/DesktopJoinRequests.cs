@@ -10,9 +10,9 @@ using TL;
 /// <summary>
 /// Las solicitudes de ingreso de una comunidad en Windows. En Android son dos archivos: `JoinRequests.java`,
 /// que es puro (fila, página y marcador, sin sesión ni red), y las dos órdenes del puente —`chat.requests`
-/// (`NativeBridge.java:757` → `joinRequests` `:3508-3523` con su carga `requestJoinPage` `:3525-3539`, su
-/// abanico de nombres `joinResolve` `:3541-3545` y su cierre `finishJoinPage` `:3545-3557`) y
-/// `chat.request.answer` (`:747` → `answerJoinRequest` `:3558-3584`)—. Aquí están las mismas reglas y las
+/// (`NativeBridge.java:757` → `joinRequests` `:3527-3542` con su carga `requestJoinPage` `:3543-3557`, su
+/// abanico de nombres `joinResolve` `:3559-3563` y su cierre `finishJoinPage` `:3564-3576`) y
+/// `chat.request.answer` (`:764` → `answerJoinRequest` `:3577-3604`)—. Aquí están las mismas reglas y las
 /// mismas frases, y el cable está en `DesktopJoinRequestsFlow.cs`.
 /// <para>
 /// La diferencia de capas que manda todo lo demás: TDLib tiene un método para la cola
@@ -26,9 +26,9 @@ using TL;
 /// </para>
 /// <para>
 /// Dos cosas que Android guarda en memoria y aquí no existen. La primera es el marcador: allá `requestOwner`,
-/// `requestChat`, `requestCursorUser` y `requestCursorDate` (`:3529-3533`) hacen que un cursor devuelto por otra
+/// `requestChat`, `requestCursorUser` y `requestCursorDate` (`:3532-3533`) hacen que un cursor devuelto por otra
 /// sesión, otro chat o una página distinta se niegue con «Vuelve a abrir las solicitudes para continuar.»
-/// (`:3529`); aquí la posición es un par de argumentos de la petición, así que no hay memoria que pueda estar
+/// (`:3533`); aquí la posición es un par de argumentos de la petición, así que no hay memoria que pueda estar
 /// vieja. Esa frase no se copia como negación de memoria, sino como lo que en Windows produce el mismo
 /// consejo: perder de la caché a la persona que el marcador nombra (<see cref="CursorGone"/>). La segunda es el
 /// `access_hash`: TDLib lo tiene en casa y MTProto lo exige en cada escritura, así que el offset y la respuesta
@@ -44,73 +44,73 @@ using TL;
 /// </summary>
 public static class DesktopJoinRequests
 {
-    /// `JoinRequests.PAGE` (`JoinRequests.java:13`).
+    /// `JoinRequests.PAGE` (`JoinRequests.java:12`).
     public const int PageSize = 20;
 
-    /// `NativeSnapshot.limit(...,80)` en las dos lecturas del nombre (`:3564` y `:3585`).
+    /// `NativeSnapshot.limit(...,80)` en las dos lecturas del nombre (`:3568` y `:3588`).
     public const int NameShown = 80;
 
-    /// `NativeSnapshot.limit(chat.title,80)` antes de meter el título en el cuerpo del diálogo (`:3583`). Vale
+    /// `NativeSnapshot.limit(chat.title,80)` antes de meter el título en el cuerpo del diálogo (`:3587`). Vale
     /// lo mismo que <see cref="NameShown"/> y es otra cosa: es el nombre de la comunidad, no el de la persona, y
     /// la aguja lo mide aparte para que nadie lo cambie a posteriori.
     public const int ChatShown = 80;
 
-    /// `JoinRequests.limit(request.bio,140)` (`JoinRequests.java:29`).
+    /// `JoinRequests.limit(request.bio,140)` (`JoinRequests.java:27`).
     public const int BioShown = 140;
 
     /// `BridgePolicy.id` acepta hasta diecinueve dígitos con signo (`BridgePolicy.java:57`); ese techo es el de
     /// un `long`, no un invento de aquí.
     private static readonly Regex Identifier = new(@"^-?(0|[1-9][0-9]{0,18})$", RegexOptions.CultureInvariant);
 
-    /// El par `identificador:fecha` del marcador, en la forma que `JoinRequests.offset` acepta (`:44-62`).
+    /// El par `identificador:fecha` del marcador, en la forma que `JoinRequests.offset` acepta (`JoinRequests.java:47-63`).
     private static readonly Regex Digits = new(@"^[0-9]+$", RegexOptions.CultureInvariant);
 
     // ---- las seis negaciones y las cuatro literales del diálogo ----
 
-    /// `:3525` y `:3575`, palabra por palabra. En TDLib la guarda es `ChatTypeBasicGroup || ChatTypeSupergroup`
+    /// `NativeBridge.java:3529` y `:3579`, palabra por palabra. En TDLib la guarda es `ChatTypeBasicGroup || ChatTypeSupergroup`
     /// —y un canal es un supergrupo—, que es exactamente las dos formas que `DesktopMembership.Of` reconoce.
     public const string Unsupported = "Las solicitudes de ingreso solo existen en grupos y canales.";
 
-    /// `JoinRequests.offset` lanza esto tres veces por el mismo motivo (`JoinRequests.java:51`, `:53`, `:58`):
+    /// `JoinRequests.offset` lanza esto tres veces por el mismo motivo (`JoinRequests.java:51`, `:59`, `:61`):
     /// dos puntos mal puestos, un tramo que no es número o un cero donde tiene que haber posición.
     public const string CursorIssue = "El marcador de solicitudes no es válido.";
 
-    /// La frase de `:3529`, copiada porque el consejo es el mismo aunque la causa no: allá el cursor no
+    /// La frase de `NativeBridge.java:3533`, copiada porque el consejo es el mismo aunque la causa no: allá el cursor no
     /// coincide con la memoria de la sesión; aquí la caché ya no conoce a la persona que el marcador nombra y
     /// sin ella no hay `offset_user` posible.
     public const string CursorGone = "Vuelve a abrir las solicitudes para continuar.";
 
-    /// `:3535` y `:3586`. Las dos son necesarias: Telegram comprueba el derecho al listar y lo vuelve a
+    /// `NativeBridge.java:3539` y `:3590`. Las dos son necesarias: Telegram comprueba el derecho al listar y lo vuelve a
     /// comprobar al decidir, y Android las escribe con palabras distintas según qué de las dos falló.
     public const string NoRightReview = "Telegram no concede a esta cuenta permiso para revisar solicitudes de ingreso.";
     public const string NoRightAnswer = "Telegram no concede a esta cuenta permiso para decidir solicitudes de ingreso.";
 
-    /// `:3582`, la rama que junta el identificador cero y el de la propia cuenta: una solicitud de uno mismo no
+    /// `NativeBridge.java:3586`, la rama que junta el identificador cero y el de la propia cuenta: una solicitud de uno mismo no
     /// existe y responderla desde aquí no tiene sentido.
     public const string SelfAnswer = "Esa solicitud no se puede responder desde aquí.";
 
-    /// `:3592`, la guarda que el botón positivo escribe antes de tocar Telegram.
+    /// `NativeBridge.java:3596`, la guarda que el botón positivo escribe antes de tocar Telegram.
     public const string ChangedAccount = "La cuenta cambió. No se respondió a la solicitud.";
 
-    /// Las dos causas que en Android salen en inglés: `BridgePolicy.id` lanza «Invalid identifier» (`:54`) y
-    /// `requiredBool` «Missing permission: approve» (`:2773`), y el `catch` de `:3581` reenvía el mensaje tal cual
+    /// Las dos causas que en Android salen en inglés: `BridgePolicy.id` lanza «Invalid identifier» (`BridgePolicy.java:57`) y
+    /// `requiredBool` «Missing permission: approve» (`NativeBridge.java:2777`), y el `catch` de `:3585` reenvía el mensaje tal cual
     /// con `a.fail(invalid.getMessage())`, que es lo que la pantalla lee. Windows las dice en español con la causa
     /// concreta, que es la norma fijada por la ronda AT y la misma decisión que tomó la ronda BF con la aprobación
-    /// de los enlaces (`:3646`, cuyo `catch` también reenvía).
+    /// de los enlaces (`NativeBridge.java:3650`, cuyo `catch` también reenvía).
     public const string BadUserId = "El identificador de la solicitud no es válido.";
     public const string MissingApprove = "La respuesta debe decir si se aprueba o se rechaza la solicitud.";
 
-    /// Los cuatro rótulos del `Dialogs.builder` de `:3572-3576`, en sus dos formas.
+    /// Los cuatro rótulos del `Dialogs.builder` de `NativeBridge.java:3591-3602`, en sus dos formas.
     public const string ApproveTitle = "Aprobar solicitud";
     public const string RejectTitle = "Rechazar solicitud";
     public const string ApproveAccept = "Aprobar en Telegram";
     public const string RejectAccept = "Rechazar en Telegram";
 
-    /// El cuerpo de aprobar, tal cual lo escribe `:3588` con el nombre y el título ya recortados.
+    /// El cuerpo de aprobar, tal cual lo escribe `NativeBridge.java:3592` con el nombre y el título ya recortados.
     public static string ApproveBody(string name, string title) =>
         "«" + name + "» entrará en «" + title + "» en cuanto Telegram lo confirme. Podrás retirarlo después desde Miembros.";
 
-    /// Y el de rechazar, `:3589`: descarta la solicitud, no a la persona.
+    /// Y el de rechazar, `NativeBridge.java:3593`: descarta la solicitud, no a la persona.
     public static string RejectBody(string name, string title) =>
         "Se descartará la solicitud de «" + name + "» para «" + title + "». La persona podrá enviar otra si sigue teniendo un enlace válido.";
 
@@ -119,13 +119,13 @@ public static class DesktopJoinRequests
     public static string Accept(bool approve) => approve ? ApproveAccept : RejectAccept;
     public static string Body(bool approve, string name, string title) => approve ? ApproveBody(name, title) : RejectBody(name, title);
 
-    /// La forma de la fila, la misma decisión de `:3525` y `:3575`.
+    /// La forma de la fila, la misma decisión de `NativeBridge.java:3529` y `:3579`.
     public static bool Supported(DesktopMembership.Kind kind) =>
         kind is DesktopMembership.Kind.Basic or DesktopMembership.Kind.Channel;
 
     // ---- el marcador ----
 
-    /// `JoinRequests.offset` (`JoinRequests.java:44-62`) hecho negación en lugar de excepción: vacío es
+    /// `JoinRequests.offset` (`JoinRequests.java:47-63`) hecho negación en lugar de excepción: vacío es
     /// «desde el principio» y no cuesta nada; si trae forma de marcador, tiene que ser dos tramos de dígitos
     /// separados por un solo dos puntos, ninguno vacío y ninguno cero.
     public static string? CursorProblem(string? value)
@@ -139,7 +139,7 @@ public static class DesktopJoinRequests
 
     /// Las dos posiciones que `messages.getChatInviteImporters` pide como `offset_date` y `offset_user`. El
     /// <c>long</c> de Android no puede desbordar aquí porque el tramo ya pasó el techo de diecinueve dígitos de
-    /// <see cref="Identifier"/> y el de fecha cabe en un `int`, que es lo que `Integer.parseInt` exige (`:52`).
+    /// <see cref="Identifier"/> y el de fecha cabe en un `int`, que es lo que `Integer.parseInt` exige (`JoinRequests.java:58`).
     public static (long UserId, int Date)? Offset(string? value)
     {
         if (string.IsNullOrEmpty(value)) return null;
@@ -150,21 +150,21 @@ public static class DesktopJoinRequests
         return (userId, date);
     }
 
-    /// `JoinRequests.token` (`JoinRequests.java:42`): identificador, dos puntos, fecha. La fecha viaja en
+    /// `JoinRequests.token` (`JoinRequests.java:44`): identificador, dos puntos, fecha. La fecha viaja en
     /// segundos de epoch, la unidad de Android, aunque MTProto la devuelva como `DateTime`.
     public static string Token(long userId, long date) =>
         userId.ToString(CultureInfo.InvariantCulture) + ":" + date.ToString(CultureInfo.InvariantCulture);
 
-    /// La lectura estricta del `userId` que manda la pantalla, espejo de `BridgePolicy.id` (`:53`): solo
+    /// La lectura estricta del `userId` que manda la pantalla, espejo de `BridgePolicy.id` (`BridgePolicy.java:57`): solo
     /// cadenas de dígitos con su techo, nada de números sueltos ni de comas.
     public static string? UserIdProblem(string? value) =>
         value is null || !Identifier.IsMatch(value) ? BadUserId : null;
 
     // ---- la fila y la página ----
 
-    /// La fila de <c>JoinRequests.row</c> (<c>JoinRequests.java:26-31</c>) con sus cuatro claves y en su orden.
+    /// La fila de <c>JoinRequests.row</c> (<c>JoinRequests.java:23-28</c>) con sus cuatro claves y en su orden.
     /// Android reparte la tercera y la cuarta entre dos pasos (`row` pone `bio` y `finishJoinPage` añade
-    /// `name`, `:3564`) porque su nombre sale de un abanico de `GetUser`; aquí la respuesta ya trae el diccionario
+    /// `name`, `NativeBridge.java:3568`) porque su nombre sale de un abanico de `GetUser`; aquí la respuesta ya trae el diccionario
     /// de personas y las cuatro se escriben juntas, en el mismo orden que sale por el puente.
     /// <c>null</c> cuando la fila no sirve, que es lo que <c>row</c> devuelve con `userId == 0`.
     public static Entry? Row(ChatInviteImporter? importer, string name)
@@ -184,7 +184,7 @@ public static class DesktopJoinRequests
     }
 
     /// La fila ya armada junto a las dos claves con las que <c>JoinRequests.page</c> fabrica el marcador de la
-    /// página siguiente (<c>JoinRequests.java:33-40</c>).
+    /// página siguiente (<c>JoinRequests.java:34-40</c>).
     public readonly record struct Entry(object Row, long UserId, long Date);
 
     /// <c>JoinRequests.page</c>: el total de Telegram, las filas, si hay más y el marcador para seguir.

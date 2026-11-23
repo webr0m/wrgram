@@ -10,4 +10,8 @@ final class MiniAppLaunch {
     private static String put(TdSession session,String title,String url,long botUserId,String buttonText,boolean keyboardData,long webAppLaunchId){MiniAppPolicy.origin(url);pending.clear();String handle=java.util.UUID.randomUUID().toString();pending.put(handle,new Launch(session,title,url,botUserId,buttonText,keyboardData,webAppLaunchId,android.os.SystemClock.elapsedRealtime()));return handle;}
     static synchronized Launch take(String handle){Launch launch=pending.remove(handle);return launch!=null&&android.os.SystemClock.elapsedRealtime()-launch.created<30_000?launch:null;}
     static synchronized void clear(){pending.clear();}
+    static synchronized String putBot(TdSession session, String title, String url, long botUserId, long launchId) {
+        if (botUserId <= 0) throw new IllegalArgumentException("Invalid Mini App bot");
+        return put(session, title, url, botUserId, "", false, launchId);
+    }
 }

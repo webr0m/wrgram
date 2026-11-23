@@ -22,7 +22,7 @@ export type ScopeClaim = { readonly label: string; readonly methods: readonly st
 export const DESKTOP_AVAILABLE: readonly ScopeClaim[] = [
   { label: 'inicio de sesión con número y código', methods: ['connect', 'authenticate', 'auth.register', 'logout'] },
   { label: 'lista de chats, carpetas con sus enlaces e historial', methods: ['chats.list', 'chats.more', 'folders.list', 'folders.get', 'folders.save', 'folders.delete', 'folders.link', 'folders.join', 'folders.links.list', 'folders.links.edit', 'folders.links.delete', 'history.older', 'history.newer', 'history.refresh', 'history.byDate'] },
-  { label: 'texto con formato, respuestas y borradores', methods: ['send.text', 'draft.set', 'typing'] },
+  { label: 'texto con formato, comandos de bots, respuestas y borradores', methods: ['send.text', 'draft.set', 'typing', 'bot.commands'] },
   // Las tres caras de editar están cableadas: el texto y el pie desde la AH, y el archivo desde la CK-B, que sube
   // el elegido con `upload.saveFilePart` y reescribe la fila con el parámetro `media` de `messages.editMessage`.
   { label: 'editar, borrar y reenviar mensajes', methods: ['message.edit', 'message.edit.caption', 'message.edit.media', 'message.delete', 'messages.delete', 'message.forward', 'messages.forward', 'message.copy'] },
@@ -67,6 +67,12 @@ export const DESKTOP_AVAILABLE: readonly ScopeClaim[] = [
   // La ronda CB cableó el `messages.editMessage` con el bit `stopped` de `inputMediaGeoLive`, que es lo que hace el
   // botón «Dejar de compartir» de la tarjeta. Lo demás de la familia está en «pendiente» aquí abajo.
   { label: 'dejar de compartir una ubicación en directo propia', methods: ['location.live.stop'] },
+  // La ronda CH-B cableó las dos claves: `account.getWallPapers` para leer y `account.installWallPaper` para poner.
+  // Los dos huecos van en la propia etiqueta porque son medidos, no de despacho: la rama de colores del
+  // `background.set` existe pero se niega por su nombre (`DesktopBackgrounds.NoCreate` —la única escritura de un
+  // fondo nuevo en MTProto es `account.uploadWallPaper`, que pide un archivo—), y la marca de «de serie» de TDLib no
+  // la manda ninguna de las dos hojas del protocolo, así que la pantalla la omite (`DesktopBackgrounds.Stock`).
+  { label: 'leer y poner los fondos que la cuenta ya tiene (crear uno por color, no)', methods: ['backgrounds.list', 'background.set'] },
 ];
 
 /** Lo que falta, con las claves que lo negarían; ninguna de estas líneas se ofrece en la pantalla. */
@@ -93,7 +99,6 @@ export const DESKTOP_PENDING: readonly ScopeClaim[] = [
   { label: 'ventajas y límites de Premium, regalos y pagos con Stars', methods: ['premium.features', 'premium.limit', 'gifts.catalog', 'gifts.send', 'gifts.received', 'payments.stars.prepare', 'payments.stars.confirm'] },
   { label: 'bloqueo local de la app, caché y proxies', methods: ['security.lock', 'security.timeout', 'security.lockNow', 'storage.status', 'storage.details', 'storage.settings', 'storage.optimize', 'proxy.list', 'proxy.add', 'proxy.enable'] },
   { label: 'listas de tareas, traducción automática del chat y etiquetas de Guardados', methods: ['checklist.add', 'checklist.send', 'chat.autotranslate', 'chat.translatable', 'saved.tags', 'saved.tag.label', 'saved.topics.pin', 'saved.search'] },
-  { label: 'fondos guardados en tu cuenta de Telegram', methods: ['backgrounds.list', 'background.set'] },
   { label: 'reproducir en el visor nativo y abrir el archivo en otra app', methods: ['media.play', 'media.open'] },
   { label: 'ventajas por nivel de impulso y paleta dinámica del sistema', methods: ['chat.boost.features', 'chat.boost.level', 'appearance.systemPalette'] },
   { label: 'resultados inline de los bots', methods: ['bot.inline.query', 'bot.inline.more', 'bot.inline.send', 'bot.inline.choose', 'bot.inline.cancel'] },

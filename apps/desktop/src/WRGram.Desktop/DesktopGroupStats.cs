@@ -6,12 +6,13 @@ using TL;
 
 /// <summary>
 /// Las estadísticas de una comunidad convertidas al contrato que comparten Android y Windows (ronda CA). El otro lado
-/// es <c>GroupChatStats.java</c>, que aplana <c>TdApi.ChatStatisticsChannel</c> y <c>TdApi.ChatStatisticsSupergroup</c>
-/// (<c>NativeBridge.java:882</c>); aquí se aplanan <c>TL.Stats_BroadcastStats</c> y <c>TL.Stats_MegagroupStats</c>, y
+/// es <c>GroupChatStats.java</c>, que aplana <c>TdApi.ChatStatisticsChannel</c> (<c>GroupChatStats.java:50</c>) y
+/// <c>TdApi.ChatStatisticsSupergroup</c> (<c>GroupChatStats.java:63</c>) desde el brazo <c>groups.stats</c>
+/// (<c>NativeBridge.java:883</c>); aquí se aplanan <c>TL.Stats_BroadcastStats</c> y <c>TL.Stats_MegagroupStats</c>, y
 /// las dos capas escupen el mismo JSON: <c>kind</c>, el periodo, las fichas <c>{id, value, previous}</c> y, solo en los
 /// grupos, la tabla de los que más escriben. Las etiquetas en español no viven en ninguna de las dos: las pone la
-/// pantalla a partir del <c>id</c> (<c>groupStats.ts:15</c>), así que un número que aquí se llama <c>viewers</c> no
-/// puede llamarse de otra manera allá.
+/// pantalla desde el catálogo <c>STATS_LABELS</c> (<c>groupStats.ts:15-27</c>), indexado por el <c>id</c> que manda
+/// cada capa, así que un número que aquí se llama <c>viewers</c> no puede llamarse de otra manera allá.
 /// <para>
 /// El emparejamiento es uno a uno, medido por reflexión sobre WTelegramClient 4.4.10. En el canal,
 /// <c>followers</c>→<c>members</c>, <c>views_per_post</c>→<c>viewsPerPost</c>, <c>shares_per_post</c>→
@@ -63,7 +64,7 @@ public static class DesktopGroupStats
     public const string Outside = "Esta cuenta ya no está dentro de la comunidad.";
 
     /// <c>CHANNEL_INVALID</c>, y el mismo texto que el host usa cuando la fila pedida no está en la caché
-    /// (<c>TelegramService.cs:3863</c>).
+    /// (<c>TelegramService.cs:3874</c>).
     public const string Stale = "La conversación no está cargada. Actualiza la lista e inténtalo de nuevo.";
 
     /// <c>BROADCAST_REQUIRED</c> / <c>MEGAGROUP_REQUIRED</c>: Telegram contradice la forma que la caché tenía. No es

@@ -42,17 +42,17 @@ export const BLOCKED_REFUSALS = {
   needsHash: 'Telegram no dio los datos necesarios para desbloquear a este remitente. Vuelve a abrir la lista de bloqueados e inténtalo de nuevo.',
   /** Solo lo diría Windows, y por la misma falta de hash, pero desde la ficha de la persona. */
   noProfileHash: 'Telegram no dio los datos necesarios para cambiar el bloqueo de esta persona. Vuelve a abrir su ficha desde la conversación e inténtalo de nuevo.',
-  /** El primer `throw` de `profileBlock` (`NativeBridge.java:1316`). */
+  /** El primer `throw` de `profileBlock` (`NativeBridge.java:1302`). */
   notPrivate: 'Esta acción solo está disponible para usuarios y bots.',
-  /** El segundo (`:1284`). */
+  /** El segundo (`:1304`). */
   selfBlock: 'Esta es tu propia cuenta.',
-  /** Solo lo diría Windows: el `getBoolean("value")` de `:1286` allá lanza sin mensaje propio. */
+  /** Solo lo diría Windows: el `getBoolean("value")` de `:1305` allá lanza sin mensaje propio. */
   missingValue: 'Falta el valor de bloqueo. Vuelve a intentarlo desde la ficha de la persona.',
   /** Solo lo diría Windows, el mismo caso con un valor que no es verdadero ni falso. */
   badValue: 'El valor de bloqueo no es verdadero ni falso.',
 } as const;
 
-/** Los cuatro rótulos del cuadro de `:1535-1538`. Lo de «no se envía ningún mensaje» es la parte que el botón no dice. */
+/** Los cuatro rótulos del cuadro de `:1555-1558`. Lo de «no se envía ningún mensaje» es la parte que el botón no dice. */
 export const BLOCKED_DIALOG = {
   title: (name: string) => 'Desbloquear a ' + name,
   body: 'Se quitará el bloqueo de esta cuenta de Telegram. Podrá volver a contactarte según tus ajustes de privacidad. No se envía ningún mensaje ni se añade a contactos.',
@@ -60,7 +60,7 @@ export const BLOCKED_DIALOG = {
 } as const;
 
 /**
- * Copia de `NativeSnapshot.limit` (`NativeSnapshot.java:545`) y de `DesktopContact.Limit` (`DesktopContact.cs:83`):
+ * Copia de `NativeSnapshot.limit` (`NativeSnapshot.java:552`) y de `DesktopContact.Limit` (`DesktopContact.cs:83`):
  * se corta y se marca con punto suspensivo, no se corta a secas. El andamio lo necesita porque el recorte lo hace el
  * puente, y una fila de diseño más ancha que la real engaña al que está mirando la pantalla.
  */

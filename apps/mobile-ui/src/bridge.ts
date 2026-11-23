@@ -17,7 +17,7 @@ export const snapshot = () => state;
 // la cámara, un permiso de Android o un diálogo de confirmación: 35 s no es un plazo real.
 const USER_DRIVEN = new Set([
   'attachment.pick', 'attachment.camera', 'attachment.album', 'attachment.videoNote', 'attachment.videoNote.record', 'attachment.photos.permission',
-  'account.photo.pick', 'account.photo.delete', 'chat.photo.pick', 'chat.photo.delete', 'media.export',
+  'account.photo.pick', 'account.photo.delete', 'chat.photo.pick', 'chat.photo.delete', 'media.export', 'bot.menu.open',
   'story.create.photo', 'story.create.video',
   'contacts.import', 'contacts.add', 'contacts.sync.set', 'contacts.sync.now',
   'share.location', 'location.live.start', 'voice.start', 'bot.button', 'security.lock',
@@ -58,6 +58,9 @@ export function request<T = unknown>(method: string, params: Record<string, unkn
 }
 
 function sendRequest<T>(method: string, params: Record<string, unknown>, timeout: number): Promise<T> {
+  // Los comandos se resaltan en el editor. Telegram los detecta al enviar y TDLib
+  // solo permite especificar manualmente las entidades de formato del mensaje.
+  if (Array.isArray(params.entities)) params = { ...params, entities: params.entities.filter(entity => entity?.type !== 'botCommand') };
   const port = window.WRGramNative;
   if (!port && import.meta.env.DEV && designTransport) return designTransport(method, params) as Promise<T>;
   if (!port) return Promise.reject(new Error('Disponible en la aplicación Android. Esta vista no conecta una cuenta.'));

@@ -9,11 +9,11 @@ using System.IO;
 /// (<c>NativeBridge.java:545</c>)— y que en este host no tenían brazo hasta la ronda AU: la pantalla de escritorio
 /// no llegaba a ofrecerlas, porque las dos entradas estaban tapadas con <c>!desktop</c>.
 /// <para>
-/// Todo lo que aquí se copia viene de <c>NativeBridge.preparePhoto</c> (<c>NativeBridge.java:1690-1707</c>) y de
-/// su llamador <c>pickedProfilePhoto</c> (<c>:1654-1662</c>), más los dos diálogos: el de confirmar (<c>:1690</c>)
-/// y el de borrar (<c>:1646</c>). Las frases van letra por
-/// letra, porque en Android no son decoración: son lo único que la persona lee cuando algo sale mal o cuando tiene
-/// que decidir.
+/// Todo lo que aquí se copia viene de <c>NativeBridge.preparePhoto</c> (<c>NativeBridge.java:1690-1707</c>) y de su
+/// llamador <c>pickedProfilePhoto</c> (<c>:1674-1682</c>), más los dos diálogos:
+/// <c>showProfilePhotoConfirmation</c> (<c>:1708-1711</c>) y <c>deleteAccountPhoto</c> (<c>:1666</c>). Las frases
+/// van letra por letra, porque en Android no son decoración: son lo único que la persona lee cuando algo sale mal o
+/// cuando tiene que decidir.
 /// </para>
 /// <para>
 /// La parte que no se parece en nada es el descodificador, y está medida en este equipo con un JPEG real de
@@ -21,11 +21,12 @@ using System.IO;
 /// 4032x3024, es decir <b>no aplica la orientación por sí solo</b>, y su <c>BitmapMetadata</c> tampoco la sabe
 /// leer (<c>GetQuery("/App1/IFD/{System.UInt16=274}")</c> lanza <c>InvalidOperationException</c> y la variante con
 /// nombre propio devuelve vacío). Así que el giro se lee de las marcas del archivo y se aplica a mano, como hace
-/// Android con <c>ExifInterface</c> (<c>:1677</c>).
+/// Android con <c>ExifInterface</c> (<c>:1697</c>).
 /// </para>
 /// <para>
 /// El orden del giro y del espejo sí cambia entre las dos capas, y es la diferencia más fina de la ronda. La
-/// tabla de valores —<see cref="Turn"/> y <see cref="Mirror"/>, copiada de <c>:1677</c>— es idéntica, pero Android
+/// tabla de valores —<see cref="Turn"/> y <see cref="Mirror"/>, copiada de la línea de <c>rotation</c> de
+/// <c>NativeBridge.java:1697</c>— es idéntica, pero Android
 /// compone las dos operaciones con <c>matrix.postRotate(r)</c> seguido de <c>matrix.postScale(-1,1)</c>, lo que
 /// aplica primero el espejo y después el giro; el orden canónico de EXIF es el contrario (girar y luego espejar),
 /// y para los valores 2, 3, 4, 6 y 8 los dos órdenes dan el mismo resultado, así que el error solo se ve en los 5
@@ -35,7 +36,7 @@ using System.IO;
 /// <para>
 /// Lo que sí se conserva sin discusión es el resultado final: recuadro al centro del lado menor, 640x640 y JPEG a
 /// calidad 88, que es lo que Telegram llega a publicar. Por eso la pantalla enseña exactamente ese cuadro antes
-/// de subir nada, igual que el diálogo nativo de Android (<c>:1688-1698</c>).
+/// de subir nada, igual que el diálogo nativo de Android (<c>NativeBridge.java:1708-1718</c>).
 /// </para>
 /// </summary>
 public static class DesktopProfilePhoto
@@ -61,7 +62,7 @@ public static class DesktopProfilePhoto
     /// en una sola cadena, y aquí caben en la misma.
     public const string NoImage = "No se pudo preparar la imagen. Elige una foto válida de hasta 20 MB.";
 
-    /// Literal de <c>NativeBridge.java:1679</c> y <c>:1709</c>: la cuenta que estaba abierta al elegir ya no es la
+    /// Literal de <c>NativeBridge.java:1679</c> y <c>:1713</c>: la cuenta que estaba abierta al elegir ya no es la
     /// abierta cuando hay que escribir.
     public const string ChangedAccount = "La cuenta cambió. No se estableció la foto.";
 

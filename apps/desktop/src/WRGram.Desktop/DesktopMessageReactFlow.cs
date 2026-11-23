@@ -10,18 +10,18 @@ using WTelegram;
 /// <summary>
 /// El cable de las reacciones en Windows (ronda BX): <c>message.react</c> y <c>message.react.custom</c>, las dos
 /// escrituras, y la bandeja que alimenta <c>message.properties</c> para que el menú del mensaje tenga qué ofrecer.
-/// En Android se atienden en <c>NativeBridge.java:4333</c> (<c>react</c>) y <c>NativeBridge.java:4338</c>
+/// En Android se atienden en <c>NativeBridge.java:4334</c> (<c>react</c>) y <c>NativeBridge.java:4339</c>
 /// (<c>reactCustom</c>) con <c>AddMessageReaction</c> y <c>RemoveMessageReaction</c>; aquí es una sola petición,
 /// <c>messages.sendReaction</c>, que manda el conjunto completo. Reglas, frases y la forma del conjunto, en
 /// <see cref="DesktopMessageReact"/>; aquí solo el orden de las peticiones y su caché.
 /// <para>
-/// El orden reproduce al de Android en lo que se parece: primero la guarda de la fila —<c>target(p)</c> es
-/// <c>NativeBridge.java:4333</c> leyendo el mensaje, y aquí es <c>DesktopMessageDelete.Loaded</c>, que exige que
+/// El orden reproduce al de Android en lo que se parece: primero la guarda de la fila —<c>message(p)</c> es
+/// <c>NativeBridge.java:364</c> leyendo el mensaje, y aquí es <c>DesktopMessageDelete.Loaded</c>, que exige que
 /// la fila esté cargada en la conversación activa antes de ir a la red—, después la forma del argumento, después
 /// la comprobación de Premium, y al final la escritura. La comprobación de la lista ofrecida va en medio, y se
-/// salta en dos casos por los mismos motivos que Android: al quitar una reacción (<c>NativeBridge.java:4333</c>
-/// manda la quitada sin preguntar) y cuando la lista no se pudo leer
-/// (<c>NativeBridge.java:5289</c>: si la consulta de las ofrecidas falla, la orden se envía igual).
+/// salta en dos casos por los mismos motivos que Android: al quitar una reacción, porque <c>react</c>
+/// (<c>NativeBridge.java:4334</c>) manda la quitada sin preguntar, y cuando la lista no se pudo leer, porque en
+/// <c>reactOffered</c> (<c>NativeBridge.java:5283</c>) la consulta fallida manda la orden igual.
 /// </para>
 /// <para>
 /// La bandeja se lee de la información completa del chat, que es donde MTProto pone lo que Telegram autoriza en
@@ -53,7 +53,7 @@ public sealed partial class TelegramService
     private DesktopMessageReact.Offer[]? _reactionDefaults;
 
     /// <c>message.react</c> y <c>message.react.custom</c> (<c>NativeBridge.java:785</c> y
-    /// <c>NativeBridge.java:4338</c>). El parámetro se llama `emoji` en las dos claves, como en Android, y para la
+    /// <c>NativeBridge.java:787</c>). El parámetro se llama `emoji` en las dos claves, como en Android, y para la
     /// personalizada es el identificador del documento.
     private async Task<object?> ReactAsync(JsonElement args, bool custom)
     {

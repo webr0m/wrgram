@@ -28,7 +28,7 @@ namespace WRGram.Desktop;
 /// </para>
 /// <para>
 /// La copia del archivo no va a disco. Android escribe un JPEG temporal porque TDLib solo sabe leer una ruta
-/// (<c>InputFileLocal</c>, <c>:1695</c>); MTProto sube un <c>Stream</c>, así que el recuadro se queda en memoria y
+/// (<c>InputFileLocal</c>, <c>:1715</c>); MTProto sube un <c>Stream</c>, así que el recuadro se queda en memoria y
 /// no queda ningún equipaje que borrar —la promesa del diálogo («WRGram no la enviará a sus servidores», y sin
 /// copia local) sale más barata de cumplir que en el móvil.
 /// </para>
@@ -36,8 +36,8 @@ namespace WRGram.Desktop;
 public sealed partial class TelegramService
 {
     /// Lo que <see cref="PreparePhoto"/> saca del archivo elegido: los bytes que se van a subir y la imagen con la
-    /// que se pinta la confirmación. Es exactamente el par que Android guarda como <c>profilePhotoFile</c> y
-    /// <c>preview</c> (<c>NativeBridge.java:1678</c>), menos el archivo.
+    /// que se pinta la confirmación. Es el par <c>file</c> y <c>preview</c> que Android declara en
+    /// <c>PreparedPhoto</c> (<c>NativeBridge.java:116</c>), menos el archivo temporal.
     private sealed record PreparedPhoto(byte[] Jpeg, BitmapSource Preview);
 
     /// <summary>
@@ -69,7 +69,7 @@ public sealed partial class TelegramService
 
     /// <summary>
     /// <c>account.photo.delete</c> (<c>NativeBridge.java:545</c>). Sin foto no hay diálogo ni error: Android
-    /// responde <c>false</c> cuando <c>GetMe</c> no trae <c>profilePhoto</c> (<c>:1646</c>), y la pantalla ya sabe
+    /// responde <c>false</c> cuando <c>GetMe</c> no trae <c>profilePhoto</c> (<c>:1666</c>), y la pantalla ya sabe
     /// que <c>false</c> significa «no cambió nada».
     /// <para>
     /// Lo que Android no tiene que hacer aquí es buscar la foto. <c>DeleteProfilePhoto(photoId)</c> se arregla con
@@ -114,8 +114,9 @@ public sealed partial class TelegramService
     /// caché de la librería no se puede reemplazar, así que se vuelve a preguntar a Telegram.
     /// <para>
     /// Lo que la AT no previó es <see cref="DesktopState.ProfilePhoto"/>: se escribe una sola vez al abrir la
-    /// sesión, con la instantánea de <c>client.User</c> (<c>TelegramService.cs:590</c>), y además va cacheado en
-    /// disco bajo una clave que no cambia nunca (<c>photo:self:&lt;id&gt;</c> en <c>MediaRegistry.cs:79</c>). Sin
+    /// sesión, con la instantánea que <c>RegisterProfile</c> saca del usuario de la librería
+    /// (<c>TelegramService.cs:598</c>), y además va cacheado en disco bajo una clave que no cambia nunca
+    /// (<c>photo:self:&lt;id&gt;</c> en <c>MediaRegistry.cs:79</c>). Sin
     /// borrar ese archivo, cambiar la foto desde otra parte dejaría en la pantalla la foto vieja para siempre.
     /// </para>
     /// </summary>

@@ -124,7 +124,7 @@ final class NativeBridge implements TdSession.Listener {
     void detach(){if(!((WrgramApplication)activity.getApplication()).ageAccess().allowed())activity.clearSensitiveGateFields();attached=false;main.removeCallbacks(contactSyncTrigger);session.unobserve(this);assistant.unobserve(assistantChanged);session.stopTyping();cancelVoiceRecording();}
     private void armContactSync(){main.removeCallbacks(contactSyncTrigger);main.postDelayed(contactSyncTrigger,8000);}
     void destroy(){cancelVoiceRecording();if(liveAnswer!=null)liveAnswer.fail("La app se cerró; no se compartió ninguna ubicación en directo.");clearLiveRequest(null);stopLiveTracking();if(videoNotePicking!=null)videoNotePicking.fail("La app se cerró; no se envió el videomensaje.");videoNotePicking=null;if(locationAnswer!=null)locationAnswer.fail("La app se cerró; no se compartió ninguna ubicación.");if(profilePhotoPicking!=null)profilePhotoPicking.fail("La app se cerró; no se cambió la foto.");locationAnswer=null;locationSource=null;profilePhotoPicking=null;if(chatPhotoPicking!=null)chatPhotoPicking.fail("La app se cerró; no se cambió la foto de la comunidad.");chatPhotoPicking=null;if(storyPicking!=null)storyPicking.fail("La app se cerró; no se publicó ninguna historia.");storyPicking=null;if(albumPicking!=null)albumPicking.fail("La app se cerró; no se envió el álbum.");albumPicking=null;if(contactsImportAnswer!=null)contactsImportAnswer.fail("La app se cerró; no se importaron contactos.");contactsImportAnswer=null;if(contactSyncPending!=null)contactSyncPending.fail("La app se cerró; no se activó la sincronización de agenda.");contactSyncPending=null;if(contactSyncNowAnswer!=null)contactSyncNowAnswer.fail("La app se cerró; no se sincronizó la agenda.");contactSyncNowAnswer=null;discardStoryDraft();deleteProfilePhotoFile();deleteChatPhotoFile();starsPayments.clear();pending.clear();destroyed=true;main.removeCallbacksAndMessages(null);events=null;media.clear();catalog.clear();inlineBatches.clear();inlineSelections.clear();clearUnsent();}
-    @Override public void changed(String kind){syncAccount();if(kind.equals("chats"))chatsDirty=true;if(kind.equals("messages")||kind.startsWith("history"))messagesDirty=true;if(kind.equals("selected")||kind.equals("auth")||kind.equals("account")){chatsDirty=true;messagesDirty=true;}if(kind.equals("auth")&&session.ready()&&contactSyncEnabled(session.selfId))armContactSync();if(kind.equals("appearance"))rememberCloudBackgrounds();schedule();}
+    @Override public void changed(String kind){syncAccount();if(kind.equals("auth")&&session.ready())activity.runOnUiThread(activity::dispatchPendingDeepLink);if(kind.equals("chats"))chatsDirty=true;if(kind.equals("messages")||kind.startsWith("history"))messagesDirty=true;if(kind.equals("selected")||kind.equals("auth")||kind.equals("account")){chatsDirty=true;messagesDirty=true;}if(kind.equals("auth")&&session.ready()&&contactSyncEnabled(session.selfId))armContactSync();if(kind.equals("appearance"))rememberCloudBackgrounds();schedule();}
     private void syncAccount(){if(account==session.selfId)return;account=session.selfId;chatsDirty=true;messagesDirty=true;media.clear();catalog.clear();searchResults.clear();inlineBatches.clear();inlineSelections.clear();openStoryViews.clear();starsPayments.clear();clearUnsent();if(account==0)assistant.clear();if(liveMessage!=0||liveAnswer!=null){clearLiveRequest(null);stopLiveTracking();}}
     private static void post(JavaScriptReplyProxy proxy,String value){if(WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER))proxy.postMessage(value);}
     private static void reject(JavaScriptReplyProxy proxy,String id,String error){try{post(proxy,object("id",id,"result",JSONObject.NULL,"error",error).toString());}catch(Exception ignored){}}
@@ -880,7 +880,7 @@ final class NativeBridge implements TdSession.Listener {
             case "assistant.send":a.ok(assistant.send(BridgePolicy.text(p,"text",4000)));break;
              case "native.settings":activity.showSettingsSupport();a.ok(true);break;
              case "native.assistant":activity.startActivity(new Intent(activity,MainActivity.class).putExtra("page","assistant"));a.ok(true);break;
-            case "attachment.recents":case "attachment.photos.permission":case "attachment.photo":case "attachment.recents.close":deviceGallery(method,p,a);break; case "composer.focus":composerFocus(p.optBoolean("active"));a.ok(true);break; case "groups.stats":{TdApi.Chat statsChat=target(p);if(!(statsChat.type instanceof TdApi.ChatTypeSupergroup)){a.fail(GroupChatStats.NOT_A_COMMUNITY);break;}final long statsOwner=a.owner;session.perform(new TdApi.GetChatStatistics(statsChat.id,false),stats->{if(destroyed||!currentAccount()||statsOwner!=session.selfId){a.fail(GroupChatStats.CHANGED);return;}try{JSONObject statsValue=GroupChatStats.dto(stats,id->{TdApi.User statsUser=session.user(id);if(statsUser==null)session.requestUser(id);String statsName=PersonName.of(statsUser);return statsName==null?"Usuario de Telegram":statsName;});if(statsValue==null){a.fail(GroupChatStats.BROKEN);return;}a.ok(statsValue);}catch(Exception ignored){a.fail(GroupChatStats.BROKEN);}},text->a.fail(GroupChatStats.explain(text)));}break; default:throw new IllegalArgumentException();
+            case "attachment.recents":case "attachment.photos.permission":case "attachment.photo":case "attachment.recents.close":deviceGallery(method,p,a);break; case "composer.focus":composerFocus(p.optBoolean("active"));a.ok(true);break; case "groups.stats":{TdApi.Chat statsChat=target(p);if(!(statsChat.type instanceof TdApi.ChatTypeSupergroup)){a.fail(GroupChatStats.NOT_A_COMMUNITY);break;}final long statsOwner=a.owner;session.perform(new TdApi.GetChatStatistics(statsChat.id,false),stats->{if(destroyed||!currentAccount()||statsOwner!=session.selfId){a.fail(GroupChatStats.CHANGED);return;}try{JSONObject statsValue=GroupChatStats.dto(stats,id->{TdApi.User statsUser=session.user(id);if(statsUser==null)session.requestUser(id);String statsName=PersonName.of(statsUser);return statsName==null?"Usuario de Telegram":statsName;});if(statsValue==null){a.fail(GroupChatStats.BROKEN);return;}a.ok(statsValue);}catch(Exception ignored){a.fail(GroupChatStats.BROKEN);}},text->a.fail(GroupChatStats.explain(text)));}break; default:dispatchBotComposer(method,p,a);
         }
     }
     private void changeAccount(String slot,Answer answer){WrgramApplication app=(WrgramApplication)activity.getApplication();if(app.account(slot)==null)throw new IllegalArgumentException();session.closeChat();clearUnsent();discardStoryDraft();if(storyPicking!=null)storyPicking.fail("La cuenta cambió. No se publicó ninguna historia.");storyPicking=null;media.clear();catalog.clear();searchResults.clear();MiniAppLaunch.clear();answer.ok(true);app.switchAccount(slot);main.post(activity::recreate);}
@@ -5420,5 +5420,92 @@ final class NativeBridge implements TdSession.Listener {
                 a.ok(row);
             }catch(Exception ignored){a.fail("No se pudo preparar el fondo.");}
         });
+    }
+
+    private void botCommands(JSONObject params, Answer answer) {
+        TdApi.Chat chat = target(params);
+        NativeBotCommands.load(session, chat, value -> {
+            if (!currentAccount() || answer.owner != session.selfId || session.activeChat != chat.id) {
+                answer.fail("La cuenta o conversación cambió."); return;
+            }
+            answer.ok(value);
+        }, answer::fail);
+    }
+
+    private void openBotMenu(JSONObject params, Answer answer) {
+        TdApi.Chat chat = target(params);
+        if (chat.id != session.activeChat || !(chat.type instanceof TdApi.ChatTypePrivate)) {
+            answer.fail("Abre el chat privado del bot para usar su Mini App."); return;
+        }
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+            answer.fail("Actualiza Android System WebView para abrir Mini Apps de forma aislada."); return;
+        }
+        long botId = ((TdApi.ChatTypePrivate) chat.type).userId;
+        perform(new TdApi.GetUser(botId), answer, user -> {
+            if (!(user.type instanceof TdApi.UserTypeBot) || user.restrictionInfo != null
+                    && user.restrictionInfo.restrictionReason != null && !user.restrictionInfo.restrictionReason.isEmpty()) {
+                answer.fail("Este bot no está disponible para abrir una Mini App."); return;
+            }
+            perform(new TdApi.GetUserFullInfo(botId), answer, full -> {
+                TdApi.BotMenuButton menu = full.botInfo == null ? null : full.botInfo.menuButton;
+                boolean hasMenu = menu != null && menu.url != null && !menu.url.isBlank();
+                if (!hasMenu && !((TdApi.UserTypeBot) user.type).hasMainWebApp) {
+                    answer.fail("Este bot ya no publica una Mini App."); return;
+                }
+                Runnable open = () -> {
+                    if (!currentAccount() || answer.owner != session.selfId || session.activeChat != chat.id) {
+                        answer.fail("La cuenta o conversación cambió."); return;
+                    }
+                    TdApi.WebAppOpenParameters options = new TdApi.WebAppOpenParameters(null, "WRGram", new TdApi.WebAppOpenModeFullSize());
+                    if (hasMenu) {
+                        if (TelegramLinks.normalize(menu.url) != null) { openLinkOrTelegram(menu.url, answer); return; }
+                        perform(new TdApi.OpenWebApp(chat.id, botId, menu.url, null, null, options), answer, result -> {
+                            if (session.activeChat != chat.id || result.url == null || result.url.url == null) {
+                                answer.fail("No se pudo abrir la Mini App en esta conversación."); return;
+                            }
+                            launchBotMenu(chat.title, result.url.url, botId, result.launchId, answer);
+                        });
+                    } else {
+                        perform(new TdApi.GetMainWebApp(chat.id, botId, "", options), answer, result -> {
+                            if (session.activeChat != chat.id || result.url == null || result.url.url == null) {
+                                answer.fail("No se pudo abrir la Mini App en esta conversación."); return;
+                            }
+                            launchBotMenu(chat.title, result.url.url, botId, 0, answer);
+                        });
+                    }
+                };
+                String consent = "botMenuConsent." + session.selfId + "." + botId;
+                if (prefs.getBoolean(consent, false)) { open.run(); return; }
+                Dialogs.builder(activity).setTitle("Abrir " + chat.title)
+                    .setMessage("Telegram compartirá tu identificador, nombre y datos públicos con la Mini App de este bot.")
+                    .setNegativeButton("Cancelar", (dialog, which) -> answer.ok(false))
+                    .setPositiveButton("Abrir Mini App", (dialog, which) -> {
+                        if (!currentAccount() || answer.owner != session.selfId || session.activeChat != chat.id) {
+                            answer.fail("La cuenta o conversación cambió."); return;
+                        }
+                        prefs.edit().putBoolean(consent, true).apply(); open.run();
+                    }).setOnCancelListener(dialog -> answer.ok(false)).show();
+            });
+        });
+    }
+
+    private void dispatchBotComposer(String method, JSONObject params, Answer answer) {
+        switch (method) {
+            case "bot.commands":
+                botCommands(params, answer);
+                break;
+            case "bot.menu.open":
+                openBotMenu(params, answer);
+                break;
+            default:
+                throw new IllegalArgumentException("La función solicitada no está disponible.");
+        }
+    }
+
+    private void launchBotMenu(String title, String url, long botId, long launchId, Answer answer) {
+        if (answer.finished || destroyed || !currentAccount() || answer.owner != session.selfId) return;
+        String handle = MiniAppLaunch.putBot(session, title, url, botId, launchId);
+        activity.startActivity(new Intent(activity, MiniAppActivity.class).putExtra("launch", handle));
+        answer.ok(true);
     }
 }

@@ -58,7 +58,7 @@ public class MessageMediaEditTest {
 
     @Test public void textVoiceNotesAndEverythingElseHaveNoMediaToReplace() {
         // La nota de voz y el videomensaje son el hueco real de la función: `TdApi.java:120743` lista cinco tipos y
-        // ahí no están, y las otras dos funciones que editan medio (`TdApi.java:119451` y `TdApi.java:120385`) repiten
+        // ahí no están, y las otras dos funciones que editan medio (`TdApi.java:119433` y `TdApi.java:120375`) repiten
         // la misma lista de cinco: editar un mensaje propio no puede dejarlo en nota de voz ni sacarlo de una.
         TdApi.MessageText text = new TdApi.MessageText();
         text.text = caption("hola");

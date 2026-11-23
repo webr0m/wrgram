@@ -5,8 +5,8 @@ using TL;
 
 /// <summary>
 /// Las reglas de «ver la ficha de quien envió un mensaje», que en Android son <c>senderProfile</c>
-/// (<c>NativeBridge.java:1614-1632</c>) y <c>respondProfilePeer</c> (<c>:1629-1632</c>). Aquí vive lo que se puede
-/// afirmar sin conexión; el cable está en <c>DesktopSenderProfileFlow.cs</c>.
+/// (<c>NativeBridge.java:1614-1632</c>) y <c>respondProfilePeer</c> (<c>NativeBridge.java:1633-1636</c>). Aquí vive
+/// lo que se puede afirmar sin conexión; el cable está en <c>DesktopSenderProfileFlow.cs</c>.
 /// <para>
 /// Las dos frases negativas vienen de Java. La del paquete que Android agrupa —no hay fila, la fila es de otro chat,
 /// el chat no está, es secreto, o el mensaje lleva temporizador— es la misma que ya escribía la ronda BA en
@@ -20,8 +20,8 @@ using TL;
 /// Tres diferencias de protocolo, medidas antes de escribir esta clase y ninguna imitada. La primera: Android lee la
 /// fila de su almacén de TDLib y, si no está, de la última búsqueda; este host no guarda las filas crudas —solo los
 /// DTO que ya pintó—, así que la petición <c>messages.getMessages</c> no es un lujo, es la única fuente. La segunda:
-/// la guarda <c>message.chatId!=chatId</c> (<c>:1616</c>) aquí se cumple por construcción, porque la propia petición va
-/// dirigida al peer del chat. La tercera: los chats secretos no existen en MTProto, así que la rama de <c>:1616</c> que
+/// la guarda <c>message.chatId!=chatId</c> (<c>:1620</c>) aquí se cumple por construcción, porque la propia petición va
+/// dirigida al peer del chat. La tercera: los chats secretos no existen en MTProto, así que la rama de <c>:1620</c> que
 /// los niega no tiene quién la diga, igual que declaró la ronda BN.
 /// </para>
 /// </summary>
@@ -40,7 +40,7 @@ public static class DesktopSenderProfile
     /// El <c>from_id</c> de la fila. MTProto lo declara por separado en <see cref="Message"/> y en
     /// <see cref="MessageService"/> —los dos descienden de <see cref="MessageBase"/>, que no lo tiene—, y la ficha del
     /// remitente tiene que poder leer a una persona que hizo una acción de servicio, que es justo lo que Android hace
-    /// al no filtrar el tipo de fila en <c>:1613</c>.
+    /// al leer la fila con <c>session.message</c> sin preguntar de qué subtipo es (<c>NativeBridge.java:1617</c>).
     public static TL.Peer? SenderOf(MessageBase? row) => row switch
     {
         Message message => message.from_id,

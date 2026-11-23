@@ -14,32 +14,33 @@ using WTelegram;
 /// aquí está el cable, que es lo que faltaba: las dos llevan desde la ronda F en la lista del puente
 /// (`BridgePolicy.java:48`, donde `chat.request.answer` está además en la de las que esperan a la persona,
 /// `bridge.ts:31`) y la pantalla las pide desde esa misma ronda. Pero en Windows la hoja de opciones no tenía
-/// ninguna entrada —la única puerta era el panel lateral, tapado con `!desktop` en `App.tsx:1237`— y, de
+/// ninguna entrada —la única puerta era el panel lateral, tapado con `!desktop` en `App.tsx:1241`— y, de
 /// haberse abierto, la primera pregunta habría caído en el `_ =&gt; throw` genérico dando a entender que faltaba
 /// una petición cuando las dos existen.
 /// <para>
 /// El orden de guardas es el del puente y es la prueba de que este archivo existe. Leer: forma, marcador,
 /// permiso, cuenta, posición, la tabla y la cuenta otra vez. Responder: forma, cuenta pedida, identificador,
 /// decisión, la propia solicitud descartada, permiso, confirmar, cuenta, escritura y cuenta. Android comprueba
-/// el derecho después de leer el nombre (`:3584` → `:3586`) y no antes: adelantar el permiso haría que un
+/// el derecho después de leer el nombre (`answerJoinRequest`, `NativeBridge.java:3588` → `:3590`) y no antes: adelantar el permiso haría que un
 /// formulario mal escrito en un chat que sí se administrara oyera primero «no tienes permiso», y retrasar la
 /// resolución del nombre haría que el cuadro de confirmar se llenara de identificadores.
 /// </para>
 /// <para>
 /// Dos cosas que el puente de Android hace con memoria y aquí se hacen con el cable. La primera es la posición
-/// de la página: allá `requestOwner`/`requestChat`/`requestCursorUser`/`requestCursorDate` (`:3513-3517`)
+/// de la página: allá `requestOwner`/`requestChat`/`requestCursorUser`/`requestCursorDate` (`NativeBridge.java:60`,
+    /// negados en `:3533`),
 /// niegan cualquier marcador que no sea el último repartido; aquí la posición viaja como `offset_date` y
 /// `offset_user` de `messages.getChatInviteImporters`, así que no hay estado que pueda estar viejo. Lo que sí se
 /// pierde es la caché: el `offset_user` de MTProto exige `access_hash`, y ese hash solo llega con la página que
 /// la pantalla ya vio. Si se fue, la negación es la misma frase con la que Android manda a reabrir
 /// (<see cref="DesktopJoinRequests.CursorGone"/>), porque el consejo para la persona es idéntico. La segunda es
-/// el nombre: Android hace un abanico de `GetUser` por página (`joinResolve`, `:3540-3544`) porque su petición
+/// el nombre: Android hace un abanico de `GetUser` por página (`joinResolve`, `NativeBridge.java:3559-3563`) porque su petición
 /// solo da identificadores; la respuesta de MTProto trae el diccionario `users` dentro, así que aquí no hay
 /// ninguna ida extra que fingir ni ninguna espera que simular.
 /// </para>
 /// <para>
 /// Y una diferencia de estado, dicha: Android limpia su memoria de cursor y llama a `schedule()` tras responder
-/// (`:3579-3580`) para que la interfaz vuelva a pedir lo suyo; aquí no hay memoria que limpiar y la escritura
+/// (`schedule()`, `NativeBridge.java:3598-3599`) para que la interfaz vuelva a pedir lo suyo; aquí no hay memoria que limpiar y la escritura
 /// responde `UpdatesBase`, que puede venir sin ninguna lista de chats. El panel vuelve a pedir la primera página
 /// él solo (`JoinRequestsPanel.tsx:65`), y la insignia de la bandeja no se mueve a mano: en Windows el contador
 /// pendiente vive solo en el `full info` (`ChatFull`/`ChannelFull.requests_pending`, medido), no en la fila del

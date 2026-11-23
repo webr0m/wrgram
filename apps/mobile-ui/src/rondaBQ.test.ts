@@ -11,7 +11,7 @@ import { desktopGapRefusal } from './desktopGap';
  * cinco cadenas que salen de ahí están copiadas carácter a carácter en `DesktopLinkManager`, cada una una sola vez
  * por capa. Dos de ellas son parecidas a otras que ya vivían aquí y no son la misma: «solo se crean» frente al
  * «solo existen» de la gestión de enlaces, y el botón «Crear enlace» frente al «Aplicar en Telegram» de
- * `confirmLink` (`:3724`) —Android tiene dos diálogos y dos rótulos, y unificarlos en Windows habría borrado uno de
+ * `confirmLink` (`:3728`) —Android tiene dos diálogos y dos rótulos, y unificarlos en Windows habría borrado uno de
  * los dos. Segundo el orden: forma, derecho, cuenta, ventana, escritura, cuenta, caja; medido por posición en los dos
  * cables, no por prosa. Tercero la puerta: la hoja de escritorio tiene que ofrecer lo mismo que la rama de Android,
  * con la misma guarda de forma. Y cuarto lo que no se copia: Android termina en un `Intent.ACTION_SEND` que en WPF no
@@ -266,12 +266,13 @@ describe('ronda BQ · crear enlace de invitación también en Windows', () => {
     // `message.edit.media` (`TelegramService.cs:325`), sacó su fila de pendientes y la sumó a la afirmada de editar:
     // eran 164 vivos y 123 pendientes. La ronda CD partió la fila de Premium: sacó `premium.state` de la pendiente —
     // la cableó en Windows (`TelegramService.cs:399`)— y la declaró sola como la marca de la cuenta. La CH-A estrenó en
-    // Android los fondos de la cuenta (`backgrounds.list`, `background.set`) y los dejó pendientes en el andamio: hoy son 165
-    // vivos y 124 pendientes, contados sobre las dos listas.
+    // Android los fondos de la cuenta (`backgrounds.list`, `background.set`) y los dejó pendientes en el andamio: eran
+    // 165 vivos y 124 pendientes. La CH-B escribió sus dos brazos (`TelegramService.cs:500` y `TelegramService.cs:501`)
+    // y pasó su fila de pendientes a afirmada: hoy son 167 vivos y 122 pendientes, contados sobre las dos listas.
     const available = new Set(DESKTOP_AVAILABLE.flatMap(claim => claim.methods));
     const pending = new Set(DESKTOP_PENDING.flatMap(claim => claim.methods));
-    expect(available.size).toBe(165);
-    expect(pending.size).toBe(124);
+    expect(available.size).toBe(168);
+    expect(pending.size).toBe(122);
     expect([...available].filter(method => pending.has(method))).toEqual([]);
     expect(preview).toContain("if (method === 'chat.invite') {");
     ordered(preview, "if (method === 'chat.invite')", "if (method === 'chat.invitelinks')");

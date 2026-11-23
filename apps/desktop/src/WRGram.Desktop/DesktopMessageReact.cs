@@ -29,7 +29,7 @@ using TL;
 /// </para>
 /// <para>
 /// Las dos comprobaciones antes de escribir son las de Android, copiadas carácter a carácter de
-/// <c>NativeBridge.java:4339</c> (<c>react</c>), <c>NativeBridge.java:4339</c> (<c>reactCustom</c>) y
+/// <c>NativeBridge.java:4334</c> (<c>react</c>), <c>NativeBridge.java:4339</c> (<c>reactCustom</c>) y
 /// <c>NativeBridge.java:5283</c> (<c>reactOffered</c>): un emoji vacío no es una orden, una reacción que el
 /// chat no ofrece se rechaza con la misma frase, y un emoji personalizado sin Premium se rechaza con la suya.
 /// Donde Android pregunta <c>GetUser(selfId).isPremium</c>, el escritorio lee la bandera

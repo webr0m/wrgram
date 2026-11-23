@@ -6,10 +6,10 @@ using TL;
 
 /// <summary>
 /// Las reglas de la ficha de perfil en Windows: <c>chat.profile</c> (<c>NativeBridge.java:535</c> →
-/// <c>chatProfile</c>, <c>:1219-1266</c>), <c>profile.related</c> (<c>:525</c> → <c>profileRelated</c>,
-/// <c>:1570-1593</c> y <c>profileMembers</c>, <c>:1594-1609</c>) y las dos filas que esa pestaña abre,
-/// <c>profile.peer</c> (<c>:524</c>) y <c>profile.contact</c> (<c>:527</c>), todas ellas terminando en
-/// <c>respondProfilePeer</c> (<c>:1629-1632</c>).
+/// <c>chatProfile</c>, <c>:1223-1270</c>), <c>profile.related</c> (<c>:538</c> → <c>profileRelated</c>,
+/// <c>:1574-1597</c> y <c>profileMembers</c>, <c>:1598-1613</c>) y las dos filas que esa pestaña abre,
+/// <c>profile.peer</c> (<c>:539</c>) y <c>profile.contact</c> (<c>:542</c>), todas ellas terminando en
+/// <c>respondProfilePeer</c> (<c>:1633-1636</c>).
 /// <para>
 /// La medida, hecha por reflexión sobre WTelegramClient 4.4.10, es la que parte el trabajo en tres y no en dos:
 /// TDLib sirve <c>GetUserFullInfo</c>, <c>GetSupergroupFullInfo</c> y <c>GetBasicGroupFullInfo</c> con los mismos
@@ -32,13 +32,14 @@ using TL;
 /// </summary>
 public static class DesktopPeerProfile
 {
-    /// <c>profileRelated</c> (<c>NativeBridge.java:1574</c>) cierra así el tipo de chat que no tiene lista.
+    /// <c>profileRelated</c> (<c>NativeBridge.java:1574-1596</c>) cierra así el tipo de chat que no tiene lista.
     public const string NoList = "No hay una lista de participantes para este chat.";
 
     /// <c>senderProfile</c> (<c>NativeBridge.java:1614</c>): un chat secreto no tiene ficha que abrir.
     public const string Secret = "Este perfil no está disponible.";
 
-    /// <c>chatProfile</c>/<c>sendPublicChatProfile</c> (<c>:1248</c> y <c>:1286</c>) cuando armar el objeto falla.
+    /// <c>chatProfile</c> (<c>NativeBridge.java:1223-1270</c>) y <c>sendPublicChatProfile</c>
+    /// (<c>:1271-1291</c>) rematan con esta frase cuando armar el objeto de la ficha falla.
     public const string LoadFailed = "No se pudo cargar el perfil público.";
 
     /// La negación propia de Windows, como la de la ronda AZ: en MTProto cada escritura y cada ficha de persona
@@ -55,15 +56,16 @@ public static class DesktopPeerProfile
     public const string LastWeek = "Últ. vez esta semana";
     public const string LastMonth = "Últ. vez este mes";
 
-    /// <c>profileRelated</c> recorta el desplazamiento a <c>[0, 5000]</c> (<c>:1572</c>) y las dos listas piden
-    /// treinta filas: <c>GetGroupsInCommon(…, 30)</c> (<c>:1576</c>) y <c>SupergroupMembersFilterRecent</c> con
-    /// <c>30</c> (<c>:1590</c>).
+    /// <c>profileRelated</c> recorta el desplazamiento a <c>[0, 5000]</c> (<c>NativeBridge.java:1576</c>) y las dos
+    /// listas piden treinta filas: <c>GetGroupsInCommon(…, 30)</c> (<c>:1580</c>) y
+    /// <c>SupergroupMembersFilterRecent</c> con <c>30</c> (<c>:1594</c>).
     public const int MaxOffset = 5000;
     public const int Page = 30;
 
     /// El cursor con el que <c>profileRelated</c> sigue las conversaciones en común: Android manda el identificador
-    /// del último chat devuelto y <c>"0"</c> cuando la página vino corta (<c>:1583</c>). Aquí el identificador es el
-    /// peer de Telegram, que llega recortado (<see cref="NoHash"/>), así que el cursor es numérico y en cadena.
+    /// del último chat devuelto y <c>"0"</c> cuando la página vino corta (<c>NativeBridge.java:1587</c>). Aquí el
+    /// identificador es el peer de Telegram, que llega recortado (<see cref="NoHash"/>), así que el cursor es numérico
+    /// y en cadena.
     public static string Cursor(IEnumerable<ChatBase> chats, int count)
     {
         long last = 0;
@@ -71,12 +73,12 @@ public static class DesktopPeerProfile
         return count == Page ? last.ToString() : "0";
     }
 
-    /// <c>Math.max(0, Math.min(5000, offset))</c> de <c>:1572</c>.
+    /// <c>Math.max(0, Math.min(5000, offset))</c> de <c>NativeBridge.java:1576</c>.
     public static int Offset(long value) => (int)Math.Clamp(value, 0, MaxOffset);
 
     /// Los usuarios públicos activos, que es lo que Android saca de <c>usernames.activeUsernames</c>
-    /// (<c>:1227</c> y <c>:1270</c>). En MTProto la misma selección es la bandera <c>active</c> de cada
-    /// <c>TL.Username</c>; el primero de la lista es el primario, igual que allá.
+    /// (<c>NativeBridge.java:1231</c> y <c>:1274</c>). En MTProto la misma selección es la bandera <c>active</c> de
+    /// cada <c>TL.Username</c>; el primero de la lista es el primario, igual que allá.
     public static List<string> ActiveUsernames(Username[]? values)
     {
         var list = new List<string>();
@@ -135,8 +137,9 @@ public static class DesktopPeerProfile
     public static object MemberRow(long id, string name, string role) => new { id = id.ToString(), name, role };
 
     /// La fila de <c>chat</c> que <c>respondProfilePeer</c> devuelve por tres caminos distintos
-    /// (<c>:1629-1632</c>, y las dos pestañas saltan aquí desde <c>App.tsx:740</c>). <c>type</c> manda en la
-    /// pantalla: <c>private</c> abre ficha de persona, <c>group</c> y <c>channel</c> abren ficha de comunidad.
+    /// (<c>NativeBridge.java:1633-1636</c>, y las dos pestañas saltan aquí desde <c>App.tsx:747</c>). <c>type</c>
+    /// manda en la pantalla: <c>private</c> abre ficha de persona, <c>group</c> y <c>channel</c> abren ficha de
+    /// comunidad.
     public static object PeerRow(string id, string title, string type, string username, bool bot) =>
         new { id, title, type, username, bot, supported = true };
 }

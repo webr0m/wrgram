@@ -231,8 +231,9 @@ describe('ronda BD · la foto de la comunidad, cruzada con las tres capas', () =
     // Los tres «Cancelar» de Android: el botón, el gesto de salir y el chat que ya estaba sin imagen.
     expect(count('answer.ok(false)', body)).toBe(3);
     expect(javaLine(1782)).toContain('TdApi.SetChatPhoto(chat.id,null)');
-    // La medida, dicha en la regla: la librería no genera el vacío, así que no hay a dónde llegar.
-    expect(rules).toContain('medido por reflexión sobre WTelegramClient 4.4.10');
+    // La medida, dicha en la regla: la librería no genera el vacío, así que no hay a dónde llegar. La frase cae hoy
+    // partida por el salto de línea del comentario, así que se exige con su continuación `///` por medio.
+    expect(rules).toMatch(/medido por reflexión sobre\s*\/\/\/\s*WTelegramClient 4\.4\.10/);
     expect(rules).toContain('<c>inputChatPhotoEmpty</c> no está generado');
     expect(rules).toContain('<c>photo_id</c>,');
     expect(service).toContain('"chat.photo.delete" => throw new BridgeException(DesktopChatPhoto.NoDelete),');

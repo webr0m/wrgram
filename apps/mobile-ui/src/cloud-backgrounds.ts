@@ -2,7 +2,12 @@ export type CloudBackground = {
   id: string;
   name: string;
   dark: boolean;
-  stock: boolean;
+  /**
+   * La marca de «de serie» de TDLib es el `isDefault` de `Background` (`TdApi.java:4982-4990`). Android la manda
+   * siempre como booleano; el cable de Windows la manda nula porque MTProto no tiene esa marca en ninguna de sus
+   * dos hojas, y decir «de la cuenta» donde no se sabe sería afirmarlo.
+   */
+  stock: boolean | null;
   selected: boolean;
   kind: 'fill' | 'pattern' | 'wallpaper' | 'chatTheme' | '';
   css?: string | null;
@@ -26,6 +31,26 @@ export function cloudBackgroundNotice(row: CloudBackground): string {
   return CLOUD_KIND_NOTES[row.kind] ?? CLOUD_KIND_NOTES[''];
 }
 
+/**
+ * Las palabras con las que la pantalla llama a una fila que no trae nombre. MTProto no manda ninguno: `wallPaper`
+ * trae `slug`, que el documento define como la dirección opaca de los enlaces de fondo, y `wallPaperNoFile` no trae
+ * campo de texto. El tipo sí lo trae la respuesta, así que decir «Relleno de color» es leer el protocolo; decir
+ * «Sin nombre» sería dejar la fila sin nada que leer cuando el protocolo sí dice algo.
+ */
+export const CLOUD_KIND_LABELS: Record<CloudBackground['kind'], string> = {
+  fill: 'Relleno de color',
+  pattern: 'Estampado',
+  wallpaper: 'Imagen',
+  chatTheme: 'Tema de conversación',
+  '': 'Fondo de la cuenta',
+};
+
+/** El nombre que dio la cuenta, o la palabra de su tipo cuando la capa no manda nombre ninguno. */
+export function cloudBackgroundLabel(row: CloudBackground): string {
+  const name = String(row.name ?? '').trim();
+  return name.length > 0 ? name : CLOUD_KIND_LABELS[row.kind] ?? CLOUD_KIND_LABELS[''];
+}
+
 export function isPaintable(row: CloudBackground): boolean {
   return typeof row.css === 'string' && row.css.length > 0;
 }
@@ -38,7 +63,7 @@ export function cloudBackgroundCss(background?: CloudBackground | null): string 
 /** El orden del listado: primero lo que se puede pintar, y dentro de cada grupo los de serie antes. */
 export function sortCloudBackgrounds(rows: CloudBackground[]): CloudBackground[] {
   return [...rows].sort((a, b) => (Number(isPaintable(b)) - Number(isPaintable(a)))
-    || (Number(b.stock) - Number(a.stock)) || (Number(b.selected) - Number(a.selected))
+    || (Number(b.stock === true) - Number(a.stock === true)) || (Number(b.selected) - Number(a.selected))
     || a.name.localeCompare(b.name, 'es'));
 }
 

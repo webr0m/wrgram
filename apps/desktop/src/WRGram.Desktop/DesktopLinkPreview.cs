@@ -4,9 +4,9 @@ using TL;
 
 /// <summary>
 /// Las reglas de la tarjeta que la pantalla pinta debajo de un mensaje con enlace: título, sitio, descripción y,
-/// cuando la página trae foto, esa foto. Android la escribe en <c>NativeSnapshot.java:224</c> y la niega en
-/// <c>NativeBridge.java:782</c>; aquí viven las mismas cuatro claves y los dos recortes, medidos línea a línea y
-/// copiados carácter a carácter, con una diferencia de protocolo por delante.
+/// cuando la página trae foto, esa foto. Android la escribe en <c>preview</c> (<c>NativeSnapshot.java:227</c>) y la
+/// niega en <c>message.link</c> (<c>NativeBridge.java:783</c>); aquí viven las mismas cuatro claves y los dos
+/// recortes, medidos línea a línea y copiados carácter a carácter, con una diferencia de protocolo por delante.
 /// <para>
 /// La diferencia: en TDLib la tarjeta es un campo del contenido de texto (<c>MessageText.linkPreview</c>), y en
 /// MTProto es un adjunto (<c>Message.media</c> de clase <c>MessageMediaWebPage</c>). Por eso las dos guardas de Java
@@ -18,33 +18,35 @@ using TL;
 /// </para>
 /// <para>
 /// Las dos condiciones con las que Java decide si la tarjeta existe en absoluto, en su misma línea:
-/// <c>!temporary</c> y «no es un chat secreto». La primera es <c>MessageExtras.temporary</c>, el mismo predicado con
-/// el que <c>NativeBridge.java:782</c> cierra el brazo, y su espejo aquí es <c>DesktopSenderProfile.IsEphemeral</c>,
-/// que <c>ConvertMessage</c> pide antes de escribir <c>Preview</c>: una fila con temporizador no pinta tarjeta y, si
+/// <c>!temporary</c> y «no es un chat secreto». La primera es el predicado <c>temporary</c>
+/// (<c>MessageExtras.java:10</c>), las mismas dos pruebas con las que <c>message.link</c>
+/// (<c>NativeBridge.java:783</c>) cierra el brazo, y su espejo aquí es <c>DesktopSenderProfile.IsEphemeral</c>, que
+/// <c>ConvertMessage</c> pide antes de escribir <c>Preview</c>: una fila con temporizador no pinta tarjeta y, si
 /// alguien la pide por su número, se niega con la frase del envoltorio. La segunda no tiene traducción posible: este
 /// host no modela los chats secretos, que es la forma <c>ChatTypeSecret</c> que TDLib usa para negarlos y que ya se
 /// declaró inalcanzable en la ronda BN.
 /// </para>
 /// <para>
-/// Y la razón de que el <c>url</c> no esté en el DTO: Android tampoco lo publica (<c>NativeSnapshot.java:224</c>
-/// escribe cuatro claves y ninguna es la dirección). La dirección vive en la fila de Telegram, y el botón «Abrir
-/// enlace externo» la pide por el número del mensaje (<c>message.link</c>, <c>NativeBridge.java:783</c>), que es justo
-/// lo que hace <see cref="TelegramService.MessageLinkAsync"/> volviendo a leer la fila. Publicarla habría puesto en la
-/// página una dirección que la persona no pidió ver.
+/// Y la razón de que el <c>url</c> no esté en el DTO: Android tampoco lo publica —<c>preview</c>
+/// (<c>NativeSnapshot.java:227</c>) escribe cuatro claves y ninguna es la dirección—. La dirección vive en la fila de
+/// Telegram, y el botón «Abrir enlace externo» la pide por el número del mensaje (<c>message.link</c>,
+/// <c>NativeBridge.java:783</c>), que es justo lo que hace <see cref="TelegramService.MessageLinkAsync"/> volviendo a
+/// leer la fila. Publicarla habría puesto en la página una dirección que la persona no pidió ver.
 /// </para>
 /// </summary>
 public static class DesktopLinkPreview
 {
-    /// Los dos recortes de <c>NativeSnapshot.java:255</c>, que llama a <c>limit(…,240)</c> con el título y a
-    /// <c>limit(…,700)</c> con la descripción. El sitio va sin recortar, igual que allá.
+    /// Los dos recortes con los que Android monta la tarjeta en <c>preview</c> (<c>NativeSnapshot.java:227</c>):
+    /// llama a <c>limit</c> con el título y 240, y con la descripción y 700. El sitio va sin recortar, igual que allá.
     public const int TitleLimit = 240;
     public const int DescriptionLimit = 700;
 
     /// El nombre con el que Android registra la foto de la tarjeta (<c>NativeSnapshot.java:464</c>).
     public const string PhotoName = "Vista previa del enlace";
 
-    /// La página ya resuelta de esa fila, o <c>null</c>. Es la guarda con la que <c>NativeBridge.java:782</c> decide
-    /// si hay tarjeta: en Java es <c>link==null</c> después de comprobar el tipo de contenido.
+    /// La página ya resuelta de esa fila, o <c>null</c>. Es la guarda con la que <c>message.link</c>
+    /// (<c>NativeBridge.java:783</c>) decide si hay tarjeta: en Java es <c>link==null</c> después de comprobar el tipo
+    /// de contenido.
     public static WebPage? PageOf(MessageBase? row) => row switch
     {
         Message { media: MessageMediaWebPage page } => page.webpage as WebPage,

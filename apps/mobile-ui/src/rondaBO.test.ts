@@ -62,7 +62,7 @@ const DOORS: Door[] = [
     // BZ abrió las tres puertas de historias de esta pantalla, y la deuda que queda es la de siempre: regalos y
     // temas de foro. Las dos entradas de historia que dependen de un contador —`activeStories` en la cabecera y
     // `hasStories` en el menú— siguen sin enseñarse en Windows, pero ya no por una guarda de plataforma: el host no
-    // publica ninguno de los dos (`DesktopState.cs:105` declara el entero y nadie lo escribe; la ronda BA dejó
+    // publica ninguno de los dos (`DesktopState.cs:107` declara el entero y nadie lo escribe; la ronda BA dejó
     // medido que `hasStories` no sale del cable). Quitar el `!desktop` no enciende nada: apaga una promesa falsa.
     file: 'PeerProfile.tsx',
     methods: ['gifts.catalog', 'gifts.received', 'gifts.send', 'forum.topics'],
@@ -95,7 +95,7 @@ const DOORS: Door[] = [
       // La historia de un enlace t.me ya no se niega en Windows: la BZ cableó las cuatro lectoras, así que la
       // pantalla llama a `showStory` en las dos capas. Lo que sigue siendo hueco —y está anotado para la CG— es que
       // el `telegram.link` de este host solo devuelve `action:"link"`, `invite_preview` o `membership`, de modo que
-      // el `case 'story'` de `App.tsx:414` no se alcanza todavía en Windows: rama muerta, no función tapada.
+      // el `case 'story'` de `App.tsx:417` no se alcanza todavía en Windows: rama muerta, no función tapada.
       'navigate(\'chats\');setMobileChat(true);showStory(owner,result.storyId);return;',
       "{!desktop&&inlineMatch&&<div className=\"inline-hint\">",
     ],

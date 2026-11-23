@@ -378,7 +378,7 @@ describe('ronda AT · medido con las manos, no con agujas', () => {
 
   it('el andamio de Windows recorta lo que el puente de C# no manda', async () => {
     // No es adorno: `UserMenu.tsx:83` pinta la bio con `FormattedText text entities`, y con las entidades del
-    // andamio delante la vista de diseño enseñaría enlaces que en Windows no existen. `FormattedText` (`formatting.tsx:98`)
+    // andamio delante la vista de diseño enseñaría enlaces que en Windows no existen. `FormattedText` (`formatting.tsx:97`)
     // convierte la ausencia en texto plano, que es exactamente lo que MTProto publica.
     const windows = await profile();
     expect(windows.bioEntities).toBeUndefined();

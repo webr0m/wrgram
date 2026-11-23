@@ -103,7 +103,7 @@ public static class DesktopEmojiCatalog
     /// `NativeBridge.java:4974`.
     public const string PackUnloaded = "No se pudo cargar el pack de stickers.";
 
-    /// `NativeBridge.java:4974` lee `installed` con `JSONObject.getBoolean`, que en Android revienta cuando la
+    /// `NativeBridge.java:4975` lee `installed` con `JSONObject.getBoolean`, que en Android revienta cuando la
     /// pantalla no manda la clave. Aquí se niega con causa escrita: adivinar entre guardar y quitar escribes en la
     /// cuenta del usuario, y es lo único de la familia que no se puede corregir después.
     public const string NeedDecision = "Hay que decir si el pack se guarda o se quita.";

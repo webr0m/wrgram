@@ -26,8 +26,9 @@ public sealed partial class TelegramService
     private async Task<object?> SenderProfileAsync(JsonElement args)
     {
         var client = CollectionClient();
-        // `session.chat(chatId)` de `:1599`: sin chat no hay petición que mandar, y Android lo niega con la frase
-        // agrupada de `:1601`, no con la de «conversación no cargada».
+        // `session.chat(chatId)` de `NativeBridge.java:1619`: sin chat no hay petición que mandar, y la guarda
+        // agrupada de Android, que es `NativeBridge.java:1620`, lo niega con la frase del perfil y no con la de
+        // «conversación no cargada».
         var entry = FindEntry(Str(args, "chatId"));
         if (entry == null) throw new BridgeException(DesktopSenderProfile.NoProfile);
         var id = Long(args, "id");
@@ -41,10 +42,10 @@ public sealed partial class TelegramService
         var peer = DesktopSenderProfile.SenderOf(row);
         if (peer == null) throw new BridgeException(DesktopSenderProfile.UnknownSender);
         // La persona existe en la respuesta pero llegó recortada (`min`): sin hash no hay `InputPeerUser` y la ficha
-        // no se puede abrir después. Es la misma negativa que `profile.contact` (`DesktopPeerProfileFlow.cs:240`).
+        // no se puede abrir después. Es la misma negativa que la que documenta `profile.contact` (`DesktopPeerProfileFlow.cs:233`).
         if (peer is PeerUser person && (_users.GetValueOrDefault(person.user_id)?.access_hash ?? 0L) == 0L)
             throw new BridgeException(DesktopPeerProfile.NoHash);
-        // `MessageSenderChat` de `:1607`: el canal o el grupo que publicó, que aquí ya está en la caché porque el
+        // `MessageSenderChat` de `NativeBridge.java:1627`: el canal o el grupo que publicó, que aquí ya está en la caché porque el
         // propio mensaje lo trajo. `EntryFromPeer` devuelve `null` si la respuesta no lo incluyó, y eso es «no
         // identificó al remitente», no una fila inventada con el número suelto.
         var sender = EntryFromPeer(peer) ?? throw new BridgeException(DesktopSenderProfile.UnknownSender);

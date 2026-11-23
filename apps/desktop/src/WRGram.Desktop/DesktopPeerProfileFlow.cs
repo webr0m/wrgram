@@ -11,7 +11,7 @@ using WTelegram;
 /// El cable de la ficha de perfil: <c>chat.profile</c>, <c>profile.related</c>, <c>profile.peer</c> y
 /// <c>profile.contact</c>. Las reglas y las frases están en <see cref="DesktopPeerProfile"/>; aquí solo se pide, se
 /// funda la caché de personas y se responde con las claves que la pantalla lee
-/// (<c>PeerProfile.tsx:52</c>, <c>:141</c> y <c>App.tsx:740</c>).
+/// (<c>PeerProfile.tsx:52</c>, <c>:141</c> y <c>App.tsx:744</c>).
 /// <para>
 /// Hasta esta ronda las cuatro caían en el <c>_ =&gt; throw</c> genérico del host, y la consecuencia se veía en
 /// pantalla: la ficha de una persona no se abría desde Windows y la pestaña «Miembros»/«En común» —que Android sí
@@ -200,9 +200,9 @@ public sealed partial class TelegramService
             }
             case InputPeerChannel:
             {
-                // El supergrupo pregunta a Telegram con el filtro `recent` de la ronda AX y 30 filas, que es la
-                // petición que Android arma en `:1570`. `hasMore` se decide con lo que la respuesta trajo, no con lo
-                // que quedó filtrado: aquí no se filtra nada.
+                // El supergrupo pregunta a Telegram con el filtro `recent` de la ronda AX y 30 filas; en Android eso
+                // es `GetSupergroupMembers` de `NativeBridge.java:1594`. `hasMore` se decide con lo que la respuesta
+                // trajo, no con lo que quedó filtrado: aquí no se filtra nada.
                 var channel = ChannelInput(entry);
                 var (filter, _) = DesktopGroupMembers.Request("recent", "");
                 var answer = await client.Channels_GetParticipants(channel, filter, 0, DesktopPeerProfile.Page, 0);
@@ -222,16 +222,16 @@ public sealed partial class TelegramService
         }
     }
 
-    /// <c>profile.peer</c> (<c>:524</c>): el chat que la pestaña ya tiene delante. En Windows la fila se arma con la
-    /// entrada que <see cref="RequireEntry"/> acaba de reconstruir, sin petición nueva.
+    /// <c>profile.peer</c> (<c>NativeBridge.java:539</c>): el chat que la pestaña ya tiene delante. En Windows la fila
+    /// se arma con la entrada que <see cref="RequireEntry"/> acaba de reconstruir, sin petición nueva.
     private object? ProfilePeerAsync(JsonElement args)
     {
         var entry = RequireEntry(Str(args, "id"));
         return DesktopPeerProfile.PeerRow(entry.Id, entry.Title, entry.Type, entry.Username ?? "", entry.Bot);
     }
 
-    /// <c>profile.contact</c> (<c>:527</c>): en TDLib es <c>CreatePrivateChat(userId,false)</c>, que no habla con
-    /// Telegram; en MTProto hace falta el par identificador + <c>access_hash</c>, y ese par solo lo tiene la caché
+    /// <c>profile.contact</c> (<c>NativeBridge.java:542</c>): en TDLib es <c>CreatePrivateChat(userId,false)</c>, que
+    /// no habla con Telegram; en MTProto hace falta el par identificador + <c>access_hash</c>, y ese par solo lo tiene la caché
     /// que las propias respuestas van llenando (<c>MergePeers</c>). Cuando la persona no está, se dice en lugar de
     /// mandar un cero.
     private object? ProfileContactAsync(JsonElement args)

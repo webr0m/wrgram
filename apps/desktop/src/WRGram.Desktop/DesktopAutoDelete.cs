@@ -6,8 +6,8 @@ using TL;
 
 /// <summary>
 /// Las reglas del borrado automático en Windows, que son las de <c>autoDeleteGet</c> (<c>NativeBridge.java:1357</c>),
-/// <c>autoDeleteSet</c> (<c>:1352</c>), <c>confirmChatAutoDelete</c> (<c>:1378</c>) y <c>confirmAutoDelete</c>
-/// (<c>:1387</c>) más el <c>AccountSafetyPolicy.autoDeleteSeconds</c> (<c>AccountSafetyPolicy.java:13</c>). Aquí vive
+/// <c>autoDeleteSet</c> (<c>:1372</c>), <c>confirmChatAutoDelete</c> (<c>:1398</c>) y <c>confirmAutoDelete</c>
+/// (<c>:1407</c>) más el <c>AccountSafetyPolicy.autoDeleteSeconds</c> (<c>AccountSafetyPolicy.java:13</c>). Aquí vive
 /// todo lo que se puede afirmar sin tener conexión; el hilo está en <c>DesktopAutoDeleteFlow.cs</c>.
 /// <para>
 /// El temporizador se mide en días completos: el panel de la pantalla ofrece 0, 1, 7 y 30 días

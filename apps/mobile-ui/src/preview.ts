@@ -17,6 +17,7 @@ import { AUTO_DELETE_DAY, AUTO_DELETE_REFUSALS, autoDeleteOwned, autoDeleteProbl
 import { PEER_PAGE, PEER_REFUSALS, activeUsernames, peerCursor, peerMemberRow, peerOffset, peerPresence, peerRole, peerRow } from './peerCard';
 import { ADMIN_RIGHT_RULES, NO_ADMIN_RIGHTS, SANCTION_DURATION, SANCTION_REFUSALS, demotePreProblem, demoteRightProblem, demoteTargetProblem, liftPreProblem, liftRightProblem, liftTargetProblem, promotePreProblem, promoteRightProblem, promoteTargetProblem, requestedRights, sanctionPreProblem, sanctionRightProblem, sanctionTargetProblem } from './memberSanctions';
 import { desktopGapRefusal } from './desktopGap'; import { LIVE_DURATIONS, LIVE_REFUSALS, type LiveStart } from './liveLocation'; import { CALL_LOG_REFUSALS, callLogOffsetProblem, callLogPage, callRowLabel, type CallReason } from './callLogModel';
+import { type CloudBackground } from './cloud-backgrounds';
 const ownBio='Construyendo WRGram, un cliente de Telegram propio. Novedades en https://wrgram.app y dudas por @rodrigo_web';
 const mariaBio='Diseñadora de producto. Portfolio en https://maria.design · escríbeme por @maria_fdz';
 const communityBio='Un espacio para construir juntos. Guía y descargas en https://wrgram.app';
@@ -128,7 +129,7 @@ function applyChatUsername(entry:ChatUsernameFixture, username:string) {
  * en la tabla se arranca en cero, igual que un chat recién creado.
  *
  * Los chats secretos no tienen fila aquí, y no hace falta: la pantalla no abre el ajuste sobre uno en ninguna de las
- * dos capas (`App.tsx:889` y `:973`), así que las dos frases con las que Android los niega (`:1343` y `:1367`) no
+ * dos capas (`App.tsx:893` y `:973`), así que las dos frases con las que Android los niega (`:1343` y `:1367`) no
  * tienen por dónde alcanzarse. Es el mismo motivo por el que la ronda AN dejó fuera del andamio la de las encuestas.
  */
 const autoDeleteFixtures: Record<string, number> = { '12': AUTO_DELETE_DAY, '14': 7 * AUTO_DELETE_DAY, '18': 30 * AUTO_DELETE_DAY };
@@ -208,7 +209,7 @@ function groupPermissionsEntry(id:string):GroupPermissionsFixture {
 }
 /**
  * El tope con el que `BridgePolicy.text` recibe los dos textos en `setChatInfo` (`NativeBridge.java:1944` y
- * `:1926`), que es menor que el límite de Telegram y por eso se comprueba antes: un texto de 2000 caracteres se
+ * `:1946`), que es menor que el límite de Telegram y por eso se comprueba antes: un texto de 2000 caracteres se
  * anuncia como lo que es (demasiado largo para el puente) y no como el cambio que la interfaz creía estar
  * guardando. Las dos negativas de aquí no las produce la pantalla nunca —solo el puente—, así que viven en el
  * espejo y no en `communityInfo.ts`.
@@ -781,7 +782,7 @@ const ATTACH_REFUSALS = {
 };
 /**
  * Las negaciones del álbum, copiadas carácter a carácter de `DesktopAlbum.cs`. Once son literales de Android —de
- * `pickedAlbum` (`NativeBridge.java:5029-5046`), de `sendAlbum` (`:4904-4907`) y de `album` (`:4028-4033`)— y
+ * `pickedAlbum` (`NativeBridge.java:5031-5049`), de `sendAlbum` (`:4985-4988`) y de `album` (`:4032-4037`)— y
  * `notPhoto` la añade este puente, porque el selector de Windows admite «Todos los archivos» y el de Android no
  * puede devolver otra cosa que `image/*`. No hay `changed` aquí aunque en Android sí exista una frase de cuenta
  * cambiada en la elección: el puente de Windows sella cada vale con la conversación en la que se abrió el selector,
@@ -1303,7 +1304,7 @@ const CONTACT_WRITE_REFUSALS = {
  * son: tres guardas y un cambio de marca. El orden es el del brazo de Windows, que a su vez es el de Java —la
  * conversación cargada, la forma del chat, la persona con su bot y su cuenta propia— y detrás los dos «no hace nada»
  * que la pantalla ya sabe leer: quitar a quien no está y añadir a quien ya está devuelven `false` sin tocar el
- * estado, y `App.tsx:746` no repinta la ficha con un `false`. El cuadro de confirmar no está aquí porque el andamio
+ * estado, y `App.tsx:750` no repinta la ficha con un `false`. El cuadro de confirmar no está aquí porque el andamio
  * no abre ventanas, igual que `designUnblockSender` declaró lo mismo para el desbloqueo: cancelar responde `false`,
  * así que la vista queda idéntica al camino corto.
  */
@@ -1351,7 +1352,7 @@ function desktopShareContact(params: Record<string, unknown>, state: State) {
   acceptState({ ...state, messages: [...state.messages, sent] });
   return true;
 }
-/** Las dos negativas de `openMessageLocation` (`NativeBridge.java:416` y `:409`), carácter a carácter. */
+/** Las dos negativas de `openMessageLocation` (`NativeBridge.java:416` y `:421`), carácter a carácter. */
 const LOCATION_REFUSALS = {
   protected: 'Esta ubicación solo se puede ver dentro de este chat.',
   gone: 'La ubicación ya no está disponible.',
@@ -1731,6 +1732,8 @@ function joinCursorProblem(marker: string): boolean {
 // Development only; Vite removes this branch and module from the Android production assets.
 export async function designRequest(method: string, params: Record<string, unknown>) { if(['attachment.recents','attachment.recents.close','attachment.photos.permission','attachment.photo','composer.focus'].includes(method))return previewDeviceGallery(method,params,snapshot(),p=>desktopAttachmentPick(p,snapshot()));
   const state = snapshot();
+  if (method === 'bot.commands') { const chat=state.chats.find(item=>item.id===state.active); const bots=chat?.bot?[chat]:chat?.type==='group'?state.chats.filter(item=>item.bot):[]; return {chatId:state.active,commands:bots.flatMap(bot=>['start','help','settings'].map(name=>({name,description:name==='help'?'Ayuda del bot':name==='settings'?'Configurar el bot':'Iniciar el bot',botId:bot.id,botName:bot.title,username:bot.username||'sample_bot'}))),...(chat?.bot?{menu:{text:'Abrir Mini App',kind:'main'}}:{})}; }
+  if (method === 'bot.menu.open') return true;
   // La puerta de la ronda BK, delante de todo lo demás: en `platform=desktop` el andamio no modela una clave que el
   // host de Windows no atiende, porque un dato sintético encima de una pantalla de escritorio es exactamente la
   // mentira que el aviso «ALCANCE DE ESTA BETA» lleva rondas negando. Las seis claves que ya se niegan por su nombre
@@ -2269,7 +2272,7 @@ export async function designRequest(method: string, params: Record<string, unkno
     if (!isSupergroupOrChannel(chat)) throw new Error(CHAT_USERNAME_REFUSALS.unsupported);
     const malformed = profileUsernameProblem(params.username);
     if (malformed) throw new Error(malformed);
-    // Solo el `trim()` del puente: la `@` la quita la pantalla antes de llamar (`App.tsx:372`), así que un
+    // Solo el `trim()` del puente: la `@` la quita la pantalla antes de llamar (`App.tsx:375`), así que un
     // «@nombre» que llega hasta aquí —una llamada hecha a mano, otra pantalla— es el nombre malo, igual que en
     // Windows. Aflojarlo en el andamio sería entrenar una vista de diseño que el host real rechaza.
     const username = String(params.username).trim();
@@ -2461,9 +2464,100 @@ export async function designRequest(method: string, params: Record<string, unkno
     return designLiveLocationStart(params, state);
   }
   if (method === 'location.live.stop') return designLiveLocationStop(params, state);
+  // Los fondos de la cuenta (ronda CH-B). La lectura publica los dos huecos del modo, que es lo que hacen las dos
+  // capas: Android los saca de su tienda del aviso `UpdateDefaultBackground` y Windows del bit `default_` de la
+  // propia lista, y en el andamio salen de la lista mutable de abajo.
+  if (method === 'backgrounds.list') return designBackgrounds(params, state);
+  // Poner por identificador lo modelan las dos capas. Crear por color solo la escribe el puente de Android —en
+  // Windows es la negativa con nombre del host, `DesktopBackgrounds.NoCreate`— y el andamio no calcula el CSS que
+  // TDLib devuelve de esa escritura, así que se queda en el rechazo sintético de abajo.
+  if (method === 'background.set' && !designCloudColors(params)) return designBackgroundSet(params, state);
+  if (method === 'background.set' && state.platform === 'desktop') throw new Error(CLOUD_REFUSALS.noCreate);
   if (method === 'calls.list') return designCallPage(params, state);
   if (method === 'chats.list' || method === 'error.clear') return true;
   throw new Error('Vista sintética: esta acción requiere una cuenta real en Android. No se ha enviado nada.');
+}
+
+/**
+ * La lista de la cuenta con la que trabaja el andamio. Cuatro filas y las cuatro formas que las dos capas saben
+ * producir: dos rellenos —uno por modo, cada uno con su marca de elegido—, un estampado con relleno pintable y una
+ * imagen sin nada que pintar. Los identificadores son números largos porque así viajan en las dos capas: Android los
+ * saca de `String.valueOf(background.id)` y Windows de `DesktopBackgrounds.IdOf`, y la pantalla los devuelve como
+ * texto para que JavaScript no los redondee.
+ */
+let previewBackgrounds: CloudBackground[] = [
+  { id: '7080000000000101', name: 'Degradado de serie', dark: false, stock: true, selected: true, kind: 'fill', css: 'linear-gradient(180deg, #f3ead9, #d8c7a3)' },
+  { id: '7080000000000102', name: 'Estampado claro', dark: false, stock: true, selected: false, kind: 'pattern', css: '#f6f1e8' },
+  { id: '7080000000000103', name: 'Noche lisa', dark: true, stock: true, selected: true, kind: 'fill', css: '#0f1519' },
+  { id: '7080000000000104', name: 'Foto de la cuenta', dark: true, stock: false, selected: false, kind: 'wallpaper', css: null },
+];
+
+/**
+ * Las cinco negativas del host de Windows, copiadas carácter a carácter de `DesktopBackgrounds`. No son invenciones
+ * del andamio: las cuatro primeras miden lo que el puente MTProto dice de su propia lista, y `noCreate` es la que
+ * nombra el hueco de la librería —la única escritura de un fondo nuevo es `account.uploadWallPaper` y pide un
+ * archivo—. La de `NotConfirmed` no está porque es la respuesta `false` de una petición que aquí no se envía.
+ */
+const CLOUD_REFUSALS = {
+  nothing: 'Hay que decir qué fondo elegir o qué colores ponerle.',
+  badId: 'El identificador del fondo no vale.',
+  noCreate: 'Windows no puede crear un fondo de color: la única forma de escribir uno nuevo es subir una imagen, y aquí no hay imagen que subir.',
+  gone: 'Ese fondo ya no está en la cuenta. Vuelve a leer la lista.',
+  modeChanged: 'Ese fondo es del otro modo. Vuelve a leer la lista.',
+};
+
+/** La forma que el cable de Windows manda de verdad: sin nombre y sin marca de serie, porque MTProto no los tiene. */
+function cloudRowsOf(platform?: string): CloudBackground[] {
+  return platform === 'desktop' ? previewBackgrounds.map(row => ({ ...row, name: '', stock: null })) : previewBackgrounds;
+}
+
+/**
+ * Los dos huecos del estado, escritos con la lista tal cual está: `DesktopBackgroundsFlow.cs:88-91` y el almacén de
+ * Android publican lo mismo, y la raíz de `App.tsx` solo pinta el del modo resuelto.
+ */
+function publishCloudSlots(state: State, platform?: string) {
+  const rows = cloudRowsOf(platform);
+  acceptState({
+    ...state,
+    appearance: {
+      ...state.appearance,
+      accountBackgrounds: { light: rows.find(row => row.selected && !row.dark), dark: rows.find(row => row.selected && row.dark) },
+    },
+  });
+}
+
+/** `backgrounds.list` en las dos capas: primero publica los huecos y después contesta solo el modo pedido. */
+function designBackgrounds(params: Record<string, unknown>, state: State): { rows: CloudBackground[] } {
+  const dark = params.dark === true;
+  publishCloudSlots(state, state.platform);
+  return { rows: cloudRowsOf(state.platform).filter(row => row.dark === dark) };
+}
+
+/**
+ * La rama de colores de `background.set`: la que en Windows se niega por su nombre y la que en Android escribe un
+ * fondo nuevo que el andamio no sabe pintar, porque el CSS lo devuelve TDLib en la fila.
+ */
+function designCloudColors(params: Record<string, unknown>) {
+  return String(params.id ?? '').trim().length === 0 && String(params.top ?? '').trim().length > 0;
+}
+
+/**
+ * El orden es el del host (`DesktopBackgroundsFlow.cs:70-85`), no el de la conveniencia: la ausencia de las dos
+ * cosas, el identificador que no es número, el fondo que ya no está y el que es del otro modo. La confirmación de
+ * `account.installWallPaper` se salta porque aquí no hay petición que pueda devolver `false`.
+ */
+function designBackgroundSet(params: Record<string, unknown>, state: State): CloudBackground {
+  const raw = String(params.id ?? '').trim();
+  if (raw.length === 0) throw new Error(CLOUD_REFUSALS.nothing);
+  if (!/^\d+$/.test(raw)) throw new Error(CLOUD_REFUSALS.badId);
+  const dark = params.dark === true;
+  const found = cloudRowsOf(state.platform).find(row => row.id === raw);
+  if (found === undefined) throw new Error(CLOUD_REFUSALS.gone);
+  if (found.dark !== dark) throw new Error(CLOUD_REFUSALS.modeChanged);
+  previewBackgrounds = previewBackgrounds.map(row =>
+    row.dark === found.dark ? { ...row, selected: row.id === raw } : row);
+  publishCloudSlots(state, state.platform);
+  return cloudRowsOf(state.platform).find(row => row.id === raw) as CloudBackground;
 }
 
 /** La compartida abierta que ve el andamio: una fila propia, viva y con cuenta atrás sin gastar. */
@@ -2476,7 +2570,7 @@ function liveShareOf(state: State) {
 
 /**
  * Lo que `startLiveLocation` (`NativeBridge.java:4735`) contesta: la fila escrita con su `id`, su `chatId` y el
- * instante en que deja de renovarse, en segundos de epoch como `LiveLocationPolicy.expiresAt` (`:87-90`). El andamio
+ * instante en que deja de renovarse, en segundos de epoch como `LiveLocationPolicy.expiresAt` (`LiveLocationPolicy.java:87-90`). El andamio
  * no simula el sensor ni el diálogo nativo de confirmación; pinta la tarjeta que queda después de aceptar, que es lo
  * que la pantalla necesita para enseñar el botón «Dejar de compartir».
  */
@@ -2922,9 +3016,9 @@ function designUnblockSender(params: Record<string, unknown>, state: State): boo
 }
 
 /**
- * `profileBlock` (`:1282-1288`), que es la otra mitad del mismo hueco: la ficha ya publicaba `blocked` desde la ronda
- * BA y su botón seguía sin puente. Aquí están las tres guardas de Java en su orden —forma del chat, cuenta propia,
- * valor— y ninguna ventana de confirmar, porque la abre la pantalla (`App.tsx:748-751`) y no el puente.
+ * `profileBlock` (`NativeBridge.java:1300-1307`), que es la otra mitad del mismo hueco: la ficha ya publicaba `blocked`
+ * desde la ronda BA y su botón seguía sin puente. Aquí están las tres guardas de Java en su orden —forma del chat,
+ * cuenta propia, valor— y ninguna ventana de confirmar, porque la abre la pantalla (`App.tsx:752-755`) y no el puente.
  */
 function designProfileBlock(params: Record<string, unknown>, state: State): boolean {
   const id = String(params.id ?? '');

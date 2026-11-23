@@ -4,6 +4,20 @@ import { describe, expect, it } from 'vitest';
 const read = (path: string) => readFileSync(new URL(`./android/${path}`, import.meta.url), 'utf8');
 
 describe('contrato de la beta Android', () => {
+  it('identifica Android en los snapshots para habilitar Mini Apps y fondos nativos', () => {
+    const snapshot = read('app/src/main/java/cc/webrom/wrgram/NativeSnapshot.java');
+    expect(snapshot).toContain('data.put("platform","android").put("ready",session.ready())');
+  });
+
+  it('conserva enlaces durante el arranque hasta que Telegram y la interfaz estén listos', () => {
+    const shell = read('app/src/main/java/cc/webrom/wrgram/ShellActivity.java');
+    const bridge = read('app/src/main/java/cc/webrom/wrgram/NativeBridge.java');
+    expect(shell).toContain('if(link!=null){pendingDeepLink=link;dispatchPendingDeepLink();}');
+    expect(shell).toContain('bridge!=null&&uiReady&&AppLock.isUnlocked()&&((WrgramApplication)getApplication()).telegram().ready()');
+    expect(shell).toContain('uiReady = true; applyContentInsets(insetBottomPx); dispatchPendingDeepLink();');
+    expect(bridge).toContain('if(kind.equals("auth")&&session.ready())activity.runOnUiThread(activity::dispatchPendingDeepLink)');
+  });
+
   it('conserva TDLib nativo y usa una interfaz React empaquetada, separada de la demo', () => {
     const build = read('app/build.gradle');
     expect(build).toContain("applicationId 'cc.webrom.wrgram'");
@@ -94,8 +108,8 @@ describe('contrato de la beta Android', () => {
     expect(engine).toContain('historyQuery(id, read.cursor, true)');
     expect(engine).toContain('historyQuery(id, read.cursor, false)');
     expect(engine).toContain('12_000');
-    expect(read('version.properties')).toContain('versionCode=58');
-    expect(read('version.properties')).toContain('versionName=1.0.0-beta30');
+    expect(read('version.properties')).toContain('versionCode=61');
+    expect(read('version.properties')).toContain('versionName=1.0.0-beta33');
     expect(read('app/build.gradle')).toContain('dependsOn syncMobileUiAssets');
   });
 

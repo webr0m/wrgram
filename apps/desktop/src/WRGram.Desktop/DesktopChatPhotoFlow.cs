@@ -9,15 +9,15 @@ namespace WRGram.Desktop;
 /// El cable de <c>chat.photo.pick</c> en Windows: selector, recorte, ventana de confirmar y escritura por MTProto.
 /// Las reglas y las frases están en <see cref="DesktopChatPhoto"/>; aquí no se vuelve a escribir ninguna.
 /// <para>
-/// El orden es el de <c>NativeBridge.chatPhotoPick</c> (<c>NativeBridge.java:1735-1743</c>) y su continuación
-/// <c>pickedChatPhoto</c> (<c>:1725-1733</c>): forma, derecho, selector, preparación, mirada de cuenta, confirmar,
-/// mirada de cuenta otra vez y escritura. Las dos miradas son las de <c>:1730</c> y <c>:1740</c>, y hacen el mismo
-/// trabajo que en Android: entre elegir el archivo y pulsar «Establecer foto» puede haber cambiado la sesión, y la
-/// foto no debe escribirse nunca en una comunidad que la persona no tenía delante.
+/// El orden es el de <c>chatPhotoPick</c> (<c>NativeBridge.java:1736-1744</c>) y su continuación
+/// <c>pickedChatPhoto</c> (<c>:1745-1753</c>): forma, derecho, selector, preparación, mirada de cuenta, confirmar,
+/// mirada de cuenta otra vez y escritura. Las dos son las de <c>currentAccount</c> en <c>:1750</c> y <c>:1759</c>, y
+/// hacen el mismo trabajo que en Android: entre elegir el archivo y pulsar «Establecer foto» puede haber cambiado la
+/// sesión, y la foto no debe escribirse nunca en una comunidad que la persona no tenía delante.
 /// </para>
 /// <para>
 /// El descarte de la imagen, el recorte de 640 y el JPEG a calidad 88 son los de la foto de perfil, sin una línea
-/// nueva: <see cref="PreparePhoto"/> es el <c>preparePhoto</c> de Android (<c>:1670-1687</c>) y la única diferencia
+/// nueva: <see cref="PreparePhoto"/> es el <c>preparePhoto</c> de Android (<c>:1690-1707</c>) y la única diferencia
 /// entre las dos carpetas temporales que allá se separan es que aquí no hay archivo temporal que separar.
 /// </para>
 /// <para>
@@ -31,7 +31,7 @@ public sealed partial class TelegramService
 {
     /// <summary>
     /// <c>chat.photo.pick</c> (<c>NativeBridge.java:546</c>). Cancelar en el selector responde <c>false</c>, como
-    /// Android (<c>:1726</c>); establecerla responde <c>true</c>, y ninguna de las dos cosas es un error.
+    /// Android (<c>:1746</c>); establecerla responde <c>true</c>, y ninguna de las dos cosas es un error.
     /// </summary>
     private async Task<object?> ChatPhotoPickAsync(JsonElement args)
     {

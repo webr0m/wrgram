@@ -5,8 +5,8 @@ namespace WRGram.Desktop;
 
 /// <summary>
 /// El nombre y la descripción de una comunidad en Windows. En Android son tres decisiones repartidas: la longitud la
-/// fija <c>ChatEditing</c> (`ChatEditing.java:12-13`, 128 y 255), quién puede escribirlas la decide el estado del
-/// miembro (`:35-56`, tres caminos que no se parecen entre sí) y el orden de los guardajes vive en
+/// fija <c>ChatEditing</c> (`ChatEditing.java:11-13`, 128 y 255), quién puede escribirlas la decide
+/// <c>ChatEditing.canChange</c> (`:35-56`, tres caminos que no se parecen entre sí) y el orden de los guardajes vive en
 /// <c>NativeBridge.setChatInfo</c> (<c>NativeBridge.java:1939-1963</c>). Aquí esas tres decisiones están escritas una
 /// vez, con las frases copiadas carácter a carácter, y el cable solo pide y compara.
 /// <para>
@@ -45,8 +45,8 @@ public static class DesktopCommunityInfo
     /// antes, y ese rechazo es la frase <see cref="TooLong"/>.
     public const int BridgeMaximum = 1024;
 
-    /// Los dos topes del <c>NativeSnapshot.limit</c> que Android aplica a los textos del diálogo
-    /// (<c>NativeBridge.java:1990</c> y <c>:1993</c>, sobre <c>NativeSnapshot.java:548</c>).
+    /// Los dos topes con los que Android corta los textos del diálogo (<c>NativeBridge.java:1990</c> y <c>:1993</c>);
+    /// <c>NativeSnapshot.limit</c> está definido en <c>NativeSnapshot.java:552</c>.
     public const int TitleShown = 64;
     public const int DescriptionShown = 96;
 
@@ -63,12 +63,12 @@ public static class DesktopCommunityInfo
     /// <c>COMMUNITY_UNREADABLE</c> (<c>NativeBridge.java:1896</c>).
     public const string Unreadable = "Telegram no devolvió la descripción actual de la comunidad. Vuelve a intentarlo.";
 
-    /// El <c>catch</c> de <c>BridgePolicy.text(params,"value",1024)</c> (<c>NativeBridge.java:1945</c>). Es la frase
-    /// con la que Android cubre las dos causas —que el texto no quepa y que la clave no sea una cadena—, así que
-    /// aquí tampoco se separan.
+    /// El <c>catch</c> que sigue a <c>BridgePolicy.text</c> del campo nuevo (<c>NativeBridge.java:1944-1945</c>). Es
+    /// la frase con la que Android cubre las dos causas —que el texto no quepa y que la clave no sea una cadena—, así
+    /// que aquí tampoco se separan.
     public const string TooLong = "Ese texto es demasiado largo para enviarlo a Telegram.";
 
-    /// Las cuatro cadenas de <c>ChatEditing.problem</c> (`ChatEditing.java:68-80`), en el mismo orden de comprobación.
+    /// Las cuatro cadenas de <c>ChatEditing.problem</c> (`ChatEditing.java:64-76`), en el mismo orden de comprobación.
     public const string EmptyTitle = "Telegram no guarda comunidades sin nombre: escribe un título de al menos un carácter.";
     public const string TitleTooLong = "Telegram admite nombres de hasta 128 caracteres.";
     public const string DescriptionTooLong = "Telegram admite descripciones de hasta 255 caracteres.";

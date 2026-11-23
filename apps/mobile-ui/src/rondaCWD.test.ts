@@ -164,7 +164,8 @@ describe('ronda CW-D · la aritmética de nombres es la de names', () => {
 
   it('la sonda ejecuta la firma nueva sobre la clase real', () => {
     expect(csproj).toContain('apps\\desktop\\src\\WRGram.Desktop\\DesktopServiceCalls.cs');
-    expect(count('Caso("', sonda)).toBe(34);
+    // Eran 34 con los nombrados de la CW-D; la CH-B le sumó veinticinco midiendo `DesktopBackgrounds`.
+    expect(count('Caso("', sonda)).toBe(59);
     for (const frase of ['"Diego invitó a Ana a la llamada de grupo"', '"Diego invitó a Ana y Bruno a la llamada de grupo"',
       '"Diego invitó a Ana, Bruno y Carla a la llamada de grupo"', '"Diego invitó a Ana, Bruno, Carla y 1 más a la llamada de grupo"',
       '"Diego invitó a Ana, Bruno, Carla y 2 más a la llamada de grupo"', '"Diego invitó a la llamada de grupo"',
@@ -230,12 +231,12 @@ describe('ronda CW-D · las citas se miden', () => {
     'ServiceMessages.java:160': 'static String[] senderNames(TdSession session,TdApi.MessageSender[] values){',
     'ServiceMessages.java:170': 'static String participantList(String[] names){',
     'TdSession.java:1309': 'if (user == null) requestUser(id);',
-    'TelegramService.cs:3645': 'private string ServiceText(MessageService service, string actor = "") => service.action switch',
+    'TelegramService.cs:3656': 'private string ServiceText(MessageService service, string actor = "") => service.action switch',
     'DesktopServiceCalls.cs:79': 'public static string Invitation(MessageActionInviteToGroupCall call, string actor,',
     'DesktopServiceCalls.cs:92': 'public static string Invitees(long[] ids, Func<long, string> nameOf)',
-    'Program.cs:138': 'Caso("el esquema no conoce el motivo «rechazada»",',
-    'Program.cs:142': 'Caso("qué tipos traen bit de vídeo, medido sobre los Flags anidados",',
-    'Program.cs:150': 'Caso("qué banderas trae la acción de grupo, medidas una por una",',
+    'Program.cs:179': 'Caso("el esquema no conoce el motivo «rechazada»",',
+    'Program.cs:183': 'Caso("qué tipos traen bit de vídeo, medido sobre los Flags anidados",',
+    'Program.cs:191': 'Caso("qué banderas trae la acción de grupo, medidas una por una",',
   };
 
   const lineOf = (file: string, at: number): string => {

@@ -6,8 +6,8 @@ using TL;
 
 /// <summary>
 /// La marca de Premium en Windows (ronda CD): <c>premium.state</c>, la clave que el selector de emojis personalizados
-/// pregunta antes de dejar elegir (<c>App.tsx:1267</c>) y la que decide si el botón ✨ del menú del mensaje se pinta o
-/// no, porque la pantalla lee <c>props.allowCustom</c> (<c>App.tsx:1086</c>). En Android la contesta
+/// pregunta antes de dejar elegir (<c>App.tsx:1271</c>) y la que decide si el botón ✨ del menú del mensaje se pinta o
+/// no, porque la pantalla lee <c>props.allowCustom</c> (<c>App.tsx:1090</c>). En Android la contesta
 /// <c>premiumState</c> (<c>NativeBridge.java:4342</c>) con dos peticiones: <c>GetUser(selfId)</c> para la marca y
 /// <c>GetPremiumState</c> para el texto del plan y sus opciones de pago. Aquí la marca sale de la cuenta ya conectada
 /// —<see cref="DesktopEmojiCatalog.IsPremium(User)"/>, la bandera <c>User.Flags.premium</c>— sin ida y vuelta, igual
@@ -47,8 +47,9 @@ public static class DesktopPremiumState
 public sealed partial class TelegramService
 {
     /// <c>premium.state</c>: la puerta de <see cref="Connected()"/> y la marca, sin más. La escritura de una reacción
-    /// personalizada ya comprobaba esta misma bandera antes de mandar <c>messages.sendReaction</c>
-    /// (<c>DesktopMessageReactFlow.cs:75</c>); lo que faltaba era que la pantalla pudiera saberla.
+    /// personalizada ya comprobaba la bandera y la negaba con <c>NotPremiumAccount</c>
+    /// (<c>DesktopMessageReactFlow.cs:75</c>) antes de mandar <c>messages.sendReaction</c>
+    /// (<c>DesktopMessageReactFlow.cs:15</c>); lo que faltaba era que la pantalla pudiera saberla.
     private Task<object?> PremiumStateAsync()
     {
         var (_, user) = Connected();

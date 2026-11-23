@@ -105,25 +105,25 @@ describe('ronda CG · la rama muerta de TdSession.unsupported() no vuelve a ment
   it('`supported` del DTO dice si el objeto llegó, y el `false` lo pone la interfaz al inventar una ficha', () => {
     const comment = line(snapshot, 86) + '\n' + line(snapshot, 87) + '\n' + line(snapshot, 88);
     expect(comment).toContain('no si el tipo de chat se');
-    expect(comment).toContain('(`App.tsx:303`)');
+    expect(comment).toContain('(`App.tsx:306`)');
     expect(body(snapshot, 'JSONObject chat(TdApi.Chat chat)')).toContain('.put("supported",true)');
     // La capa de contratos lo exige: ningún chat llega sin su marca.
     expect(line(read('./contract.ts'), 30)).toContain('supported: boolean;');
     // Y estos son los únicos sitios de la interfaz que deciden la marca.
     expect(line(read('./peerCard.ts'), 76)).toContain('supported: true');
-    expect(line(read('./App.tsx'), 303)).toContain('supported:false');
+    expect(line(read('./App.tsx'), 306)).toContain('supported:false');
     expect(count('supported:false', read('./App.tsx'))).toBe(1);
     expect(count('supported:true', read('./App.tsx'))).toBe(2);
     // Quien consume la marca: la ficha de perfil, el reenvío, la bandeja y los paneles.
     expect(read('./PeerProfile.tsx')).toContain('{chat.supported && <button type="button" onClick={() => openChat(chat)}>');
-    expect(line(read('./App.tsx'), 1038)).toContain('state.chats.filter(chat=>chat.supported)');
+    expect(line(read('./App.tsx'), 1042)).toContain('state.chats.filter(chat=>chat.supported)');
     expect(line(read('./Inbox.tsx'), 152)).toContain('chat.supported === false');
   });
 
   it('ninguna capa vecina se movió de su aguja y los tres huecos que declaró la ronda están ya cableados', () => {
     // Medido hoy con `wc -l`: la ronda CH-A puso el bloque de los fondos al final del puente (veinticuatro líneas) y la
     // CH-A2 sumó nueve a la sesión y cuatro a la instantánea; `MainActivity` no se movió.
-    expect(bridge.split('\n').length - 1).toBe(5424);
+    expect(bridge.split('\n').length - 1).toBe(5511);
     expect(session.split('\n').length - 1).toBe(1409);
     expect(snapshot.split('\n').length - 1).toBe(553);
     expect(activity.split('\n').length - 1).toBe(609);

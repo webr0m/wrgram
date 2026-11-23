@@ -33,7 +33,7 @@ public final class GroupChatStats {
 
     /**
      * TDLib no conserva el nombre del rechazo de Telegram: para esta petición la respuesta llega como un 403 que
-     * `TdSession.safeError` (`TdSession.java:275`) vierte en su frase genérica con el número. Aquí solo puede
+     * `TdSession.safeError` (`TdSession.java:280`) vierte en su frase genérica con el número. Aquí solo puede
      * fallar el permiso de estadísticas, así que ese 403 se traduce; cualquier otro texto viaja tal cual, sin
      * inventarse una causa para un código que no se le ha visto.
      */

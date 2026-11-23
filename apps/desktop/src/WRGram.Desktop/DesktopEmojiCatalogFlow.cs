@@ -39,9 +39,9 @@ using WTelegram;
 /// <c>setEmojiStatus(null)</c>. En MTProto eso es <c>account.clearEmojiStatus</c> o el constructor
 /// <c>EmojiStatusEmpty</c>, y los dos faltan en la biblioteca; escribir <c>document_id</c> cero sería inventarse una
 /// orden, así que ese argumento se niega con <see cref="DesktopEmojiCatalog.NoRemoval"/>. Poner el estado sí tiene
-/// petición y está cableado. El <c>schedule()</c> de <c>:362</c>, que en Android vuelve a leer la cuenta, aquí es un
-/// eco local: la bandera <c>emoji_status</c> de la sesión conectada se actualiza con lo que Telegram acaba de
-/// aceptar y la marca sale en el estado, sin ida y vuelta.
+/// petición y está cableado. El <c>schedule()</c> de <c>NativeBridge.java:360</c>, que en Android vuelve a leer la
+/// cuenta, aquí es un eco local: la bandera <c>emoji_status</c> de la sesión conectada se actualiza con lo que
+/// Telegram acaba de aceptar y la marca sale en el estado, sin ida y vuelta.
 /// </para>
 /// <para>
 /// <b>La animación, medida y no prometida.</b> Un emoji personalizado es un documento <c>video/webm</c>, y el
@@ -52,10 +52,11 @@ using WTelegram;
 /// <para>
 /// Dos diferencias de forma, medidas: donde Android <b>omite</b> una clave si no hay dato (<c>:4914</c> y
 /// <c>:4965</c>), aquí se escribe <c>null</c>, que la pantalla trata igual porque solo mira si el valor es verdad
-/// (<c>BatchPanels.tsx:198</c> y <c>EmojiStatusSettings.tsx:180</c>); y donde <c>:4942</c> pide una ventana de
-/// veinticuatro con desplazamiento, <c>messages.getFeaturedStickers</c> no tiene parámetro de desplazamiento —medido,
-/// su firma es <c>(Client client, Int64 hash)</c>—, así que la ventana se recorta a <c>PackLimit</c> y
-/// <c>nextOffset</c> sale siempre cero: la pantalla no ofrece más abajo.
+/// (<c>BatchPanels.tsx:198</c> y <c>EmojiStatusSettings.tsx:180</c>); y donde <c>GetTrendingStickerSets</c>
+/// (<c>NativeBridge.java:4942</c>) pide una ventana de veinticuatro con desplazamiento,
+/// <c>messages.getFeaturedStickers</c> no tiene parámetro de desplazamiento —medido, su firma es
+/// <c>(Client client, Int64 hash)</c>—, así que la ventana se recorta a <c>PackLimit</c> y <c>nextOffset</c> sale
+/// siempre cero: la pantalla no ofrece más abajo.
 /// </para>
 /// </summary>
 public sealed partial class TelegramService

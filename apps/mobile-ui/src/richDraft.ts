@@ -15,7 +15,7 @@ const MARKS=new Set<TextEntityType>(['bold','italic','underline','strikethrough'
 const LINES=new Set<TextEntityType>(['blockquote','pre']);
 const LINKISH=new Set<TextEntityType>(['link']);
 /** Lo único que el compositor escribe en el borrador: sirve para comparar el borrador local con el de Telegram. */
-export const COMPOSER_TYPES=new Set<TextEntityType>([...MARKS,'link','customEmoji']);
+export const COMPOSER_TYPES=new Set<TextEntityType>([...MARKS,'link','customEmoji','botCommand']);
 /** Tipos que pueden fusionarse cuando quedan pegados; un emoji personalizado nunca se fusiona. */
 const MERGEABLE=new Set<TextEntityType>([...MARKS,'link']);
 const SAFE_URL=/^(https?:\/\/|tg:\/\/)/i;

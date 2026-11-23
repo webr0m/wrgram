@@ -7,7 +7,7 @@ using TL;
 
 /// <summary>
 /// Las reglas de la firma de invitación: <c>groups.add.info</c> (<c>NativeBridge.java:741</c>) y
-/// <c>groups.member.add</c> (<c>:2154</c>). Viven aquí, y no dentro del cable, por la misma razón por la que
+/// <c>groups.member.add</c> (<c>:742</c>). Viven aquí, y no dentro del cable, por la misma razón por la que
 /// <c>MemberAdditions.java</c> existe al otro lado: son reglas de Telegram, no de la librería. Las catorce frases
 /// están copiadas carácter a carácter de <c>MemberAdditions.java:24-37</c> y de su espejo
 /// <c>memberAdditions.ts:9-25</c>, y <c>rondaBB.test.ts</c> las compara con las dos.

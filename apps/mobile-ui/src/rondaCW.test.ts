@@ -195,9 +195,9 @@ describe('ronda CW · las citas se miden', () => {
     'TdApi.java:138457': 'public static class JoinGroupCall extends Function<GroupCallInfo> {',
     'TdApi.java:30070': 'public static class GroupCallJoinParameters extends Object {',
     'callLogModel.ts:60': 'export function callRowLabel(',
-    'preview.ts:3221': "{ chat: '24', reason: 'missed', video: false, group: true",
-    'TelegramService.cs:3645': 'private string ServiceText(MessageService service, string actor = "") => service.action switch',
-    'desktopScope.ts:91': "label: 'notificaciones push, llamadas y WR IA'",
+    'preview.ts:3315': "{ chat: '24', reason: 'missed', video: false, group: true",
+    'TelegramService.cs:3656': 'private string ServiceText(MessageService service, string actor = "") => service.action switch',
+    'desktopScope.ts:97': "label: 'notificaciones push, llamadas y WR IA'",
   };
 
   const lineOf = (file: string, at: number): string => {

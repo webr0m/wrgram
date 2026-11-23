@@ -67,8 +67,8 @@ public sealed partial class TelegramService
 
     /// <summary>
     /// <c>autoDeleteSet</c> (<c>NativeBridge.java:1372-1396</c>) más sus dos confirmaciones
-    /// (<c>confirmChatAutoDelete</c>, <c>:1378</c>, y <c>confirmAutoDelete</c>, <c>:1387</c>). El <c>false</c> es el
-    /// «Cancelar» de la ventana (<c>:1390</c>) y su cierre por la equis (<c>:1394</c>): la interfaz ya lo traduce por
+    /// (<c>confirmChatAutoDelete</c>, <c>:1398</c>, y <c>confirmAutoDelete</c>, <c>:1407</c>). El <c>false</c> es el
+    /// «Cancelar» de la ventana (<c>:1410</c>) y su cierre por la equis (<c>:1414</c>): la interfaz ya lo traduce por
     /// «en Telegram no ha cambiado nada» y conserva el número que la persona había escrito.
     /// <para>
     /// Que la respuesta final vuelva a leerse en Telegram en vez de devolver el número que se acaba de mandar es lo

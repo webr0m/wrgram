@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, type KeyboardEvent } from 'react';
 import type { TextEntity, TextEntityType } from './contract';
 import { activeMarks, MAX_LENGTH, segments } from './richDraft'; import { native, request } from './bridge';
 
@@ -26,6 +26,7 @@ interface Props {
   onSend():void;
   onSelection(marks:Set<TextEntityType>):void;
   onBlur():void;
+  onKeyDown?(event:KeyboardEvent<HTMLElement>):void;
 }
 
 const BLOCK=new Set(['DIV','P','LI','BLOCKQUOTE','PRE']);
@@ -110,7 +111,7 @@ function domState(root:HTMLElement):{text:string;shape:string} {
 function modelSignature(text:string,entities:TextEntity[]):string {
   const parts:string[]=[];
   for(const segment of segments(text,entities)) {
-    const marks=segment.marks.map(type=>`text-${type}`).join('/');
+    const marks=segment.marks.join('/');
     text.slice(segment.start,segment.end).split('\n').forEach((line,index)=>{
       if(index>0)parts.push('b');
       if(line)parts.push(`t${line.length}:${marks}`);
@@ -259,6 +260,8 @@ export const RichComposer=forwardRef<RichEditor,Props>((props,ref)=>{
       submit(props.text.slice(0,start)+value+props.text.slice(end),start+value.length);
     }}
     onKeyDown={event=>{
+      props.onKeyDown?.(event);
+      if(event.defaultPrevented)return;
       if(event.key!=='Enter'||event.nativeEvent.isComposing)return;
       if(!event.shiftKey&&(props.enterSends||event.ctrlKey||event.metaKey)){event.preventDefault();props.onSend();return;}
       event.preventDefault();
