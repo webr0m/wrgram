@@ -21,7 +21,7 @@ public static class DesktopPrivateChat
     public const string NoAccount = "Inicia sesión para abrir conversaciones.";
 
     /// Lo que Android lanza como <c>Invalid identifier</c> desde <c>BridgePolicy.id</c>
-    /// (<c>BridgePolicy.java:57</c>): no es un número positivo de hasta diecinueve dígitos.
+    /// (<c>BridgePolicy.java:58</c>): no es un número positivo de hasta diecinueve dígitos.
     public const string BadId = "El identificador de la persona no es un identificador válido.";
 
     /// La consecuencia de la diferencia de protocolo escrita con nombre: sin el <c>access_hash</c> no hay

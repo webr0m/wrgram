@@ -7,10 +7,10 @@ using TL;
 
 /// <summary>
 /// Las reglas de las cinco escrituras sobre una fila de supergrupo o canal: <c>groups.member.ban</c> y
-/// <c>groups.member.restrict</c> las atiende <c>banGroupMember</c> (<c>NativeBridge.java:2899</c>), que en un básico
+/// <c>groups.member.restrict</c> las atiende <c>banGroupMember</c> (<c>NativeBridge.java:2910</c>), que en un básico
 /// cede a <c>banBasicMember</c> (<c>:2880-2898</c>); <c>groups.member.unban</c> las atiende <c>unbanGroupMember</c>
-/// (<c>:2866</c>), <c>groups.member.promote</c> a <c>promoteGroupMember</c> (<c>:2871</c>) y
-/// <c>groups.member.demote</c> a <c>demoteGroupMember</c> (<c>:2872</c>). Cada frase está copiada carácter a
+/// (<c>:2877</c>), <c>groups.member.promote</c> a <c>promoteGroupMember</c> (<c>:2882</c>) y
+/// <c>groups.member.demote</c> a <c>demoteGroupMember</c> (<c>:2883</c>). Cada frase está copiada carácter a
 /// carácter de esas implementaciones, incluidos los tres rótulos del cuadro de confirmación y el remate de
 /// cada cuerpo; y cada guarda se comprueba en el mismo orden en que las comprueba Android, que no es un orden
 /// arbitrario: va pegado a las dos peticiones que las separan (<c>GetChatMember</c> sobre uno mismo y
@@ -31,7 +31,7 @@ using TL;
 /// (<see cref="BanRights"/>).</description></item>
 /// <item><description>El borrado del historial de una persona no es un argumento de la sanción: es su propia
 /// petición, <c>channels.deleteParticipantHistory</c>, que es el equivalente exacto del
-/// <c>DeleteChatMessagesBySender</c> de <c>:2899</c>. Viaja después, y si falla la sanción queda aplicada —así lo
+/// <c>DeleteChatMessagesBySender</c> de <c>:2910</c>. Viaja después, y si falla la sanción queda aplicada —así lo
 /// dice Android y así lo dice aquí—.</description></item>
 /// </list>
 /// </para>

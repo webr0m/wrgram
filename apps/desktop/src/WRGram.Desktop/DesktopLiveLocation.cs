@@ -6,8 +6,8 @@ using TL;
 /// <summary>
 /// Reglas de la ubicación en directo en Windows (ronda CB). Android hace las tres cosas —enviar, renovar y
 /// detener— porque TDLib tiene los tres pedidos y el teléfono tiene sensores: <c>InputMessageLiveLocation</c>
-/// (<c>NativeBridge.java:4774</c>), <c>EditMessageLiveLocation</c> con punto nuevo (<c>NativeBridge.java:4815</c>)
-/// y <c>EditMessageLiveLocation</c> sin punto (<c>NativeBridge.java:4832</c>). Aquí solo hay con qué detener, y
+/// (<c>NativeBridge.java:4841</c>), <c>EditMessageLiveLocation</c> con punto nuevo (<c>NativeBridge.java:4882</c>)
+/// y <c>EditMessageLiveLocation</c> sin punto (<c>NativeBridge.java:4899</c>). Aquí solo hay con qué detener, y
 /// las dos razones son de biblioteca y de sistema, no de pereza.
 /// <para>
 /// <b>Empezar a compartir no se puede.</b> El proyecto se compila contra <c>net8.0-windows</c>
@@ -37,7 +37,7 @@ public static class DesktopLiveLocation
 {
     /// Gemelo carácter a carácter de <c>LiveLocationPolicy.NOT_SHARING</c> (<c>LiveLocationPolicy.java:50</c>), que
     /// es la frase con la que Android niega las cuatro situaciones que no son una ubicación propia en directo: fila
-    /// que no está (<c>NativeBridge.java:4829</c>), contenido que ya no es una ubicación, mensaje recibido y chat
+    /// que no está (<c>NativeBridge.java:4896</c>), contenido que ya no es una ubicación, mensaje recibido y chat
     /// distinto del abierto. Aquí la primera la cubre <c>RequireEntry</c> y las otras tres van juntas por el mismo
     /// motivo, así que la misma frase sirve sin inventar una categoría nueva.
     public const string NotSharing = "No estás compartiendo ninguna ubicación en directo en este chat.";
@@ -53,7 +53,7 @@ public static class DesktopLiveLocation
     public static bool CanStop(bool outgoing, int period) => outgoing && period > 0;
 
     /// Si la fila es del propio usuario: <c>Message.Flags.out_</c>, la misma bandera con la que
-    /// <c>ConvertMessage</c> arma <c>MessageDto.Outgoing</c> (<c>TelegramService.cs:3419</c>).
+    /// <c>ConvertMessage</c> arma <c>MessageDto.Outgoing</c> (<c>TelegramService.cs:3413</c>).
     public static bool IsOutgoing(TL.Message message) => (message.flags & TL.Message.Flags.out_) != 0;
 
     /// El tiempo que la ubicación sigue anunciando, con el orden de la librería en la cabeza:

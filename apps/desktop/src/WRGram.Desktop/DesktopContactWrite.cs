@@ -4,13 +4,13 @@ namespace WRGram.Desktop;
 
 /// <summary>
 /// Reglas de «añadir» y «quitar» una persona de la agenda propia en Windows. Android atiende las dos en el mismo
-/// método, <c>contactAction</c> (<c>NativeBridge.java:1859</c>), con las dos claves del puente juntas en un solo
+/// método, <c>contactAction</c> (<c>NativeBridge.java:1860</c>), con las dos claves del puente juntas en un solo
 /// <c>case</c> (<c>:563</c>), y este archivo es su traducción: las dos frases que se ven cuando algo no puede ser,
 /// las dos que se ven cuando sí puede pero no hace falta, el cuadro de confirmar con sus tres rótulos, la regla de
 /// los dos nombres y el orden exacto en que todo eso ocurre. El hilo está en <see cref="DesktopContactWriteFlow"/>.
 /// <para>
 /// <b>Las cuatro salidas de Android, que son cuatro y no dos.</b> La pantalla solo sabe preguntar
-/// (<c>App.tsx:750</c>) y mirar el <c>boolean</c> que vuelve (<c>PeerProfile.tsx:97</c> es el botón que lo pide), y
+/// (<c>App.tsx:760</c>) y mirar el <c>boolean</c> que vuelve (<c>PeerProfile.tsx:97</c> es el botón que lo pide), y
 /// <c>:1839</c> tiene cuatro caminos: negar con frase, decir «no hace nada» porque la persona ya está en el estado
 /// que se pedía, abrir el cuadro y escribir, o cerrarse sin escribir. Los dos del medio son los que se olvidan:
 /// <c>contacts.remove</c> sobre alguien que no es contacto responde <c>ok(false)</c> sin tocar Telegram, y

@@ -7,8 +7,9 @@ export type TabRules = {
 export type TabEmoji =
   | { kind:'preset'; id:string }
   | { kind:'premium'; id:string; emoji?:string };
-export type InboxTab = { id:string; name:string; hidden?:boolean; icon?:string; emoji?:TabEmoji; rules?:TabRules };
-export const TAB_ICONS:[string,string][]=[['','Sin icono'],['hash','Etiqueta'],['bookmark','Marcador'],['star','Estrella'],['megaphone','Megáfono'],['users','Personas'],['send','Enviar'],['bot','Bot'],['lock','Candado'],['pin','Fijado'],['archive','Archivados'],['image','Multimedia'],['heart','Favorito'],['globe','Público'],['bell','Avisos'],['flame','Tendencia']];
+export type TabDisplay = 'icon'|'iconName';
+export type InboxTab = { id:string; name:string; hidden?:boolean; icon?:string; emoji?:TabEmoji; display?:TabDisplay; rules?:TabRules };
+export const TAB_ICONS:[string,string][]=[['','Sin icono'],['plus','Plus'],['wrgram','WRGram'],['hash','Etiqueta'],['bookmark','Marcador'],['star','Estrella'],['megaphone','Megáfono'],['users','Personas'],['send','Enviar'],['bot','Bot'],['lock','Candado'],['pin','Fijado'],['archive','Archivados'],['image','Multimedia'],['heart','Favorito'],['globe','Público'],['bell','Avisos'],['flame','Tendencia']];
 export const TAB_EMOJIS: Readonly<Record<string, string>> = {
   hash:'💬', bookmark:'🔖', star:'⭐', megaphone:'📣', users:'👥',
   send:'✈️', bot:'🤖', lock:'🔒', pin:'📌', archive:'📦',
@@ -22,6 +23,10 @@ export function arrangeTabs(folders:State['folders'], saved:InboxTab[]):InboxTab
   const included=saved.filter(tab=>tab.id.startsWith('custom:')?!!tab.rules:ids.has(tab.id));
   const present=new Set(included.map(tab=>tab.id));
   return [...included,...defaults.filter(tab=>!present.has(tab.id))];
+}
+
+export function tabShowsName(tab:InboxTab):boolean {
+  return !tab.emoji&&tab.display!=='icon';
 }
 
 export function visibleTabId(id:string,tabs:readonly InboxTab[]):string {

@@ -5,11 +5,11 @@ using System.Collections.Generic;
 
 /// <summary>
 /// Reglas de «Ir a una fecha» en Windows. El botón existe en la cabecera del chat desde hace rondas y Android lo
-/// atiende con <c>GetChatMessageByDate</c> (<c>TdSession.java:951-953</c>, que tolera el 404 y lo devuelve como
+/// atiende con <c>GetChatMessageByDate</c> (<c>TdSession.java:955-958</c>, que tolera el 404 y lo devuelve como
 /// ausencia); aquí la orden caía en el <c>_ =&gt; throw</c> genérico, que dice «No disponible en escritorio (beta)»
 /// dando a entender que falta el cable, y la pantalla además tapaba el botón con <c>!desktop</c>.
 /// <para>
-/// Las tres frases son literales de <c>messageByDate</c> (<c>NativeBridge.java:3388-3402</c>, recogidas en
+/// Las tres frases son literales de <c>messageByDate</c> (<c>NativeBridge.java:3399-3413</c>, recogidas en
 /// <c>HistoryDate.java</c>) carácter a carácter: la misma hora escrita en los dos dispositivos tiene que salir o
 /// negarse igual.
 /// </para>
@@ -32,26 +32,26 @@ using System.Collections.Generic;
 public static class DesktopHistoryDate
 {
     /// Literal de <c>messageByDate</c> cuando la conversación pedida no es la abierta o no tiene historial saltable
-    /// (<c>NativeBridge.java:3393</c>).
+    /// (<c>NativeBridge.java:3404</c>).
     public const string History = "Este historial no admite saltos por fecha.";
 
-    /// Literal de <c>messageByDate</c> para la hora que no cabe o no viene (<c>NativeBridge.java:3397</c>).
+    /// Literal de <c>messageByDate</c> para la hora que no cabe o no viene (<c>NativeBridge.java:3408</c>).
     public const string Range = "Fecha fuera de rango.";
 
-    /// Literal de <c>messageByDate</c> cuando la conversación cambió mientras se esperaba (<c>NativeBridge.java:3399</c>).
+    /// Literal de <c>messageByDate</c> cuando la conversación cambió mientras se esperaba (<c>NativeBridge.java:3410</c>).
     public const string Changed = "La conversación cambió.";
 
     /// El techo con el que Android decide que una hora es basura: su <c>date</c> viaja en <c>int</c>.
     public const long MaxSeconds = int.MaxValue;
 
     /// Cuántos mensajes se leen alrededor de la ancla. Es la misma franja con la que Android corta la banda de
-    /// fechas en <c>galleryPage</c> (<c>NativeBridge.java:3371</c>, treinta por página), y aquí sirve para otra
+    /// fechas en <c>galleryPage</c> (<c>NativeBridge.java:3382</c>, treinta por página), y aquí sirve para otra
     /// cosa: la selección del mensaje la decide esta casa, así que no depende de si el servidor ancló la página un
     /// mensaje antes o después de la hora pedida.
     public const int Page = 30;
 
     /// Si la hora manda algo, cabe en el entero de Android y no está por delante de <paramref name="now"/>. Es el
-    /// <c>at&lt;=0 || at&gt;Integer.MAX_VALUE || at&gt;now</c> de <c>messageByDate</c> (<c>NativeBridge.java:3397</c>).
+    /// <c>at&lt;=0 || at&gt;Integer.MAX_VALUE || at&gt;now</c> de <c>messageByDate</c> (<c>NativeBridge.java:3408</c>).
     public static bool Acceptable(long at, long now) => at > 0 && at <= MaxSeconds && at <= now;
 
     /// El <c>DateTime</c> que espera <c>messages.getHistory</c> en <c>offset_date</c>, en segundos de epoch UTC.

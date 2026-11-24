@@ -250,7 +250,7 @@ describe('ronda AM · la pantalla de Windows ya entra al navegador', () => {
     expect(count(item, app)).toBe(2);
     expect(count(`{message.albumId&&!desktop&&${item}`, app)).toBe(0);
     const desktop = app.slice(at('{props.reactions.length>0&&reactionBar(props,act)}', app),
-      at('const owner=state.selfId,topic=', app));
+      at('const owner=state.selfId,topic=state.topic?.id;', app));
     const android = app.slice(at('{reactionBar(props,act)}', app));
     for (const branch of [desktop, android]) {
       expect(branch).toContain(`{message.albumId&&${item}}`);

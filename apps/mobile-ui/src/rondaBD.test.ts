@@ -134,7 +134,7 @@ function tsBody(name: string, from = preview): string {
   throw new Error(`Sin cierre para ${name}`);
 }
 
-/** Las citas de Android que un archivo de C# hace con el número suelto (`<c>:1730</c>`). */
+/** Las citas de Android que un archivo de C# hace con el número suelto (`<c>:1731</c>`). */
 function bareCitations(from: string): number[] {
   return [...from.matchAll(/(?<![\w.]):(\d{3,4})(?:-(\d{3,4}))?/g)].flatMap(match =>
     match.slice(1, 3).filter((value): value is string => Boolean(value)).map(Number));
@@ -143,9 +143,9 @@ function bareCitations(from: string): number[] {
 describe('ronda BD · la foto de la comunidad, cruzada con las tres capas', () => {
   it('las ocho frases que Android dice están letra por letra en la línea que cita la regla pura', () => {
     for (const [name, javaName, line] of [
-      ['Unsupported', 'CHAT_PHOTO_UNSUPPORTED', 1722], ['ChangedAccount', 'CHAT_PHOTO_CHANGED', 1723],
-      ['PickTitle', 'CHAT_PHOTO_PICK_TITLE', 1724], ['PickBody', 'CHAT_PHOTO_PICK_BODY', 1725],
-      ['DeleteTitle', 'CHAT_PHOTO_DELETE_TITLE', 1726], ['DeleteBody', 'CHAT_PHOTO_DELETE_BODY', 1727],
+      ['Unsupported', 'CHAT_PHOTO_UNSUPPORTED', 1723], ['ChangedAccount', 'CHAT_PHOTO_CHANGED', 1724],
+      ['PickTitle', 'CHAT_PHOTO_PICK_TITLE', 1725], ['PickBody', 'CHAT_PHOTO_PICK_BODY', 1726],
+      ['DeleteTitle', 'CHAT_PHOTO_DELETE_TITLE', 1727], ['DeleteBody', 'CHAT_PHOTO_DELETE_BODY', 1728],
     ] as const) {
       expect(javaConst(line, javaName)).toBe(csSentence(name));
       // La cita es lo que hace revisable la frase: sin número, la siguiente ronda no sabe dónde mirar.
@@ -153,22 +153,22 @@ describe('ronda BD · la foto de la comunidad, cruzada con las tres capas', () =
       expect(cited(name)).toBe(line);
     }
     // Los dos botones afirmativos no son constantes en Android: se leen donde el `AlertDialog` los escribe.
-    expect(javaDialog(1756, 'setPositiveButton')).toBe(csSentence('PickAccept'));
-    expect(javaDialog(1780, 'setPositiveButton')).toBe(csSentence('DeleteAccept'));
-    expect(cited('PickAccept')).toBe(1756);
-    expect(cited('DeleteAccept')).toBe(1780);
+    expect(javaDialog(1757, 'setPositiveButton')).toBe(csSentence('PickAccept'));
+    expect(javaDialog(1781, 'setPositiveButton')).toBe(csSentence('DeleteAccept'));
+    expect(cited('PickAccept')).toBe(1757);
+    expect(cited('DeleteAccept')).toBe(1781);
   });
 
   it('las dos normas que ya existían no se vuelven a declarar', () => {
     // El permiso y el descarte de la imagen son las mismas dos cadenas con las que la ronda AW cambia el nombre y
     // la AU sube el avatar; Android también las comparte (`ChatEditing`, `preparePhoto`) y aquí pasa igual.
-    expect(csSentence('NoRight', communityRules)).toBe(javaConst(1894, 'COMMUNITY_NO_RIGHT'));
+    expect(csSentence('NoRight', communityRules)).toBe(javaConst(1895, 'COMMUNITY_NO_RIGHT'));
     expect(javaBody('chatPhotoPick')).toContain('answer.fail(COMMUNITY_NO_RIGHT)');
     expect(javaBody('deleteChatPhoto')).toContain('answer.fail(COMMUNITY_NO_RIGHT)');
     expect(count(csSentence('NoRight', communityRules), rules)).toBe(0);
     expect(count(csSentence('NoImage', accountRules), rules)).toBe(0);
     // Y el «Cancelar» del cuadro de confirmar es el de la foto de perfil, no una segunda copia.
-    expect(javaDialog(1756, 'setNegativeButton')).toBe(csSentence('Cancel', accountRules));
+    expect(javaDialog(1757, 'setNegativeButton')).toBe(csSentence('Cancel', accountRules));
     expect(rules).not.toContain('public const string Cancel');
     // Las negativas de forma y de derecho se dicen con las mismas reglas puras que miden el nombre y la descripción.
     expect(cable).toContain('DesktopCommunityInfo.Supported(kind)');
@@ -217,7 +217,7 @@ describe('ronda BD · la foto de la comunidad, cruzada con las tres capas', () =
     ] as const) {
       expect(at(before, pick)).toBeLessThan(at(after, pick));
     }
-    // Las dos miradas de cuenta de Android (`:1748` y `:1757`): una al volver del selector, otra al pulsar el botón.
+    // Las dos miradas de cuenta de Android (`:1749` y `:1758`): una al volver del selector, otra al pulsar el botón.
     expect(count('if (CollectionClient().User!.id != owner) throw new BridgeException(DesktopChatPhoto.ChangedAccount);', pick)).toBe(2);
     expect(count('return false;', pick)).toBe(2);
   });
@@ -230,7 +230,7 @@ describe('ronda BD · la foto de la comunidad, cruzada con las tres capas', () =
     expect(at('answer.owner!=session.selfId', body)).toBeLessThan(at('new TdApi.SetChatPhoto(chat.id,null)', body));
     // Los tres «Cancelar» de Android: el botón, el gesto de salir y el chat que ya estaba sin imagen.
     expect(count('answer.ok(false)', body)).toBe(3);
-    expect(javaLine(1782)).toContain('TdApi.SetChatPhoto(chat.id,null)');
+    expect(javaLine(1783)).toContain('TdApi.SetChatPhoto(chat.id,null)');
     // La medida, dicha en la regla: la librería no genera el vacío, así que no hay a dónde llegar. La frase cae hoy
     // partida por el salto de línea del comentario, así que se exige con su continuación `///` por medio.
     expect(rules).toMatch(/medido por reflexión sobre\s*\/\/\/\s*WTelegramClient 4\.4\.10/);
@@ -337,7 +337,7 @@ describe('ronda BD · la foto de la comunidad, cruzada con las tres capas', () =
     expect(windows).not.toContain(drop);
     expect(android).toContain(drop);
     expect(windows).toContain(`community(chat)&&<MenuItem icon={<Image/>} label="${pick}"`);
-    // Y en Android la segunda entrada aparece solo donde hay imagen que quitar, que es la guarda de `:1775`.
+    // Y en Android la segunda entrada aparece solo donde hay imagen que quitar, que es la guarda de `:1776`.
     expect(android).toContain(`community(chat)&&chat.photo&&<MenuItem icon={<Trash2/>} label="${drop}"`);
     for (const branch of [windows, android]) {
       expect(branch).toContain("void run<boolean>('chat.photo.pick',{id:chat.id})");
@@ -431,7 +431,7 @@ describe('ronda BD · medido con las manos, no con agujas', () => {
   });
 
   it('sin permiso no se abre el selector: la negativa llega antes que el descarte de la imagen', async () => {
-    // El orden de `:1736` y `:1739` contra el descarte de `:1702`. Si aquí se adelantara el archivo, una cuenta sin
+    // El orden de `:1737` y `:1740` contra el descarte de `:1703`. Si aquí se adelantara el archivo, una cuenta sin
     // derechos oiría «no se pudo preparar la imagen» en lugar del permiso que le falta.
     const noRight = csSentence('NoRight', communityRules);
     expect(await pick('18', { name: 'cartel.webp' })).toBe(noRight);
@@ -445,7 +445,7 @@ describe('ronda BD · medido con las manos, no con agujas', () => {
     expect(await pick('14', { name: 'Nuevo logo.jpg' })).toBe(true);
     expect(await drop('14')).toBe(true);
     expect(row('14')?.photo).toBeUndefined();
-    // `:1775`: sin imagen no se abre el diálogo y se responde `false`, que la pantalla lee «no ha cambiado nada».
+    // `:1776`: sin imagen no se abre el diálogo y se responde `false`, que la pantalla lee «no ha cambiado nada».
     expect(await drop('14')).toBe(false);
     expect(await drop('22')).toBe(false);
   });

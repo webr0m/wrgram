@@ -27,7 +27,7 @@ using WTelegram;
 /// negaciones y los tres techos— es la misma norma de <c>PrivacyRules.java</c> dicha una vez en esta capa.
 /// </para>
 /// <para>
-/// La otra diferencia es que aquí el <c>catch</c> de <c>NativeBridge.java:3889</c> («No se pudo leer la
+/// La otra diferencia es que aquí el <c>catch</c> de <c>NativeBridge.java:3900</c> («No se pudo leer la
 /// privacidad actual de este ajuste. No se cambió nada.») no tiene de qué escapar. Allá ese <c>catch</c> atrapa lo
 /// que se rompa <i>armado</i> la lista de reglas; aquí la lista se arma a partir de valores ya validados, así que no
 /// hay fallo posible que merezca esa frase y no se copia: una negación que no puede ocurrir es peor que un hueco.
@@ -38,7 +38,7 @@ using WTelegram;
 public sealed partial class TelegramService
 {
     /// <summary>
-    /// <c>privacyGet</c> (<c>NativeBridge.java:3867-3878</c>). Diez lecturas seguidas, en el orden de
+    /// <c>privacyGet</c> (<c>NativeBridge.java:3878-3889</c>). Diez lecturas seguidas, en el orden de
     /// <c>PRIVACY_KEYS</c>, que es el orden en el que la pantalla recorre el array. Allá la recursión va de clave en
     /// clave; aquí el mismo recorrido es un <c>foreach</c>, y el orden sale idéntico.
     /// <para>
@@ -69,7 +69,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>privacySet</c> (<c>NativeBridge.java:3879-3893</c>). El orden es el de Java línea por línea y no es
+    /// <c>privacySet</c> (<c>NativeBridge.java:3890-3904</c>). El orden es el de Java línea por línea y no es
     /// cosmético: si la reconstrucción se intentara antes de mirar la forma, un argumento mal formado se confundiría
     /// con un ajuste que Telegram no deja reescribir. La lectura previa va en medio porque la norma de conservar las
     /// reglas que la pantalla no sabe expresar (<c>PrivacyRules.java:12-18</c>) exige saber cuáles había.
@@ -89,7 +89,7 @@ public sealed partial class TelegramService
         if (client.User?.id != owner) throw new BridgeException(DesktopPrivacy.ChangedAccount);
         MergePeers(current.users?.Values, current.chats?.Values);
         var rules = DesktopPrivacy.Merge(current.rules, value!, allow, restrict, PrivacyInput);
-        // La guarda escrita de su puño y letra en `NativeBridge.java:3890`, entre la reconstrucción y la petición:
+        // La guarda escrita de su puño y letra en `NativeBridge.java:3901`, entre la reconstrucción y la petición:
         // llega después del `merge` porque allá el `merge` vive dentro del `perform` de la lectura, y el orden de las
         // negaciones es el de esa línea.
         if (client.User?.id != owner) throw new BridgeException(DesktopPrivacy.ChangedAccount);
@@ -98,9 +98,9 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// Los dos <c>optionalIds(p, …, 100)</c> de <c>NativeBridge.java:3882</c>. La ausencia y el array vacío son la
+    /// Los dos <c>optionalIds(p, …, 100)</c> de <c>NativeBridge.java:3893</c>. La ausencia y el array vacío son la
     /// lista vacía, igual que allá; lo que no está bien formado se corta con la causa dicha en español, porque en
-    /// Android ese rechazo lo produce <c>BridgePolicy.ids</c> (<c>BridgePolicy.java:58</c>) fuera de cualquier
+    /// Android ese rechazo lo produce <c>BridgePolicy.ids</c> (<c>BridgePolicy.java:59</c>) fuera de cualquier
     /// <c>catch</c> propio: sube al general de <c>NativeBridge.java:167</c> y la pantalla lee «Solicitud no válida o
     /// función no disponible».
     /// </summary>

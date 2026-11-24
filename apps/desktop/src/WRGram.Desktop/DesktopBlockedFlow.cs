@@ -15,19 +15,19 @@ using WTelegram;
 /// techos, las frases y el cuadro de confirmar están en <see cref="DesktopBlocked"/>; aquí está el hilo, que es lo que
 /// faltaba: las tres órdenes están en la lista del puente desde hace rondas (<c>BridgePolicy.java:42</c> y <c>:30</c>),
 /// las tres pantallas las piden desde entonces (<c>BlockedSettings.tsx:25</c> y <c>:48</c>, <c>PeerProfile.tsx:98</c>
-/// a través de <c>App.tsx:755</c>) y en Windows caían en el <c>_ =&gt; throw</c> genérico. La tercera era la más
+/// a través de <c>App.tsx:765</c>) y en Windows caían en el <c>_ =&gt; throw</c> genérico. La tercera era la más
 /// callada: la ficha de una persona sí mostraba el botón de «Bloquear» porque <c>chat.profile</c> publica
 /// <c>blocked</c> desde la ronda BA, y pulsarlo devolvía la frase del beta.
 /// <para>
 /// La lectura es la parte fácil y sale línea por línea: el marcador, la página de cincuenta, la cuenta mirada
 /// después de la ida, los dos diccionarios de la respuesta volcados en la caché de pares y las filas armadas con el
 /// nombre y la foto que esa misma respuesta trae. Lo que Android hace con la memoria de TDLib (<c>senderName</c> y
-/// <c>senderPhoto</c>, <c>TdSession.java:1306-1314</c>) aquí lo hace <c>EntryFromPeer</c> sobre los
+/// <c>senderPhoto</c>, <c>TdSession.java:1310-1318</c>) aquí lo hace <c>EntryFromPeer</c> sobre los
 /// <c>users</c>/<c>chats</c> del <c>contacts.getBlocked</c>, así que no hay ninguna ida extra que fingir.
 /// </para>
 /// <para>
 /// La escritura es la que obliga a releer. Android pasa el remitente tal cual a
-/// <c>SetMessageSenderBlockList(sender,null)</c> (<c>:1560</c>) porque su capa de abajo resuelve ids sueltos; MTProto
+/// <c>SetMessageSenderBlockList(sender,null)</c> (<c>:1561</c>) porque su capa de abajo resuelve ids sueltos; MTProto
 /// pide un <c>InputPeer</c> —persona y canal con su <c>access_hash</c>— y la pantalla solo devuelve el <c>kind</c> y
 /// el número que leyó, con lo que dos problemas: el número no distingue un <c>PeerChat</c> de un <c>PeerChannel</c>
 /// del mismo id y el hash no viaja en la orden. La respuesta son dos lecturas: el cable recorre la lista de verdad,
@@ -48,12 +48,12 @@ using WTelegram;
 /// entrada que <see cref="RequireEntry"/> reconstruye ya trae su <c>InputPeerUser</c> con hash. Lo que conserva es el
 /// orden de <c>:1282-1285</c> —forma del chat, cuenta propia, valor— y el silencio ante la cuenta: allá no hay
 /// <c>currentAccount()</c> porque no hay diálogo nativo que pueda cruzarse; aquí tampoco, por el mismo motivo, y la
-/// confirmación la hace la pantalla en su propio cuadro (<c>App.tsx:754</c>), no el host. Bloquear y desbloquear son
+/// confirmación la hace la pantalla en su propio cuadro (<c>App.tsx:764</c>), no el host. Bloquear y desbloquear son
 /// las dos peticiones medidas con el nombre simétrico, <c>Contacts_Block</c> y <c>Contacts_Unblock</c>, ambas con
 /// <c>my_stories_from</c> en falso.
 /// </para>
 /// <para>
-/// Y una cosa que aquí no se copia: el <c>schedule()</c> de <c>NativeBridge.java:1560</c>. Android lo llama para
+/// Y una cosa que aquí no se copia: el <c>schedule()</c> de <c>NativeBridge.java:1561</c>. Android lo llama para
 /// que su lazo de notificaciones vuelva a pedir las listas; en Windows el <c>contacts.unblockPeer</c> responde un
 /// <c>Bool</c> (medido) y la pantalla vuelve a cargar ella sola —<c>BlockedSettings.tsx:53-56</c> reinicia la
 /// página tras el desbloqueo porque los marcadores del servidor se desplazan—, así que no hay nada que empujar.
@@ -110,10 +110,10 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>profileBlock</c> (<c>NativeBridge.java:1300-1307</c>): las dos guardas de Java en su orden y, según el
+    /// <c>profileBlock</c> (<c>NativeBridge.java:1301-1308</c>): las dos guardas de Java en su orden y, según el
     /// valor, una de las dos peticiones simétricas. No abre ventana ninguna porque Android tampoco: el cuadro de
-    /// confirmar es el de la pantalla (<c>App.tsx:752-755</c>) y la orden ya llega decidida. El <c>ok(true)</c> de
-    /// <c>NativeBridge.java:1306</c> responde lo que TDLib aceptó sin mirar el <c>updates</c>; aquí se responde
+    /// confirmar es el de la pantalla (<c>App.tsx:762-765</c>) y la orden ya llega decidida. El <c>ok(true)</c> de
+    /// <c>NativeBridge.java:1307</c> responde lo que TDLib aceptó sin mirar el <c>updates</c>; aquí se responde
     /// <c>true</c> cuando la librería no lanza, que es el mismo contrato.
     /// </summary>
     private async Task<object?> SetBlockProfileAsync(JsonElement args)

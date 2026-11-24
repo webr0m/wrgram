@@ -183,7 +183,7 @@ describe('ronda CP · el andamio y la pantalla anuncian el tope de la cuenta', (
 describe('ronda CP · una copia de gigas tiene plazo de copia', () => {
   it('los tres métodos que copian un archivo elegido esperan más que un diálogo', () => {
     expect(bridge).toContain("const IMPORT_COPY = new Set(['attachment.pick', 'attachment.album', 'share.import']);");
-    expect(count('IMPORT_COPY.has(method) ? 900000 : USER_DRIVEN.has(method) ? 300000', bridge)).toBe(1);
+    expect(count('IMPORT_COPY.has(method) ? 900000 : READ_RECEIPT.has(method) ? 120000 : USER_DRIVEN.has(method) ? 300000', bridge)).toBe(1);
     // Los selectores siguen siendo órdenes con plazo de persona: la copia grande no los saca de la lista.
     expect(bridge).toContain("'attachment.pick', 'attachment.camera', 'attachment.album'");
   });
@@ -198,6 +198,8 @@ describe('ronda CP · una copia de gigas tiene plazo de copia', () => {
     expect(requestTimeoutMs('share.import')).toBe(900000);
     expect(requestTimeoutMs('attachment.camera')).toBe(300000);
     expect(requestTimeoutMs('media.export')).toBe(300000);
+    expect(requestTimeoutMs('message.readDate')).toBe(120000);
+    expect(requestTimeoutMs('message.viewers')).toBe(120000);
     expect(requestTimeoutMs('storage.details')).toBe(130000);
     expect(requestTimeoutMs('send.text')).toBe(35000);
   });

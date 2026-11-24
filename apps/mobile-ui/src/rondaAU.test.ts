@@ -144,18 +144,18 @@ const count = (needle: string, from: string) => from.split(needle).length - 1;
 describe('ronda AU · la foto de perfil, cruzada con las tres capas', () => {
   it('las diez frases del diálogo y del descarte están letra por letra en el puente', () => {
     // En Android estas cadenas no son decoración: son lo único que la persona lee al elegir y al decidir.
-    expect(csSentence('NoImage')).toBe(javaThrow(1704));
+    expect(csSentence('NoImage')).toBe(javaThrow(1705));
     // La negativa de cuenta no es la frase corta del perfil: es la que Android responde cuando el trabajo
-    // segundo plano vuelve y la cuenta ya no es la dueña del `answer` (`NativeBridge.java:1679`).
-    expect(csSentence('ChangedAccount')).toBe(javaFail(1679));
-    expect(csSentence('PickTitle')).toBe(javaDialog(1710, 'setTitle'));
-    expect(csSentence('PickBody')).toBe(javaDialog(1710, 'setMessage'));
-    expect(csSentence('PickAccept')).toBe(javaDialog(1710, 'setPositiveButton'));
-    expect(csSentence('DeleteTitle')).toBe(javaDialog(1666, 'setTitle'));
-    expect(csSentence('DeleteBody')).toBe(javaDialog(1666, 'setMessage'));
-    expect(csSentence('DeleteAccept')).toBe(javaDialog(1666, 'setPositiveButton'));
-    expect(csSentence('Cancel')).toBe(javaDialog(1666, 'setNegativeButton'));
-    expect(javaDialog(1710, 'setNegativeButton')).toBe(csSentence('Cancel'));
+    // segundo plano vuelve y la cuenta ya no es la dueña del `answer` (`NativeBridge.java:1680`).
+    expect(csSentence('ChangedAccount')).toBe(javaFail(1680));
+    expect(csSentence('PickTitle')).toBe(javaDialog(1711, 'setTitle'));
+    expect(csSentence('PickBody')).toBe(javaDialog(1711, 'setMessage'));
+    expect(csSentence('PickAccept')).toBe(javaDialog(1711, 'setPositiveButton'));
+    expect(csSentence('DeleteTitle')).toBe(javaDialog(1667, 'setTitle'));
+    expect(csSentence('DeleteBody')).toBe(javaDialog(1667, 'setMessage'));
+    expect(csSentence('DeleteAccept')).toBe(javaDialog(1667, 'setPositiveButton'));
+    expect(csSentence('Cancel')).toBe(javaDialog(1667, 'setNegativeButton'));
+    expect(javaDialog(1711, 'setNegativeButton')).toBe(csSentence('Cancel'));
   });
 
   it('el espejo copia las dos frases que sí puede alcanzar y calla las que no', () => {
@@ -172,22 +172,22 @@ describe('ronda AU · la foto de perfil, cruzada con las tres capas', () => {
 
   it('los cinco números del descarte son los literales de Android, línea a línea', () => {
     expect(csNumber('MaxBytes')).toBe('20');
-    expect(javaLine(1694)).toContain('cursor.getLong(0)>20L*1024*1024');
+    expect(javaLine(1695)).toContain('cursor.getLong(0)>20L*1024*1024');
     expect(csNumber('MaxPixels')).toBe('12000');
-    expect(javaLine(1695)).toContain('bounds.outWidth>12000||bounds.outHeight>12000');
+    expect(javaLine(1696)).toContain('bounds.outWidth>12000||bounds.outHeight>12000');
     expect(csNumber('DecodeLimit')).toBe('2048');
-    expect(javaLine(1696)).toContain('/options.inSampleSize>2048)options.inSampleSize*=2');
+    expect(javaLine(1697)).toContain('/options.inSampleSize>2048)options.inSampleSize*=2');
     expect(csNumber('Side')).toBe('640');
-    expect(javaLine(1698)).toContain('Bitmap.createScaledBitmap(crop,640,640,true)');
+    expect(javaLine(1699)).toContain('Bitmap.createScaledBitmap(crop,640,640,true)');
     expect(csNumber('JpegQuality')).toBe('88');
-    expect(javaLine(1699)).toContain('compress(Bitmap.CompressFormat.JPEG,88,stream)');
+    expect(javaLine(1700)).toContain('compress(Bitmap.CompressFormat.JPEG,88,stream)');
     const mirror = tsBlock('PROFILE_PHOTO_MAX');
     expect(mirror).toContain('bytes: 20 * 1024 * 1024');
     expect(mirror).toContain('pixels: 12000');
   });
 
   it('la tabla del giro y del espejo es la de Android, con el orden canónico de EXIF', () => {
-    const turn = javaLine(1697);
+    const turn = javaLine(1698);
     expect(turn).toContain('rotation=orientation==3||orientation==4?180:orientation==5||orientation==6?90:orientation==7||orientation==8?270:0');
     expect(turn).toContain('flip=orientation==2||orientation==4||orientation==5||orientation==7');
     const angle = csMember('Turn');
@@ -197,7 +197,7 @@ describe('ronda AU · la foto de perfil, cruzada con las tres capas', () => {
     expect(mirror).toContain('orientation is 2 or 4 or 5 or 7');
     // La diferencia fina entre capas: Android compone las dos operaciones en una matriz —espejo después del giro,
     // o sea aplicado primero— y el orden canónico es el contrario. Windows aplica los dos pasos por separado.
-    expect(javaLine(1698)).toContain('matrix.postRotate(rotation);if(flip)matrix.postScale(-1f,1f)');
+    expect(javaLine(1699)).toContain('matrix.postRotate(rotation);if(flip)matrix.postScale(-1f,1f)');
     const steps = csBody('Turn', cable);
     expect(at('new RotateTransform(angle)', steps)).toBeLessThan(at('new ScaleTransform(-1, 1)', steps));
     expect(rules).toContain('Android publica un reflejo del recorte correcto');
@@ -208,7 +208,7 @@ describe('ronda AU · la foto de perfil, cruzada con las tres capas', () => {
   });
 
   it('el recorte se mide sobre la imagen ya girada y al centro del lado menor', () => {
-    const crop = javaLine(1698);
+    const crop = javaLine(1699);
     expect(crop).toContain('int side=Math.min(oriented.getWidth(),oriented.getHeight())');
     expect(crop).toContain('(oriented.getWidth()-side)/2');
     expect(crop).toContain('(oriented.getHeight()-side)/2');
@@ -230,11 +230,11 @@ describe('ronda AU · la foto de perfil, cruzada con las tres capas', () => {
     expect(tsBody('profilePhotoProblem')).toContain('bytes > PROFILE_PHOTO_MAX.bytes');
     expect(tsBody('profilePhotoProblem')).toContain('width > PROFILE_PHOTO_MAX.pixels');
     // Las dimensiones se leen sin descodificar, que es el `inJustDecodeBounds` de Android.
-    expect(javaLine(1695)).toContain('bounds.inJustDecodeBounds=true');
+    expect(javaLine(1696)).toContain('bounds.inJustDecodeBounds=true');
     expect(csBody('StoredSize')).toContain('BitmapCreateOptions.DelayCreation');
     expect(csDoc('StoredSize')).toContain('4032x3024');
     // El tipo se decide por extensión porque el selector de Windows no da el MIME que el de Android sí da.
-    expect(javaLine(1693)).toContain('mime.startsWith("image/")');
+    expect(javaLine(1694)).toContain('mime.startsWith("image/")');
     expect(csMember('IsImage')).toContain('ToLowerInvariant()');
     expect(tsBody('profilePhotoIsImage')).toContain('.toLowerCase()');
     expect(rules).toContain('webp');
@@ -254,8 +254,8 @@ describe('ronda AU · la foto de perfil, cruzada con las tres capas', () => {
     // Las dos miradas de cuenta de Android: una antes del diálogo y otra antes de escribir. La primera es la que
     // descarta el trabajo ya preparado; la segunda, la que cancela el botón positivo. Ninguna es la frase corta.
     expect(count('CollectionClient().User!.id != owner', pick)).toBe(2);
-    expect(javaLine(1679)).toContain('session.selfId!=owner');
-    expect(javaLine(1713)).toContain('session.selfId!=owner');
+    expect(javaLine(1680)).toContain('session.selfId!=owner');
+    expect(javaLine(1714)).toContain('session.selfId!=owner');
     // Borrar: sin foto no hay diálogo, y la foto se localiza antes de preguntar.
     const drop = csBody('AccountPhotoDeleteAsync');
     expect(drop).toContain('self.photo?.photo_id ?? 0');
@@ -339,7 +339,7 @@ describe('ronda AU · la foto de perfil, cruzada con las tres capas', () => {
     expect(tsBlock('PROFILE_PHOTO_MAX')).not.toContain('side: 640');
     expect(tsBlock('PROFILE_PHOTO_MAX')).not.toContain('quality');
     // Y la cancelación, que en Android responde `false` sin error, tampoco se inventa aquí.
-    expect(javaLine(1675)).toContain('if(uri==null){profilePhotoPicking=null;answer.ok(false);return;}');
+    expect(javaLine(1676)).toContain('if(uri==null){profilePhotoPicking=null;answer.ok(false);return;}');
     expect(cable).toContain('Cancelar en el selector o en la confirmación');
   });
 
@@ -381,7 +381,7 @@ describe('ronda AU · medido con las manos, no con agujas', () => {
   });
 
   const profile = async () => (await call('account.profile')) as Profile;
-  // El puente siempre manda un objeto: `request(method, params = {})` de `bridge.ts:56`.
+  // El puente siempre manda un objeto: `request(method, params = {})` de `bridge.ts:58`.
   const pick = async (params: Record<string, unknown> = {}) =>
     call('account.photo.pick', params).catch((caught: Error) => caught.message);
   const drop = async () => call('account.photo.delete').catch((caught: Error) => caught.message);

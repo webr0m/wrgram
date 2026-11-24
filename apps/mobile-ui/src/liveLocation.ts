@@ -26,7 +26,7 @@ export type LiveStart = { id: string; chatId: string; expiresAt: number };
  * Las cinco negativas de la familia, copiadas carácter a carácter de quien las pronuncia:
  * `LiveLocationPolicy.ALREADY` (`LiveLocationPolicy.java:48`), `LiveLocationPolicy.BAD_PERIOD`
  * (`LiveLocationPolicy.java:52`), `LiveLocationPolicy.NOT_SHARING` (`LiveLocationPolicy.java:50`) y el
- * «La ubicación ya no está disponible.» de `NativeBridge.java:4830` en Android, y
+ * «La ubicación ya no está disponible.» de `NativeBridge.java:4897` en Android, y
  * `DesktopLiveLocation.NoSensor` y `DesktopLiveLocation.NotSharing` en Windows. `rondaCB.test.ts` las vuelve a medir
  * contra las dos fuentes: la pantalla y el andamio no pueden contar una historia distinta de la del cable.
  */

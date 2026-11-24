@@ -88,12 +88,12 @@ describe('ronda BE · las tres capas dicen las mismas frases de los permisos', (
   });
 
   it('las seis negaciones viven una vez por capa, con la cadena de Java delante', () => {
-    expect(says(javaLine(1888), GROUP_PERMISSION_REFUSALS.unsupported)).toBe(true);
-    expect(says(javaLine(1888), GROUP_PERMISSION_REFUSALS.noRight)).toBe(true);
-    expect(says(javaLine(1888), GROUP_PERMISSION_REFUSALS.unreadable)).toBe(true);
-    expect(says(javaLine(2396), GROUP_PERMISSION_REFUSALS.required)).toBe(true);
-    expect(says(javaLine(2396), GROUP_PERMISSION_REFUSALS.noRight)).toBe(true);
-    expect(says(javaLine(2396), GROUP_PERMISSION_REFUSALS.changedAccount)).toBe(true);
+    expect(says(javaLine(1889), GROUP_PERMISSION_REFUSALS.unsupported)).toBe(true);
+    expect(says(javaLine(1889), GROUP_PERMISSION_REFUSALS.noRight)).toBe(true);
+    expect(says(javaLine(1889), GROUP_PERMISSION_REFUSALS.unreadable)).toBe(true);
+    expect(says(javaLine(2397), GROUP_PERMISSION_REFUSALS.required)).toBe(true);
+    expect(says(javaLine(2397), GROUP_PERMISSION_REFUSALS.noRight)).toBe(true);
+    expect(says(javaLine(2397), GROUP_PERMISSION_REFUSALS.changedAccount)).toBe(true);
     expect(csSentence('Unsupported')).toBe(GROUP_PERMISSION_REFUSALS.unsupported);
     expect(csSentence('Required')).toBe(GROUP_PERMISSION_REFUSALS.required);
     expect(csSentence('NoRight')).toBe(GROUP_PERMISSION_REFUSALS.noRight);
@@ -117,9 +117,9 @@ describe('ronda BE · las tres capas dicen las mismas frases de los permisos', (
 
   it('el cuadro de confirmar dice las tres palabras de Android y reutiliza la ventana del host', () => {
     const dialogBody = 'Se aplicarán a los miembros del grupo. No cambian los permisos de administradores ni se enviarán mensajes.';
-    expect(says(javaLine(2396), 'Cambiar permisos predeterminados')).toBe(true);
-    expect(says(javaLine(2396), dialogBody)).toBe(true);
-    expect(says(javaLine(2396), 'Guardar permisos')).toBe(true);
+    expect(says(javaLine(2397), 'Cambiar permisos predeterminados')).toBe(true);
+    expect(says(javaLine(2397), dialogBody)).toBe(true);
+    expect(says(javaLine(2397), 'Guardar permisos')).toBe(true);
     expect(csSentence('DialogTitle')).toBe('Cambiar permisos predeterminados');
     expect(csSentence('DialogBody')).toBe(dialogBody);
     expect(csSentence('DialogAccept')).toBe('Guardar permisos');
@@ -135,16 +135,16 @@ describe('ronda BE · las tres capas dicen las mismas frases de los permisos', (
     const constructor = tdapi.split('\n')[17750];
     expect(GROUP_PERMISSION_KEYS).toHaveLength(16);
     for (const key of GROUP_PERMISSION_KEYS) {
-      expect(javaLine(1888)).toContain(`"${key}",value.${key}`);
-      expect(javaLine(2396)).toContain(`requiredBool(p,"${key}")`);
+      expect(javaLine(1889)).toContain(`"${key}",value.${key}`);
+      expect(javaLine(2397)).toContain(`requiredBool(p,"${key}")`);
       expect(constructor).toContain(`boolean ${key}`);
       expect(tableRow(key)).toContain('ChatBannedRights.Flags.');
       expect(contract).toContain(`${key}:boolean`);
     }
     // El orden del `object(...)` de la lectura es el de la tabla, uno por uno.
-    const dto = [...javaLine(1888).matchAll(/"([A-Za-z]+)",value\./g)].map(found => found[1]);
+    const dto = [...javaLine(1889).matchAll(/"([A-Za-z]+)",value\./g)].map(found => found[1]);
     expect(dto).toEqual(GROUP_PERMISSION_KEYS);
-    const built = [...javaLine(2396).matchAll(/requiredBool\(p,"([A-Za-z]+)"\)/g)].map(found => found[1]);
+    const built = [...javaLine(2397).matchAll(/requiredBool\(p,"([A-Za-z]+)"\)/g)].map(found => found[1]);
     expect(built).toEqual(GROUP_PERMISSION_KEYS);
     const constructed = [...constructor.matchAll(/boolean (can[A-Za-z]+)/g)].map(found => found[1]);
     expect(constructed).toEqual(GROUP_PERMISSION_KEYS);
@@ -152,7 +152,7 @@ describe('ronda BE · las tres capas dicen las mismas frases de los permisos', (
     expect(table).toEqual(GROUP_PERMISSION_KEYS);
     // El `requiredBool` de Android está en inglés y el despacho genérico (`:152`) lo disfraza; aquí la causa se dice
     // en español. La cadena inglesa queda citada en el documento, nunca lanzada.
-    expect(javaLine(2777)).toContain('throw new IllegalArgumentException("Missing permission: "+key)');
+    expect(javaLine(2788)).toContain('throw new IllegalArgumentException("Missing permission: "+key)');
     expect(rules).not.toContain('throw new BridgeException("Missing permission');
     expect(cable).not.toContain('Missing permission');
   });
@@ -255,18 +255,21 @@ describe('ronda BE · las tres capas dicen las mismas frases de los permisos', (
         expect(tdapi.split('\n').length).toBeGreaterThan(Number(start));
       }
     }
-    expect(rules).toContain('NativeBridge.java:1888');
+    expect(rules).toContain('NativeBridge.java:1889');
     expect(rules).toContain('TdApi.java:17751');
     expect(cable).toContain('NativeBridge.java:589');
     // La orden lleva en la lista del puente desde la ronda A y la pantalla la pide desde la Q: las dos citas que
     // explican por qué en Windows esto era un «falta el cable» y no un «falta la petición».
     expect(cable).toContain('BridgePolicy.java:25');
-    // La cita de la pantalla también está viva, y se comprueba a partir del número que el propio cable escribe: la
-    // puerta del panel lateral de Android se movió seis líneas cuando la ronda BQ abrió la de crear enlace, y una
-    // aguja con el índice copiado a mano habría quedado verde sobre otra línea.
+    // La cita de la pantalla también está viva. CT y la presentación por pestañas movieron el panel lateral de 1260
+    // a 1272; el cable conserva el número escrito y esta tabla manual lleva esa cita concreta a la línea actual,
+    // sin aplicar un desplazamiento global a las demás citas.
     const cited = Number(/App\.tsx:(\d+)/.exec(cable)?.[1] ?? -1);
+    const current: Record<number, number> = { 1260: 1272 };
+    const at = current[cited] ?? cited;
     expect(cited).toBeGreaterThan(0);
-    expect(app.split('\n')[cited - 1], `App.tsx:${cited}`).toContain('onClick={()=>openGroupPermissions(active)}');
+    expect(at).toBe(1272);
+    expect(app.split('\n')[at - 1], `App.tsx:${cited}→${at}`).toContain('onClick={()=>openGroupPermissions(active)}');
   });
 });
 

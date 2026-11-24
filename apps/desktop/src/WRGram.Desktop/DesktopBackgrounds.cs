@@ -63,9 +63,9 @@ public static class DesktopBackgrounds
     /// cuando la orden no trae ni identificador ni colores.
     public const string Nothing = "Hay que decir qué fondo elegir o qué colores ponerle.";
 
-    /// <c>NativeBridge.java:5409</c>: el identificador que no es un número de Telegram. Aquí lo decide
+    /// <c>NativeBridge.java:5476</c>: el identificador que no es un número de Telegram. Aquí lo decide
     /// <see cref="ParseId"/> en vez de un <c>long.parseLong</c> sobre <c>BridgePolicy.id</c>
-    /// (<c>NativeBridge.java:5407</c>), y la frase es la misma.
+    /// (<c>NativeBridge.java:5474</c>), y la frase es la misma.
     public const string BadId = "El identificador del fondo no vale.";
 
     /// La negativa de crear. No es la del beta genérico: el brazo existe, lo que no existe es la petición. Medido
@@ -77,7 +77,7 @@ public static class DesktopBackgrounds
         + "es subir una imagen, y aquí no hay imagen que subir.";
 
     /// Android se niega con «La cuenta cambió.» si la cuenta cambia a mitad de la lectura (<c>backgroundsList</c>,
-    /// <c>NativeBridge.java:5386</c>) y la pantalla convierte cualquier respuesta sin <c>rows</c> en «No se han podido
+    /// <c>NativeBridge.java:5448-5457</c>) y la pantalla convierte cualquier respuesta sin <c>rows</c> en «No se han podido
     /// leer los fondos de la cuenta.» (<c>CloudBackgrounds.tsx:40</c>). La otra forma de no traer filas es que Telegram
     /// no devuelva lista: allá sale una fila vacía (<c>rows</c>, <c>AccountBackgrounds.java:101</c>), aquí una negativa
     /// por su nombre.

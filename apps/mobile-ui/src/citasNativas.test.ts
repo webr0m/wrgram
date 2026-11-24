@@ -4,7 +4,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 /**
  * El cortafuegos del cable de Android, hecho a imagen de la ronda BM, que es el del host de Windows.
  *
- * El barrido del 20 de noviembre midió 414 números de `NativeBridge.java` citados en los tres documentos de registro,
+ * El barrido del 20 de noviembre midió 519 números de `NativeBridge.java` citados en los tres documentos de registro,
  * en los comentarios de las clases del despacho Windows y en la interfaz compartida, y encontró ramas del `switch`
  * atribuidas a una línea que ya no era la suya: el número se quedó donde lo escribió la ronda de turno y las líneas
  * de encima habían crecido desde entonces. Las doce tandas de re-anclaje —`.tools/c315-fija.mjs` a
@@ -21,7 +21,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
  * La tabla se reimprime con `.tools/c315-tabla.mjs` y se injerta con `.tools/c315-injerta.mjs --aplicar` después de
  * cualquier tanda que mueva líneas del puente; el injertador es el que ajusta las tres agujas de cuenta de abajo.
  *
- * El enlace con número en la etiqueta es la otra clase que ningún cribado de palabras ve: `[App.tsx:1232](#L572)`
+ * El enlace con número en la etiqueta es la otra clase que ningún cribado de palabras ve: `[App.tsx:1251](#L572)`
  * dice dos cosas distintas y las dos salen bien en cualquier búsqueda. La última comprobación obliga a que la
  * etiqueta y la ancla coincidan, a que la ruta exista y a que el número quepa en el archivo apuntado.
  */
@@ -61,9 +61,7 @@ const cables: Record<number, string[]> = {
   551: ['account.sessions'],
   552: ['privacy.get'],
   553: ['privacy.blocked'],
-  556: ['password.state'],
   562: ['privacy.autoDelete'],
-  564: ['privacy.autoDelete.set'],
   565: ['chat.autoDelete.set'],
   566: ['account.session.revoke'],
   570: ['contacts.list'],
@@ -73,7 +71,6 @@ const cables: Record<number, string[]> = {
   580: ['groups.members'],
   581: ['groups.members.page'],
   584: ['groups.member.ban'],
-  585: ['groups.member.restrict'],
   587: ['groups.member.promote'],
   588: ['groups.member.demote'],
   589: ['groups.permissions.get'],
@@ -109,29 +106,33 @@ const cables: Record<number, string[]> = {
   764: ['chat.request.answer'],
   765: ['scheduled.list'],
   768: ['scheduled.delete'],
-  782: ['message.properties'],
-  783: ['message.link'],
-  784: ['link.open'],
-  785: ['message.react'],
-  787: ['message.react.custom'],
-  797: ['emojiStatus.state'],
-  799: ['emojiStatus.set'],
-  808: ['bot.status'],
-  820: ['bot.posts'],
-  828: ['chat.bot.remove'],
-  830: ['message.edit', 'message.edit.caption', 'message.delete', 'message.copy', 'message.forward'],
-  831: ['message.edit.media'],
-  835: ['catalog'],
-  844: ['attachment.pick'],
-  847: ['send.attachment'],
-  848: ['attachment.album'],
-  857: ['location.live.start'],
-  858: ['location.live.stop'],
-  882: ['native.assistant'],
-  883: ['attachment.recents', 'attachment.photos.permission', 'attachment.photo', 'attachment.recents.close', 'composer.focus', 'groups.stats', 'share.import'],
-  3860: ['findPhone', 'p2p', 'noPaidMessages', 'savedMusic', 'starGiftsAutoSave'],
-  4527: ['underline'],
-  4539: ['link'],
+  774: ['message.readDate', 'message.viewers'],
+  783: ['message.properties'],
+  784: ['message.link'],
+  785: ['link.open'],
+  786: ['message.react'],
+  788: ['message.react.custom'],
+  798: ['emojiStatus.state'],
+  800: ['emojiStatus.set'],
+  809: ['bot.status'],
+  811: ['inbox.tabs'],
+  812: ['inbox.tabs.set'],
+  821: ['bot.posts'],
+  829: ['chat.bot.remove'],
+  831: ['message.edit', 'message.edit.caption', 'message.delete', 'message.copy', 'message.forward'],
+  832: ['message.edit.media'],
+  836: ['catalog'],
+  845: ['attachment.pick'],
+  849: ['attachment.album'],
+  858: ['location.live.start'],
+  859: ['location.live.stop'],
+  884: ['attachment.recents', 'attachment.photos.permission', 'attachment.photo', 'attachment.recents.close', 'composer.focus', 'groups.stats', 'share.import'],
+  3871: ['findPhone', 'p2p', 'noPaidMessages', 'savedMusic', 'starGiftsAutoSave'],
+  4258: ['canReply', 'canReadMessages', 'canDeleteSentMessages', 'canDeleteAllMessages', 'canEditName', 'canEditBio', 'canEditProfilePhoto', 'canEditUsername', 'canViewGiftsAndStars', 'canSellGifts', 'canChangeGiftSettings', 'canTransferAndUpgradeGifts', 'canTransferStars'],
+  4606: ['link'],
+  4994: ['installed'],
+  4999: ['search'],
+  5006: ['featured'],
 };
 
 /** Las claves que hoy abre la línea `NNN` del puente. */
@@ -173,19 +174,14 @@ describe('citas nativas · el despacho de Android, medido por línea', () => {
     expect(huerfanas, 'citas nuevas sobre el despacho: re-ancla o reimprime la tabla').toEqual([]);
   });
 
-  it('la tabla tiene sus ochenta y ocho filas medidas', () => {
-    expect(Object.keys(cables).length).toBe(88);
-    expect(cited.size).toBeGreaterThanOrEqual(414);
+  it('la tabla tiene sus ochenta y nueve filas medidas', () => {
+    expect(Object.keys(cables).length).toBe(89);
+    expect(cited.size).toBeGreaterThanOrEqual(538); // 542 antes del re-anclaje de CU: las apariciones no cambian, solo se juntan números que apuntan a la misma línea
   });
 
   it('ninguna cita señala fuera del archivo', () => {
     const fuera = [...cited.keys()].filter(at => at > java.length || at < 1).sort((a, b) => a - b);
     expect(fuera, `${java.length} líneas tiene hoy el puente`).toEqual([]);
-  });
-
-  it('la tabla tiene sus ochenta y ocho filas medidas', () => {
-    expect(Object.keys(cables).length).toBe(88);
-    expect(cited.size).toBeGreaterThanOrEqual(414);
   });
 
   it('todo enlace etiquetado con número de línea apunta a la línea que dice', () => {

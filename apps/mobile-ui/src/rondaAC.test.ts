@@ -226,10 +226,10 @@ describe('ronda AC · la interfaz comparte las palabras con las dos capas', () =
     expect(app).toContain('{self&&<button className="danger" onClick={()=>remove(false)}>Solo para mí</button>}');
   });
 
-  it('la rama de escritorio pide el contrato antes de pintar, y se cae si la conversación cambió', () => {
+  it('la rama de escritorio pide el contrato y se cae si cambian cuenta, conversación o tema', () => {
     const menu = tsBody('messageMenu', app);
     expect(menu).toContain("const props=await run<Properties>('message.properties',{id:message.id})");
-    expect(menu).toContain('if(!props||snapshot().active!==message.chatId)return;');
+    expect(menu).toContain('if(!props||snapshot().selfId!==owner||snapshot().active!==message.chatId||(snapshot().topic?.id||0)!==topic)return;');
     expect(menu).toContain('{props&&deleteItems(message,props)}');
   });
 

@@ -10,25 +10,25 @@ import { DESKTOP_NAMED_IN_SCAFFOLD, desktopGapRefusal, desktopGenericRefusal } f
  * El hueco no estaba en la pantalla ni en el contrato: `contract.ts:124` declara `description:string` desde la ronda
  * AO, `NativeSnapshot.java:198` ya la leía del contenedor del mensaje y la tarjeta `BatchPanels.tsx:38` ya la pintaba.
  * Lo que faltaba era la escritura. TDLib la pide en `TdApi.InputMessagePoll.description` y el puente de Android la
- * pone en `NativeBridge.java:4698`, pasada por el mismo recorte con el que se limitan los pies de foto:
- * `NativeBridge.java:5306` la mide contra 1024, que es la opción de runtime `message_caption_length_max` con la que
- * este puente trabaja desde la ronda AE, y `NativeBridge.java:5307` devuelve `null` cuando sale vacía —que es como
+ * pone en `NativeBridge.java:4765`, pasada por el mismo recorte con el que se limitan los pies de foto:
+ * `NativeBridge.java:5373` la mide contra 1024, que es la opción de runtime `message_caption_length_max` con la que
+ * este puente trabaja desde la ronda AE, y `NativeBridge.java:5374` devuelve `null` cuando sale vacía —que es como
  * TDLib entiende «sin descripción», no una cadena vacía— . La pantalla manda la suya en `BatchPanels.tsx:94`, recortada
  * a mano en el `textarea` de `BatchPanels.tsx:100`, y el borrador la lleva declarada en
- * `BatchPanels.tsx:63`; el compositor la enchufa al puente sin renombrarla en `App.tsx:1146`, que manda el borrador
+ * `BatchPanels.tsx:63`; el compositor la enchufa al puente sin renombrarla en `App.tsx:1177`, que manda el borrador
  * entero como mandaba la pregunta.
  *
  * Windows no puede con ella, y no por pereza: contado sobre el ensamblado empaquetado, ni `TL.Poll` ni
  * `TL.InputMediaPoll` traen un campo donde escribirla. Callar la descripción y mandar la encuesta igualmente sería
  * fingir —saldría por el cable una encuesta distinta de la que se pidió—, así que la ronda la niega por su nombre:
  * la frase está en `DesktopPoll.cs:225`, la regla que decide si se manda o se niega en `DesktopPoll.cs:344` y la
- * guarda en `TelegramService.cs:2534`, la última del envío, detrás de la del cierre. Al leer, el hueco se declara
- * igual: `TelegramService.cs:2956` pone `Description` en vacío porque la librería no lo trae nunca.
+ * guarda en `TelegramService.cs:2528`, la última del envío, detrás de la del cierre. Al leer, el hueco se declara
+ * igual: `TelegramService.cs:2950` pone `Description` en vacío porque la librería no lo trae nunca.
  *
- * El andamio copia la misma decisión, con la misma frase: `preview.ts:1048` es la negativa con nombre y
- * `preview.ts:1106` la guarda, que va detrás de las diez compartidas porque en Android no existe; por eso solo se
- * alcanza bajo escritorio, como marca `preview.ts:2448`. La fila que deja un envío de escritorio sigue saliendo con
- * la descripción vacía —`preview.ts:1116`—, que es la única verdad posible mientras no haya campo donde ponerla.
+ * El andamio copia la misma decisión, con la misma frase: `preview.ts:1065` es la negativa con nombre y
+ * `preview.ts:1123` la guarda, que va detrás de las diez compartidas porque en Android no existe; por eso solo se
+ * alcanza bajo escritorio, como marca `preview.ts:2469`. La fila que deja un envío de escritorio sigue saliendo con
+ * la descripción vacía —`preview.ts:1133`—, que es la única verdad posible mientras no haya campo donde ponerla.
  *
  * Lo que la ronda NO cerró, dicho en vez de tapado: el medio por opción. TDLib lo pide en
  * `TdApi.InputPollOption.media` y MTProto en `TL.InputPollAnswer.media`, así que en las dos capas es construible, pero
@@ -259,24 +259,24 @@ describe('ronda CM · medido con las manos, no con agujas', () => {
 describe('ronda CM · las citas de los archivos de la ronda', () => {
   /** Lo que tiene que decir la línea citada, medido hoy una por una. */
   const anchors: Record<string, string> = {
-    'NativeBridge.java:4698': 'poll.description=pollDescription(p);',
-    'NativeBridge.java:5306': 'NativeSnapshot.limit(p.optString("description","").trim(),1024)',
-    'NativeBridge.java:5307': 'return text.isEmpty()?null:new TdApi.FormattedText(text,new TdApi.TextEntity[0]);',
+    'NativeBridge.java:4765': 'poll.description=pollDescription(p);',
+    'NativeBridge.java:5373': 'NativeSnapshot.limit(p.optString("description","").trim(),1024)',
+    'NativeBridge.java:5374': 'return text.isEmpty()?null:new TdApi.FormattedText(text,new TdApi.TextEntity[0]);',
     'NativeSnapshot.java:198': 'limit(container.description.text,600)',
     'DesktopPoll.cs:225': 'public const string NoDescription =',
     'DesktopPoll.cs:344': 'public static bool HasDescription(string? raw)',
-    'TelegramService.cs:2534': 'if (DesktopPoll.HasDescription(Str(args, "description")))',
-    'TelegramService.cs:2956': 'Description = "",',
-    'preview.ts:1048': "noDescription: 'La biblioteca de escritorio no tiene campo",
-    'preview.ts:1106': "if (String(params.description ?? '').trim()) throw new Error(POLL_REFUSALS.noDescription);",
-    'preview.ts:1116': "question: question.slice(0, POLL_SHOWN_QUESTION), description: '',",
-    'preview.ts:2448': "if (method === 'poll.send' && state.platform === 'desktop')",
+    'TelegramService.cs:2528': 'if (DesktopPoll.HasDescription(Str(args, "description")))',
+    'TelegramService.cs:2950': 'Description = "",',
+    'preview.ts:1065': "noDescription: 'La biblioteca de escritorio no tiene campo",
+    'preview.ts:1123': "if (String(params.description ?? '').trim()) throw new Error(POLL_REFUSALS.noDescription);",
+    'preview.ts:1133': "question: question.slice(0, POLL_SHOWN_QUESTION), description: '',",
+    'preview.ts:2469': "if (method === 'poll.send' && state.platform === 'desktop')",
     'BatchPanels.tsx:38': '{poll.description&&<p className="poll-description">',
     'BatchPanels.tsx:63': 'export interface PollDraft {question:string;description:string;',
     'BatchPanels.tsx:94': 'description:description.trim()',
     'BatchPanels.tsx:100': '!desktop&&<label className="field-label">Descripción (opcional)',
     'contract.ts:124': 'description:string',
-    'App.tsx:1146': "run<boolean>('poll.send',{...draft",
+    'App.tsx:1177': "run<boolean>('poll.send',{...draft",
   };
 
   /** Los trozos que la ronda tocó, con el mismo recorte que usan CF, CB, BM y BY. */
@@ -369,14 +369,15 @@ describe('ronda CM · las citas de los archivos de la ronda', () => {
     // envío— y no tocó ninguna de las demás capas de esta hoja; doce más, los dos ayudantes de la ronda CW-D.
     // Veinticuatro más, repartidas entre los fondos de la CH-A y el aviso `UpdateDefaultBackground` de la CH-A2, y
     // cuatro en la instantánea con el `appearance` que publica los dos huecos. Once más: ocho por las dos ramas del
-    // despacho que la CH-B cableó en Windows y tres por leer los dos huecos del fondo al entrar.
-    expect(java).toHaveLength(5512);
+    // despacho que la CH-B cableó en Windows y tres por leer los dos huecos del fondo al entrar. Medido hoy: puente
+    // en 5579, despacho en 4307, andamio en 3395 y `App.tsx` en 1592.
+    expect(java).toHaveLength(5579);
     expect(snapshot).toHaveLength(554);
-    expect(service).toHaveLength(4313);
+    expect(service).toHaveLength(4307);
     expect(pollCs).toHaveLength(500);
     expect(contract).toHaveLength(250);
     expect(batch).toHaveLength(351);
-    expect(preview).toHaveLength(3374);
-    expect(app).toHaveLength(1561);
+    expect(preview).toHaveLength(3395);
+    expect(app).toHaveLength(1592);
   });
 });

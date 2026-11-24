@@ -19,6 +19,9 @@
 .tabs-appearance-options { display:flex; flex-wrap:wrap; gap:6px; }
 .tabs-appearance-options button,.tabs-manager .settings-actions button { min-height:40px; min-width:0; max-width:100%; overflow-wrap:anywhere; }
 .tabs-appearance-options button:is([aria-pressed=true],[aria-expanded=true]) { color:var(--accent); background:var(--selected); border-color:var(--gold-line); }
+.tabs-appearance > .tabs-display-options { padding-bottom:8px; border-bottom:1px solid var(--line); }
+.tabs-icon-picker .inbox-tab-brand { width:19px; height:19px; background:transparent; box-shadow:none; border-radius:0; padding:0; }
+.tabs-icon-picker .inbox-tab-brand svg { width:100%; height:100%; }
 .tabs-appearance .emoji-catalog { padding:0; min-width:0; }
 .tabs-label-preview { display:flex; align-items:center; gap:8px; margin:0; color:var(--muted); }
 .inbox-tab-emoji { display:inline-grid; place-items:center; flex:none; width:23px; height:23px; font-size:20px; line-height:1; }

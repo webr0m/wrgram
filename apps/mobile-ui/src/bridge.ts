@@ -52,7 +52,9 @@ const USER_DRIVEN = new Set([
   'chat.join', 'chat.leave',
 ]);
 const STORAGE_SCAN = new Set(['storage.details', 'storage.optimize']); const IMPORT_COPY = new Set(['attachment.pick', 'attachment.album', 'share.import']); // Copiar gigas al almacén privado puede pasar de los 300 s del diálogo.
-export const requestTimeoutMs = (method: string) => IMPORT_COPY.has(method) ? 900000 : USER_DRIVEN.has(method) ? 300000 : STORAGE_SCAN.has(method) ? 130000 : 35000;
+// Cada fase nativa de CT puede tardar 25 s: propiedades, lectura/lectores e hidratación concurrente.
+const READ_RECEIPT = new Set(['message.readDate', 'message.viewers']);
+export const requestTimeoutMs = (method: string) => IMPORT_COPY.has(method) ? 900000 : READ_RECEIPT.has(method) ? 120000 : USER_DRIVEN.has(method) ? 300000 : STORAGE_SCAN.has(method) ? 130000 : 35000;
 export function request<T = unknown>(method: string, params: Record<string, unknown> = {}): Promise<T> {
   return sendRequest(method, params, requestTimeoutMs(method));
 }

@@ -1,7 +1,7 @@
 /**
  * El espejo de `DesktopAutoDelete.cs` (ronda BN): las frases con las que las dos capas niegan el borrado automático,
  * la regla de la duración y las dos claves del DTO. Son las cadenas que el puente devuelve —`AccountSafetyPolicy.java:11`,
- * `:15` y `:17`, más los `answer.fail` de `NativeBridge.java:1379`, `:1390`, `:1393`, `:1401` y `:1412`, todas copiadas
+ * `:15` y `:17`, más los `answer.fail` de `NativeBridge.java:1380`, `:1391`, `:1394`, `:1402` y `:1413`, todas copiadas
  * carácter a carácter en C#—, y `rondaBN.test.ts` las compara con el Java y con el C# para que el andamio de diseño
  * no enseñe nunca una palabra que Android o Windows no dirían.
  *
@@ -16,14 +16,14 @@ export const AUTO_DELETE_DAY = 86400;
 /** `AccountSafetyPolicy.java:17`: 365 días, y ni una hora más. */
 export const AUTO_DELETE_MAX_DAYS = 365;
 
-/** El `777000` de `NativeBridge.java:1367` y `:1390`: el usuario con el que Telegram habla solo. */
+/** El `777000` de `NativeBridge.java:1368` y `:1391`: el usuario con el que Telegram habla solo. */
 export const AUTO_DELETE_TELEGRAM_NOTICES = 777000;
 
 /**
  * Las nueve frases con las que el puente niega algo de esta familia, cada una con la litera de Android que la
  * pronuncia. `wrongAccount` es la primera que se comprueba en las cuatro órdenes (`AccountSafetyPolicy.owner`,
  * `AccountSafetyPolicy.java:11`); `badDuration` y `outOfRange` salen de `autoDeleteSeconds` (`:15` y `:17`). Las cinco
- * restantes las dice `NativeBridge.java`: `notAllowedHere` y `noRight` son las dos ramas de `autoDeleteSet` (`NativeBridge.java:1390` y
+ * restantes las dice `NativeBridge.java`: `notAllowedHere` y `noRight` son las dos ramas de `autoDeleteSet` (`NativeBridge.java:1391` y
  * `:1393`), que se distinguen por la forma del chat y no por el deseo de la pantalla; `defaultChanged` es su guarda
  * del temporizador por defecto, también en `autoDeleteSet` (`:1379`); `changed` la dice `confirmChatAutoDelete`
  * (`:1401`) y `changedAccount` el botón positivo de `confirmAutoDelete` (`:1412`). La novena, `unreadable`, no tiene
@@ -43,7 +43,7 @@ export const AUTO_DELETE_REFUSALS = {
   unreadable: 'Telegram no devolvió la información actual de la conversación. Vuelve a intentarlo.',
 } as const;
 
-/** El rótulo del botón positivo (`NativeBridge.java:1411`); el negativo es «Cancelar» y los dos responden sin tocar Telegram. */
+/** El rótulo del botón positivo (`NativeBridge.java:1412`); el negativo es «Cancelar» y los dos responden sin tocar Telegram. */
 export const AUTO_DELETE_ACCEPT = 'Aplicar en Telegram';
 
 /** El título del modo predeterminado, que en Android es literal (`:1377`) porque no hay comunidad que nombrar. */
@@ -86,7 +86,7 @@ export function autoDeleteOwned(accountId: unknown, selfId: string): boolean {
 }
 
 /**
- * `userId!=session.selfId&&userId!=777000` (`NativeBridge.java:1390`): en un particular no hay derecho que leer, hay dos chats que no
+ * `userId!=session.selfId&&userId!=777000` (`NativeBridge.java:1391`): en un particular no hay derecho que leer, hay dos chats que no
  * admiten temporizador —la propia cuenta, que es «Mensajes guardados», y el usuario de avisos—.
  */
 export function canChangeAutoDelete(userId: number, selfId: number): boolean {

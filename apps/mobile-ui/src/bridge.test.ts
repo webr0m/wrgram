@@ -145,6 +145,26 @@ describe('plazos del puente con la interfaz nativa', () => {
     await rejected;
   });
 
+  it.each(['message.readDate', 'message.viewers'])('mantiene %s pendiente más de los 35 s y acepta la respuesta tardía', async method => {
+    const bridge = await loadBridge();
+    const pending = bridge.request(method, { id: '100' });
+    const id = lastId();
+    let settled = false;
+    void pending.then(() => { settled = true; }, () => { settled = true; });
+    await vi.advanceTimersByTimeAsync(35000);
+    expect(settled).toBe(false);
+    reply({ id, result: method === 'message.readDate' ? { state: 'unread' } : { viewers: [] } });
+    await expect(pending).resolves.toEqual(method === 'message.readDate' ? { state: 'unread' } : { viewers: [] });
+  });
+
+  it.each(['message.readDate', 'message.viewers'])('corta %s a los 120 s si el nativo nunca responde', async method => {
+    const bridge = await loadBridge();
+    const pending = bridge.request(method, { id: '100' });
+    const rejected = expect(pending).rejects.toThrow('No se confirmó la operación');
+    await vi.advanceTimersByTimeAsync(120000);
+    await rejected;
+  });
+
   it('sigue cortando a los 35 s una consulta que no espera interacción', async () => {
     const bridge = await loadBridge();
     const pending = bridge.request('chats.list');

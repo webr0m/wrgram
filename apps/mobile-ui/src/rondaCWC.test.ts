@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
  * `NativeSnapshot.java:483` y la fila del registro por `CallLog.row`— la pinta tal cual; ninguna pantalla tiene nada
  * que inventar aquí.
  *
- * **Las tres reglas son deliberadas y las tres se miden.** Deduplicar: `TdSession.java:1309` resuelve al revés de
+ * **Las tres reglas son deliberadas y las tres se miden.** Deduplicar: `TdSession.java:1313` resuelve al revés de
  * como se desearía —mientras el perfil no está en memoria el nombre es el relleno, y dos rellenos iguales en la misma
  * línea se leen como dos personas que son una—. Cortar en tres: es el corte que ya hace `names` en las familias que
  * tienen lista completa. Y no poner cifra de «más»: el campo se documenta como «some other call participants», así que
@@ -153,7 +153,7 @@ describe('ronda CW-C · las citas se miden', () => {
     'ServiceMessages.java:160': 'static String[] senderNames(TdSession session,TdApi.MessageSender[] values){',
     'ServiceMessages.java:170': 'static String participantList(String[] names){',
     'NativeSnapshot.java:483': 'String service=ServiceMessages.text(message,session);if(service!=null)return service;',
-    'TdSession.java:1309': 'if (user == null) requestUser(id);',
+    'TdSession.java:1313': 'if (user == null) requestUser(id);',
   };
 
   const lineOf = (file: string, at: number): string => {

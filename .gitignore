@@ -22,7 +22,17 @@ artifacts/
 apps/mobile/android/app/src/main/assets/ui/
 
 # SDK y herramientas instaladas en este equipo
-.tools/
+.tools/*
+# La sonda CT es fuente de la compuerta, no una herramienta local.
+!.tools/ctprobe/
+.tools/ctprobe/*
+!.tools/ctprobe/*.cs
+!.tools/ctprobe/*.csproj
+# Igual la de CW-B: rondaCHB, rondaCWB y rondaCWD la leen del árbol.
+!.tools/cwb-probe/
+.tools/cwb-probe/*
+!.tools/cwb-probe/*.cs
+!.tools/cwb-probe/*.csproj
 
 # Capturas y volcados de depuración (pueden contener conversaciones reales)
 .tmp/

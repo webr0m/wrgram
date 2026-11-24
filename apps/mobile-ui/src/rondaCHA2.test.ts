@@ -21,15 +21,16 @@ import { cloudBackgroundFor, type CloudBackground, type CloudBackgroundSlots } f
  * está delante en las tres lecturas: sin él, cambiar de cuenta pintaría el fondo de la anterior. En la
  * sesión el aviso se guarda en un mapa por modo (`TdSession.java:54`) con un centinela para el null
  * (`TdSession.java:55`), se lee con `defaultBackground` (`TdSession.java:158`), se escribe en la rama
- * (`TdSession.java:314`), se olvida al cerrar la cuenta (`TdSession.java:336`) y la llave ausente se distingue
- * del centinela preguntando `defaultBackgroundKnown` (`TdSession.java:1408`).
+ * (`TdSession.java:318`), se olvida al cerrar la cuenta (`TdSession.java:340`) y la llave ausente se distingue
+ * del centinela preguntando `defaultBackgroundKnown` (`TdSession.java:1412`).
  *
  * **El camino del aviso hasta la pantalla.** `changed("appearance")` guarda antes de repintar
- * (`NativeBridge.java:127`), y el guarda recorre los dos modos (`NativeBridge.java:5357-5369`): descarta el
- * modo no oído (`NativeBridge.java:5361`), pide lo escuchado (`NativeBridge.java:5362`), compara con lo ya
- * guardado (`NativeBridge.java:5364`) y solo escribe si algo cambió (`NativeBridge.java:5368`) —un aviso repetido no reescribe las preferencias—. La
- * marca del listado sale del mismo sitio (`NativeBridge.java:5349`) y el puesto desde aquí se escribe en el
- * hueco de su modo (`NativeBridge.java:5417`), así que el aviso y el puesto no pueden discrepar. La
+ * (`NativeBridge.java:127`), y el guarda recorre los dos modos (`NativeBridge.java:5424-5436`): descarta el
+ * modo no oído (`NativeBridge.java:5428`), pide lo escuchado (`NativeBridge.java:5429`), compara con lo ya
+ * guardado (`NativeBridge.java:5431`) y solo escribe si algo cambió (`NativeBridge.java:5435`) —un aviso repetido no reescribe las preferencias—. La
+ * marca del listado sale del mismo sitio (`NativeBridge.java:5416`) y el puesto desde aquí se escribe en el
+ * hueco de su modo (`NativeBridge.java:5484`), así que el aviso y el puesto no pueden discrepar. La
+ * lista lee esa misma marca (`NativeBridge.java:5454`). La
  * instantánea publica los dos huecos juntos (`NativeSnapshot.java:545`) con la cuenta delante
  * (`NativeSnapshot.java:539-551`, llamada en `NativeSnapshot.java:39` y en el rebote sin cuenta
  * `NativeBridge.java:133`).
@@ -387,23 +388,23 @@ describe('ronda CH-A2 · las citas', () => {
     'TdSession.java:54': 'private final Map<Boolean,TdApi.Background> defaultBackgrounds',
     'TdSession.java:55': 'private static final TdApi.Background NO_DEFAULT_BACKGROUND',
     'TdSession.java:158': 'TdApi.Background defaultBackground(boolean dark){',
-    'TdSession.java:314': 'else if(object instanceof TdApi.UpdateDefaultBackground){',
-    'TdSession.java:336': 'defaultBackgrounds.clear();',
-    'TdSession.java:1408': 'boolean defaultBackgroundKnown(boolean dark){',
+    'TdSession.java:318': 'else if(object instanceof TdApi.UpdateDefaultBackground){',
+    'TdSession.java:340': 'defaultBackgrounds.clear();',
+    'TdSession.java:1412': 'boolean defaultBackgroundKnown(boolean dark){',
     'AccountBackgrounds.java:113': 'static String putSlot(String stored, String owner, boolean dark, String row) {',
     'AccountBackgrounds.java:128': 'static String slot(String stored, boolean dark) {',
     'AccountBackgrounds.java:134': 'static String chosenId(String stored, String owner, boolean dark) {',
     'AccountBackgrounds.java:141': 'static JSONObject slots(String stored, String owner) throws Exception {',
     'AccountBackgrounds.java:151': 'private static JSONObject parse(String json) {',
     'NativeBridge.java:127': 'void changed(String kind){',
-    'NativeBridge.java:5349': 'private String chosenBackground(boolean dark){',
-    'NativeBridge.java:5357': 'private void rememberCloudBackgrounds(){',
-    'NativeBridge.java:5361': 'for(boolean dark:new boolean[]{false,true}){if(!session.defaultBackgroundKnown(dark))continue;',
-    'NativeBridge.java:5362': 'TdApi.Background live=session.defaultBackground(dark);',
-    'NativeBridge.java:5364': 'if(row.equals(AccountBackgrounds.slot(stored,dark)))continue;',
-    'NativeBridge.java:5368': 'if(!next.equals(stored))prefs.edit().putString("accountBackgrounds",next).apply();',
-    'NativeBridge.java:5387': 'AccountBackgrounds.rows(result.backgrounds,chosenBackground(dark))',
-    'NativeBridge.java:5417': 'String next=AccountBackgrounds.putSlot(cloudStore(),String.valueOf(session.selfId),set.forDarkTheme,row.toString());',
+    'NativeBridge.java:5416': 'private String chosenBackground(boolean dark){',
+    'NativeBridge.java:5424': 'private void rememberCloudBackgrounds(){',
+    'NativeBridge.java:5428': 'for(boolean dark:new boolean[]{false,true}){if(!session.defaultBackgroundKnown(dark))continue;',
+    'NativeBridge.java:5429': 'TdApi.Background live=session.defaultBackground(dark);',
+    'NativeBridge.java:5431': 'if(row.equals(AccountBackgrounds.slot(stored,dark)))continue;',
+    'NativeBridge.java:5435': 'if(!next.equals(stored))prefs.edit().putString("accountBackgrounds",next).apply();',
+    'NativeBridge.java:5454': 'AccountBackgrounds.rows(result.backgrounds,chosenBackground(dark))',
+    'NativeBridge.java:5484': 'String next=AccountBackgrounds.putSlot(cloudStore(),String.valueOf(session.selfId),set.forDarkTheme,row.toString());',
     'NativeBridge.java:133': 'private JSONObject bridgeState(boolean includeChats,boolean includeMessages)throws Exception{',
     'NativeSnapshot.java:539': 'static JSONObject appearanceDto(SharedPreferences prefs,Context context,String account)throws Exception{',
     'NativeSnapshot.java:545': 'value.put("accountBackgrounds",AccountBackgrounds.slots(',
@@ -428,7 +429,7 @@ describe('ronda CH-A2 · las citas', () => {
     'AccountBackgrounds.java:134': [138, '}'],
     'AccountBackgrounds.java:141': [149, '}'],
     'AccountBackgrounds.java:151': [157, '}'],
-    'NativeBridge.java:5357': [5369, '}'],
+    'NativeBridge.java:5424': [5436, '}'],
     'NativeSnapshot.java:539': [551, '}'],
     'backgrounds.ts:79': [81, '}'],
     'CloudBackgrounds.tsx:96': [98, 'la marca no se entera hasta el siguiente aviso'],

@@ -50,9 +50,9 @@ public final class LiveLocationPolicy {
     public static final String NOT_SHARING = "No estás compartiendo ninguna ubicación en directo en este chat.";
     /** La negativa del periodo fuera de la cota de la librería. */
     public static final String BAD_PERIOD = "Elige una duración entre 1 minuto y 24 horas.";
-    /** La negativa del permision denegado, la misma frase que ya dice el flujo fijo (<c>NativeBridge.java:1200</c>). */
+    /** La negativa del permision denegado, la misma frase que ya dice el flujo fijo (<c>NativeBridge.java:1201</c>). */
     public static final String NO_PERMISSION = "No se concedió permiso. No se envió ninguna ubicación.";
-    /** La negativa del fijado ausente o viejo, copiada del flujo fijo (<c>NativeBridge.java:1200</c>). */
+    /** La negativa del fijado ausente o viejo, copiada del flujo fijo (<c>NativeBridge.java:1201</c>). */
     public static final String NO_FIX = "Android no tiene una ubicación reciente. No se envió nada; inténtalo cuando haya una señal disponible.";
 
     private LiveLocationPolicy() {

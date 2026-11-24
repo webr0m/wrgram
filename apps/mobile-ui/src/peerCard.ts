@@ -1,6 +1,6 @@
 /**
  * El espejo de `DesktopPeerProfile.cs` y de `DesktopSenderProfile.cs`, y de `chatProfile`/`profileRelated`/
- * `senderProfile` de Android (`NativeBridge.java:1237-1284`, `:1554-1593` y `:1594-1612`). Una frase, una vez: el
+ * `senderProfile` de Android (`NativeBridge.java:1238-1285`, `:1555-1594` y `:1595-1613`). Una frase, una vez: el
  * andamio no escribe español propio, pregunta aquí.
  */
 
@@ -11,20 +11,20 @@ export const PEER_PAGE = 30;
 export const PEER_MAX_OFFSET = 5000;
 
 export const PEER_REFUSALS = {
-  /** `NativeBridge.java:1595`, carácter a carácter. */
+  /** `NativeBridge.java:1596`, carácter a carácter. */
   noList: 'No hay una lista de participantes para este chat.',
-  /** `NativeBridge.java:1620`, la misma negación del chat secreto. */
+  /** `NativeBridge.java:1621`, la misma negación del chat secreto. */
   secret: 'Este perfil no está disponible.',
-  /** `NativeBridge.java:1266` y `:1270`. */
+  /** `NativeBridge.java:1267` y `:1271`. */
   loadFailed: 'No se pudo cargar el perfil público.',
-  /** `NativeBridge.java:1645`, la otra negación de `senderProfile`: la fila no trae autor. */
+  /** `NativeBridge.java:1646`, la otra negación de `senderProfile`: la fila no trae autor. */
   noSender: 'Telegram no identificó al remitente.',
   /** Sin gemelo en Java: es el `access_hash` de MTProto, que TDLib guarda en casa. */
   noHash: 'Telegram no dio los datos necesarios para abrir esta ficha. Vuelve a abrirla desde la conversación e inténtalo de nuevo.',
 } as const;
 
 export const PEER_PRESENCE = {
-  /** `presence` (`NativeBridge.java:1564`). */
+  /** `presence` (`NativeBridge.java:1565`). */
   online: 'En línea',
   /** El prefijo de `:1567`; detrás va la fecha, cuyo molde sí difiere entre capas. */
   offline: 'Última vez ',

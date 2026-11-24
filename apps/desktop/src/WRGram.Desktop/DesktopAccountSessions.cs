@@ -13,14 +13,14 @@ namespace WRGram.Desktop;
 /// La medida dice que las dos las tiene: <c>Account_GetAuthorizations(Client)</c> responde
 /// <c>Task&lt;TL.Account_Authorizations&gt;</c> y <c>Account_ResetAuthorization(Client, long hash)</c>
 /// <c>Task&lt;bool&gt;</c> (WTelegramClient 4.4.10, reflexionado). Android pregunta con <c>GetActiveSessions</c>
-/// (<c>NativeBridge.java:1786</c>) y cierra con <c>TerminateSession</c> (<c>NativeBridge.java:566</c>), que son la
+/// (<c>NativeBridge.java:1787</c>) y cierra con <c>TerminateSession</c> (<c>NativeBridge.java:566</c>), que son la
 /// misma pregunta de TDLib con otros nombres. Lo que no se parece es la forma de los datos, y esa traducción vive
 /// entera en <see cref="DesktopSessions"/>: el cable solo pide y ordena.
 /// </para>
 /// <para>
 /// El identificador es la diferencia con más consecuencias. TDLib da un <c>item.id</c> de sesión; MTProto da un
 /// <c>hash</c> de 64 bits que solo tiene sentido para la sesión que está viva en este momento. Por eso la pantalla
-/// lo trata como una opaca cadena de ida y vuelta —<c>item.id</c> en <c>App.tsx:402</c>— y por eso la lista se lee
+/// lo trata como una opaca cadena de ida y vuelta —<c>item.id</c> en <c>apps/mobile-ui/src/App.tsx:412</c>— y por eso la lista se lee
 /// <b>siempre</b> antes de cerrar: un <c>hash</c> guardado de una lectura anterior ya no vale. Aquí no hay caché de
 /// sesiones, igual que en Android, que tampoco guarda la lista: cada apertura del diálogo vuelve a preguntar.
 /// </para>
@@ -28,7 +28,7 @@ namespace WRGram.Desktop;
 public sealed partial class TelegramService
 {
     /// <summary>
-    /// <c>account.sessions</c> (<c>NativeBridge.java:551</c> → <c>accountSessions</c>, <c>:1786</c>). Las ocho claves
+    /// <c>account.sessions</c> (<c>NativeBridge.java:551</c> → <c>accountSessions</c>, <c>:1787</c>). Las ocho claves
     /// del DTO son las ocho de Android, en el mismo orden, y ninguna se inventa: lo que MTProto no trae se deja
     /// vacío con la misma cadena con la que lo deja el puente móvil.
     /// <para>
@@ -65,7 +65,7 @@ public sealed partial class TelegramService
     /// <c>account.session.revoke</c> (<c>NativeBridge.java:566</c>) con el guardaje de esa línea, en ese orden:
     /// sesión montada, identificador con forma, y recién entonces la escritura. Android no comprueba nada más —no
     /// prohíbe cerrar la sesión propia— porque la pantalla ya no ofrece el botón en esa fila
-    /// (<c>App.tsx:402</c>, <c>!item.current</c>); copiar esa omisión es más honesto que inventar una guarda que el
+    /// (<c>App.tsx:412</c>, <c>!item.current</c>); copiar esa omisión es más honesto que inventar una guarda que el
     /// otro cliente no tiene.
     /// <para>
     /// Se devuelve el <c>bool</c> de la librería en vez del <c>true</c> fijo de Android. Allá el <c>case</c>

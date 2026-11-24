@@ -97,9 +97,9 @@ const SEARCH_ROUTE = /if \(path === '([^']+)'\) return request\.method === 'GET'
 
 describe('ronda BS · Giphy como fuente aparte, servida por nuestro borde', () => {
   it('la fuente entra por un parámetro más de catalog, no por un método nuevo', () => {
-    expect(javaLine(835).trim()).toBe('case "catalog":catalog.list(BridgePolicy.text(p,"tab",10),BridgePolicy.text(p,"query",100),BridgePolicy.text(p,"setId",40),BridgePolicy.text(p,"source",20),a::ok,a::fail);break;');
+    expect(javaLine(836).trim()).toBe('case "catalog":catalog.list(BridgePolicy.text(p,"tab",10),BridgePolicy.text(p,"query",100),BridgePolicy.text(p,"setId",40),BridgePolicy.text(p,"source",20),a::ok,a::fail);break;');
     // El envío es la misma orden de siempre: la clave que devuelve el catálogo decide el camino, no un método aparte.
-    expect(javaLine(836)).toContain('case "send.catalog":catalog.send(BridgePolicy.text(p,"key",80)');
+    expect(javaLine(837)).toContain('case "send.catalog":catalog.send(BridgePolicy.text(p,"key",80)');
     // Y la lista cerrada del puente no crece: «giphy» no es un método en ninguna de sus partes.
     expect(policy).not.toContain('giphy');
     expect(count('"catalog"', policy)).toBe(1);

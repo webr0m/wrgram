@@ -6,7 +6,7 @@ using TL;
 using WTelegram;
 
 /// <summary>
-/// El cable de <c>groups.stats</c> (<c>NativeBridge.java:883</c>): la única petición de estadísticas que las dos capas
+/// El cable de <c>groups.stats</c> (<c>NativeBridge.java:884</c>): la única petición de estadísticas que las dos capas
 /// tienen, con sus dos métodos de MTProto —<c>stats.getBroadcastStats</c> para un canal y
 /// <c>stats.getMegagroupStats</c> para un supergrupo— elegidos por la forma que la caché guarda de la fila. Reglas,
 /// fichas y frases están en <see cref="DesktopGroupStats"/>; aquí solo viaja la lectura.

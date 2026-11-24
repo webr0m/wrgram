@@ -225,6 +225,10 @@ final class TdSession {
         if (!ready()) { failure.accept("Inicia sesión antes de usar esta función."); return; }
         request("ui:" + (++requestSerial), 25_000, function, success, value -> failure.accept(safeError(value)), null);
     }
+    <T extends TdApi.Object> void performRaw(TdApi.Function<T> function, Consumer<T> success, Consumer<TdApi.Error> failure) {
+        if (!ready()) { failure.accept(new TdApi.Error(401, "WRGRAM_NOT_READY")); return; }
+        request("ui:" + (++requestSerial), 25_000, function, success, failure, null);
+    }
     <T extends TdApi.Object> void performSlow(TdApi.Function<T> function, Consumer<T> success, Consumer<String> failure) {
         if (!ready()) { failure.accept("Inicia sesión antes de usar esta función."); return; }
         request("slow:" + (++requestSerial), 120_000, function, success, value -> failure.accept(safeError(value)), null);

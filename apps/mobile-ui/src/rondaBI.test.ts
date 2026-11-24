@@ -110,8 +110,8 @@ describe('ronda BI · medido en el cable de las tres capas', () => {
     expect(policyLine(14)).toContain('offset > Integer.MAX_VALUE - PAGE_SIZE');
     expect(rules).toContain('public const int MaxOffset = int.MaxValue - PageSize;');
     expect(BLOCKED_MAX_OFFSET).toBe(2_147_483_647 - BLOCKED_PAGE_SIZE);
-    expect(javaLine(1554)).toContain('NativeSnapshot.limit(session.senderName(sender),120)');
-    expect(javaLine(1554)).toContain('NativeSnapshot.limit(session.senderName(sender),120)');
+    expect(javaLine(1555)).toContain('NativeSnapshot.limit(session.senderName(sender),120)');
+    expect(javaLine(1555)).toContain('NativeSnapshot.limit(session.senderName(sender),120)');
     expect(csNumber('NameShown')).toBe(BLOCKED_NAME_SHOWN);
     expect(BLOCKED_NAME_SHOWN).toBe(120);
     // Dos palabras para tres subtipos: el canal y el grupo básico caben en la misma.
@@ -126,10 +126,10 @@ describe('ronda BI · medido en el cable de las tres capas', () => {
       ['BadOffset', BLOCKED_REFUSALS.badOffset, [policyLine(12), policyLine(14)]],
       ['BadSender', BLOCKED_REFUSALS.badSender, [policyLine(23)]],
       ['IncompatiblePeer', BLOCKED_REFUSALS.incompatiblePeer, [policyLine(29), policyLine(35)]],
-      ['ListFailed', BLOCKED_REFUSALS.listFailed, [javaLine(1546)]],
-      ['ChangedAccount', BLOCKED_REFUSALS.changedAccount, [javaLine(1559)]],
-      ['NotPrivate', BLOCKED_REFUSALS.notPrivate, [javaLine(1302)]],
-      ['SelfBlock', BLOCKED_REFUSALS.selfBlock, [javaLine(1304)]],
+      ['ListFailed', BLOCKED_REFUSALS.listFailed, [javaLine(1547)]],
+      ['ChangedAccount', BLOCKED_REFUSALS.changedAccount, [javaLine(1560)]],
+      ['NotPrivate', BLOCKED_REFUSALS.notPrivate, [javaLine(1303)]],
+      ['SelfBlock', BLOCKED_REFUSALS.selfBlock, [javaLine(1305)]],
     ];
     for (const [name, phrase, rows] of shared) {
       expect(csSentence(name)).toBe(phrase);
@@ -157,10 +157,10 @@ describe('ronda BI · medido en el cable de las tres capas', () => {
   });
 
   it('el cuadro de confirmar es el de Android: sus cuatro rótulos y la escritura detrás', () => {
-    expect(javaLine(1555)).toContain('.setTitle("Desbloquear a "+name)');
-    expect(says(javaLine(1556), BLOCKED_DIALOG.body)).toBe(true);
-    expect(javaLine(1557)).toContain('.setNegativeButton("Cancelar"');
-    expect(javaLine(1558)).toContain('.setPositiveButton("Desbloquear"');
+    expect(javaLine(1556)).toContain('.setTitle("Desbloquear a "+name)');
+    expect(says(javaLine(1557), BLOCKED_DIALOG.body)).toBe(true);
+    expect(javaLine(1558)).toContain('.setNegativeButton("Cancelar"');
+    expect(javaLine(1559)).toContain('.setPositiveButton("Desbloquear"');
     expect(csSentence('Body')).toBe(BLOCKED_DIALOG.body);
     expect(csSentence('Accept')).toBe(BLOCKED_DIALOG.accept);
     expect(rules).toContain('"Desbloquear a " + name');
@@ -168,7 +168,7 @@ describe('ronda BI · medido en el cable de las tres capas', () => {
     ordered(javaUnblock, 'BlockedSendersPolicy.sender(', '.setTitle(', '.setPositiveButton(', 'SetMessageSenderBlockList(sender,null)');
     ordered(csUnblock, 'DesktopBlocked.Requested(', 'ConfirmPhoto(', 'client.Contacts_Unblock(');
     // Cancelar responde `false` sin tocar Telegram, en las dos capas.
-    expect(javaLine(1561)).toContain('setOnCancelListener(dialog->answer.ok(false))');
+    expect(javaLine(1562)).toContain('setOnCancelListener(dialog->answer.ok(false))');
     expect(csUnblock).toContain('if (!ConfirmPhoto(DesktopBlocked.Title(name), DesktopBlocked.Body, DesktopBlocked.Accept, null)) return false;');
     expect(csUnblock).not.toMatch(/Contacts_Unblock\([^\n]*\);\s*\n\s*return false;/);
     // El rótulo del botón de la fila sale del espejo, no de una copia escrita a mano en la pantalla.
@@ -202,15 +202,15 @@ describe('ronda BI · medido en el cable de las tres capas', () => {
   });
 
   it('la fila y la página salen de las mismas claves en las tres capas', () => {
-    expect(javaLine(1537)).toContain('object("kind",kind,"id",Long.toString(id),"name"');
-    expect(javaLine(1544)).toContain('if(photo!=null)item.put("photo",photo)');
+    expect(javaLine(1538)).toContain('object("kind",kind,"id",Long.toString(id),"name"');
+    expect(javaLine(1545)).toContain('if(photo!=null)item.put("photo",photo)');
     expect(csRow).toContain('{ ["kind"] = Kind(peer), ["id"] = Id(peer), ["name"] = name };');
     expect(csRow).toContain('if (photo != null) row["photo"] = photo;');
     expect(contract).toContain("export interface BlockedSender { kind:'user'|'chat'; id:string; name:string; photo?:Media }");
-    expect(javaLine(1548)).toContain('count>0&&(count>=BlockedSendersPolicy.PAGE_SIZE||offset+count<result.totalCount)');
+    expect(javaLine(1549)).toContain('count>0&&(count>=BlockedSendersPolicy.PAGE_SIZE||offset+count<result.totalCount)');
     expect(rules).toContain('rows > 0 && (rows >= PageSize || offset + rows < total)');
     expect(mirror).toContain('rows > 0 && (rows >= BLOCKED_PAGE_SIZE || offset + rows < total)');
-    expect(javaLine(1548)).toContain('"nextOffset",offset+count');
+    expect(javaLine(1549)).toContain('"nextOffset",offset+count');
     expect(csPage).toContain('nextOffset = offset + items.Count');
     expect(mirror).toContain('nextOffset: offset + items.length');
     // La fórmula, medida con números: página llena sigue, página corta para aunque falten filas por leer.

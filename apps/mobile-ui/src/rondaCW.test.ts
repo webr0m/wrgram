@@ -190,14 +190,14 @@ describe('ronda CW · las citas se miden', () => {
     'ServiceMessages.java:129': 'text="Videollamada finalizada"+((a.duration>0)?" · "+duration(a.duration):"")',
     'ServiceMessages.java:130': 'actor+" invitó a "+invitados+" a la videollamada"',
     'CallLog.java:46': 'static boolean video(TdApi.Message message) {',
-    'NativeBridge.java:5338': 'rows.put(CallLog.row(message,title,ServiceMessages.text(message,session)));shown++;',
+    'NativeBridge.java:5405': 'rows.put(CallLog.row(message,title,ServiceMessages.text(message,session)));shown++;',
     'TdApi.java:49759': 'public static class MessageGroupCall extends MessageContent {',
     'TdApi.java:138457': 'public static class JoinGroupCall extends Function<GroupCallInfo> {',
     'TdApi.java:30070': 'public static class GroupCallJoinParameters extends Object {',
     'callLogModel.ts:60': 'export function callRowLabel(',
-    'preview.ts:3315': "{ chat: '24', reason: 'missed', video: false, group: true",
-    'TelegramService.cs:3656': 'private string ServiceText(MessageService service, string actor = "") => service.action switch',
-    'desktopScope.ts:97': "label: 'notificaciones push, llamadas y WR IA'",
+    'preview.ts:3336': "{ chat: '24', reason: 'missed', video: false, group: true",
+    'TelegramService.cs:3650': 'private string ServiceText(MessageService service, string actor = "") => service.action switch',
+    'desktopScope.ts:98': "label: 'notificaciones push, llamadas y WR IA'",
   };
 
   const lineOf = (file: string, at: number): string => {

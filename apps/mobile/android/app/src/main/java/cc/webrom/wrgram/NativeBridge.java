@@ -771,6 +771,7 @@ final class NativeBridge implements TdSession.Listener {
             case "draft.set":setDraft(p,a);break;
             case "message.album":album(message(p),a);break;
             case "message.translate":translate(message(p),p,a);break;
+            case "message.readDate":readDate(message(p),a);break; case "message.viewers":messageViewers(message(p),a);break;
             case "chat.translatable":{TdApi.Chat chat=target(p);perform(new TdApi.ToggleChatIsTranslatable(chat.id,p.getBoolean("value")),a,value->a.ok(true));break;}
             case "chat.autotranslate":{TdApi.Chat chat=target(p);if(!(chat.type instanceof TdApi.ChatTypeSupergroup))throw new IllegalArgumentException("La traducción automática de Telegram solo está disponible en canales y supergrupos.");perform(new TdApi.ToggleSupergroupHasAutomaticTranslation(((TdApi.ChatTypeSupergroup)chat.type).supergroupId,p.getBoolean("value")),a,value->a.ok(true));break;}
             case "message.transcribe":transcribe(message(p),a);break;
@@ -2411,16 +2412,24 @@ final class NativeBridge implements TdSession.Listener {
     }
     /** Nunca incluye el token: es la única forma en que un registro del bot puede salir por el puente. */
     static JSONObject botRecordDto(JSONObject record){return record.optLong("botUserId")<=0?object("configured",false):object("configured",true,"botUserId",Long.toString(record.optLong("botUserId")),"username",record.optString("username",""),"name",record.optString("name",""));}
-    static final Set<String> TAB_ICON_KEYS=Set.of("hash","bookmark","star","megaphone","users","send","bot","lock","pin","archive","image","heart","globe","bell","flame");
+    static final Set<String> TAB_ICON_KEYS=Set.of("plus","wrgram","hash","bookmark","star","megaphone","users","send","bot","lock","pin","archive","image","heart","globe","bell","flame");
+    static final Set<String> TAB_EMOJI_KEYS=Set.of("hash","bookmark","star","megaphone","users","send","bot","lock","pin","archive","image","heart","globe","bell","flame");
     private static JSONArray readInboxTabs(SharedPreferences preferences, String key) {
         try { return new JSONArray(preferences.getString(key, "[]")); }
         catch (org.json.JSONException ignored) { return new JSONArray(); }
     }
 
+    static String inboxTabDisplay(JSONObject tab) throws org.json.JSONException {
+        if(!tab.has("display")||tab.isNull("display"))return null;
+        String display=tab.getString("display");
+        if(!display.matches("icon|iconName"))throw new IllegalArgumentException("La presentación de la pestaña no es válida.");
+        return display;
+    }
+
     static JSONObject inboxTabEmoji(JSONObject choice, boolean premium, String previousPremiumId) throws org.json.JSONException {
         String kind = BridgePolicy.text(choice, "kind", 7);
         String id = BridgePolicy.text(choice, "id", 19);
-        if ("preset".equals(kind) && TAB_ICON_KEYS.contains(id)) return object("kind", kind, "id", id);
+        if ("preset".equals(kind) && TAB_EMOJI_KEYS.contains(id)) return object("kind", kind, "id", id);
         if ("premium".equals(kind) && BridgePolicy.id(choice, "id") > 0) {
             if (!premium && !id.equals(previousPremiumId)) {
                 throw new IllegalArgumentException("Necesitas Telegram Premium para elegir este emoji.");
@@ -2469,6 +2478,8 @@ final class NativeBridge implements TdSession.Listener {
                 if(!icon.matches("[a-z]{1,16}")||!TAB_ICON_KEYS.contains(icon))throw new IllegalArgumentException("El icono de la pestaña no es válido.");
                 value.put("icon",icon);
             }
+            String display=inboxTabDisplay(tab);
+            if(display!=null)value.put("display",display);
             if(!tab.isNull("emoji")){
                 value.put("emoji",inboxTabEmoji(tab.getJSONObject("emoji"),premium,previousPremiumIds.get(id)));
             }
@@ -4047,6 +4058,62 @@ final class NativeBridge implements TdSession.Listener {
         TdApi.FormattedText text=NativeSnapshot.formatted(message.content);
         if(text==null||text.text==null||text.text.isBlank()){a.fail("Este mensaje no tiene texto para traducir.");return;}
         perform(new TdApi.TranslateMessageText(message.chatId,message.id,language,""),a,result->{try{JSONObject value=new JSONObject().put("text",result.text==null?"":result.text);JSONArray entities=NativeSnapshot.entities(result);if(entities.length()>0)value.put("entities",entities);a.ok(value);}catch(Exception ignored){a.fail("No se pudo preparar la traducción.");}});
+    }
+    private boolean receiptScopeReady(Answer a,long chatId,int topicId){
+        if(destroyed||!currentAccount()||a.owner!=session.selfId){a.fail("La cuenta cambió. Vuelve a abrir la conversación.");return false;}
+        if(!ReadReceipts.sameScope(session.activeChat,session.activeTopic,chatId,topicId)){a.fail(ReadReceipts.SCOPE_CHANGED);return false;}
+        return true;
+    }
+    private <T extends TdApi.Object> void performReceipt(TdApi.Function<T> function,Answer a,boolean viewers,long chatId,int topicId,Consumer<T> success){
+        session.performRaw(function,value->{
+            if(!receiptScopeReady(a,chatId,topicId))return;
+            try{success.accept(value);}catch(Exception ignored){a.fail(ReadReceipts.BROKEN);}
+        },error->{
+            if(!receiptScopeReady(a,chatId,topicId))return;
+            try{
+                JSONObject result=ReadReceipts.error(error,viewers);
+                if(result!=null)a.ok(result);else a.fail(TdSession.safeError(error));
+            }catch(Exception ignored){a.fail(ReadReceipts.BROKEN);}
+        });
+    }
+    private void readDate(TdApi.Message message,Answer a){
+        final int topic=message.topicId instanceof TdApi.MessageTopicForum forum?forum.forumTopicId:0;
+        if(!ReadReceipts.sameScope(session.activeChat,session.activeTopic,message.chatId,topic)){a.fail(ReadReceipts.SCOPE_CHANGED);return;}
+        if(!message.isOutgoing){a.fail(ReadReceipts.NOT_OUTGOING);return;}
+        TdApi.Chat chat=session.chat(message.chatId);
+        if(chat==null||!(chat.type instanceof TdApi.ChatTypePrivate)){a.fail(ReadReceipts.NOT_PRIVATE);return;}
+        performReceipt(new TdApi.GetMessageProperties(message.chatId,message.id),a,false,message.chatId,topic,properties->{
+            if(!properties.canGetReadDate){a.fail(ReadReceipts.DATE_UNAVAILABLE);return;}
+            performReceipt(new TdApi.GetMessageReadDate(message.chatId,message.id),a,false,message.chatId,topic,value->{try{a.ok(ReadReceipts.date(value));}catch(Exception ignored){a.fail(ReadReceipts.BROKEN);}});
+        });
+    }
+    private void messageViewers(TdApi.Message message,Answer a){
+        final int topic=message.topicId instanceof TdApi.MessageTopicForum forum?forum.forumTopicId:0;
+        if(!ReadReceipts.sameScope(session.activeChat,session.activeTopic,message.chatId,topic)){a.fail(ReadReceipts.SCOPE_CHANGED);return;}
+        if(!message.isOutgoing){a.fail(ReadReceipts.NOT_OUTGOING);return;}
+        TdApi.Chat chat=session.chat(message.chatId);
+        if(chat==null||!(chat.type instanceof TdApi.ChatTypeBasicGroup||chat.type instanceof TdApi.ChatTypeSupergroup)){a.fail(ReadReceipts.NOT_GROUP);return;}
+        performReceipt(new TdApi.GetMessageProperties(message.chatId,message.id),a,true,message.chatId,topic,properties->{
+            if(!properties.canGetViewers){a.fail(ReadReceipts.VIEWERS_UNAVAILABLE);return;}
+            performReceipt(new TdApi.GetMessageViewers(message.chatId,message.id),a,true,message.chatId,topic,value->{
+                Map<Long,String> names=new HashMap<>();
+                long[] missing=ReadReceipts.missingViewerIds(value,id->{
+                    String name=PersonName.of(session.user(id));
+                    if(name!=null&&!name.isEmpty())names.put(id,name);
+                    return name;
+                });
+                ReadReceipts.hydrateViewerNames(missing,(id,ok,bad)->session.performRaw(new TdApi.GetUser(id),
+                        user->{if(receiptScopeReady(a,message.chatId,topic))ok.accept(user);},
+                        error->{if(receiptScopeReady(a,message.chatId,topic))bad.accept(error);}),
+                        (id,name)->names.put(id,name),()->finishViewerNames(value,names,a,message.chatId,topic),
+                        error->{if(receiptScopeReady(a,message.chatId,topic))a.fail(TdSession.safeError(error));});
+            });
+        });
+    }
+    private void finishViewerNames(TdApi.MessageViewers value,Map<Long,String> names,Answer a,long chatId,int topicId){
+        if(!receiptScopeReady(a,chatId,topicId))return;
+        try{a.ok(ReadReceipts.viewers(value,id->names.containsKey(id)?names.get(id):PersonName.of(session.user(id))));}
+        catch(Exception ignored){a.fail(ReadReceipts.BROKEN);}
     }
     private void transcribe(TdApi.Message message,Answer answer){
         TdApi.Chat chat=session.chat(message.chatId);

@@ -114,11 +114,11 @@ const PHRASES: [keyof typeof AUTO_DELETE_REFUSALS, string, number, string][] = [
   ['wrongAccount', 'AccountSafetyPolicy', 11, 'WrongAccount'],
   ['badDuration', 'AccountSafetyPolicy', 15, 'BadDuration'],
   ['outOfRange', 'AccountSafetyPolicy', 17, 'OutOfRange'],
-  ['notAllowedHere', 'NativeBridge', 1390, 'NotAllowedHere'],
-  ['noRight', 'NativeBridge', 1393, 'NoRight'],
-  ['defaultChanged', 'NativeBridge', 1379, 'DefaultChanged'],
-  ['changed', 'NativeBridge', 1401, 'Changed'],
-  ['changedAccount', 'NativeBridge', 1412, 'ChangedAccount'],
+  ['notAllowedHere', 'NativeBridge', 1391, 'NotAllowedHere'],
+  ['noRight', 'NativeBridge', 1394, 'NoRight'],
+  ['defaultChanged', 'NativeBridge', 1380, 'DefaultChanged'],
+  ['changed', 'NativeBridge', 1402, 'Changed'],
+  ['changedAccount', 'NativeBridge', 1413, 'ChangedAccount'],
 ];
 
 describe('ronda BN · las tres capas dicen lo mismo del borrado automático', () => {
@@ -181,8 +181,8 @@ describe('ronda BN · las tres capas dicen lo mismo del borrado automático', ()
   });
 
   it('el 777000 es el de Android, y la regla de los dos chats sin temporizador es la suya', () => {
-    expect(javaLine(1367)).toContain('userId!=session.selfId&&userId!=777000');
-    expect(javaLine(1390)).toContain('if(id==session.selfId||id==777000)');
+    expect(javaLine(1368)).toContain('userId!=session.selfId&&userId!=777000');
+    expect(javaLine(1391)).toContain('if(id==session.selfId||id==777000)');
     expect(rules).toContain('public const long TelegramNotices = 777000');
     expect(rules).toContain('userId != selfId && userId != TelegramNotices');
     expect(canChangeAutoDelete(777000, 1)).toBe(false);
@@ -194,10 +194,10 @@ describe('ronda BN · las tres capas dicen lo mismo del borrado automático', ()
   });
 
   it('el cuadro de confirmar es el de `confirmAutoDelete`, con sus cuatro rótulos y su recorte', () => {
-    expect(javaLine(1409)).toContain('"Borrado automático · "+NativeSnapshot.limit(title,100)');
-    expect(javaLine(1410)).toContain('setNegativeButton("Cancelar"');
-    expect(javaLine(1411)).toContain('setPositiveButton("Aplicar en Telegram"');
-    expect(javaLine(1414)).toContain('setOnCancelListener(dialog->answer.ok(false))');
+    expect(javaLine(1410)).toContain('"Borrado automático · "+NativeSnapshot.limit(title,100)');
+    expect(javaLine(1411)).toContain('setNegativeButton("Cancelar"');
+    expect(javaLine(1412)).toContain('setPositiveButton("Aplicar en Telegram"');
+    expect(javaLine(1415)).toContain('setOnCancelListener(dialog->answer.ok(false))');
     expect(csSentence('Accept')).toBe(AUTO_DELETE_ACCEPT);
     expect(mirror).toContain(`AUTO_DELETE_ACCEPT = '${AUTO_DELETE_ACCEPT}'`);
     expect(rules).toContain('DesktopContact.Limit(title, 100)');
@@ -209,8 +209,8 @@ describe('ronda BN · las tres capas dicen lo mismo del borrado automático', ()
     expect(count('Borrado automático · ', rules)).toBe(1);
     expect(count('Borrado automático · ', cable)).toBe(0);
     // Las dos frases del cuerpo son las de `:1406`, en los dos sentidos y con la división por el paso.
-    expect(javaLine(1408)).toContain(`"${autoDeleteBody(0)}"`);
-    expect(javaLine(1408)).toContain('después de \"+(seconds/86400)+\" días. No es una limpieza del historial existente.');
+    expect(javaLine(1409)).toContain(`"${autoDeleteBody(0)}"`);
+    expect(javaLine(1409)).toContain('después de \"+(seconds/86400)+\" días. No es una limpieza del historial existente.');
     expect(rules).toContain(`"${autoDeleteBody(0)}"`);
     expect(rules).toContain('después de " + (seconds / Day) +');
     expect(autoDeleteBody(7 * AUTO_DELETE_DAY)).toBe(autoDeleteBody(7 * 86400));
@@ -253,8 +253,8 @@ describe('ronda BN · las tres capas dicen lo mismo del borrado automático', ()
       'if(id==session.selfId||id==777000)',
       'confirmChatAutoDelete(chat,seconds,answer)');
     // La rama de comunidad: primero el derecho (`:1391`) y después la ventana (`:1392`), como arriba.
-    expect(javaLine(1393)).toContain('grantedAdminRight(actor,"canChangeInfo")');
-    expect(javaLine(1394)).toContain('confirmChatAutoDelete(chat,seconds,answer)');
+    expect(javaLine(1394)).toContain('grantedAdminRight(actor,"canChangeInfo")');
+    expect(javaLine(1395)).toContain('confirmChatAutoDelete(chat,seconds,answer)');
     // La duración delante de la forma: si no, un «400 días» escrito en un chat ajeno oiría el permiso.
     expect(WRITE.indexOf('Seconds(args)')).toBeLessThan(WRITE.indexOf('RequireEntry'));
     // El derecho delante de la ventana: un cuadro que no se puede cumplir es peor que un aviso (norma BI).
@@ -270,7 +270,7 @@ describe('ronda BN · las tres capas dicen lo mismo del borrado automático', ()
       'if (current.period != before.period) throw new BridgeException(DesktopAutoDelete.DefaultChanged)',
       'await client.Messages_SetDefaultHistoryTTL(seconds)');
     // Después de escribir, las dos capas devuelven lo que Telegram guarda y `canChange:true` fijo.
-    expect(javaLine(1403)).toContain('answer.ok(object("seconds",updated.messageAutoDeleteTime,"canChange",true))');
+    expect(javaLine(1404)).toContain('answer.ok(object("seconds",updated.messageAutoDeleteTime,"canChange",true))');
     expect(WRITE).toContain('var (applied, _) = await AutoDeleteStateAsync(client, entry)');
   });
 
@@ -329,8 +329,8 @@ describe('ronda BN · las tres capas dicen lo mismo del borrado automático', ()
   it('las dos frases de los chats secretos son de Android y el andamio no las alcanza', () => {
     const secret = ['El temporizador de chats secretos requiere un flujo distinto.',
       'No se modifica la autodestrucción de chats secretos desde este ajuste.'];
-    expect(says(javaLine(1363), secret[0])).toBe(true);
-    expect(says(javaLine(1387), secret[1])).toBe(true);
+    expect(says(javaLine(1364), secret[0])).toBe(true);
+    expect(says(javaLine(1388), secret[1])).toBe(true);
     // MTProto no tiene la forma `ChatTypeSecret` que las dispara: se declaran fuera en vez de imitarse, y no se
     // escriben en ninguna de las capas nuevas.
     for (const phrase of secret) {

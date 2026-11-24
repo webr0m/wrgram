@@ -60,12 +60,12 @@ describe('ronda BA · la ficha de perfil y su pestaña, cruzadas con las tres ca
 
   it('las tres negaciones con gemelo son la palabra de Android en su línea', () => {
     expect(PEER_REFUSALS.noList).toBe(csSentence('NoList'));
-    expect(says(1596, PEER_REFUSALS.noList)).toBe(true);
+    expect(says(1597, PEER_REFUSALS.noList)).toBe(true);
     expect(PEER_REFUSALS.secret).toBe(csSentence('Secret'));
-    expect(says(1621, PEER_REFUSALS.secret)).toBe(true);
+    expect(says(1622, PEER_REFUSALS.secret)).toBe(true);
     expect(PEER_REFUSALS.loadFailed).toBe(csSentence('LoadFailed'));
-    expect(says(1252, PEER_REFUSALS.loadFailed)).toBe(true);
-    expect(says(1290, PEER_REFUSALS.loadFailed)).toBe(true);
+    expect(says(1253, PEER_REFUSALS.loadFailed)).toBe(true);
+    expect(says(1291, PEER_REFUSALS.loadFailed)).toBe(true);
   });
 
   it('la cuarta es propia de Windows y lo dice una sola vez en cada capa', () => {
@@ -85,15 +85,15 @@ describe('ronda BA · la ficha de perfil y su pestaña, cruzadas con las tres ca
 
   it('las cinco cadenas de presencia son las de presence() y viven una vez en el espejo', () => {
     expect(PEER_PRESENCE.online).toBe(csSentence('Online'));
-    expect(says(1564, PEER_PRESENCE.online)).toBe(true);
+    expect(says(1565, PEER_PRESENCE.online)).toBe(true);
     expect(PEER_PRESENCE.offline).toBe(csSentence('OfflinePrefix'));
-    saysInParts(1567, PEER_PRESENCE.offline);
+    saysInParts(1568, PEER_PRESENCE.offline);
     expect(PEER_PRESENCE.recently).toBe(csSentence('Recently'));
-    expect(says(1569, PEER_PRESENCE.recently)).toBe(true);
+    expect(says(1570, PEER_PRESENCE.recently)).toBe(true);
     expect(PEER_PRESENCE.week).toBe(csSentence('LastWeek'));
-    expect(says(1570, PEER_PRESENCE.week)).toBe(true);
+    expect(says(1571, PEER_PRESENCE.week)).toBe(true);
     expect(PEER_PRESENCE.month).toBe(csSentence('LastMonth'));
-    expect(says(1571, PEER_PRESENCE.month)).toBe(true);
+    expect(says(1572, PEER_PRESENCE.month)).toBe(true);
     // Cada una, una sola vez en la clase de reglas: el cable pregunta, no repite.
     for (const phrase of Object.values(PEER_PRESENCE)) expect(count(`"${phrase}"`, rules)).toBe(1);
     // Y el cable no escribe español suyo: usa la función.
@@ -106,16 +106,16 @@ describe('ronda BA · la ficha de perfil y su pestaña, cruzadas con las tres ca
     // Medido hoy en NativeBridge: el recorte vive en la línea del `Math.min`, las dos ventanas de treinta
     // son llamadas distintas (`GetGroupsInCommon` y `GetSupergroupMembers`) y el 30 del cursor está en la
     // comparación que arma `nextCursor`.
-    expect(line(1576)).toContain('5000');
-    expect(line(1580)).toContain(',30)');
-    expect(line(1594)).toContain(',30)');
-    expect(line(1587)).toContain('count==30');
+    expect(line(1577)).toContain('5000');
+    expect(line(1581)).toContain(',30)');
+    expect(line(1595)).toContain(',30)');
+    expect(line(1588)).toContain('count==30');
     expect(cable).toContain('DesktopPeerProfile.Offset(Long(args, "offset"))');
     expect(cable).toContain('DesktopPeerProfile.Page');
   });
 
   it('el puesto de la fila es el de profileMembers, en las dos familias de participantes', () => {
-    saysInParts(1607, 'Creador', 'Administrador');
+    saysInParts(1608, 'Creador', 'Administrador');
     expect(PEER_ROLE.creator).toBe('Creador');
     expect(PEER_ROLE.admin).toBe('Administrador');
     expect(PEER_ROLE.none).toBe('');

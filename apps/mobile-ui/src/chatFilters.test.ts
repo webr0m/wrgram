@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHAT_FILTERS, arrangeTabs, chatFilters, defaultRules, matchesTab, tabSource, type InboxTab } from './chatFilters';
+import { CHAT_FILTERS, arrangeTabs, chatFilters, defaultRules, matchesTab, tabShowsName, tabSource, type InboxTab } from './chatFilters';
 import type { Chat } from './contract';
 
 const labels=(folders:{id:number;title:string}[])=>chatFilters(folders).map(([,label])=>label);
@@ -29,6 +29,16 @@ describe('pestañas de chats',()=>{
 });
 
 describe('personalización de la bandeja',()=>{
+  it('conserva el modo de presentación al combinar pestañas guardadas y nuevas',()=>{
+    const saved:InboxTab[]=[{id:'all',name:'Todos',icon:'plus',display:'icon'},{id:'unread',name:'No leídos',icon:'wrgram',display:'iconName'}];
+    expect(arrangeTabs([],saved).slice(0,2)).toEqual(saved);
+  });
+  it('solo oculta el nombre en modo icono y mantiene la vista anterior para pestañas sin modo',()=>{
+    expect(tabShowsName({id:'all',name:'Todos',icon:'plus',display:'icon'})).toBe(false);
+    expect(tabShowsName({id:'all',name:'Todos',icon:'plus',display:'iconName'})).toBe(true);
+    expect(tabShowsName({id:'all',name:'Todos',icon:'plus'})).toBe(true);
+    expect(tabShowsName({id:'all',name:'Todos',emoji:{kind:'preset',id:'star'},display:'iconName'})).toBe(false);
+  });
   it('conserva las preferencias y muestra las carpetas nuevas sin resucitar carpetas eliminadas',()=>{
     const rules={...defaultRules,source:'folder:11'};
     const saved:InboxTab[]=[{id:'custom:work',name:'Trabajo pendiente',rules},{id:'all',name:'Bandeja',hidden:true},{id:'folder:11',name:'Mi oficina'}];

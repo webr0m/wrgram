@@ -30,6 +30,7 @@ export const DESKTOP_AVAILABLE: readonly ScopeClaim[] = [
   { label: 'encuestas creadas y votadas', methods: ['poll.send', 'poll.answer', 'poll.voters'] },
   { label: 'programación de mensajes', methods: ['scheduled.list', 'scheduled.sendNow', 'scheduled.reschedule', 'scheduled.delete'] },
   { label: 'lectura, archivo y silencio', methods: ['chat.read', 'chat.unread', 'chat.archive', 'chat.mute', 'chat.defaultSilent'] },
+  { label: 'hora de lectura en privados y lectores en grupos básicos', methods: ['message.readDate', 'message.viewers'] },
   { label: 'fijar un mensaje y fijar la conversación', methods: ['chat.pin', 'message.pin', 'chat.pinned', 'message.properties'] },
   // La ronda BX sacó estas dos claves de «pendiente»: la negativa de la ronda AG buscaba en la librería
   // `messages.setReactions` y `TypeReaction`, que son los nombres que Telegram jubiló. La petición actual es

@@ -28,30 +28,30 @@ import type { CallLogEntry } from './contract';
  * puente no repite ninguna de las dos negaciones: las oye por referencia.
  *
  * **El orden del cuerpo, medido línea por línea.** `NativeBridge.java:753` enruta `calls.list` justo detrás de la
- * búsqueda de mensajes, y el cuerpo (`NativeBridge.java:5316-5345`) valida el cursor (`NativeBridge.java:5319`), niega
- * el que no sigue el recorrido de esta sesión (`NativeBridge.java:5321`), arma la función con el `LIMIT` de la clase
- * (`NativeBridge.java:5323`), descarta lo que no es llamada (`NativeBridge.java:5327`), apunta los chats que faltan sin
- * pasar de veinte (`NativeBridge.java:5329`), comprueba que la cuenta sigue siendo la misma (`NativeBridge.java:5332`)
- * y **solo entonces** recorta por nombre (`NativeBridge.java:5337`) y arma la fila (`NativeBridge.java:5338`). La frase
- * de cada fila la pone `ServiceMessages` (`NativeBridge.java:5338`), para que el registro no invente otra manera de
- * decir lo que ya se lee dentro del chat. El cursor que se recuerda es el que se repartió (`NativeBridge.java:5340`) y
- * la página sale con las dos cifras (`NativeBridge.java:5341`): `fetched` antes del recorte, `shown` después.
+ * búsqueda de mensajes, y el cuerpo (`NativeBridge.java:5383-5412`) valida el cursor (`NativeBridge.java:5386`), niega
+ * el que no sigue el recorrido de esta sesión (`NativeBridge.java:5388`), arma la función con el `LIMIT` de la clase
+ * (`NativeBridge.java:5390`), descarta lo que no es llamada (`NativeBridge.java:5394`), apunta los chats que faltan sin
+ * pasar de veinte (`NativeBridge.java:5396`), comprueba que la cuenta sigue siendo la misma (`NativeBridge.java:5399`)
+ * y **solo entonces** recorta por nombre (`NativeBridge.java:5404`) y arma la fila (`NativeBridge.java:5405`). La frase
+ * de cada fila la pone la rama de `MessageCall` (`ServiceMessages.java:125`), para que el registro no invente otra manera de
+ * decir lo que ya se lee dentro del chat. El cursor que se recuerda es el que se repartió (`NativeBridge.java:5407`) y
+ * la página sale con las dos cifras (`NativeBridge.java:5408`): `fetched` antes del recorte, `shown` después.
  *
- * **Windows, por su nombre.** `calls.list` está declarado pendiente (`desktopScope.ts:97`) y la rama de escritorio de
+ * **Windows, por su nombre.** `calls.list` está declarado pendiente (`desktopScope.ts:98`) y la rama de escritorio de
  * Ajustes no lo ofrece: el registro solo se pinta en la lista de categorías del móvil (`SettingsPage.tsx:232`, fuera
- * del bloque que devuelve `SettingsPage.tsx:179`). En el andamio sí trabaja: `preview.ts:2476` lo despacha a
- * `designCallPage` (`preview.ts:3326-3345`), que copia el mismo orden —negación, cursor viejo, recorte local— y
+ * del bloque que devuelve `SettingsPage.tsx:179`). En el andamio sí trabaja: `preview.ts:2497` lo despacha a
+ * `designCallPage` (`preview.ts:3347-3366`), que copia el mismo orden —negación, cursor viejo, recorte local— y
  * recuerda el cursor siguiente como hace el puente.
  *
- * **Las cuatro casas de las palabras.** La clave la declara `BridgePolicy.java:54`, al lado de la llamada que ya vivía
+ * **Las cuatro casas de las palabras.** La clave la declara `BridgePolicy.java:55`, al lado de la llamada que ya vivía
  * aquí (`BridgePolicy.java:41`), y el brazo la recoge entre la búsqueda de mensajes (`NativeBridge.java:752`) y los
  * hilos. La fila la arma `CallLog.java:97` y la frase se la presta `ServiceMessages.java:125-126`, con la duración de
  * `ServiceMessages.java:186-191`; por eso el registro y la burbuja no pueden decir dos cosas distintas de la misma
  * llamada. El espejo de TypeScript arma la página en `callLogModel.ts:113` y el contrato con las dos cifras está en
  * `contract.ts:248-249`. La pantalla manda el nombre vacío —`CallLogPanel.tsx:36`—, recorta en memoria con la regla de
  * la clase —`CallLogPanel.tsx:59`— y avisa del recorte —`CallLogPanel.tsx:77`— antes de ofrecer más llamadas. El
- * andamio pagina de cinco (`preview.ts:3299`), recuerda el cursor que repartió (`preview.ts:3319`) y toma los títulos
- * de la bandeja real (`preview.ts:3337`), y la librería ordena la lista de arriba abajo (`TdApi.java:145264`).
+ * andamio pagina de cinco (`preview.ts:3320`), recuerda el cursor que repartió (`preview.ts:3340`) y toma los títulos
+ * de la bandeja real (`preview.ts:3358`), y la librería ordena la lista de arriba abajo (`TdApi.java:145264`).
  *
  * Como en CF, CM, CN, CI, CJ y CK: la última prueba mide las citas.
  */
@@ -427,20 +427,20 @@ describe('ronda CL · las citas', () => {
     'TdApi.java:27101': 'public Message[] messages;',
     'TdApi.java:27105': 'public String nextOffset;',
     'BridgePolicy.java:41': 'static { METHODS.add("call.open"); }',
-    'BridgePolicy.java:54': 'static { METHODS.add("calls.list"); }',
+    'BridgePolicy.java:55': 'static { METHODS.add("calls.list"); }',
     'NativeBridge.java:752': 'case "messages.search.more":searchMore(p,a);break;',
     'NativeBridge.java:753': 'case "calls.list":callLog(p,a);break;',
-    'NativeBridge.java:5316': 'private void callLog(JSONObject p,Answer a){',
-    'NativeBridge.java:5319': 'try{offset=CallLog.offset(p.optString("offset",""));',
-    'NativeBridge.java:5321': 'if(!offset.isEmpty()&&(callLogOwner!=session.selfId',
-    'NativeBridge.java:5323': 'TdApi.SearchCallMessages search=new TdApi.SearchCallMessages();',
-    'NativeBridge.java:5327': 'if(message==null||!CallLog.isCall(message.content))continue;',
-    'NativeBridge.java:5329': '!missing.contains(message.chatId)&&missing.size()<20',
-    'NativeBridge.java:5332': 'if(!currentAccount()||session.selfId!=owner){a.fail("La cuenta cambió.");return;}',
-    'NativeBridge.java:5337': 'if(!CallLog.matches(title,query))continue;',
-    'NativeBridge.java:5338': 'rows.put(CallLog.row(message,title,ServiceMessages.text(message,session)));shown++;',
-    'NativeBridge.java:5340': 'callLogOwner=owner;callLogMissed=onlyMissed;',
-    'NativeBridge.java:5341': '.put("fetched",kept.size()).put("shown",shown)',
+    'NativeBridge.java:5383': 'private void callLog(JSONObject p,Answer a){',
+    'NativeBridge.java:5386': 'try{offset=CallLog.offset(p.optString("offset",""));',
+    'NativeBridge.java:5388': 'if(!offset.isEmpty()&&(callLogOwner!=session.selfId',
+    'NativeBridge.java:5390': 'TdApi.SearchCallMessages search=new TdApi.SearchCallMessages();',
+    'NativeBridge.java:5394': 'if(message==null||!CallLog.isCall(message.content))continue;',
+    'NativeBridge.java:5396': '!missing.contains(message.chatId)&&missing.size()<20',
+    'NativeBridge.java:5399': 'if(!currentAccount()||session.selfId!=owner){a.fail("La cuenta cambió.");return;}',
+    'NativeBridge.java:5404': 'if(!CallLog.matches(title,query))continue;',
+    'NativeBridge.java:5405': 'rows.put(CallLog.row(message,title,ServiceMessages.text(message,session)));shown++;',
+    'NativeBridge.java:5407': 'callLogOwner=owner;callLogMissed=onlyMissed;',
+    'NativeBridge.java:5408': '.put("fetched",kept.size()).put("shown",shown)',
     'CallLog.java:20': 'static final int LIMIT = 50;',
     'CallLog.java:22': 'static final int MAX_OFFSET = 64;',
     'CallLog.java:23': 'static final String BAD_OFFSET =',
@@ -467,17 +467,17 @@ describe('ronda CL · las citas', () => {
     'SettingsPage.tsx:232': "{id:'calls',title:'Registro de llamadas'",
     'contract.ts:248': 'export interface CallLogEntry',
     'contract.ts:249': 'export interface CallLogPage',
-    'desktopScope.ts:97': "label: 'notificaciones push, llamadas y WR IA'",
-    'preview.ts:2476': "if (method === 'calls.list') return designCallPage(params, state);",
-    'preview.ts:3299': 'const CALL_LOG_DESIGN_PAGE = 5;',
-    'preview.ts:3319': 'let designCalls: { owner: string; onlyMissed: boolean; cursor: string } | null = null;',
-    'preview.ts:3326': 'function designCallPage(params: Record<string, unknown>, state: State): CallLogPage {',
-    'preview.ts:3337': 'state.chats.find(chat => chat.id === row.chat)',
+    'desktopScope.ts:98': "label: 'notificaciones push, llamadas y WR IA'",
+    'preview.ts:2497': "if (method === 'calls.list') return designCallPage(params, state);",
+    'preview.ts:3320': 'const CALL_LOG_DESIGN_PAGE = 5;',
+    'preview.ts:3340': 'let designCalls: { owner: string; onlyMissed: boolean; cursor: string } | null = null;',
+    'preview.ts:3347': 'function designCallPage(params: Record<string, unknown>, state: State): CallLogPage {',
+    'preview.ts:3358': 'state.chats.find(chat => chat.id === row.chat)',
   };
 
   /** La última línea de cada rango citado, con lo que dice. */
   const ends: Record<string, [number, string]> = {
-    'NativeBridge.java:5316': [5345, '}'],
+    'NativeBridge.java:5383': [5412, '}'],
     'CallLog.java:20': [24, 'static final String STALE_CURSOR ='],
     'CallLog.java:23': [24, 'static final String STALE_CURSOR ='],
     'CallLog.java:34': [36, '}'],
@@ -489,7 +489,7 @@ describe('ronda CL · las citas', () => {
     'ServiceMessages.java:125': [126, 'kind="call"'],
     'ServiceMessages.java:186': [191, '}'],
     'contract.ts:248': [249, 'export interface CallLogPage'],
-    'preview.ts:3326': [3345, '}'],
+    'preview.ts:3347': [3366, '}'],
   };
 
   const lineOf = (file: string, at: number): string => {

@@ -319,6 +319,8 @@ describe('ronda CB · la regla de la tarjeta en las tres capas', () => {
     // La misma bandera con la que el puente decide si la fila es propia es la que arma el DTO de Windows.
     expect(rules).toContain('(message.flags & TL.Message.Flags.out_) != 0');
     expect(service.join('\n')).toContain('Outgoing = (message.flags & TL.Message.Flags.out_) != 0,');
+    expect(service.join('\n')).toContain(
+      'dto.Status = DesktopReadOutbox.Status(entry.ReadOutbox, message.ID, dto.Outgoing, scheduled);');
   });
 
   it('el periodo solo lo tiene la ubicación viva', () => {
@@ -548,19 +550,19 @@ describe('ronda CB · las citas de los archivos de la ronda', () => {
     'MessageExtras.java:42': 'live.expiresIn <= 0 || live.location == null',
     'MessageExtras.java:44': 'put("canStop", message.isOutgoing && live.expiresIn > 0)',
     'NativeBridge.java:421': 'answer.fail("La ubicación ya no está disponible.")',
-    'NativeBridge.java:1200': 'livePermissionResult(granted)',
-    'NativeBridge.java:4735': 'private void startLiveLocation(JSONObject p,Answer a)',
-    'NativeBridge.java:4739': 'a.fail(LiveLocationPolicy.ALREADY)',
-    'NativeBridge.java:4741': 'int period=LiveLocationPolicy.period(p)',
-    'NativeBridge.java:4774': 'new TdApi.InputMessageLiveLocation(live)',
-    'NativeBridge.java:4815': 'new TdApi.EditMessageLiveLocation(chat,message,null,live)',
-    'NativeBridge.java:4825': 'private void stopLiveLocation(JSONObject p,Answer a)',
-    'NativeBridge.java:4829': 'a.fail(LiveLocationPolicy.NOT_SHARING)',
-    'NativeBridge.java:4830': 'a.fail("La ubicación ya no está disponible.")',
-    'NativeBridge.java:4831': 'if(liveMessage==id)stopLiveTracking();',
-    'NativeBridge.java:4832': 'new TdApi.EditMessageLiveLocation(message.chatId,id,null,null)',
+    'NativeBridge.java:1201': 'livePermissionResult(granted)',
+    'NativeBridge.java:4806': 'a.fail(LiveLocationPolicy.ALREADY)',
+    'NativeBridge.java:4808': 'int period=LiveLocationPolicy.period(p)',
+    'NativeBridge.java:4841': 'new TdApi.InputMessageLiveLocation(live),replyTo,silent',
+    'NativeBridge.java:4844': 'answer.ok(object("id",Long.toString(message.id),"chatId",Long.toString(message.chatId),"expiresAt"',
+    'NativeBridge.java:4882': 'new TdApi.EditMessageLiveLocation(chat,message,null,live)',
+    'NativeBridge.java:4892': 'private void stopLiveLocation(JSONObject p,Answer a)',
+    'NativeBridge.java:4896': 'a.fail(LiveLocationPolicy.NOT_SHARING)',
+    'NativeBridge.java:4897': 'a.fail("La ubicación ya no está disponible.")',
+    'NativeBridge.java:4898': 'if(liveMessage==id)stopLiveTracking();',
+    'NativeBridge.java:4899': 'new TdApi.EditMessageLiveLocation(message.chatId,id,null,null)',
     'MainWindow.xaml.cs:134': 'Web.CoreWebView2.Environment',
-    'TelegramService.cs:3419': 'Outgoing = (message.flags & TL.Message.Flags.out_) != 0,',
+    'TelegramService.cs:3413': 'Outgoing = (message.flags & TL.Message.Flags.out_) != 0,',
     'TdApi.java:35709': 'between 60 and 86400',
     'TdApi.java:46978': '1-360; 0 if unknown',
     'WRGram.Desktop.csproj:5': '<TargetFramework>net8.0-windows</TargetFramework>',
@@ -572,7 +574,7 @@ describe('ronda CB · las citas de los archivos de la ronda', () => {
 
   /** La última línea de cada rango citado, con lo que dice. */
   const ends: Record<string, [number, string]> = {
-    'NativeBridge.java:4825': [4833, '}'],
+    'NativeBridge.java:4892': [4900, '}'],
     'LiveLocationPolicy.java:87': [90, '}'],
     'DesktopBackgroundsFlow.cs:70': [85, 'return after.Find(row => row.Id == raw) ?? throw new BridgeException(DesktopBackgrounds.Gone);'],
     'DesktopBackgroundsFlow.cs:88': [91, 'private void PublishCloudSlots(List<BackgroundRowDto> rows)'],
@@ -610,6 +612,7 @@ describe('ronda CB · las citas de los archivos de la ronda', () => {
     ['liveLocation.ts', text('./liveLocation.ts')],
     ['preview.ts CB', preview.slice(pvFrom, pvTo).join('\n')],
     ['desktopScope.ts CB', [...scope.slice(scStop - 3, scStop), ...scope.slice(scStart - 5, scStart)].join('\n')],
+    ['TelegramService.cs (saliente)', service.slice(3413, 3423).join('\n')],
   ];
 
   const lineOf = (file: string, n: number) => {
@@ -626,6 +629,8 @@ describe('ronda CB · las citas de los archivos de la ronda', () => {
     return row;
   };
 
+  // CT movió el puente sin reescribir todas las citas de la prosa del andamio. La tabla de anclas mide la línea de
+  // hoy y la prosa tiene que decir esa misma cifra: no hay mapa que traduzca la heredada.
   const written = new Map<string, number>();
   const loose = new Map<string, string>();
   for (const [donde, body] of watched) {
@@ -672,13 +677,18 @@ describe('ronda CB · las citas de los archivos de la ronda', () => {
     expect([...written.keys()].sort()).toEqual(Object.keys(anchors).sort());
   });
 
-  it('el andamio ya no cita el puente de oído: las dos cifras que escribió la ronda están medidas', () => {
-    // La ronda CB metió líneas en `NativeBridge.java`, así que cualquier cifra de antes de la tanda puede estar bien
-    // o puede señalar otro sitio. Solo vale buscar el literal.
-    expect(jrow(at('private void startLiveLocation'))).toBe(jrow(4735));
-    expect(preview[at('Lo que `startLiveLocation`', preview) - 1]).toContain('NativeBridge.java:4735');
-    expect(preview[at('El `EditMessageLiveLocation` sin punto', preview) - 1]).toContain('NativeBridge.java:4832');
-    expect(preview.join('\n')).not.toContain('NativeBridge.java:4998');
-    expect(preview.join('\n')).not.toContain('NativeBridge.java:4936-4944');
+  it('las tres frases del andamio que movió la propia ronda señalan la línea de hoy', () => {
+    // La ronda CB metió líneas en `NativeBridge.java`, así que las cifras con las que se escribieron estas frases
+    // señalaron otro sitio. Aquí se comprueba la línea real, sin mapa intermedio que la traduzca.
+    expect(jrow(at('private void startLiveLocation'))).toBe(jrow(4802));
+    expect(preview[at('Lo que `startLiveLocation` contesta desde', preview) - 1])
+      .toContain('`livePermissionResult` (`NativeBridge.java:4844`)');
+    const orden = at('El orden es el del puente, no el de la conveniencia', preview);
+    expect(preview[orden - 1]).toContain('`NativeBridge.java:4806` niega la compartida que ya está');
+    expect(preview[orden]).toContain('`NativeBridge.java:4808` mire el periodo');
+    expect(preview[at('El `EditMessageLiveLocation` sin punto', preview) - 1])
+      .toContain('(`stopLiveLocation`, `NativeBridge.java:4899`');
+    expect(preview.join('\n')).not.toContain('NativeBridge.java:5027');
+    expect(preview.join('\n')).not.toContain('NativeBridge.java:4965-4973');
   });
 });

@@ -322,12 +322,12 @@ public sealed class PollVoterDto
 
 /// <summary>
 /// Una fila de la agenda, con los cuatro campos que <c>contacts</c> de Android arma en
-/// <c>object("id",…,"name",…,"username",…,"bot",…)</c> (<c>NativeBridge.java:1786</c>). El <c>id</c> es texto porque
+/// <c>object("id",…,"name",…,"username",…,"bot",…)</c> (<c>NativeBridge.java:1787</c>). El <c>id</c> es texto porque
 /// Android lo pasa con <c>Long.toString</c> y la pantalla lo devuelve tal cual a <c>share.contact</c>.
 /// <para>
 /// Falta el quinto campo de Android, <c>photo</c>, y falta a propósito: la orden de TDLib ya traía las miniaturas
 /// descargadas y esta capa tendría que pedir cada una por su cuenta para una lista de hasta 50 personas. La
-/// pantalla tiene respaldo con iniciales (<c>ContactAvatar</c>, <c>App.tsx:98</c>), así que lo que se pierde es un
+/// pantalla tiene respaldo con iniciales (<c>ContactAvatar</c>, <c>apps/mobile-ui/src/App.tsx:100</c>), así que lo que se pierde es un
 /// retrato y no información.
 /// </para>
 /// </summary>
@@ -679,7 +679,7 @@ public sealed class OpenStoryDto
     public MediaDto Media { get; set; } = new();
 
     /// Los cuatro mandos de escritura: salen en falso mientras el host no tenga el brazo que los obedezca, y la
-    /// pantalla los gatingea uno a uno (<c>App.tsx:294</c>) para que no aparezca un botón muerto.
+    /// pantalla los gatingea uno a uno (<c>App.tsx:304</c>) para que no aparezca un botón muerto.
     public bool CanEdit { get; set; }
     public bool CanDelete { get; set; }
     public bool CanToggleProfile { get; set; }
@@ -719,9 +719,9 @@ public sealed class WalletDto
 
 /// <summary>
 /// La fila de un pack de stickers o emojis personalizados. Las nueve primeras claves son las de <c>stickerInfo</c>
-/// (<c>NativeBridge.java:4900-4901</c>), que es la forma común de las cuatro lecturas; las tres siguientes son las
-/// que solo trae un pack ya abierto: la portada y el caracter que arma <c>emojiPackList</c> (<c>:4906</c>) y la
-/// lista de dentro de <c>emojiPack</c> (<c>:4953</c>) o <c>stickerSet</c> (<c>:4974</c>).
+/// (<c>NativeBridge.java:4976-4977</c>), que es la forma común de las cuatro lecturas; las tres siguientes son las
+/// que solo trae un pack ya abierto: la portada y el caracter que arma <c>emojiPackList</c> (<c>:4982</c>) y la
+/// lista de dentro de <c>emojiPack</c> (<c>:5020-5038</c>) o <c>stickerSet</c> (<c>:5041</c>).
 /// </summary>
 public sealed class StickerPackDto
 {

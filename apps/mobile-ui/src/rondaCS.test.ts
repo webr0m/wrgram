@@ -50,9 +50,9 @@ describe('ronda CS · la cita de texto en las tres capas', () => {
   });
 
   it('el envío de Android lleva la cita y el chat secreto la descarta', () => {
-    expect(line(engine, 1100)).toContain('TdApi.InputTextQuote quote');
-    expect(line(engine, 1126)).toContain('reply.quote');
-    expect(line(engine, 1126)).toContain('ChatTypeSecret');
+    expect(line(engine, 1104)).toContain('TdApi.InputTextQuote quote');
+    expect(line(engine, 1130)).toContain('reply.quote');
+    expect(line(engine, 1130)).toContain('ChatTypeSecret');
   });
 
   it('la vuelta de Android proyecta la cita con sus entidades', () => {
@@ -61,8 +61,16 @@ describe('ronda CS · la cita de texto en las tres capas', () => {
   });
 
   it('Windows decide la cita antes de marcar el envío como en curso', () => {
-    expect(line(service, 1473)).toContain('DesktopReplyQuote.ForAsync');
-    expect(line(service, 1479)).not.toContain('new InputReplyToMessage');
+    const start = service.indexOf('    private async Task<object?> SendAsync(');
+    const end = service.indexOf('    private async Task<object?> TypingAsync(', start);
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    const send = service.slice(start, end);
+    const quote = send.indexOf('DesktopReplyQuote.ForAsync');
+    const sending = send.indexOf('_state.Sending = true;');
+    expect(quote).toBeGreaterThanOrEqual(0);
+    expect(sending).toBeGreaterThan(quote);
+    expect(send).not.toContain('new InputReplyToMessage');
     expect(desktop).toContain('GetMessages');
     expect(desktop).toContain('quote_text');
     expect(desktop).toContain('quote_offset');
@@ -71,16 +79,16 @@ describe('ronda CS · la cita de texto en las tres capas', () => {
   });
 
   it('la vuelta de Windows proyecta la cita hacia el DTO', () => {
-    expect(line(service, 3437)).toContain('DesktopReplyQuote.Receive');
+    expect(line(service, 3431)).toContain('DesktopReplyQuote.Receive');
     expect(stateCs).toContain('public ReplyQuoteDto? ReplyQuote { get; set; }');
     expect(desktop).toContain('quote_text');
   });
 
   it('el contrato y la pantalla llevan la cita de ida y de vuelta', () => {
     expect(line(contract, 159)).toContain('replyQuote');
-    expect(line(app, 811)).toContain('quote:replyQuote');
-    expect(line(app, 1121)).toContain('selectionQuote');
-    expect(line(app, 1232)).toContain('quote={message.replyQuote}');
+    expect(line(app, 821)).toContain('quote:replyQuote');
+    expect(line(app, 1150)).toContain('selectionQuote');
+    expect(line(app, 1263)).toContain('quote={message.replyQuote}');
     expect(quoteUi).toContain('FormattedText');
   });
 
@@ -90,11 +98,11 @@ describe('ronda CS · la cita de texto en las tres capas', () => {
   });
 
   it('las longitudes de las capas tocadas no se movieron sin que la ronda lo sepa', () => {
-    expect(lines(engine).length).toBe(1426);
+    expect(lines(engine).length).toBe(1430);
     expect(lines(snapshot).length).toBe(554);
-    expect(lines(bridge).length).toBe(5512);
-    expect(lines(service).length).toBe(4313);
-    expect(lines(app).length).toBe(1561);
+    expect(lines(bridge).length).toBe(5579);
+    expect(lines(service).length).toBe(4307);
+    expect(lines(app).length).toBe(1592);
     expect(lines(contract).length).toBe(250);
     expect(lines(stateCs).length).toBe(760);
   });

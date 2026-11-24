@@ -9,7 +9,7 @@ using WTelegram;
 /// El cable de <c>profile.sender</c> (brazo en <c>TelegramService.cs:254</c>): leer la fila, sacar su autor y devolver
 /// la fila de chat que la pantalla abre después. Las reglas y las frases están en <see cref="DesktopSenderProfile"/>;
 /// el par de frases negativas y el orden de las guardas son los de <c>senderProfile</c>
-/// (<c>NativeBridge.java:1614-1632</c>).
+/// (<c>NativeBridge.java:1615-1633</c>).
 /// <para>
 /// Después de esta orden la pantalla hace <c>chat.profile</c> con el identificador devuelto (<c>PeerProfile.tsx:50-54</c>),
 /// y esa ya estaba conectada desde la ronda BA —así que el trabajo de aquí es solo el puente entre un número de mensaje
@@ -26,8 +26,8 @@ public sealed partial class TelegramService
     private async Task<object?> SenderProfileAsync(JsonElement args)
     {
         var client = CollectionClient();
-        // `session.chat(chatId)` de `NativeBridge.java:1619`: sin chat no hay petición que mandar, y la guarda
-        // agrupada de Android, que es `NativeBridge.java:1620`, lo niega con la frase del perfil y no con la de
+        // `session.chat(chatId)` de `NativeBridge.java:1620`: sin chat no hay petición que mandar, y la guarda
+        // agrupada de Android, que es `NativeBridge.java:1621`, lo niega con la frase del perfil y no con la de
         // «conversación no cargada».
         var entry = FindEntry(Str(args, "chatId"));
         if (entry == null) throw new BridgeException(DesktopSenderProfile.NoProfile);
@@ -45,7 +45,7 @@ public sealed partial class TelegramService
         // no se puede abrir después. Es la misma negativa que la que documenta `profile.contact` (`DesktopPeerProfileFlow.cs:233`).
         if (peer is PeerUser person && (_users.GetValueOrDefault(person.user_id)?.access_hash ?? 0L) == 0L)
             throw new BridgeException(DesktopPeerProfile.NoHash);
-        // `MessageSenderChat` de `NativeBridge.java:1627`: el canal o el grupo que publicó, que aquí ya está en la caché porque el
+        // `MessageSenderChat` de `NativeBridge.java:1628`: el canal o el grupo que publicó, que aquí ya está en la caché porque el
         // propio mensaje lo trajo. `EntryFromPeer` devuelve `null` si la respuesta no lo incluyó, y eso es «no
         // identificó al remitente», no una fila inventada con el número suelto.
         var sender = EntryFromPeer(peer) ?? throw new BridgeException(DesktopSenderProfile.UnknownSender);

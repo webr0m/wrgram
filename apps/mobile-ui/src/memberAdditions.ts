@@ -58,7 +58,7 @@ export function positiveId(value: string): boolean {
 }
 
 /**
- * Espejo del `Long.parseLong` de `addMembers` (`NativeBridge.java:2183`): diecinueve dígitos no caben
+ * Espejo del `Long.parseLong` de `addMembers` (`NativeBridge.java:2184`): diecinueve dígitos no caben
  * todos y el puente lo cuenta como identificador inválido, no como persona inexistente. Java lo comprueba
  * tras `positive`, con su mismo mensaje, así que vive aparte y no dentro del regex.
  */

@@ -59,11 +59,11 @@ describe('ronda BW · una persona sin nombre deja de ser un relleno para siempre
     expect(sender).toContain('return name == null ? "Usuario de Telegram" : name;');
     // La concatenación pelada era la que devolvía una cadena vacía para un perfil mínimo.
     expect(sender).not.toContain('(user.firstName + " " + user.lastName).trim()');
-    // Las agujas del host C# leen estas líneas por su número: firma en 1306, cierra en 1313.
-    // Las seis que sumó la ronda CH-A2 sobre la sesión movieron la banda: medida, no restada.
-    expect(line(session, 1306)).toContain('String senderName(TdApi.MessageSender sender)');
-    expect(line(session, 1300)).toBe('    }');
-    expect(line(session, 1314)).toContain('TdApi.File senderPhoto');
+    // Las agujas del host C# leen estas líneas por su número: firma en 1310, cierra en 1317.
+    // Las seis que sumó la ronda CH-A2 sobre la sesión y las de CT movieron la banda: medida, no restada.
+    expect(line(session, 1310)).toContain('String senderName(TdApi.MessageSender sender)');
+    expect(line(session, 1309)).toBe('    }');
+    expect(line(session, 1318)).toContain('TdApi.File senderPhoto');
   });
 
   it('la recuperación se pide una vez por identificador y se aprovecha al repintar', () => {
@@ -78,8 +78,8 @@ describe('ronda BW · una persona sin nombre deja de ser un relleno para siempre
     expect(request).toContain('}, ignored -> { });');
     expect(session).toContain('private final Set<Long> unknownUsers = new HashSet<>();');
     // Y lo que ya sabía Telegram cuenta: la respuesta por su cuenta limpia el pendiente.
-    expect(line(session, 358)).toContain('users.put(user.id, user); unknownUsers.remove(user.id);');
-    expect(line(session, 337)).toContain('uncertainSends.clear(); unknownUsers.clear(); typingUsers.clear();');
+    expect(line(session, 362)).toContain('users.put(user.id, user); unknownUsers.remove(user.id);');
+    expect(line(session, 341)).toContain('uncertainSends.clear(); unknownUsers.clear(); typingUsers.clear();');
   });
 
   it('la lista de administradores ya no pregunta solo por el usuario editable', () => {
@@ -87,41 +87,42 @@ describe('ronda BW · una persona sin nombre deja de ser un relleno para siempre
     expect(member).toContain('String name=PersonName.of(user);');
     expect(member).toContain('if(name==null){name="Usuario de Telegram";session.requestUser(userId);}');
     expect(member).not.toContain('editableUsername');
-    expect(line(bridge, 2784)).toContain('PersonName.of(user)');
-    expect(line(bridge, 2785)).toContain('session.requestUser(userId)');
+    expect(line(bridge, 2795)).toContain('PersonName.of(user)');
+    expect(line(bridge, 2796)).toContain('session.requestUser(userId)');
     // El cuerpo de memberDto no se desplaza: sus agujas siguen apuntando a su sitio.
-    expect(line(bridge, 2781)).toContain('private JSONObject memberDto');
-    expect(line(bridge, 2791)).toBe('    }');
+    expect(line(bridge, 2792)).toContain('private JSONObject memberDto');
+    expect(line(bridge, 2802)).toBe('    }');
   });
 
   it('la lista de un grupo básico también despierta la recuperación', () => {
-    expect(line(bridge, 2837)).toContain('TdApi.User user=session.user(userId);if(PersonName.of(user)==null)session.requestUser(userId);');
+    expect(line(bridge, 2848)).toContain('TdApi.User user=session.user(userId);if(PersonName.of(user)==null)session.requestUser(userId);');
     // `rosterName` ya hacía la regla bien, pero la hacía en su casa: ahora la pide y se queda con su relleno.
     const roster = body(bridge, 'private static String rosterName(TdApi.User user)');
     expect(roster).toContain('if(user==null)return "Usuario de Telegram";');
     expect(roster).toContain('String name=PersonName.of(user);');
     expect(roster).not.toContain('user.firstName');
     expect(roster).not.toContain('NativeSnapshot.limit');
-    expect(line(bridge, 2859)).toBe('    }');
-    expect(line(bridge, 2860)).toContain('private static String rosterUsername(TdApi.User user){');
-    expect(line(bridge, 2864)).toBe('    }');
+    expect(line(bridge, 2870)).toBe('    }');
+    expect(line(bridge, 2871)).toContain('private static String rosterUsername(TdApi.User user){');
+    expect(line(bridge, 2875)).toBe('    }');
   });
 
   it('ninguna superficie repite ya la regla y los archivos no se movieron de su aguja', () => {
     const calls = java('TelegramCalls');
     // Los hosts C# y las notas citan líneas de estos archivos por su número: el total es la invariant.
     // Medido hoy con `wc -l`: la ronda CH-A puso el bloque de los fondos al final del puente y la CH-A2 sumó
-    // nueve líneas a la sesión; la CQ añadió al final los dos brazos de notificación (dieciséis más).
-    expect(bridge.split('\n').length - 1).toBe(5511);
-    expect(session.split('\n').length - 1).toBe(1425);
+    // nueve líneas a la sesión; la CQ añadió al final los dos brazos de notificación. CT volvió a medir ambos
+    // archivos después de insertar sus métodos de lectura: 5578 líneas el puente y 1429 la sesión.
+    expect(bridge.split('\n').length - 1).toBe(5578);
+    expect(session.split('\n').length - 1).toBe(1429);
     expect(calls.split('\n').length - 1).toBe(289);
     // Las cuatro superficies que pintan un nombre llaman a la misma función.
-    expect(line(bridge, 2784)).toContain('PersonName.of(user)');
-    expect(line(bridge, 2837)).toContain('PersonName.of(user)');
-    expect(line(session, 1309)).toContain('PersonName.of(user)');
+    expect(line(bridge, 2795)).toContain('PersonName.of(user)');
+    expect(line(bridge, 2848)).toContain('PersonName.of(user)');
+    expect(line(session, 1313)).toContain('PersonName.of(user)');
     expect(line(calls, 65)).toContain('String name = PersonName.of(user); return name == null ? "Telegram" : name;');
     // Y ninguna de las cuatro vuelve a concatenar los dos nombres por su cuenta.
-    expect(bridge.split('\n').slice(2777, 2788).join('\n') + line(calls, 65)).not.toContain('user.firstName + ');
+    expect(bridge.split('\n').slice(2779, 2790).join('\n') + line(calls, 65)).not.toContain('user.firstName + ');
     // El recorte a noventa que Windows cita está donde dice la cita.
     expect(line(person, 21)).toContain('NativeSnapshot.limit(join(user.firstName, user.lastName), 90)');
     expect(line(person, 24)).toContain('NativeSnapshot.limit("@" + username, 90)');
@@ -129,19 +130,19 @@ describe('ronda BW · una persona sin nombre deja de ser un relleno para siempre
 
   it('Windows cita las líneas que de verdad describen la regla', () => {
     const roster = cs('DesktopGroupRoster');
-    expect(roster).toContain('<c>NativeBridge.java:2853-2859</c>');
+    expect(roster).toContain('<c>NativeBridge.java:2864-2870</c>');
     expect(roster).toContain('<c>:2856-2860</c>');
     expect(roster).not.toContain(':2754-2758');
-    expect(line(bridge, 2864)).toBe('    }');
+    expect(line(bridge, 2875)).toBe('    }');
     // Windows dice el arroba con su propia lectura de MTProto, en el mismo orden que Android.
     const join = cs('DesktopJoinRequestsFlow');
     const person = body(join, 'private string PersonName(long userId');
-    expect(join).toContain('<c>TdSession.java:1306-1309</c>');
+    expect(join).toContain('<c>TdSession.java:1310-1316</c>');
     expect(person).toContain('var handle = DesktopContact.Username(person);');
     expect(person).toContain('return handle.Length == 0 ? DesktopGroupMembers.UnknownPerson : "@" + handle;');
     // Y el párrafo que contaba el arroba como divergencia apunta ahora a las líneas que describen la regla.
     const members = cs('DesktopGroupMembers');
-    expect(members).toContain('(<c>:2781-2783</c>)');
+    expect(members).toContain('(<c>:2792-2802</c>)');
     expect(members).toContain('<c>:2798-2800</c>');
     // Ninguna cita de esta banda puede quedarse en el antes de la ronda BV: los números van con el archivo.
     expect(members).not.toMatch(/<c>:2[0-6][0-9][0-9]<\/c>/);

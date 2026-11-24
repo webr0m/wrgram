@@ -47,10 +47,10 @@ describe('ronda AE · el arranque de diseño pinta el chat del que son sus filas
     expect(preview).toContain(`:Message=>({id:String(id),chatId:'${boot}'`);
   });
 
-  it('la rama de escritorio del menú deja de estar apagada por el arranque', () => {
-    // No se tocó la guarda: lo que estaba mal era el estado de arranque. Sin esta línea el menú actuaría
-    // sobre una fila de otra conversación, que es justo lo que el puente de cada plataforma rechaza.
-    expect(app).toContain('if(!props||snapshot().active!==message.chatId)return;');
+  it('la rama de escritorio del menú exige la cuenta, conversación y tema del arranque', () => {
+    // El menú pide las capacidades antes de pintar y solo sigue si la cuenta, el chat y el tema siguen siendo los
+    // que tenía al abrirlo. Cambiar cualquiera de los tres lo convierte en una acción sobre una fila ajena.
+    expect(app).toContain('if(!props||snapshot().selfId!==owner||snapshot().active!==message.chatId||(snapshot().topic?.id||0)!==topic)return;');
     expect(bootRows().length).toBeGreaterThan(8);
   });
 

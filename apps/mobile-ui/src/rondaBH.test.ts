@@ -75,7 +75,7 @@ const csGet = body('private async Task<object?> PrivacyAsync', cable, '\n    ///
 
 describe('ronda BH · medido en el cable de las tres capas', () => {
   it('las catorce claves son las mismas en Java, en C# y en el espejo, y en el mismo orden', () => {
-    const row = javaLine(3848);
+    const row = javaLine(3859);
     expect(row).toContain('private static final String[] PRIVACY_KEYS=');
     const declared = [...row.matchAll(/"([A-Za-z0-9]+)"/g)].map(found => found[1]);
     expect(declared).toEqual([...PRIVACY_KEYS]);
@@ -104,10 +104,10 @@ describe('ronda BH · medido en el cable de las tres capas', () => {
   });
 
   it('los cuatro techos están medidos en las tres capas, con el número dentro de la frase cuando Java lo dice', () => {
-    expect(javaLine(3881)).toContain('BridgePolicy.text(p,"key",20)');
-    expect(javaLine(3881)).toContain('BridgePolicy.text(p,"value",12)');
-    expect(javaLine(3882)).toContain('optionalIds(p,"allowUsers",100)');
-    expect(javaLine(3882)).toContain('optionalIds(p,"restrictUsers",100)');
+    expect(javaLine(3892)).toContain('BridgePolicy.text(p,"key",20)');
+    expect(javaLine(3892)).toContain('BridgePolicy.text(p,"value",12)');
+    expect(javaLine(3893)).toContain('optionalIds(p,"allowUsers",100)');
+    expect(javaLine(3893)).toContain('optionalIds(p,"restrictUsers",100)');
     expect(modelLine(20)).toContain('MAX_USER_EXCEPTIONS = 200');
     expect(csNumber('MaxKey')).toBe(PRIVACY_MAX_KEY);
     expect(csNumber('MaxValue')).toBe(PRIVACY_MAX_VALUE);
@@ -121,12 +121,12 @@ describe('ronda BH · medido en el cable de las tres capas', () => {
 
   it('las seis frases que Java dice en español están copiadas carácter a carácter en C# y en el espejo', () => {
     const shared: [string, string, string][] = [
-      ['unknownSetting', csSentence('UnknownSetting'), javaLine(3861)],
+      ['unknownSetting', csSentence('UnknownSetting'), javaLine(3872)],
       ['badValue', csSentence('BadValue'), modelLine(90)],
       ['tooMany', csSentence('TooMany'), modelLine(92)],
       ['duplicated', csSentence('Duplicated'), modelLine(94)],
       ['bothWays', csSentence('BothWays'), modelLine(95)],
-      ['changedAccount', csSentence('ChangedAccount'), javaLine(3890)],
+      ['changedAccount', csSentence('ChangedAccount'), javaLine(3901)],
     ];
     for (const [name, csharp, row] of shared) {
       const phrase = (PRIVACY_REFUSALS as Record<string, string>)[name];
@@ -211,12 +211,12 @@ describe('ronda BH · medido en el cable de las tres capas', () => {
     expect(javaGet).toContain('if(index>=PRIVACY_KEYS.length)');
     expect(javaGet).toContain('privacyGet(result,index+1,a)');
     expect(javaGet).toContain('privacySetting(key)');
-    expect(javaLine(3884)).toContain('long owner=session.selfId');
+    expect(javaLine(3895)).toContain('long owner=session.selfId');
     expect(csGet).toContain('foreach (var (key, setting) in DesktopPrivacy.Keys)');
     ordered(csGet, 'Account_GetPrivacy(setting)', 'client.User?.id != owner', 'MergePeers(answer.users?.Values', 'DesktopPrivacy.Row(key, answer.rules)');
     // Android se traga el fallo de proyección de una clave y sigue; aquí no hay nada que atrapar, así que esa
     // diferencia está escrita en el cable y no copiada en silencio.
-    expect(javaLine(3875)).toContain('catch(Exception ignored){}');
+    expect(javaLine(3886)).toContain('catch(Exception ignored){}');
     expect(cable).toContain('una negación que no puede ocurrir es peor que un hueco');
     expect(rules).not.toContain('Unreadable');
   });

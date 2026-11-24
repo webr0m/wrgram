@@ -5,9 +5,9 @@ using TL;
 
 /// <summary>
 /// Reglas de los enlaces de una lista colaborativa en Windows (ronda CI). Android administra esos enlaces con tres
-/// funciones de TDLib —<c>GetChatFolderInviteLinks</c> (<c>NativeBridge.java:3958</c>),
-/// <c>EditChatFolderInviteLink</c> (<c>NativeBridge.java:3979</c> y <c>:3977</c>) y
-/// <c>DeleteChatFolderInviteLink</c> (<c>NativeBridge.java:3974</c>)— y las tres nombran el enlace con su URL
+/// funciones de TDLib —<c>GetChatFolderInviteLinks</c> (<c>NativeBridge.java:3969</c>),
+/// <c>EditChatFolderInviteLink</c> (<c>NativeBridge.java:3990</c> y <c>:3978</c>) y
+/// <c>DeleteChatFolderInviteLink</c> (<c>NativeBridge.java:3985</c>)— y las tres nombran el enlace con su URL
 /// entera. MTProto usa la familia <c>chatlists.*</c>, medida por reflexión sobre WTelegramClient 4.4.10, y ahí el
 /// enlace se nombra con un <c>slug</c> suelto: <c>Chatlists_GetExportedInvites(InputChatlist)</c>,
 /// <c>Chatlists_EditExportedInvite(InputChatlist, slug, title, peers)</c> y
@@ -31,7 +31,7 @@ using TL;
 /// </para>
 /// <para>
 /// <b>Lo que esta capa no puede, dicho por su nombre.</b> Android cambia los chats de un enlace ya creado abriendo
-/// un selector nativo (<c>chooseFolderChats</c>, <c>NativeBridge.java:4005</c>) y el host no tiene ningún selector
+/// un selector nativo (<c>chooseFolderChats</c>, <c>NativeBridge.java:4016</c>) y el host no tiene ningún selector
 /// que mandar: los <c>InputPeer</c> con acceso escrito solo los sabe la pantalla de la carpeta, y el enlace lleva
 /// su propia lista, independiente de la de la lista colaborativa. Así que <c>chooseChats</c> se niega con
 /// <see cref="NoPicker"/> en vez de contestar <c>true</c> habiendo renombrado a medias, y la pantalla deja de
@@ -42,7 +42,7 @@ using TL;
 /// <b>Una forma de chat que no es la de Android.</b> <c>TL.ExportedChatlistInvite</c> publica <c>Peer[] peers</c>,
 /// sin <c>access_hash</c>, y las claves que este host reparte por el puente llevan prefijo de forma
 /// (<c>u</c>/<c>g</c>/<c>c</c>, la regla única de <c>ChatIdOf</c>); Android repone el número de chat de TDLib
-/// pelado (<c>idList</c>, <c>NativeBridge.java:3895</c>). Ninguna de las dos capas usa la clave para nada más que
+/// pelado (<c>idList</c>, <c>NativeBridge.java:3906</c>). Ninguna de las dos capas usa la clave para nada más que
 /// contar: la pantalla pinta <c>invite.chatIds.length</c> y el botón de elegir chats de Android viaja con ids
 /// numéricos propios. La diferencia queda escrita aquí porque es la que alguien intentará «arreglar» algún día.
 /// </para>
@@ -53,7 +53,7 @@ public static class DesktopFolderLinks
     /// <c>folders.join</c>.
     public const int MaxSlug = 64;
 
-    /// Gemelo carácter a carácter de <c>NativeBridge.java:3983</c>, la única negativa que Android pronuncia en
+    /// Gemelo carácter a carácter de <c>NativeBridge.java:3994</c>, la única negativa que Android pronuncia en
     /// <c>folderLinkChange</c>: la lista que la pantalla enseñaba ya no contiene ese enlace.
     public const string Gone = "Este enlace ya no pertenece a la carpeta.";
 
@@ -112,6 +112,6 @@ public static class DesktopFolderLinks
     }
 
     /// Nombre ya recortado como lo recorta Android (<c>BridgePolicy.text(params,"name",32).trim()</c> en
-    /// <c>NativeBridge.java:3969</c>), con el corte de esta capa en el largo.
+    /// <c>NativeBridge.java:3980</c>), con el corte de esta capa en el largo.
     public static bool NameAllowed(string name) => name.Length is >= 1 and <= 32;
 }

@@ -10,8 +10,8 @@ using WTelegram;
 /// <summary>
 /// El cable de la gestión de enlaces de invitación: las cuatro órdenes (<c>chat.invitelinks</c>,
 /// <c>chat.invitelink.create</c>, <c>chat.invitelink.edit</c> y <c>chat.invitelink.revoke</c>) que Android despacha en
-/// <c>NativeBridge.java:758-761</c> y atienden <c>inviteLinks</c> (<c>:3606</c>), <c>inviteLinkForm</c>
-/// (<c>:3642</c>) —los dos primeros caminos— y <c>revokeInviteLink</c> (<c>:3700</c>). Reglas, techos, frases y
+/// <c>NativeBridge.java:758-761</c> y atienden <c>inviteLinks</c> (<c>:3617</c>), <c>inviteLinkForm</c>
+/// (<c>:3653</c>) —los dos primeros caminos— y <c>revokeInviteLink</c> (<c>:3711</c>). Reglas, techos, frases y
 /// cuerpos de diálogo están en <see cref="DesktopLinkManager"/>; aquí está
 /// el cable, que es lo que faltaba: las cuatro llevan desde la ronda A en la lista del puente
 /// (<c>BridgePolicy.java:49</c>) y la pantalla las pide desde la ronda G, pero en Windows la entrada
@@ -36,7 +36,7 @@ using WTelegram;
 /// </para>
 /// <para>
 /// Y una diferencia de estado, dicha: Android recuerda el marcador que repartió y lo compara con el que le llegan
-/// (<c>linkOwner</c> contra <c>session.selfId</c> en <c>NativeBridge.java:3613</c>); aquí la posición es un argumento
+/// (<c>linkOwner</c> contra <c>session.selfId</c> en <c>NativeBridge.java:3624</c>); aquí la posición es un argumento
 /// de <c>messages.getExportedChatInvites</c>, no una memoria del
 /// cliente, así que no hay nada que pueda estar viejo ni frase que decir. Por el mismo motivo, después de escribir
 /// tampoco hay cursor que limpiar ni lista que refrescar con <c>schedule()</c>: el panel vuelve a pedir la primera
@@ -46,7 +46,7 @@ using WTelegram;
 public sealed partial class TelegramService
 {
     /// <summary>
-    /// <c>createInviteLink</c> (<c>NativeBridge.java:1883</c>, despachado en <c>:694</c>): el enlace suelto que la
+    /// <c>createInviteLink</c> (<c>NativeBridge.java:1884</c>, despachado en <c>:694</c>): el enlace suelto que la
     /// pantalla pide sin formulario, con el nombre fijo <see cref="DesktopLinkManager.DefaultLabel"/>, siete días y sin
     /// límite de participantes. Cuatro cosas de este camino son distintas del de <see cref="InviteLinkFormAsync"/> y
     /// las cuatro vienen de Java, no de gusto: la negativa de forma es otra frase
@@ -62,7 +62,7 @@ public sealed partial class TelegramService
     /// de la familia (<see cref="DesktopLinkManager.ChangedAccount"/>): Android no escribe ninguna en
     /// <c>createInviteLink</c>, así que la que la persona leería es la del envoltorio. Es la misma decisión que dejó
     /// documentada la ronda BC en <c>DesktopChatUsernames.cs:63-67</c>. No hay tercera: el botón positivo de este
-    /// diálogo no pregunta por la cuenta, a diferencia del <c>confirmLink</c> de <c>NativeBridge.java:3728-3735</c>,
+    /// diálogo no pregunta por la cuenta, a diferencia del <c>confirmLink</c> de <c>NativeBridge.java:3739-3746</c>,
     /// que sí lo hace en el formulario.
     /// </para>
     /// <para>
@@ -97,7 +97,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>inviteLinks</c> (<c>NativeBridge.java:3606-3621</c>) más <c>loadInviteLinks</c> (<c>:3622-3632</c>). Las
+    /// <c>inviteLinks</c> (<c>NativeBridge.java:3617-3632</c>) más <c>loadInviteLinks</c> (<c>:3623-3633</c>). Las
     /// veinte filas se piden filtradas por esta cuenta, que es exactamente el <c>session.selfId</c> que Android manda
     /// como <c>creator_user_id</c>, y la página sale de <see cref="DesktopLinkManager.Page"/> con sus cinco claves.
     /// El <c>catch</c> de <c>:3630</c> («No se pudieron preparar los enlaces de invitación.») cubre un fallo
@@ -134,7 +134,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>inviteLinkForm</c> (<c>NativeBridge.java:3642-3693</c>) con los dos caminos. <c>false</c> es el «Cancelar»
+    /// <c>inviteLinkForm</c> (<c>NativeBridge.java:3653-3704</c>) con los dos caminos. <c>false</c> es el «Cancelar»
     /// del diálogo y el cierre por la equis, igual que en Android (<c>:3730</c> y <c>:3734</c>), y la cuenta que cambió
     /// a mitad del viaje se dice con <see cref="DesktopLinkManager.ChangedAccount"/> ocho veces en el método: tres en
     /// el crear y cinco en el editar. Son las dos pasadas del <c>perform</c> de <c>:488</c> antes de cada ida, la
@@ -183,7 +183,7 @@ public sealed partial class TelegramService
             if (client.User?.id != owner) throw new BridgeException(DesktopLinkManager.ChangedAccount);
             return true;
         }
-        // Se lee el enlace antes de tocarlo, que es la razón que Android escribe en `NativeBridge.java:3672`: un
+        // Se lee el enlace antes de tocarlo, que es la razón que Android escribe en `NativeBridge.java:3683`: un
         // enlace principal o de suscripción no admite estos cambios y hay que saberlo de Telegram, no del panel.
         var answer = await client.Messages_GetExportedChatInvite(entry.Input, url);
         var current = answer switch
@@ -215,7 +215,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>revokeInviteLink</c> (<c>NativeBridge.java:3700-3727</c>). El enlace ya revocado responde <c>false</c> y no
+    /// <c>revokeInviteLink</c> (<c>NativeBridge.java:3711-3738</c>). El enlace ya revocado responde <c>false</c> y no
     /// una frase, que es lo que Android hace en <c>:3712</c>: no ha pasado nada y la pantalla no tiene nada que decir.
     /// En MTProto no hay <c>RevokeChatInviteLink</c>; lo que hay es <c>messages.editExportedChatInvite</c> con la
     /// bandera <c>revoked</c> y nada más, que es la misma escritura con la que Telegram deja de aceptar el enlace.
@@ -261,7 +261,7 @@ public sealed partial class TelegramService
         return true;
     }
 
-    /// <c>canInviteMembers</c> (<c>NativeBridge.java:1863</c>) leído del sitio donde MTProto publica el derecho: la
+    /// <c>canInviteMembers</c> (<c>NativeBridge.java:1864</c>) leído del sitio donde MTProto publica el derecho: la
     /// fila propia en <c>channels.getParticipant</c>, con su tabla de derechos, o la cabecera del chat en un básico.
     /// Las dos lecturas son las que ya gastan las rondas BB y BE; esta no añade petición ni inventa permiso.
     private async Task<bool> MayManageLinksAsync(Client client, ChatEntry entry, DesktopMembership.Kind kind)
@@ -275,7 +275,7 @@ public sealed partial class TelegramService
         return DesktopMemberAdditions.MayInvite(await SelfParticipantAsync(client, ChannelInput(entry)));
     }
 
-    /// <c>requiredBool(p,"approval")</c> (<c>NativeBridge.java:3654</c>). Allá es un <c>throw</c> en inglés que el
+    /// <c>requiredBool(p,"approval")</c> (<c>NativeBridge.java:3665</c>). Allá es un <c>throw</c> en inglés que el
     /// despacho reenvía; aquí es la causa concreta en español, sin nombre de clave, que es lo único que la persona
     /// puede comprobar.
     private static bool ApprovalValue(JsonElement args)
@@ -293,11 +293,11 @@ public sealed partial class TelegramService
         epoch is { } value ? DateTimeOffset.FromUnixTimeSeconds(value).UtcDateTime : null;
 
     /// <c>usage_limit</c>: Telegram no distingue «cero» de «sin límite», así que el cero se manda como ausencia, que es
-    /// lo que TDLib traduce del <c>memberLimit</c> de <c>NativeBridge.java:3664</c> y <c>:3686</c>.
+    /// lo que TDLib traduce del <c>memberLimit</c> de <c>NativeBridge.java:3675</c> y <c>:3687</c>.
     private static int? Quota(long memberLimit) => memberLimit > 0 ? (int)memberLimit : null;
 
     /// El <c>Dialogs.builder</c> con el que Android confirma los tres diálogos del puente
-    /// (<c>NativeBridge.java:3729-3734</c>), hecho con la ventana que el host ya levanta para
+    /// (<c>NativeBridge.java:3740-3745</c>), hecho con la ventana que el host ya levanta para
     /// los otros guardados: el mismo par de botones, el mismo «Cancelar» y el cierre por la equis valiendo igual. El
     /// rótulo positivo es <see cref="DesktopCommunityInfo.DialogAccept"/>, la cadena exacta de Android.
     private static bool ConfirmLink(string title, string body) =>

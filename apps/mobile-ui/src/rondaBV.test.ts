@@ -104,9 +104,9 @@ describe('ronda BV · Android: se pregunta antes de añadir', () => {
     expect(list).not.toContain('!reaction.needsPremium&&');
     expect(list).not.toContain('result.length()<16');
     expect(java).not.toContain('private JSONArray emojis(');
-    expect(javaLine(4329)).toContain('result.put("reactions",reactionOptions(value))');
-    expect(javaLine(4333).startsWith('    private JSONArray reactionOptions(')).toBe(true);
-    expect(javaLine(4334).startsWith('    private void react(JSONObject p,Answer a){')).toBe(true);
+    expect(javaLine(4396)).toContain('result.put("reactions",reactionOptions(value))');
+    expect(javaLine(4400).startsWith('    private JSONArray reactionOptions(')).toBe(true);
+    expect(javaLine(4401).startsWith('    private void react(JSONObject p,Answer a){')).toBe(true);
   });
 
   it('las tres claves de reacción del puente siguen siendo las tres de siempre', () => {

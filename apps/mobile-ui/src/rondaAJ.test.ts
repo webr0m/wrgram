@@ -8,6 +8,7 @@ const schedule = text('../../desktop/src/WRGram.Desktop/DesktopSchedule.cs');
 const deletes = text('../../desktop/src/WRGram.Desktop/DesktopMessageDelete.cs');
 const state = text('../../desktop/src/WRGram.Desktop/DesktopState.cs');
 const service = text('../../desktop/src/WRGram.Desktop/TelegramService.cs');
+const outbox = text('../../desktop/src/WRGram.Desktop/DesktopReadOutbox.cs');
 const app = text('./App.tsx');
 const preview = text('./preview.ts');
 const policy = text('../../mobile/android/app/src/main/java/cc/webrom/wrgram/BridgePolicy.java');
@@ -178,7 +179,8 @@ describe('ronda AJ · una fila programada no es una fila del historial', () => {
     expect(count('ConvertMessage(message, entry, scheduled: true)', service)).toBe(1);
     expect(csBody('ConvertMessage')).toContain('ScheduledAt = scheduled ? Unix(message.Date) : null,');
     // El tick de «leído» se mide con ids del historial: una fila que aún no salió no puede estar leída.
-    expect(csBody('ConvertMessage')).toContain('dto.Status = scheduled ? "" : dto.Outgoing ?');
+    expect(csBody('ConvertMessage')).toContain('dto.Status = DesktopReadOutbox.Status(entry.ReadOutbox, message.ID, dto.Outgoing, scheduled);');
+    expect(outbox).toContain('scheduled ? "" : outgoing ? confirmedReadOutboxMaxId >= messageId ? "read" : "sent" : ""');
   });
 
   it('la bandeja no ensucia el ancla de fijados ni la caché de textos', () => {

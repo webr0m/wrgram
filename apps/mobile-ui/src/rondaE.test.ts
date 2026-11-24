@@ -50,7 +50,9 @@ describe('Ronda E en el puente', () => {
   });
 
   it('el icono de pestaña se valida contra una lista cerrada y se persiste', () => {
-    expect(bridge).toContain('static final Set<String> TAB_ICON_KEYS=Set.of("hash","bookmark","star","megaphone","users","send","bot","lock","pin","archive","image","heart","globe","bell","flame");');
+    expect(bridge).toContain('static final Set<String> TAB_ICON_KEYS=Set.of("plus","wrgram","hash","bookmark","star","megaphone","users","send","bot","lock","pin","archive","image","heart","globe","bell","flame");');
+    expect(bridge).toContain('static final Set<String> TAB_EMOJI_KEYS=Set.of("hash","bookmark","star","megaphone","users","send","bot","lock","pin","archive","image","heart","globe","bell","flame");');
+    expect(bridge).toContain('TAB_EMOJI_KEYS.contains(id)');
     expect(bridge).toContain('if(!icon.matches("[a-z]{1,16}")||!TAB_ICON_KEYS.contains(icon))throw new IllegalArgumentException("El icono de la pestaña no es válido.");');
     expect(bridge).toContain('value.put("icon",icon);');
   });

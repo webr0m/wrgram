@@ -29,7 +29,7 @@ describe('ronda CR · las cuatro claves que ninguna pantalla ofrecía', () => {
   it('las cuatro claves están en el espejo, en la tabla de Java y en la de C#, tras las diez de BH', () => {
     expect(PRIVACY_KEYS).toHaveLength(14);
     expect([...PRIVACY_KEYS].slice(10)).toEqual(crKeys.map(([key]) => key));
-    const declared = javaLine(3848);
+    const declared = javaLine(3859);
     expect(declared).toContain('private static final String[] PRIVACY_KEYS=');
     for (const [key] of crKeys) expect(declared).toContain(`"${key}"`);
     for (const [key, , ] of crKeys) expect(rules).toContain(`("${key}", InputPrivacyKey.`);
@@ -46,8 +46,8 @@ describe('ronda CR · las cuatro claves que ninguna pantalla ofrecía', () => {
   it('la inserción es neutra en líneas: el default sigue en la 3861 y los cuatro case viven en la última línea de case', () => {
     // La norma de la ronda: ninguna cita vecina envejece. Los cuatro case se añaden a la línea del último case
     // de BH, así que el `default` y todo lo que viene después conservan su número.
-    expect(javaLine(3861)).toContain('default:throw new IllegalArgumentException("Ajuste de privacidad no válido.");');
-    const lastCases = javaLine(3860);
+    expect(javaLine(3872)).toContain('default:throw new IllegalArgumentException("Ajuste de privacidad no válido.");');
+    const lastCases = javaLine(3871);
     expect(lastCases).toContain('case "findPhone":return new TdApi.UserPrivacySettingAllowFindingByPhoneNumber();');
     for (const [key, klass] of crKeys) expect(lastCases).toContain(`case "${key}":return new TdApi.${klass}();`);
   });

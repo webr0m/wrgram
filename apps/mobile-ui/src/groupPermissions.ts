@@ -3,11 +3,11 @@ import type { GroupPermissions } from './contract';
 /**
  * El espejo de `DesktopGroupPermissions.cs` (ronda BE): las cinco negaciones que las dos capas dicen sobre los
  * permisos predeterminados de una comunidad, las dieciséis claves del DTO con su orden y el paso de la tabla. Son las
- * cadenas que el puente devuelve —`NativeBridge.java:1888` y `:2396` los dos `answer.fail`, `DesktopGroupPermissions`
+ * cadenas que el puente devuelve —`NativeBridge.java:1889` y `:2397` los dos `answer.fail`, `DesktopGroupPermissions`
  * las mismas en C#—, copiadas carácter a carácter; `rondaBE.test.ts` las compara con el Java y con el C# para que la
  * vista de diseño no enseñe nunca una palabra que Android o Windows no dirían.
  *
- * Lo que no está aquí a propósito: las etiquetas del panel. `GROUP_PERMISSION_FIELDS` (`App.tsx:1448`) ya es la tabla
+ * Lo que no está aquí a propósito: las etiquetas del panel. `GROUP_PERMISSION_FIELDS` (`apps/mobile-ui/src/App.tsx:1479`) ya es la tabla
  * que la pantalla pinta, con su orden de lectura para una persona, y esta es la orden del puente. Son dos cosas
  * distintas y por eso viven separadas: la interfaz agrupa por tema, el contrato por la posición del constructor de
  * `TdApi.ChatPermissions` (`TdApi.java:17751`).
@@ -28,9 +28,9 @@ export const GROUP_PERMISSION_REFUSALS = {
 } as const;
 
 /**
- * Las dieciséis claves en el orden del `object(...)` que fabrica `groupPermissions` (`NativeBridge.java:1888`),
+ * Las dieciséis claves en el orden del `object(...)` que fabrica `groupPermissions` (`NativeBridge.java:1889`),
  * que es el del constructor de `TdApi.ChatPermissions` (`TdApi.java:17751`) y el de los dieciséis `requiredBool`
- * que lee `setGroupPermissions` (`NativeBridge.java:2396`). El orden no es
+ * que lee `setGroupPermissions` (`NativeBridge.java:2397`). El orden no es
  * cosmético: es lo que el test compara con las dos capas, porque una tabla escrita en otro orden se lee igual y
  * desordena el DTO que Android fabrica.
  */

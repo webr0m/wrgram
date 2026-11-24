@@ -269,13 +269,13 @@ describe('ronda CE · la vuelta', () => {
 
 describe('ronda CE · las citas escritas', () => {
   const anchors: Record<string, string> = {
-    'NativeBridge.java:4516': 'if(values.length()>100)',
-    'NativeBridge.java:4522': 'if(offset<0||offset>length||size<1||size>length-offset)',
-    'NativeBridge.java:4535': 'Emoji personalizado no válido.',
-    'NativeBridge.java:4539': 'case "link":',
+    'NativeBridge.java:4583': 'if(values.length()>100)',
+    'NativeBridge.java:4589': 'if(offset<0||offset>length||size<1||size>length-offset)',
+    'NativeBridge.java:4602': 'Emoji personalizado no válido.',
+    'NativeBridge.java:4606': 'case "link":',
     'NativeSnapshot.java:523': 'kind instanceof TdApi.TextEntityTypeUrl&&formatted.text',
     'NativeSnapshot.java:525': 'item.put("customEmojiId",String.valueOf',
-    'BridgePolicy.java:57': 'static long id(JSONObject params,String key)',
+    'BridgePolicy.java:58': 'static long id(JSONObject params,String key)',
   };
 
   const lineOf = (file: string, n: number) => {
@@ -311,19 +311,14 @@ describe('ronda CE · las citas escritas', () => {
 
 describe('ronda CE · las agujas de las capas tocadas', () => {
   it('las longitudes medidas hoy, con lo que sumó la ronda', () => {
-    // Medido hoy con `split(/\r?\n/).length`: la ronda CE estrenó `DesktopTextEntities.cs` —ciento treinta y cuatro
-    // líneas—, sumó treinta y siete al despacho y tres al estado con la `CustomEmojiId` del DTO. Las capas que solo
-    // miró no se movieron: Android ya tenía las reglas y el modelo, el contrato y la pantalla ya las usaban; doce líneas más subió después el despacho, los dos ayudantes de la ronda CW-D.
-    // Veinticuatro más, repartidas entre la CH-A —el bloque de los fondos, al final del puente— y la CH-A2 —el aviso
-    // `UpdateDefaultBackground`—, que además sumó nueve líneas a la sesión y cuatro a la instantánea. Once más: ocho
-    // por las dos ramas `backgrounds.list`/`background.set` del despacho con su comentario, y tres por leer los dos
-    // huecos del fondo al entrar, como hizo la CH-B en Windows.
+    // Las longitudes se miden hoy sobre los archivos en disco, después de CT y de las rondas posteriores. Los
+    // incrementos históricos se explican en sus propias pruebas; aquí solo se fija el tamaño actual de cada capa.
     expect(rules).toHaveLength(134);
-    expect(service).toHaveLength(4313);
+    expect(service).toHaveLength(4307);
     expect(stateCs.split(/\r?\n/)).toHaveLength(760);
-    expect(java).toHaveLength(5512);
+    expect(java).toHaveLength(5579);
     expect(snapshot).toHaveLength(554);
-    expect(policy.split(/\r?\n/)).toHaveLength(61);
+    expect(policy.split(/\r?\n/)).toHaveLength(62);
     expect(model.split(/\r?\n/)).toHaveLength(202);
     expect(contract.split(/\r?\n/)).toHaveLength(250);
   });

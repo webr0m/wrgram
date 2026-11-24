@@ -19,18 +19,18 @@ import { desktopGapRefusal } from './desktopGap';
  * frases con las que el puente niega son constantes de esa clase (`MessageMediaEdit.java:41`,
  * `MessageMediaEdit.java:43`, `MessageMediaEdit.java:45` y `MessageMediaEdit.java:47`), y en el puente no se repite
  * ninguna: `NativeBridge.java` las oye por referencia. Lo que sí hace el puente es armar el contenido
- * (`NativeBridge.java:4636-4651`) conservando el pie y las dos banderas del contenido viejo, porque
+ * (`NativeBridge.java:4703-4718`) conservando el pie y las dos banderas del contenido viejo, porque
  * `EditMessageMedia` edita «including message caption» (`TdApi.java:120725`) y mandarlo vacío borraría un texto que
  * nadie pidió borrar.
  *
  * **El orden del brazo, que es lo que esta vez se midió.** `message.edit.media` entra justo detrás de la familia de
- * editar (`NativeBridge.java:831`) y su cuerpo (`NativeBridge.java:4616-4634`) mira primero el vale del archivo, luego
+ * editar (`NativeBridge.java:832`) y su cuerpo (`NativeBridge.java:4683-4701`) mira primero el vale del archivo, luego
  * clasifica los dos tipos, arma el contenido **en el hilo del puente** y solo entonces pregunta a Telegram con
  * `GetMessageProperties`; la escritura va dentro de la respuesta. Armar antes de preguntar no es un atajo: los avisos
  * de TDLib llegan al hilo principal, y decodificar una foto o medir un vídeo delante de ellos congelaría la pantalla.
  *
  * **Windows, por su nombre.** La ronda CK dejó un hueco dicho con nombre: la clave estaba declarada pendiente y el
- * ítem se cortaba con la puerta del escritorio (`App.tsx:1078`), porque en MTProto `messages.editMessage` sí tiene
+ * ítem se cortaba con la puerta del escritorio (`App.tsx:1104`), porque en MTProto `messages.editMessage` sí tiene
  * parámetro `media`. El hueco era una ronda sin hacer, no un límite de la librería, y la CK-B la hizo: brazo, subida
  * y negativas sobre los objetos de Telegram. Hoy la clave está en la lista de disponibles (`desktopScope.ts:28`) y la
  * pantalla pinta el ítem sin distinguir capa.
@@ -289,14 +289,14 @@ describe('ronda CK · las citas', () => {
     'TdApi.java:54711': 'True, if the message can be edited using the method editMessageMedia.',
     'TdApi.java:54713': 'public boolean canEditMedia;',
     'BridgePolicy.java:53': 'static { METHODS.add("message.edit.media"); }',
-    'NativeBridge.java:831': 'case "message.edit.media":editMessageMedia(p,a);break;',
-    'NativeBridge.java:4326': '"editMedia",props.canEditMedia&&!MessageMediaEdit.currentKind(message.content).isEmpty()',
-    'NativeBridge.java:4616': 'private void editMessageMedia(JSONObject p,Answer a)throws Exception{',
-    'NativeBridge.java:4636': 'private TdApi.InputMessageContent mediaContent(Attachment item,String kind,TdApi.MessageContent current){',
-    'NativeBridge.java:4653': 'private TdApi.InputMessageContent videoContent(Attachment item){',
-    'NativeBridge.java:4662': 'private TdApi.InputMessageContent audioContent(Attachment item){',
-    'NativeBridge.java:4669': 'private TdApi.InputMessageContent documentContent(Attachment item){',
-    'NativeBridge.java:4675': 'private static int mediaSeconds(String path){',
+    'NativeBridge.java:832': 'case "message.edit.media":editMessageMedia(p,a);break;',
+    'NativeBridge.java:4393': '"editMedia",props.canEditMedia&&!MessageMediaEdit.currentKind(message.content).isEmpty()',
+    'NativeBridge.java:4683': 'private void editMessageMedia(JSONObject p,Answer a)throws Exception{',
+    'NativeBridge.java:4703': 'private TdApi.InputMessageContent mediaContent(Attachment item,String kind,TdApi.MessageContent current){',
+    'NativeBridge.java:4720': 'private TdApi.InputMessageContent videoContent(Attachment item){',
+    'NativeBridge.java:4729': 'private TdApi.InputMessageContent audioContent(Attachment item){',
+    'NativeBridge.java:4736': 'private TdApi.InputMessageContent documentContent(Attachment item){',
+    'NativeBridge.java:4742': 'private static int mediaSeconds(String path){',
     'MessageMediaEdit.java:41': 'Telegram no permite cambiar el medio de este mensaje.',
     'MessageMediaEdit.java:43': 'Este mensaje no tiene un medio que se pueda sustituir.',
     'MessageMediaEdit.java:45': 'Dentro de un álbum solo se puede cambiar una foto por un vídeo, o un vídeo por una foto.',
@@ -309,8 +309,8 @@ describe('ronda CK · las citas', () => {
     'MessageMediaEdit.java:111': 'static boolean showsCaptionAboveMedia(TdApi.MessageContent content) {',
     'MessageMediaEdit.java:119': 'static boolean hasSpoiler(TdApi.MessageContent content) {',
     'MessageMediaEdit.java:131': 'static boolean streams(String mime) {',
-    'App.tsx:1078': '{props.editMedia&&<MenuItem icon={<FileText/>} label="Cambiar el archivo del mensaje"',
-    'App.tsx:1142': 'function replaceMessageMedia(message:Message,props:Properties)',
+    'App.tsx:1104': '{props.editMedia&&<MenuItem icon={<FileText/>} label="Cambiar el archivo del mensaje"',
+    'App.tsx:1173': 'function replaceMessageMedia(message:Message,props:Properties)',
     'contract.ts:213': 'export interface Properties {',
     'desktopScope.ts:28': "'message.edit', 'message.edit.caption', 'message.edit.media',",
     'preview.ts:402': 'editMedia: own && !!message?.media,',
@@ -318,8 +318,8 @@ describe('ronda CK · las citas', () => {
 
   /** La última línea de cada rango citado, con lo que dice. */
   const ends: Record<string, [number, string]> = {
-    'NativeBridge.java:4616': [4634, '}'],
-    'NativeBridge.java:4636': [4651, '}'],
+    'NativeBridge.java:4683': [4701, '}'],
+    'NativeBridge.java:4703': [4718, '}'],
     'TdApi.java:120724': [120729, 'public static class EditMessageMedia extends Function<Message> {'],
   };
 

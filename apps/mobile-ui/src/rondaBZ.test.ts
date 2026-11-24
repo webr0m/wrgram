@@ -255,10 +255,10 @@ describe('ronda BZ · el contrato de salida, clave por clave', () => {
 describe('ronda BZ · las citas de los dos archivos nuevos', () => {
   /** Lo que tiene que decir la primera línea de cada cita. Medida hoy, línea por línea. */
   const anchors: Record<string, string> = {
-    'App.tsx:251': 'function showStory(',
-    'App.tsx:257': "await run('story.close',{id:story.chatId,storyId:story.id})",
-    'App.tsx:268': "await run<OpenStory>('story.open',{id:chat.id,storyId})",
-    'App.tsx:294': 'story.canEdit&&',
+    'App.tsx:261': 'function showStory(',
+    'App.tsx:267': "await run('story.close',{id:story.chatId,storyId:story.id})",
+    'App.tsx:278': "await run<OpenStory>('story.open',{id:chat.id,storyId})",
+    'App.tsx:304': 'story.canEdit&&',
     'contract.ts:58': 'export interface ActiveStory {',
     'MessageExtras.java:85': 'kind("story").put("mention"',
     'NativeBridge.java:363': 'private TdApi.Chat target(JSONObject p)',
@@ -281,15 +281,15 @@ describe('ronda BZ · las citas de los dos archivos nuevos', () => {
     'NativeSnapshot.java:423': 'JSONObject storyMedia(TdApi.Story story)',
     'NativeSnapshot.java:425': '"Historia"',
     'NativeSnapshot.java:426': '"Video de historia"',
-    'TelegramService.cs:596': '_state.SelfId = user.id.ToString();',
-    'TelegramService.cs:3799': 'var id = "u" + user.id;',
-    'TelegramService.cs:3816': 'var id = "g" + chat.ID;',
-    'TelegramService.cs:3829': 'var id = "c" + channel.ID;',
+    'TelegramService.cs:598': '_state.SelfId = user.id.ToString();',
+    'TelegramService.cs:3793': 'var id = "u" + user.id;',
+    'TelegramService.cs:3810': 'var id = "g" + chat.ID;',
+    'TelegramService.cs:3823': 'var id = "c" + channel.ID;',
   };
 
-  /** La última línea de cada rango citado, con lo que dice. Las dos de cierre de bloque se compratan solas. */
+  /** La última línea de cada rango citado, con lo que dice. Las de cierre de bloque se compratan solas. */
   const ends: Record<string, [number, string]> = {
-    'App.tsx:251': [298, 'function openStories('],
+    'App.tsx:261': [307, '}'],
     'contract.ts:58': [59, 'export interface OpenStory {'],
     'NativeBridge.java:366': [372, 'TdApi.GetChatActiveStories(chat.id)'],
     'NativeBridge.java:373': [380, '}'],

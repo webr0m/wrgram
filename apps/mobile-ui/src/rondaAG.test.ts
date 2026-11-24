@@ -158,7 +158,7 @@ describe('ronda AG · el espejo dice lo mismo que el puente', () => {
     const menu = app.slice(app.indexOf('async function messageMenu'));
     const bar = menu.indexOf('const reactionBar=(props:Properties,act:');
     const branch = menu.indexOf('if(desktop){');
-    const android = menu.indexOf('const owner=state.selfId,topic=');
+    const android = menu.indexOf('const owner=state.selfId,topic=state.topic?.id;');
     expect(bar).toBeGreaterThan(-1);
     expect(branch).toBeGreaterThan(bar);
     expect(android).toBeGreaterThan(branch);

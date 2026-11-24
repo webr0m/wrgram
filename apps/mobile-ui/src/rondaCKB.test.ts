@@ -15,16 +15,16 @@ import { desktopGapRefusal } from './desktopGap';
  * `WTelegramClient` 4.4.10.** Dos consecuencias mandan el resto. La primera: no existe `GetMessageProperties` que
  * consulte `canEditMedia`, así que el derecho lo decide el host con las mismas dos miradas que ya usan `message.edit`
  * y `message.edit.caption` —autoría de la fila y `edit_messages` en un canal—, y para saberlas tiene que releer el
- * mensaje (`TelegramService.cs:1843`), igual que obliga la propia petición: `messages.editMessage` reemplaza, no
+ * mensaje (`TelegramService.cs:1837`), igual que obliga la propia petición: `messages.editMessage` reemplaza, no
  * parchea. La segunda: ningún `InputMedia` de esta versión tiene campo de pie, así que el texto conserva su camino
- * por el argumento `message` de la petición (`TelegramService.cs:1867`) con sus entidades (`TelegramService.cs:1869`)
- * y con la bandera de ponerlo encima del medio (`TelegramService.cs:1870`). Cambiar el archivo no es borrar lo
+ * por el argumento `message` de la petición (`TelegramService.cs:1861`) con sus entidades (`TelegramService.cs:1863`)
+ * y con la bandera de ponerlo encima del medio (`TelegramService.cs:1864`). Cambiar el archivo no es borrar lo
  * escrito, y editarlo por aquí no pisa `message.edit.caption`.
  *
  * **El orden es el de Android, con una adaptación que obliga el coste.** Allí se arma el contenido antes de preguntar
  * porque preguntar cuesta un viaje; aquí negar es gratis y subir cuesta, así que todas las negativas que no necesitan
- * la red caen antes de la subida (`TelegramService.cs:1863`): el vale y su cuenta, la conversación cargada, la fila
- * leída, el archivo preparado y, ya con la fila fresca, `DesktopMessageEditMedia.Problem` (`TelegramService.cs:1857`).
+ * la red caen antes de la subida (`TelegramService.cs:1857`): el vale y su cuenta, la conversación cargada, la fila
+ * leída, el archivo preparado y, ya con la fila fresca, `DesktopMessageEditMedia.Problem` (`TelegramService.cs:1851`).
  * Detrás de la confirmación se tira la copia local y se releé el historial, porque la fila vieja apunta al archivo que
  * ya no está.
  *
@@ -35,7 +35,7 @@ import { desktopGapRefusal } from './desktopGap';
  * `MessageMediaEdit.java:32-36`, que aquí lee `DesktopMessageEditMedia.cs:58`. El orden de negar es el de
  * `MessageMediaEdit.java:81`, la pareja del álbum la de
  * `MessageMediaEdit.java:89`, y la entrada que ofrece la pantalla es la misma conjunción de
- * `NativeBridge.java:4326` —derecho **y** un medio de los cinco—. Las tres exclusiones que Android decide por clase
+ * `NativeBridge.java:4393` —derecho **y** un medio de los cinco—. Las tres exclusiones que Android decide por clase
  * de contenido —sticker, videomensaje redondo y nota de voz— se miden aquí por atributo del documento, en
  * `DesktopMessageEditMedia.cs:65` y en el mismo orden, antes de los tipos que sí admiten el cambio. Lo que Android
  * mide y este host no puede medir —el contenedor que admite emisión continua, `MessageMediaEdit.java:131`— se queda
@@ -48,23 +48,23 @@ import { desktopGapRefusal } from './desktopGap';
  * `DesktopMessageEditMedia.cs:128`, `DesktopMessageEditMedia.cs:134` y `DesktopMessageEditMedia.cs:139` conservan el
  * pie, su puesto encima del medio y el aviso de contenido sensible, y `DesktopMessageEditMedia.cs:149` arma el medio
  * nuevo. El brazo del despacho está en `TelegramService.cs:325`, en la misma visera que su par de Android,
- * `NativeBridge.java:831`.
+ * `NativeBridge.java:832`.
  *
- * **Las negativas del brazo, en el orden en que caen.** `TelegramService.cs:1823` la cuenta conectada,
- * `TelegramService.cs:1829` el vale del archivo con su cuenta y su conversación, `TelegramService.cs:1836` el archivo
- * todavía preparado y `TelegramService.cs:1857` la forma, el derecho y el álbum juntos, ya con la fila recién leída
- * en `TelegramService.cs:1843`. Cobrar y pedir viene después: `TelegramService.cs:1863` sube el archivo y
- * `TelegramService.cs:1866` escribe la fila. Si la petición no cuaja, `TelegramService.cs:1876` deja la copia local
- * donde estaba; si cuaja, `TelegramService.cs:1878` la tira porque la fila ya apunta a otro archivo.
+ * **Las negativas del brazo, en el orden en que caen.** `TelegramService.cs:1817` la cuenta conectada,
+ * `TelegramService.cs:1823` el vale del archivo con su cuenta y su conversación, `TelegramService.cs:1830` el archivo
+ * todavía preparado y `TelegramService.cs:1851` la forma, el derecho y el álbum juntos, ya con la fila recién leída
+ * en `TelegramService.cs:1837`. Cobrar y pedir viene después: `TelegramService.cs:1857` sube el archivo y
+ * `TelegramService.cs:1860` escribe la fila. Si la petición no cuaja, `TelegramService.cs:1870` deja la copia local
+ * donde estaba; si cuaja, `TelegramService.cs:1872` la tira porque la fila ya apunta a otro archivo.
  *
  * **Cómo sabe Windows de qué tipo es el adjunto sin preguntar la red cada vez.** La conversión de la fila anota la
- * clase real del objeto de Telegram en `TelegramService.cs:3451` y la guarda en `DesktopState.cs:194`, y la anota por
+ * clase real del objeto de Telegram en `TelegramService.cs:3445` y la guarda en `DesktopState.cs:194`, y la anota por
  * el mismo motivo que `HasCaption`: es la única mirada que ve la clase. La marca no viaja —`[JsonIgnore]`—, así que el
  * cable entre el host y la pantalla es
- * exactamente el de antes; lo que se añade es una respuesta dentro del host (`TelegramService.cs:3207`) y su bandera
- * en `message.properties` (`TelegramService.cs:3229`).
+ * exactamente el de antes; lo que se añade es una respuesta dentro del host (`TelegramService.cs:3201`) y su bandera
+ * en `message.properties` (`TelegramService.cs:3223`).
  *
- * **La pantalla ya no distingue capa.** `App.tsx:1078` pinta la entrada sin el `!desktop` que dejó la CK y la clave
+ * **La pantalla ya no distingue capa.** `App.tsx:1104` pinta la entrada sin el `!desktop` que dejó la CK y la clave
  * está en la fila afirmada de `desktopScope.ts:28`. El andamio sigue publicando la bandera con la forma de la fila
  * (`preview.ts:402`) y no modela la orden en ninguna capa, ni aquí ni en Android: eso está dicho en la hoja, no
  * tapado.
@@ -506,45 +506,45 @@ describe('ronda CK-B · las citas de los archivos de la ronda', () => {
     'DesktopMessageEditMedia.cs:139': 'public static bool HasSpoiler(MessageMedia? media) => media switch',
     'DesktopMessageEditMedia.cs:149': 'public static InputMedia MediaFor(string wanted, string name, string mime, InputFileBase file, bool spoiler)',
     'TelegramService.cs:325': '"message.edit.media" => await EditMessageMediaAsync(args),',
-    'TelegramService.cs:1823': 'if (_client == null) throw new BridgeException("La cuenta no está conectada.");',
-    'TelegramService.cs:1829': 'if (!_outbox.TryGetValue(token, out var file) || file.Account != client.User!.id || file.Chat != _active)',
-    'TelegramService.cs:1836': 'if (!File.Exists(file.Path)) throw new BridgeException(DesktopAttachment.NotPrepared);',
-    'TelegramService.cs:1843': 'var found = await client.GetMessages(entry.Input, new InputMessageID { id = ids[0] });',
-    'TelegramService.cs:1857': 'var problem = DesktopMessageEditMedia.Problem(DesktopMessageEditMedia.CanEditMedia(fresh, channelAllowed),',
-    'TelegramService.cs:1863': 'var uploaded = await client.UploadFileAsync(file.Path, null);',
-    'TelegramService.cs:1866': 'await client.Messages_EditMessage(entry.Input, ids[0],',
-    'TelegramService.cs:1867': 'message: DesktopMessageEditMedia.CaptionOf(fresh),',
-    'TelegramService.cs:1869': 'entities: DesktopMessageEditMedia.CaptionEntitiesOf(fresh),',
-    'TelegramService.cs:1870': 'invert_media: DesktopMessageEditMedia.ShowsCaptionAboveMedia(fresh));',
-    'TelegramService.cs:1876': 'throw new BridgeException("No se confirmó la edición en Telegram. " + message, ex);',
-    'TelegramService.cs:1878': 'DropOutbox(token);',
-    'TelegramService.cs:3207': 'var canEditMedia = DesktopMessageEditMedia.Offered(message?.Outgoing ?? false,',
-    'TelegramService.cs:3229': 'editMedia = canEditMedia,',
-    'TelegramService.cs:3451': 'dto.MediaKind = DesktopMessageEditMedia.CurrentKind(message.media);',
-    'NativeBridge.java:831': 'case "message.edit.media":editMessageMedia(p,a);break;',
-    'NativeBridge.java:4326': '"editMedia",props.canEditMedia&&!MessageMediaEdit.currentKind(message.content).isEmpty()',
+    'TelegramService.cs:1817': 'if (_client == null) throw new BridgeException("La cuenta no está conectada.");',
+    'TelegramService.cs:1823': 'if (!_outbox.TryGetValue(token, out var file) || file.Account != client.User!.id || file.Chat != _active)',
+    'TelegramService.cs:1830': 'if (!File.Exists(file.Path)) throw new BridgeException(DesktopAttachment.NotPrepared);',
+    'TelegramService.cs:1837': 'var found = await client.GetMessages(entry.Input, new InputMessageID { id = ids[0] });',
+    'TelegramService.cs:1851': 'var problem = DesktopMessageEditMedia.Problem(DesktopMessageEditMedia.CanEditMedia(fresh, channelAllowed),',
+    'TelegramService.cs:1857': 'var uploaded = await client.UploadFileAsync(file.Path, null);',
+    'TelegramService.cs:1860': 'await client.Messages_EditMessage(entry.Input, ids[0],',
+    'TelegramService.cs:1861': 'message: DesktopMessageEditMedia.CaptionOf(fresh),',
+    'TelegramService.cs:1863': 'entities: DesktopMessageEditMedia.CaptionEntitiesOf(fresh),',
+    'TelegramService.cs:1864': 'invert_media: DesktopMessageEditMedia.ShowsCaptionAboveMedia(fresh));',
+    'TelegramService.cs:1870': 'throw new BridgeException("No se confirmó la edición en Telegram. " + message, ex);',
+    'TelegramService.cs:1872': 'DropOutbox(token);',
+    'TelegramService.cs:3201': 'var canEditMedia = DesktopMessageEditMedia.Offered(message?.Outgoing ?? false,',
+    'TelegramService.cs:3223': 'editMedia = canEditMedia,',
+    'TelegramService.cs:3445': 'dto.MediaKind = DesktopMessageEditMedia.CurrentKind(message.media);',
+    'NativeBridge.java:832': 'case "message.edit.media":editMessageMedia(p,a);break;',
+    'NativeBridge.java:4393': '"editMedia",props.canEditMedia&&!MessageMediaEdit.currentKind(message.content).isEmpty()',
     // La cita la escribió la ronda CD en el comentario de `PropertiesAsync`, dentro del archivo que esta ronda vigila.
-    'NativeBridge.java:4329': 'result.put("allowCustom",value.allowCustomEmoji)',
+    'NativeBridge.java:4396': 'result.put("allowCustom",value.allowCustomEmoji)',
     'DesktopState.cs:194': 'public string MediaKind { get; set; } = "";',
-    'App.tsx:1078': '{props.editMedia&&<MenuItem icon={<FileText/>} label="Cambiar el archivo del mensaje"',
+    'App.tsx:1104': '{props.editMedia&&<MenuItem icon={<FileText/>} label="Cambiar el archivo del mensaje"',
     'desktopScope.ts:28': "'message.edit', 'message.edit.caption', 'message.edit.media',",
     'preview.ts:402': 'editMedia: own && !!message?.media,',
   };
 
   /** Las anclas que solo son únicas dentro del cuerpo de su método, con el cuerpo medido por balance de llaves. */
   const dentro: Record<string, [number, number]> = {
+    'TelegramService.cs:1817': [CS_BODY - 1, CS_END + 1],
     'TelegramService.cs:1823': [CS_BODY - 1, CS_END + 1],
-    'TelegramService.cs:1829': [CS_BODY - 1, CS_END + 1],
-    'TelegramService.cs:1836': [CS_BODY - 1, CS_END + 1],
-    'TelegramService.cs:1843': [CS_BODY - 1, CS_END + 1],
+    'TelegramService.cs:1830': [CS_BODY - 1, CS_END + 1],
+    'TelegramService.cs:1837': [CS_BODY - 1, CS_END + 1],
+    'TelegramService.cs:1851': [CS_BODY - 1, CS_END + 1],
     'TelegramService.cs:1857': [CS_BODY - 1, CS_END + 1],
+    'TelegramService.cs:1860': [CS_BODY - 1, CS_END + 1],
+    'TelegramService.cs:1861': [CS_BODY - 1, CS_END + 1],
     'TelegramService.cs:1863': [CS_BODY - 1, CS_END + 1],
-    'TelegramService.cs:1866': [CS_BODY - 1, CS_END + 1],
-    'TelegramService.cs:1867': [CS_BODY - 1, CS_END + 1],
-    'TelegramService.cs:1869': [CS_BODY - 1, CS_END + 1],
+    'TelegramService.cs:1864': [CS_BODY - 1, CS_END + 1],
     'TelegramService.cs:1870': [CS_BODY - 1, CS_END + 1],
-    'TelegramService.cs:1876': [CS_BODY - 1, CS_END + 1],
-    'TelegramService.cs:1878': [CS_BODY - 1, CS_END + 1],
+    'TelegramService.cs:1872': [CS_BODY - 1, CS_END + 1],
   };
 
   /** Los trozos que la ronda tocó, con el mismo recorte que usan CF, CM, CN, CI, CJ, CK y CN-B. */
@@ -587,8 +587,10 @@ describe('ronda CK-B · las citas de los archivos de la ronda', () => {
 
   const written = new Map<string, number>();
   for (const [, body] of watched)
-    for (const match of body.matchAll(/([A-Za-z][\w.]*\.(?:tsx|ts|java|cs|csproj|css)):(\d+)(?:-(\d+))?/g))
-      written.set(`${match[1]}:${match[2]}`, Math.max(written.get(`${match[1]}:${match[2]}`) ?? 0, Number(match[3] ?? 0)));
+    for (const match of body.matchAll(/([A-Za-z][\w.]*\.(?:tsx|ts|java|cs|csproj|css)):(\d+)(?:-(\d+))?/g)) {
+      const key = `${match[1]}:${match[2]}`;
+      written.set(key, Math.max(written.get(key) ?? 0, Number(match[3] ?? 0)));
+    }
 
   it('cada número citado señala hoy la línea que la frase afirma', () => {
     for (const [citation, needle] of Object.entries(anchors)) {
@@ -622,14 +624,15 @@ describe('ronda CK-B · las citas de los archivos de la ronda', () => {
     // la `CustomEmojiId` del DTO y su comentario; doce más, los dos ayudantes de la ronda CW-D.
     // Veinticuatro más, repartidas entre los fondos de la CH-A y el aviso `UpdateDefaultBackground` de la CH-A2. Once
     // más: ocho por las dos ramas del despacho que la CH-B cableó en Windows y tres por leer los dos huecos al entrar.
-    expect(service).toHaveLength(4313);
+    // CT y las demás inserciones cambiaron estas medidas sin mover las agujas.
+    expect(service).toHaveLength(4307);
     expect(mirror).toHaveLength(166);
     expect(stateCs).toHaveLength(760);
     expect(pure).toHaveLength(136);
-    expect(java).toHaveLength(5512);
-    expect(app).toHaveLength(1561);
-    expect(scope).toHaveLength(118);
-    expect(preview).toHaveLength(3374);
+    expect(java).toHaveLength(5579);
+    expect(app).toHaveLength(1592);
+    expect(scope).toHaveLength(119);
+    expect(preview).toHaveLength(3395);
     expect(contract).toHaveLength(250);
   });
 });

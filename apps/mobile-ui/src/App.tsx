@@ -9,6 +9,7 @@ import { dayKey, filterChats, historyDate, messageTime as time } from './inboxMo
 import { bubbleDate, forwardLabel, forwardTarget, type JumpTarget } from './messageProvenance';
 import { ReplyQuote } from './ReplyQuote';
 import { ChatOptions, ChatOptionSection } from './ChatOptions'; import { AttachmentPanel, type PickedAttachment } from './AttachmentPanel'; import { useKeyboardAttachments } from './keyboardAttachments'; import { LIVE_DURATIONS, type LiveStart } from './liveLocation'; import { ShareInboxPanel, type ShareInPayload } from './ShareInboxPanel'; import { selectionQuote } from './quoteRules';
+import { createReadReceiptFlow, readDateLabel, type ReadDateResult, type MessageViewersResult } from './readReceipts';
 import { type AccountProfile, type AccountSession, type ActiveStory, type AddBatch, type AddPermission, type AdminEvent, type ArchivedStory, type BotAccount, type BotDefaultRights, type BotPost, type BotPublished, type CatalogItem, type Chat, type ChatMembership, type ChatProfile, type ChatSender, type ChatSenders, type ChatUsername, type Contact, type ForumTopicInfo, type ForwardOrigin, type SavedFilter, type GlobalSearch, type GroupAdminRights, type GroupMember, type GroupMemberPage, type GroupPermissions, type GroupRoster, type InlineBatch, type Media, type Message, type OpenStory, type OwnedBot, type Properties, type ReactionOption, type PaidMessagesInfo, type RosterMember, type StarsPayment, type State, type StoryAlbum, type StoryAlbumStories, type StoryInteractions, type StoryReactions, type TelegramLinkResult } from './contract';
 import { ADD_LIMITS, batchNotice, forwardNotice, outcomeLine, permissionLine } from './memberAdditions';
 import { BAN_ACTIONS, banishConfirm, banishProblem, banishable, rosterLine } from './groupRoster';
@@ -61,6 +62,7 @@ import { AgeGate } from './AgeGate';
 import { releaseNotesFor } from './releaseNotes';
 import { dividerIndex, isNewMessage, newestIncomingId, scrollHistoryEnd, scrollMarkToTop, shouldMarkRead, visibleReadBoundary, unreadAnchor as firstUnreadId } from './unread';
 import { arrangeTabs, matchesTab, tabSource, visibleTabId, type InboxTab } from './chatFilters';
+import { canShowMessageReaders, completeInboxTabsSave } from './inboxUiPolicy';
 import { InboxTabs } from './InboxTabs';
 import { InboxTabBar } from './InboxTabBar';
 import { readPreference, writePreference } from './devicePreferences';
@@ -142,6 +144,13 @@ export function App(){
     if(previous?.onClose!==next?.onClose)previous?.onClose?.();
     updateDialog(next);
   }
+  const [openReadReceipt]=useState(()=>createReadReceiptFlow<ReadDateResult|MessageViewersResult,Dialog>({
+    scope:()=>({account:snapshot().selfId,chat:snapshot().active,topic:snapshot().topic?.id||0}),
+    current:()=>dialogRef.current,
+    show:setDialog,
+    clear:()=>setDialog(undefined),
+  }));
+  useLayoutEffect(()=>{openReadReceipt.invalidate();},[state.selfId,state.active,state.topic?.id]);
   const [replyId,setReplyId]=useState('');const [replyQuote,setReplyQuote]=useState<{text:string;position:number}>();const [selected,setSelected]=useState<Set<string>>(new Set());const [silent,setSilent]=useState(false);const [format,setFormat]=useState(false);const [picker,setPicker]=useState(false);const [search,setSearch]=useState(false);const [searchQuery,setSearchQuery]=useState('');const [found,setFound]=useState<Message[]>();const [searchBusy,setSearchBusy]=useState(false);const [searchHasMore,setSearchHasMore]=useState(false);const [pinned,setPinned]=useState<Message>();const [chatProfile,setChatProfile]=useState<ChatProfile>();const [searchMode,setSearchMode]=useState<'chat'|'global'>('chat');const [searchFilter,setSearchFilter]=useState('');const [searchSender,setSearchSender]=useState('');const [since,setSince]=useState('');const [untilDay,setUntilDay]=useState('');const [globalFound,setGlobalFound]=useState<Message[]>([]);const [globalOffset,setGlobalOffset]=useState('');const [globalTotal,setGlobalTotal]=useState(0);const [savedFilters,setSavedFilters]=useState<SavedFilter[]>([]);const [highlight,setHighlight]=useState<Pick<Message,'id'|'chatId'>>();const [thread,setThread]=useState<Message>();const [requests,setRequests]=useState<Chat>();const [links,setLinks]=useState<Chat>();const [safety,setSafety]=useState<Chat>();const [statsChat,setStatsChat]=useState<Chat>();
   const highlightId=highlight?.chatId===state.active?highlight?.id:'';const [draft,setDraft]=useState('');const [draftEntities,setDraftEntities]=useState<TextEntity[]>([]);const draftFormats=useRef(new Map<string,TextEntity[]>());const [alphabetic,setAlphabetic]=useState(false);const drafts=useRef(new Map<string,string>());const draftReplies=useRef(new Map<string,string>());const draftTimers=useRef(new Map<string,ReturnType<typeof setTimeout>>());const field=useRef<RichEditor>(null);const [formatMarks,setFormatMarks]=useState<Set<TextEntityType>>(new Set());const history=useRef<HTMLDivElement>(null);const historyContents=useRef<HTMLDivElement>(null);const followLatest=useRef(true);const activeId=useRef(state.active);const lastAccount=useRef(state.selfId);const pinnedChat=useRef('');const pinnedTopic=useRef(0);const [jump,setJump]=useState(false);const jumpPending=useRef(false);const unreadAnchor=useRef(false);const olderPending=useRef<{scope:string;first?:string;height:number;top:number;started:number;loading:boolean}|undefined>(undefined);const [updateDismissed,setUpdateDismissed]=useState(0),[showUpdate,setShowUpdate]=useState(false);const [recording,setRecording]=useState(false);const [inlineBusy,setInlineBusy]=useState(false);const [forumVersion,setForumVersion]=useState(0);const readFloors=useRef(new Map<string,string>());const readTimer=useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
   const [quickChats,setQuickChats]=useState(false);useKeyboardAttachments(previewAttachment,error=>setToast(error instanceof Error?error.message:'No se pudo importar el contenido del teclado.'));
@@ -219,6 +228,7 @@ export function App(){
  useEffect(()=>{const onThemeLink=(event:Event)=>{const detail=(event as CustomEvent<string>).detail;const decoded=decodeThemeLink(detail);if(!decoded.ok){setToast(decoded.error);return;}const imported=decoded.theme;const warnings=themeContrastWarnings(imported.palette);setDialog({title:`Tema “${imported.name}”`,body:<><p>Enlace de tema de WRGram{imported.author?` · ${imported.author}`:''}. Se guardará solo en este dispositivo; no modifica tu cuenta de Telegram.</p>{warnings.length>0?<div className="inline-warning"><Info size={15}/><span>{warnings.join(' ')}</span></div>:<p className="settings-note">Contraste de texto correcto.</p>}<div className="modal-actions"><button className="secondary" onClick={()=>setDialog(undefined)}>Ahora no</button><button className="primary" onClick={()=>{const list=[imported,...(state.appearance.customThemes??[]).filter(item=>item.id!==imported.id)].slice(0,20);void run('appearance',{theme:'custom',custom:imported,customThemes:list,...(imported.style?{font:imported.style.fontSize,fontFamily:imported.style.fontFamily,wallpaper:imported.style.wallpaper}:{})}).then(done=>{if(done!==undefined){setDialog(undefined);setToast(`Tema “${imported.name}” importado y aplicado.`);}});}}>Aplicar tema</button></div></>});};window.addEventListener('wrgram:theme-link',onThemeLink);return()=>window.removeEventListener('wrgram:theme-link',onThemeLink);},[state.appearance.customThemes]); useEffect(()=>{sharePrefill.current=text=>{navigate('chats');setMobileChat(true);applyDraft(text,[],text.length);};}); useEffect(()=>{const onShareIn=(event:Event)=>{const detail=(event as CustomEvent<ShareInPayload>).detail;if(!detail||typeof detail.text!=='string'||!Array.isArray(detail.items))return;setDialog({title:'Compartir en WRGram',body:<ShareInboxPanel payload={detail} run={run} close={()=>setDialog(undefined)} done={message=>{setDialog(undefined);setToast(message);}} prefill={text=>sharePrefill.current(text)}/>});};window.addEventListener('wrgram:share-in',onShareIn);return()=>window.removeEventListener('wrgram:share-in',onShareIn);},[]);
   const confirm=(title:string,text:string,label:string,action:()=>void,danger=false)=>setDialog({title,body:<><p>{text}</p><div className="modal-actions"><button className="secondary" onClick={()=>setDialog(undefined)}>Cancelar</button><button className={danger?'danger':'primary'} onClick={()=>{setDialog(undefined);action();}}>{label}</button></div></>});
   const loadFailed=(title:string,retry:()=>void)=>setDialog({title,body:<><p>Telegram no devolvió la información solicitada. Revisa la conexión e inténtalo de nuevo; no se ha modificado nada.</p><div className="modal-actions"><button className="secondary" onClick={()=>setDialog(undefined)}>Cerrar</button><button className="primary" onClick={retry}>Reintentar</button></div></>});
+  const readReceiptTime=(seconds:number)=>`${historyDate(seconds)}, ${time(seconds)}`;
   function openStoryArchive(){openStoryAlbums();}
   function openStoryAlbums(){
     setDialog({title:'Álbumes de historias',body:<p>Consultando álbumes en Telegram…</p>});
@@ -775,7 +785,7 @@ function navigate(next:Page){setPage(next);setMenu(false);setPicker(false);setMo
   }
   function manageInboxTabs(){
     setMenu(false);
-    setDialog({title:'Administrar pestañas',className:'tabs-manager-modal',body:<InboxTabs initial={tabs} folders={state.folders} save={async next=>{
+    const managerDialog:Dialog={title:'Administrar pestañas',className:'tabs-manager-modal',body:<InboxTabs initial={tabs} folders={state.folders} save={async next=>{
       const owner=state.selfId;
       if(snapshot().selfId!==owner)return false;
       let saved:InboxTab[]|undefined;
@@ -788,9 +798,9 @@ function navigate(next:Page){setPage(next);setMenu(false);setPicker(false);setMo
       const arranged=arrangeTabs(state.folders,saved);
       const chosen=visibleTabId(filter,arranged);
       chooseFilter(chosen);
-      setTabPrefs({owner,tabs:saved});setDialog(undefined);
-      return true;
-    }}/>});
+      return completeInboxTabsSave(dialogRef.current,managerDialog,snapshot().selfId===owner,()=>setTabPrefs({owner,tabs:saved}),()=>setDialog(undefined));
+    }}/>};
+    setDialog(managerDialog);
   }
    function createCommunity(kind:'supergroup'|'forum'|'channel'){const label=kind==='channel'?'canal':kind==='forum'?'foro':'supergrupo';const finish=(title:string,description:string,result:{id:string})=>{void run('chat.open',{id:result.id}).then(opened=>{if(opened!==undefined){navigate('chats');setMobileChat(true);void run('chats.more');}});setDialog({title:`${label.charAt(0).toUpperCase()+label.slice(1)} creado`,body:<><p>“{title}” ya existe en Telegram{description?` con la descripción indicada`:''}. No se invitó a nadie ni se publicó contenido.</p><p className="settings-note">Puedes configurar un nombre público para compartirlo con t.me. Solo se aplica si Telegram confirma que está disponible.</p><div className="modal-actions"><button className="secondary" onClick={()=>setDialog(undefined)}>Ahora no</button><button className="primary" onClick={()=>openChatUsername(result.id,title)}>Configurar nombre público</button></div></>});};setDialog({title:`Crear ${label}`,body:<><p>Telegram creará un espacio nuevo en tu cuenta. No se invitará a nadie ni se publicarán mensajes automáticamente. {kind==='channel'?'El canal se crea privado.':'El espacio se crea privado.'} Su enlace y audiencia se gestionan después desde Telegram.</p><TextEntry label={`Nombre del ${label}`} maximum={128} action="Continuar" submit={title=>setDialog({title:`Descripción del ${label}`,body:<><p className="settings-note">Opcional. Telegram puede mostrarla en la información del chat; puedes cambiarla después.</p><TextEntry label="Descripción · vacío para omitir" maximum={255} allowEmpty multiline action="Revisar creación" submit={description=>confirm(`Crear ${label}`,`Se creará “${title.trim()}”${description.trim()?` con una descripción de ${description.trim().length} caracteres`:''} en Telegram. No se invitará a miembros automáticamente.`,'Crear',()=>{void run<{id:string}>('groups.createSuper',{title:title.trim(),description:description.trim(),kind}).then(result=>{if(result)finish(title.trim(),description.trim(),result);});})}/></>})}/></>});}
    function newChat(mode:unknown=false){const secret=mode===true;setDialog({title:secret?'Nuevo chat secreto':'Nueva conversación',body:<><p>{secret?'Crea una sesión E2EE en este dispositivo. La otra persona debe aceptar; compara después la clave por un canal de confianza.':'Abre un usuario o bot por su nombre público de Telegram.'}</p><TextEntry label="Nombre de usuario público" placeholder="@usuario" maximum={33} action={secret?'Crear chat secreto':'Abrir en Telegram'} submit={username=>void run(secret?'chat.secret':'chat.find',{username}).then(result=>{if(result!==undefined){setDialog(undefined);navigate('chats');setMobileChat(true);}})}/>{!secret&&<div className="action-list"><button className="menu-item" onClick={()=>createCommunity('supergroup')}><Users/><span>Crear supergrupo</span><ChevronRight size={15}/></button><button className="menu-item" onClick={()=>createCommunity('forum')}><MessageCircle/><span>Crear foro</span><ChevronRight size={15}/></button><button className="menu-item" onClick={()=>createCommunity('channel')}><Send/><span>Crear canal privado</span><ChevronRight size={15}/></button><button className="text-button" onClick={()=>newChat(true)}><LockKeyhole size={16}/>Crear un chat secreto</button></div>}</>});}
@@ -911,7 +921,7 @@ function navigate(next:Page){setPage(next);setMenu(false);setPicker(false);setMo
         {/* El nombre público de la comunidad (ronda BC). La caja, el cuadro de confirmar y el aviso de los enlaces
             rotos ya estaban escritos para Android en `openChatUsername`, y el puente de Windows contestaba las dos
             órdenes desde esta ronda; lo que faltaba era la puerta, porque el panel lateral donde Android la pone
-            (`App.tsx:1241`) corta antes de llegar en escritorio. La guarda es `isSupergroupOrChannel`, no `community`: en
+            (`App.tsx:1272`) corta antes de llegar en escritorio. La guarda es `isSupergroupOrChannel`, no `community`: en
             MTProto el nombre vive en el peer de canal, así que un grupo básico no tiene ni de dónde leerlo. */}
         {(chat.supergroup===true||chat.type==='channel')&&<MenuItem icon={<Link2/>} label="Nombre público del chat" onClick={()=>{setDialog(undefined);openChatUsername(chat.id,chat.title);}}/>}
         </ChatOptionSection>
@@ -927,9 +937,9 @@ function navigate(next:Page){setPage(next);setMenu(false);setPicker(false);setMo
             hacer. Ver miembros, luego añadir, luego administrar: el mismo orden de las otras dos hojas. */}
         {(chat.type==='group'||chat.supergroup===true||chat.type==='channel')&&<MenuItem icon={<UserPlus/>} label="Añadir personas" onClick={()=>{setDialog(undefined);openAddPeople(chat);}}/>}
         {(chat.supergroup===true||chat.type==='channel')&&<MenuItem icon={<ShieldCheck/>} label="Administrar miembros" onClick={()=>{setDialog(undefined);openGroupMembers(chat);}}/>}
-        {/* Los permisos predeterminados (ronda BE). Android los pone en el panel lateral (`:1139`), y ese panel no
-            abre en Windows porque `chatInfo` corta en la `:754`; el puente de Windows ya contesta las dos órdenes, así
-            que lo que faltaba era la puerta. La guarda es la de `groupPermissions` (`NativeBridge.java:1888`): un
+        {/* Los permisos predeterminados (ronda BE). Android los pone en el panel lateral (`:1272`), y ese panel no
+            abre en Windows porque `chatInfo` corta en la `:807`; el puente de Windows ya contesta las dos órdenes, así
+            que lo que faltaba era la puerta. La guarda es la de `groupPermissions` (`NativeBridge.java:1889`): un
             grupo básico no tiene tabla que editar, y en MTProto la bandera vive en el peer de canal. */}
         {(chat.supergroup===true||chat.type==='channel')&&<MenuItem icon={<ShieldQuestion/>} label="Permisos predeterminados" onClick={()=>{setDialog(undefined);openGroupPermissions(chat);}}/>}{(chat.supergroup===true||chat.type==='channel')&&<MenuItem icon={<BarChart3/>} label="Estadísticas" onClick={()=>{setDialog(undefined);setStatsChat(chat);}}/>}
         {/* El enlace suelto (ronda BQ). La rama de Android de esta misma hoja lo ofrece desde siempre y el puente de
@@ -941,12 +951,12 @@ function navigate(next:Page){setPage(next);setMenu(false);setPicker(false);setMo
         {/* La gestión de enlaces (ronda BF). Las dos entradas de Android —el menú (`:911`) y el panel lateral
             (`:1139`)— están tapadas con `!desktop`, y aquí no llegaba ninguna: las cuatro órdenes viven en la lista del
             puente desde la ronda A y el puente de Windows las contesta desde esta ronda, así que lo único que faltaba
-            era la puerta. La guarda es la forma de `NativeBridge.java:3608`, más ancha que la de permisos de arriba: el
+            era la puerta. La guarda es la forma de `NativeBridge.java:3618`, más ancha que la de permisos de arriba: el
             enlace exportado también existe en un grupo básico, porque `chatFull.exported_invite` lo publica igual que
             el de canal. */}
         {(chat.supergroup===true||chat.type==='group'||chat.type==='channel')&&<MenuItem icon={<KeyRound/>} label="Mis enlaces de invitación" onClick={()=>{setDialog(undefined);setLinks(chat);}}/>}
         {/* La cola de solicitudes (ronda BG). Misma forma de guarda que arriba, y por el mismo motivo:
-            `joinRequests` (`NativeBridge.java:3527`) y `answerJoinRequest` (`:3577`) cortan en cualquier otra
+            `joinRequests` (`NativeBridge.java:3538`) y `answerJoinRequest` (`:3588`) cortan en cualquier otra
             forma de chat, y en MTProto la cola vive en el `PeerChannel` o en el `PeerChat`. El escritorio no
             pone el número en el rótulo porque `TL.Chat` y `TL.Channel` no publican ninguna cifra pendiente —solo
             el `full info`—, así que la cifra la dice el propio panel al consultar Telegram. */}
@@ -1065,6 +1075,22 @@ function navigate(next:Page){setPage(next);setMenu(false);setPicker(false);setMo
  function openAlbumCaptions(message:Message){setDialog({title:'Álbum',body:<p>Consultando los elementos del álbum en Telegram…</p>});void run<{id:string;text:string}[]>('message.album',{id:message.id}).then(items=>{if(!items||items.length<2){setDialog(undefined);return;}setDialog({title:`Textos del álbum (${items.length})`,body:<div className="action-list">{items.map((item,index)=><button className="menu-item" key={item.id} onClick={()=>editAlbumCaption(message,item,index)}><Image size={18}/><span>{item.text||`Elemento ${index+1} sin texto`}</span><Pencil size={15}/></button>)}</div>});});}
  function editAlbumCaption(message:Message,item:{id:string;text:string},index:number){setDialog({title:`Texto del elemento ${index+1}`,body:<TextEntry label="Texto del archivo" initial={item.text} maximum={1024} allowEmpty action="Guardar en Telegram" multiline submit={caption=>{const value=parseFormatting(caption);void run<boolean>('message.edit.caption',{id:item.id,caption:value.text,entities:value.entities}).then(saved=>{if(saved)openAlbumCaptions(message);});}}/>});}
  function paidReaction(message:Message){setDialog({title:'Reacción de pago',body:<PaidReactionPicker pick={count=>{void run('message.react.paid',{id:message.id,count:String(count)});setDialog(undefined);}}/>});}
+ function showReadReceipts(message:Message){
+   const viewers=active?.type==='group';
+   const title=viewers?'Lectores del mensaje':'Hora de lectura';
+   openReadReceipt(
+     ()=>viewers?run<MessageViewersResult>('message.viewers',{id:message.id}):run<ReadDateResult>('message.readDate',{id:message.id}),
+     {title,body:<p>Consultando en Telegram…</p>},
+     result=>{
+       if('viewers' in result){
+         const rows=result.viewers;
+         return {title:`Lectores (${rows.length})`,body:<div role="status" aria-live="polite">{rows.length?<div className="read-receipt-list" tabIndex={0} role="list" aria-label="Lectores del mensaje">{rows.map(row=><div className="read-receipt-row" role="listitem" key={row.id}><span>{row.name}</span><time>{readReceiptTime(row.date)}</time></div>)}</div>:<p>Nadie ha abierto el mensaje todavía.</p>}</div>};
+       }
+       return {title:'Hora de lectura',body:<p role="status" aria-live="polite">{readDateLabel(result,readReceiptTime)}</p>};
+     },
+     retry=>loadFailed(title,retry),
+   );
+ }
  async function messageMenu(message:Message){
    if(message.status==='pending'||message.status==='failed')return;
    // Las dos caras de editar, en un solo sitio: en Android las pintaba el menú y en Windows no existían, así que
@@ -1092,8 +1118,9 @@ function navigate(next:Page){setPage(next);setMenu(false);setPicker(false);setMo
      </div>;
    };
    if(desktop){
+     const owner=state.selfId,topic=state.topic?.id||0;
      const props=await run<Properties>('message.properties',{id:message.id});
-     if(!props||snapshot().active!==message.chatId)return;
+     if(!props||snapshot().selfId!==owner||snapshot().active!==message.chatId||(snapshot().topic?.id||0)!==topic)return;
      const act=(method:string,params:Record<string,unknown>={})=>{void run(method,{id:message.id,...params});setDialog(undefined);};
      setDialog({title:'Opciones del mensaje',body:<>
        {props.reactions.length>0&&reactionBar(props,act)}
@@ -1103,6 +1130,8 @@ function navigate(next:Page){setPage(next);setMenu(false);setPicker(false);setMo
        <MenuItem icon={<Zap/>} label="Respuestas rápidas" onClick={()=>setDialog({title:'Respuestas rápidas',body:<QuickReplySend run={run} done={()=>{setDialog(undefined);field.current?.focus();}}/>})}/>
        {message.transcribable&&<MenuItem icon={<Mic/>} label="Transcribir" onClick={()=>activateMessageLanguage(message,'transcribe')}/>}
        <TranslateMessageOption message={message} allowed={active?.type!=='secret'} translate={()=>activateMessageLanguage(message,'translate')}/>
+       {message.outgoing&&active?.type==='private'&&<MenuItem icon={<CheckCheck/>} label="Hora de lectura" onClick={()=>void showReadReceipts(message)}/>}
+       {canShowMessageReaders(message.outgoing,active,desktop)&&<MenuItem icon={<CheckCheck/>} label="Lectores" onClick={()=>void showReadReceipts(message)}/>}
        {props&&forwardItem(message,props)}
        {editEntries(props)}
        {message.albumId&&<MenuItem icon={<Image/>} label="Editar textos del álbum" onClick={()=>openAlbumCaptions(message)}/>}
@@ -1131,6 +1160,8 @@ function navigate(next:Page){setPage(next);setMenu(false);setPicker(false);setMo
        {props.transcribe&&<MenuItem icon={<Mic/>} label="Transcribir" onClick={()=>activateMessageLanguage(message,'transcribe')}/>}
        {props.canBePaid&&message.paidMedia?.locked&&<MenuItem icon={<LockKeyhole/>} label={`Desbloquear por ${message.paidMedia.starCount} ⭐`} onClick={()=>{setDialog(undefined);startStarsPayment(message);}}/>}
        <TranslateMessageOption message={message} allowed={active?.type!=='secret'} translate={()=>activateMessageLanguage(message,'translate')}/>
+       {message.outgoing&&active?.type==='private'&&<MenuItem icon={<CheckCheck/>} label="Hora de lectura" onClick={()=>void showReadReceipts(message)}/>}
+       {canShowMessageReaders(message.outgoing,active,false)&&<MenuItem icon={<CheckCheck/>} label="Lectores" onClick={()=>void showReadReceipts(message)}/>}
        {props.report&&<ReportAction id={message.id} message chatId={message.chatId} run={run}/>}
        {deleteItems(message,props)}
        {selectItem(message)}

@@ -84,7 +84,7 @@ const failsOf = (at: number) => [...(java[at - 1] ?? '').matchAll(/a\.fail\("((?
 const throwsOf = (at: number) => [...(java[at - 1] ?? '').matchAll(/IllegalArgumentException\("((?:[^"\\]|\\.)*)"\)/g)].map(m => m[1]);
 const numberFrom = (at: number, pattern: RegExp, from = java) => Number((from[at - 1] ?? '').match(pattern)?.[1]);
 
-/** La línea medida de Android, en el número que citan las frases: `jrow(350)` es la línea 337. */
+/** La línea medida de Android: `jrow(350)` es exactamente la línea 350. */
 const jrow = (at: number) => java[at - 1] ?? '';
 const srow = (at: number) => snapshot[at - 1] ?? '';
 
@@ -134,12 +134,12 @@ describe('ronda BY · el cable de la familia del emoji en Windows', () => {
   it('las frases del host son las de Android, carácter a carácter', () => {
     const table: [string, number, 'fail' | 'throw'][] = [
       ['StatusUnread', 315, 'fail'], ['StatusesUnprepared', 335, 'fail'], ['BadStatusId', 350, 'throw'],
-      ['BadExpiry', 354, 'throw'], ['StatusNeedsPremium', 359, 'fail'], ['BadCustomEmoji', 4339, 'throw'],
-      ['CustomEmojiMissing', 4340, 'fail'], ['CustomEmojiUnloaded', 4340, 'fail'],
-      ['CustomEmojiUnsearched', 4341, 'fail'], ['SavedUnread', 4929, 'fail'], ['NeedPackName', 4934, 'fail'],
-      ['ResultsUnread', 4936, 'fail'], ['BadPage', 4941, 'throw'], ['FeaturedUnread', 4947, 'fail'],
-      ['NotEmojiPack', 4957, 'fail'], ['PackUnopened', 4969, 'fail'], ['PacksUnprepared', 4972, 'fail'],
-      ['NeedShortName', 4973, 'throw'], ['PackUnprepared', 4973, 'fail'], ['PackUnloaded', 4974, 'fail'],
+      ['BadExpiry', 354, 'throw'], ['StatusNeedsPremium', 359, 'fail'], ['BadCustomEmoji', 4406, 'throw'],
+      ['CustomEmojiMissing', 4407, 'fail'], ['CustomEmojiUnloaded', 4407, 'fail'],
+      ['CustomEmojiUnsearched', 4408, 'fail'], ['SavedUnread', 4996, 'fail'], ['NeedPackName', 5001, 'fail'],
+      ['ResultsUnread', 5003, 'fail'], ['BadPage', 5008, 'throw'], ['FeaturedUnread', 5014, 'fail'],
+      ['NotEmojiPack', 5024, 'fail'], ['PackUnopened', 5036, 'fail'], ['PacksUnprepared', 5039, 'fail'],
+      ['NeedShortName', 5040, 'throw'], ['PackUnprepared', 5040, 'fail'], ['PackUnloaded', 5041, 'fail'],
     ];
     for (const [name, at, kind] of table) {
       const source = kind === 'fail' ? failsOf(at) : throwsOf(at);
@@ -148,8 +148,9 @@ describe('ronda BY · el cable de la familia del emoji en Windows', () => {
     }
     // Las dos salidas del mismo intento de `:335` y `:336` son la misma frase.
     expect(csLiteral('StatusesUnprepared')).toBe(failsOf(336)[0]);
-    // `Emoji personalizado no válido.` es la misma frase que `:4339` usa para el parámetro `emoji` de una reacción.
-    expect(csLiteral('BadCustomEmoji')).toBe(throwsOf(4339)[0]);
+    // `Emoji personalizado no válido.` nace en `reactCustom` (hoy :4406); :4396 se reserva para `allowCustom`.
+    expect(jrow(4396)).toContain('result.put("allowCustom",value.allowCustomEmoji)');
+    expect(csLiteral('BadCustomEmoji')).toBe(throwsOf(4406)[0]);
   });
 
   it('los tres huecos propios se niegan con nombre y causa, y ninguna frase es de Android', () => {
@@ -174,13 +175,13 @@ describe('ronda BY · el cable de la familia del emoji en Windows', () => {
   it('los ocho topes están medidos en el puente, no copiados de memoria', () => {
     expect(csNumber('StatusCap')).toBe(numberFrom(329, /ids\.size\(\)<(\d+)/));
     expect(csNumber('StatusCap')).toBe(numberFrom(333, /Math\.min\(ids\.size\(\),(\d+)\)/));
-    expect(csNumber('PackLimit')).toBe(numberFrom(4942, /GetTrendingStickerSets\(type,offset,(\d+)\)/));
-    expect(csNumber('MaxOffset')).toBe(numberFrom(4941, /offset>(\d+)/));
-    expect(csNumber('StickersShown')).toBe(numberFrom(4974, /i<(\d+)/));
-    expect(csNumber('TitleCap')).toBe(numberFrom(4900, /limit\(set\.title,(\d+)/));
-    expect(csNumber('QueryCap')).toBe(numberFrom(4933, /text\(p,"query",(\d+)/));
-    expect(csNumber('ShortNameCap')).toBe(numberFrom(4973, /text\(p,"name",(\d+)/));
-    expect(csNumber('SearchCap')).toBe(numberFrom(4341, /new String\[0\],0,(\d+)\)/));
+    expect(csNumber('PackLimit')).toBe(numberFrom(5009, /GetTrendingStickerSets\(type,offset,(\d+)\)/));
+    expect(csNumber('MaxOffset')).toBe(numberFrom(5008, /offset>(\d+)/));
+    expect(csNumber('StickersShown')).toBe(numberFrom(5041, /i<(\d+)/));
+    expect(csNumber('TitleCap')).toBe(numberFrom(4967, /limit\(set\.title,(\d+)/));
+    expect(csNumber('QueryCap')).toBe(numberFrom(5000, /text\(p,"query",(\d+)/));
+    expect(csNumber('ShortNameCap')).toBe(numberFrom(5040, /text\(p,"name",(\d+)/));
+    expect(csNumber('SearchCap')).toBe(numberFrom(4408, /new String\[0\],0,(\d+)\)/));
   });
 
   it('las cuatro guardas de forma dicen lo mismo en las dos orillas', () => {
@@ -189,7 +190,7 @@ describe('ronda BY · el cable de la familia del emoji en Windows', () => {
     const matches = (at: number) => jrow(at).match(/matches\("([^"]+)"\)/)?.[1] ?? '';
     // La de Android va entre paréntesis: sin ellos el `\A` solo anclaría la primera alternativa.
     expect(anchored('StatusPattern')).toBe(`(${matches(350)})`);
-    expect(anchored('ShortNamePattern')).toBe(matches(4973));
+    expect(anchored('ShortNamePattern')).toBe(matches(5040));
     // `PositiveId` es la lectura positiva del `BridgePolicy.id`, que en Android admite signo y cero.
     expect(anchored('PositivePattern')).toBe('[1-9][0-9]{0,18}');
     expect(policy).toMatch(/matches\("-\?\(0\|\[1-9\]\[0-9\]\{0,18\}\)"\)/);
@@ -200,13 +201,13 @@ describe('ronda BY · el cable de la familia del emoji en Windows', () => {
   it('los dos intervalos y las tres secciones son los de Android', () => {
     expect(jrow(354)).toContain('expiration<now+60||expiration>now+367L*86400L');
     expect(rules).toContain('expiration >= now + 60 && expiration <= now + 367L * 86400L');
-    expect(jrow(4941)).toContain('offset<0||offset>10000');
+    expect(jrow(5008)).toContain('offset<0||offset>10000');
     expect(rules).toContain('offset >= 0 && offset <= MaxOffset');
-    const sections = [...java.slice(4922, 4951).join('\n').matchAll(/case "([a-z]+)"/g)].map(m => m[1]);
+    const sections = [...java.slice(4988, 5019).join('\n').matchAll(/case "([a-z]+)"/g)].map(m => m[1]);
     expect(sections).toEqual(['installed', 'search', 'featured']);
     expect(rules).toContain('kind is "installed" or "search" or "featured"');
-    // El recorte del nombre corto: hasta el último `/`, igual que `:4971`. Vive en la regla pura y el brazo la llama.
-    expect(jrow(4973)).toContain('name.substring(name.lastIndexOf(\'/\')+1)');
+    // El recorte del nombre corto: hasta el último `/`, igual que hoy :5040. Vive en la regla pura y el brazo la llama.
+    expect(jrow(5040)).toContain('name.substring(name.lastIndexOf(\'/\')+1)');
     expect(rules).toContain("var cut = value.LastIndexOf('/')");
     expect(flow).toContain('DesktopEmojiCatalog.ShortNameOf(');
   });
@@ -306,32 +307,34 @@ describe('ronda BY · el cable de la familia del emoji en Windows', () => {
 });
 
 describe('ronda BY · las citas de los dos archivos nuevos y del despacho', () => {
+  // La clave es la cita tal como está escrita y el valor es lo que esa línea dice hoy en el puente. CT movió el
+  // puente sin reescribir la prosa: no hay mapa que traduzga la cifra heredada, la prosa tiene que decir la de hoy.
   const anchors: Record<string, string> = {
     'NativeBridge.java:307': 'private void emojiStatusState(Answer a){',
     'NativeBridge.java:315': 'a.fail("No se pudo leer el estado emoji.")',
     'NativeBridge.java:335': 'a.fail("No se pudieron preparar los estados emoji.")',
-    'NativeBridge.java:350': 'if(!id.matches("0|[1-9][0-9]{0,18}"))throw new IllegalArgumentException("Estado emoji no válido.")',
-    'NativeBridge.java:354': 'throw new IllegalArgumentException("La caducidad debe estar entre un minuto y 367 días.")',
+    'NativeBridge.java:350': 'IllegalArgumentException("Estado emoji no válido.")',
+    'NativeBridge.java:354': 'IllegalArgumentException("La caducidad debe estar entre un minuto y 367 días.")',
     'NativeBridge.java:359': 'a.fail("Necesitas Telegram Premium para cambiar el estado emoji.")',
-    'NativeBridge.java:360': 'SetEmojiStatus(selected),a,ignored->{schedule();a.ok(true);}',
-    'NativeBridge.java:4339': 'throw new IllegalArgumentException("Emoji personalizado no válido.")',
-    'NativeBridge.java:4340': 'a.fail("Ese emoji personalizado no está disponible.")',
-    'NativeBridge.java:4341': 'a.fail("No se pudieron cargar emojis personalizados.")',
-    'NativeBridge.java:4929': 'a.fail("No se pudieron leer los packs guardados.")',
-    'NativeBridge.java:4934': 'a.fail("Escribe el nombre de un pack.")',
-    'NativeBridge.java:4941': 'throw new IllegalArgumentException("Página no válida.")',
-    'NativeBridge.java:4942': 'GetTrendingStickerSets(type,offset,24)',
-    'NativeBridge.java:4950': 'default:throw new IllegalArgumentException("Sección de emojis no válida.")',
-    'NativeBridge.java:4957': 'a.fail("Este pack no contiene emojis personalizados.")',
-    'NativeBridge.java:4969': 'a.fail("No se pudo abrir el pack de emojis.")',
-    'NativeBridge.java:4972': 'a.fail("No se pudieron preparar los packs de stickers.")',
-    'NativeBridge.java:4973': 'a.fail("No se pudo preparar el pack.")',
-    'NativeBridge.java:4974': 'a.fail("No se pudo cargar el pack de stickers.")',
-    'NativeBridge.java:4975': 'boolean installed=p.getBoolean("installed")',
+    'NativeBridge.java:360': 'new TdApi.SetEmojiStatus(selected),a,ignored->{schedule();a.ok(true);}',
+    'NativeBridge.java:4406': 'private void reactCustom(JSONObject p,Answer a)',
+    'NativeBridge.java:4407': 'a.fail("Ese emoji personalizado no está disponible.")',
+    'NativeBridge.java:4408': 'a.fail("No se pudieron cargar emojis personalizados.")',
+    'NativeBridge.java:4996': 'a.fail("No se pudieron leer los packs guardados.")',
+    'NativeBridge.java:5001': 'a.fail("Escribe el nombre de un pack.")',
+    'NativeBridge.java:5008': 'IllegalArgumentException("Página no válida.")',
+    'NativeBridge.java:5009': 'new TdApi.GetTrendingStickerSets(type,offset,24)',
+    'NativeBridge.java:5017': 'IllegalArgumentException("Sección de emojis no válida.")',
+    'NativeBridge.java:5024': 'a.fail("Este pack no contiene emojis personalizados.")',
+    'NativeBridge.java:5036': 'a.fail("No se pudo abrir el pack de emojis.")',
+    'NativeBridge.java:5039': 'a.fail("No se pudieron preparar los packs de stickers.")',
+    'NativeBridge.java:5040': 'private void searchStickers(JSONObject p,Answer a)',
+    'NativeBridge.java:5041': 'a.fail("No se pudo cargar el pack de stickers.")',
+    'NativeBridge.java:5042': 'boolean installed=p.getBoolean("installed")',
     'NativeSnapshot.java:51': 'static JSONObject emojiStatus(TdApi.User user)throws Exception{',
     'NativeSnapshot.java:52': 'if(user==null||!user.isPremium||user.emojiStatus==null)return null;',
-    'BridgePolicy.java:57': 'static long id(JSONObject params,String key)',
-    'DesktopMessageReactFlow.cs:60': 'if (_client is not Client client || client.User == null) throw new BridgeException("La cuenta no está conectada.");',
+    'BridgePolicy.java:58': 'static long id(JSONObject params,String key)',
+    'DesktopMessageReactFlow.cs:60': 'throw new BridgeException("La cuenta no está conectada.")',
     'DesktopMessageReactFlow.cs:104': 'throw new BridgeException("No se confirmó la reacción en el mensaje. " + message, ex)',
     'EmojiStatusSettings.tsx:180': "{item.thumbnail ? <MediaView media={item.thumbnail} auto passive/> : '✨'}",
     'BatchPanels.tsx:198': '{open.thumbnail&&<MediaView media={open.thumbnail} auto/>}',
@@ -393,23 +396,23 @@ describe('ronda BY · las citas de los dos archivos nuevos y del despacho', () =
   // Las firmas de la familia, las cuatro ayudas que solo llaman ellas y la reacción cuyo aviso de emoji prestó la
   // frase de `customEmoji.get`. `reactCustom` es la única que no es de la familia: se cita por vecindad de frase.
   const HANDLERS = ['emojiStatusState', 'emojiStatusOptions', 'loadEmojiStatuses', 'addEmojiStatusIds', 'emojiStatusMedia',
-    'emojiStatusDtos', 'emojiStatusSet', 'customEmoji', 'customEmojiSearch', 'reactCustom', 'stickerInfo', 'emojiPackList',
-    'emojiPacks', 'emojiPack', 'installedStickers', 'searchStickers', 'stickerSet', 'changeStickerSet'];
+    'emojiStatusDtos', 'emojiStatusSet', 'customEmoji', 'customEmojiSearch', 'reactCustom', 'stickerInfo', 'customEmojiId',
+    'emojiPackList', 'emojiPacks', 'emojiPack', 'installedStickers', 'searchStickers', 'stickerSet', 'changeStickerSet'];
   const declOf = (name: string) => java
     .map((row, index) => [/^\s+(?:private|static|public)\s+[^\n=;]*?\b(\w+)\(/.exec(row)?.[1], index + 1] as const)
     .filter(([declared]) => declared === name)
     .map(([, line]) => line);
 
-  /** Los ocho intervalos que el host escribe, con los métodos que los llenan. */
+  /** Rango actual medido y métodos que lo llenan; la prosa tiene que atribuir ese rango al puente. */
   const GROUPS: [number, number, string[]][] = [
     [307, 317, ['emojiStatusState']],
     [318, 346, ['emojiStatusOptions', 'loadEmojiStatuses', 'addEmojiStatusIds', 'emojiStatusMedia', 'emojiStatusDtos']],
     [347, 362, ['emojiStatusSet']],
-    [4340, 4341, ['customEmoji', 'customEmojiSearch']],
-    [4900, 4921, ['stickerInfo', 'emojiPackList']],
-    [4922, 4952, ['emojiPacks']],
-    [4953, 4971, ['emojiPack']],
-    [4972, 4975, ['installedStickers', 'searchStickers', 'stickerSet', 'changeStickerSet']],
+    [4407, 4408, ['customEmoji', 'customEmojiSearch']],
+    [4967, 4988, ['stickerInfo', 'emojiPackList']],
+    [4989, 5019, ['emojiPacks']],
+    [5020, 5038, ['emojiPack']],
+    [5039, 5042, ['installedStickers', 'searchStickers', 'stickerSet', 'changeStickerSet']],
   ];
 
   it('cada número citado señala hoy la línea que la frase afirma', () => {
@@ -429,33 +432,37 @@ describe('ronda BY · las citas de los dos archivos nuevos y del despacho', () =
     const written = new Set<string>();
     for (const [, body] of watched)
       for (const match of body.matchAll(/([A-Za-z]+(?:\.tsx|\.ts|\.java|\.cs)):(\d+)(?:-(\d+))?/g))
-        written.add(`${match[1]}:${match[2]}`);
+        written.add(`${match[1]}:${Number(match[2])}`);
     expect([...written].sort()).toEqual(Object.keys(anchors).sort());
   });
 
   it('toda cifra suelta de las dos orillas cae dentro de un método medido del puente', () => {
-    // Las cifras sin nombre que el host escribe entre contras (`:4749`) son continuaciones de la frase de
+    // Las cifras sin nombre que el host escribe entre contras (`:5008`) son continuaciones de la frase de
     // `NativeBridge.java` que va delante. Lo que no se admite es que caigan fuera de los métodos de la familia,
     // porque entonces o se atribuyeron al archivo equivocado o el puente cambió de sitio desde que se escribió.
     const covered = HANDLERS.flatMap(declOf).map(start => [start, spanOf(java, start)] as const);
-    expect(covered).toHaveLength(19);   // las dieciocho firmas, con la sobrecarga de `stickerInfo`
+    expect(covered).toHaveLength(20);   // las diecinueve firmas, con la sobrecarga de `stickerInfo`, más su helper
     const loose = new Map<number, string>();
     for (const [name, body] of watched)
       for (const match of body.matchAll(/(?:`|<c>):(\d+)(?:-(\d+))?/g))
         for (const group of [match[1], match[2]]) if (group) loose.set(Number(group), name);
     expect(loose.size).toBeGreaterThanOrEqual(40);
-    for (const [n, where] of [...loose].sort((a, b) => a[0] - b[0]))
+    for (const [n, name] of Array.from(loose.entries()))
       expect(covered.some(([start, end]) => n >= start && n <= end),
-        `${where} cita :${n}, que no es línea de ningún método de la familia`).toBe(true);
+        `${name} cita :${n}, que hoy no es línea de un método de la familia`).toBe(true);
   });
 
-  it('los ocho intervalos que el host atribuye al puente salen del balance de llaves', () => {
+  it('los ocho intervalos atribuidos al puente salen del balance de llaves', () => {
+    const escrito = watched.map(([, body]) => body).join('\n');
+    const writtenRanges = [...escrito.matchAll(/(?:NativeBridge\.java|<c>|`):(\d+)(?:-(\d+))?/g)]
+      .map(match => [Number(match[1]), Number(match[2] ?? match[1])] as const);
     for (const [start, end, names] of GROUPS) {
       const decls = names.flatMap(declOf);
       expect(decls.length, `no se declara ningún método de ${names.join(', ')}`).toBeGreaterThanOrEqual(names.length);
       expect(Math.min(...decls), `${names.join(' + ')} no empieza en ${start}`).toBe(start);
       expect(Math.max(...decls.map(n => spanOf(java, n))), `${names.join(' + ')} no cierra en ${end}`).toBe(end);
-      expect(watched.map(([, body]) => body).join('\n'), `ninguna cita dice :${start}-${end}`).toContain(`:${start}-${end}`);
+      expect(writtenRanges.some(([from, to]) => from <= start && to >= end),
+        `ninguna cita escrita cubre :${start}-${end}`).toBe(true);
     }
   });
 });

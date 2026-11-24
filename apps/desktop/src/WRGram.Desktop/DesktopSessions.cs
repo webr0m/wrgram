@@ -5,7 +5,7 @@ namespace WRGram.Desktop;
 
 /// <summary>
 /// Reglas de la lista de sesiones activas en Windows. En Android el flujo está escrito entero desde hace rondas:
-/// la lectura es <c>accountSessions</c> (<c>NativeBridge.java:1786</c>), despachada en <c>:538</c>, y el cierre es
+/// la lectura es <c>accountSessions</c> (<c>NativeBridge.java:1787</c>), despachada en <c>:538</c>, y el cierre es
 /// un <c>TerminateSession</c> de una línea (<c>:553</c>). Aquí las dos caían en negativas: la lectura con una
 /// frase propia (<c>DesktopAccountProfile.NoSessions</c>, que esta ronda ha borrado porque mentía) y la escritura
 /// con el <c>_ =&gt; throw</c> genérico, sin que nadie hubiera mirado si la librería tenía petición.
@@ -34,17 +34,17 @@ namespace WRGram.Desktop;
 /// </summary>
 public static class DesktopSessions
 {
-    /// Literal de <c>answer.fail("No se pudieron consultar las sesiones.")</c> (<c>NativeBridge.java:1786</c>). Allá
+    /// Literal de <c>answer.fail("No se pudieron consultar las sesiones.")</c> (<c>NativeBridge.java:1787</c>). Allá
     /// la produce el fallo al montar el <c>JSONArray</c>; aquí no hay JSON que montar —se devuelve un array de
     /// DTOs—, así que la frase queda para lo que sí puede pasar en esta capa: que la respuesta no traiga la lista.
     public const string NotRead = "No se pudieron consultar las sesiones.";
 
-    /// El respaldo de <c>item.deviceModel==null?"Dispositivo":item.deviceModel</c> (<c>NativeBridge.java:1786</c>).
-    /// No es decoración: sin <c>device</c> la fila de la pantalla (<c>App.tsx:402</c>) queda sin título.
+    /// El respaldo de <c>item.deviceModel==null?"Dispositivo":item.deviceModel</c> (<c>NativeBridge.java:1787</c>).
+    /// No es decoración: sin <c>device</c> la fila de la pantalla (<c>App.tsx:412</c>) queda sin título.
     public const string NoDevice = "Dispositivo";
 
     /// Lo que Android lanza como <c>Invalid identifier</c> desde <c>BridgePolicy.id</c>
-    /// (<c>BridgePolicy.java:57</c>) dicho en español, como hicieron las rondas AT y AU con las demás frases
+    /// (<c>BridgePolicy.java:58</c>) dicho en español, como hicieron las rondas AT y AU con las demás frases
     /// inglesas del puente: un código de la biblioteca no es una explicación.
     public const string BadId = "El identificador de la sesión no es un identificador válido.";
 
@@ -76,7 +76,7 @@ public static class DesktopSessions
     public static string Device(string? model) => string.IsNullOrEmpty(model) ? NoDevice : model;
 
     /// <c>item.applicationName==null?"":item.applicationName+" "+(item.applicationVersion==null?"":item.applicationVersion)</c>
-    /// (<c>NativeBridge.java:1785</c>). Se copia tal cual, con su espacio cuando la versión falta: la pantalla
+    /// (<c>NativeBridge.java:1786</c>). Se copia tal cual, con su espacio cuando la versión falta: la pantalla
     /// compone <c>[version,platform,location].filter(Boolean).join(' · ')</c> y el HTML colapsa el doble espacio,
     /// así que divergir aquí sería cambiar una cifra por estética y perder la paridad que esta ronda persigue.
     public static string Version(string? name, string? version) =>

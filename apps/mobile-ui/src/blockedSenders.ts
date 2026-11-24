@@ -3,7 +3,7 @@ import type { BlockedSender, BlockedSenders } from './contract';
 /**
  * El espejo de `BlockedSendersPolicy.java` y de `DesktopBlocked.cs` (ronda BI): la página de remitentes bloqueados,
  * su marcador, las dos palabras de `kind`, los tres techos y las negaciones que dicen las dos capas. Son las cadenas
- * que el puente devuelve, copiadas carácter a carácter de `NativeBridge.java:1541-1576` y de
+ * que el puente devuelve, copiadas carácter a carácter de `NativeBridge.java:1542-1577` y de
  * `BlockedSendersPolicy.java:9-36`; `rondaBI.test.ts` las compara con el Java, con el C# y con los rótulos del panel
  * para que la vista de diseño no enseñe nunca una palabra que Android o Windows no dirían.
  *
@@ -42,7 +42,7 @@ export const BLOCKED_REFUSALS = {
   needsHash: 'Telegram no dio los datos necesarios para desbloquear a este remitente. Vuelve a abrir la lista de bloqueados e inténtalo de nuevo.',
   /** Solo lo diría Windows, y por la misma falta de hash, pero desde la ficha de la persona. */
   noProfileHash: 'Telegram no dio los datos necesarios para cambiar el bloqueo de esta persona. Vuelve a abrir su ficha desde la conversación e inténtalo de nuevo.',
-  /** El primer `throw` de `profileBlock` (`NativeBridge.java:1302`). */
+  /** El primer `throw` de `profileBlock` (`NativeBridge.java:1303`). */
   notPrivate: 'Esta acción solo está disponible para usuarios y bots.',
   /** El segundo (`:1304`). */
   selfBlock: 'Esta es tu propia cuenta.',
@@ -76,7 +76,7 @@ export const blockedOffsetProblem = (raw: unknown): string | null => {
 
 export const blockedOffset = (raw: unknown): number => (typeof raw === 'number' && Number.isInteger(raw) ? raw : 0);
 
-/** La litera de `BridgePolicy.id` (`BridgePolicy.java:57`): cadena con forma de entero firmado de hasta diecinueve dígitos. */
+/** La litera de `BridgePolicy.id` (`BridgePolicy.java:58`): cadena con forma de entero firmado de hasta diecinueve dígitos. */
 const IDENTIFIER = /^-?(0|[1-9][0-9]{0,18})$/;
 
 /**

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
-import type { InboxTab } from './chatFilters';
+import { tabShowsName, type InboxTab } from './chatFilters';
 import { InboxTabEmoji, InboxTabIcon } from './InboxTabs';
 import { useLanguage } from './language';
 
@@ -46,10 +46,17 @@ export function InboxTabBar({tabs, active, unread, choose, manage}:{
         {tabs.map(tab=>{
           const isActive=active===tab.id;
           const count=tab.id==='unread'?unread:0;
-          return <button type="button" className="inbox-tab" key={tab.id} ref={isActive?selected:undefined}
-            aria-pressed={isActive} aria-label={tab.emoji?tab.name+(count?' · '+count:''):undefined}
-            title={tab.emoji?tab.name:undefined} onClick={()=>choose(tab.id)}>
-            {tab.emoji?<InboxTabEmoji emoji={tab.emoji}/>:<><InboxTabIcon icon={tab.icon}/>{tab.name}</>}
+          const showsName=tabShowsName(tab);
+          const iconOnly=!showsName;
+          const label=tab.name+(count?' · '+count:'');
+          const initial=Array.from(tab.name.trim())[0]?.toLocaleUpperCase()||'•';
+          return <button type="button" className={'inbox-tab'+(iconOnly?' inbox-tab-icon-only':'')} key={tab.id} ref={isActive?selected:undefined}
+            aria-pressed={isActive} aria-label={iconOnly?label:undefined}
+            title={iconOnly?tab.name:undefined} onClick={()=>choose(tab.id)}>
+            {tab.emoji?<InboxTabEmoji emoji={tab.emoji}/>
+              : tab.icon?<InboxTabIcon icon={tab.icon}/>
+                : iconOnly?<span className="inbox-tab-initial" aria-hidden="true">{initial}</span>:null}
+            {showsName&&<span className="inbox-tab-name">{tab.name}</span>}
             {count>0&&<span className="chat-tab-unread">{count}</span>}
           </button>;
         })}

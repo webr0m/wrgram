@@ -5,10 +5,10 @@ using TL;
 
 /// <summary>
 /// El cable de la agenda escribiente en Windows: <c>contacts.add</c> y <c>contacts.remove</c>, que Android atiende
-/// las dos en <c>contactAction</c> (<c>NativeBridge.java:1859</c>) desde un mismo <c>case</c> del despacho
+/// las dos en <c>contactAction</c> (<c>NativeBridge.java:1860</c>) desde un mismo <c>case</c> del despacho
 /// (<c>:563</c>). Las claves estaban en la lista del puente (<c>BridgePolicy.java</c>) y la pantalla las pide desde
-/// la ficha de la persona (<c>PeerProfile.tsx:97</c> a través de <c>App.tsx:750</c>); en Windows caían en el
-/// <c>_ =&gt; throw</c> genérico de <c>TelegramService.cs:506</c>, así que el botón de «Añadir a contactos» existía y
+/// la ficha de la persona (<c>PeerProfile.tsx:97</c> a través de <c>App.tsx:760</c>); en Windows caían en el
+/// <c>_ =&gt; throw</c> genérico de <c>TelegramService.cs:508</c>, así que el botón de «Añadir a contactos» existía y
 /// devolvía la frase del beta. Las reglas, las frases y su orden están en <see cref="DesktopContactWrite"/>; aquí
 /// está el hilo.
 /// <para>
@@ -22,7 +22,7 @@ using TL;
 /// <para>
 /// Los dos «no hace nada» de Android se conservan tal cual: quitar a quien no está y añadir a quien ya está
 /// responden <c>false</c> sin abrir ventana y sin tocar Telegram (<c>:1839</c>, los dos <c>answer.ok(false)</c>
-/// delante del diálogo y del <c>perform</c>). La pantalla lo lee bien —<c>App.tsx:750</c> solo repinta la ficha si el
+/// delante del diálogo y del <c>perform</c>). La pantalla lo lee bien —<c>App.tsx:760</c> solo repinta la ficha si el
 /// valor es <c>true</c>—, así que no hay frase que decir: no pasó nada y la persona no perdió ningún botón.
 /// </para>
 /// <para>
@@ -71,7 +71,7 @@ public sealed partial class TelegramService
 
     /// <summary>
     /// <c>contacts.remove</c> (<c>:1839</c>): sin cuadro y sin guarda de cuenta, porque Android tampoco tiene ninguna
-    /// de las dos —la orden ya viene decidida por el <c>confirm()</c> de la propia pantalla (<c>App.tsx:751</c>) y el
+    /// de las dos —la orden ya viene decidida por el <c>confirm()</c> de la propia pantalla (<c>App.tsx:761</c>) y el
     /// <c>RemoveContacts</c> no espera a nadie—. Lo único que se añade es el identificador con hash que MTProto pide
     /// y TDLib resuelve solo.
     /// </summary>

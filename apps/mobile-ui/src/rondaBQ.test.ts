@@ -7,11 +7,11 @@ import { desktopGapRefusal } from './desktopGap';
  * La ronda BQ conecta `chat.invite` en Windows: el brazo del despacho, el cable y las cinco frases que Android ya
  * decía y que aquí faltaban. Lo que esta prueba vigila son las cuatro piezas por las que el flujo puede romperse.
  *
- * Primero las frases: `createInviteLink` (`NativeBridge.java:1883`) niega de dos maneras y pregunta de una, y las
+ * Primero las frases: `createInviteLink` (`NativeBridge.java:1884`) niega de dos maneras y pregunta de una, y las
  * cinco cadenas que salen de ahí están copiadas carácter a carácter en `DesktopLinkManager`, cada una una sola vez
  * por capa. Dos de ellas son parecidas a otras que ya vivían aquí y no son la misma: «solo se crean» frente al
  * «solo existen» de la gestión de enlaces, y el botón «Crear enlace» frente al «Aplicar en Telegram» de
- * `confirmLink` (`:3728`) —Android tiene dos diálogos y dos rótulos, y unificarlos en Windows habría borrado uno de
+ * `confirmLink` (`:3739`) —Android tiene dos diálogos y dos rótulos, y unificarlos en Windows habría borrado uno de
  * los dos. Segundo el orden: forma, derecho, cuenta, ventana, escritura, cuenta, caja; medido por posición en los dos
  * cables, no por prosa. Tercero la puerta: la hoja de escritorio tiene que ofrecer lo mismo que la rama de Android,
  * con la misma guarda de forma. Y cuarto lo que no se copia: Android termina en un `Intent.ACTION_SEND` que en WPF no
@@ -116,7 +116,7 @@ describe('ronda BQ · crear enlace de invitación también en Windows', () => {
     // unicidad a Java sería exigirle algo que Java no hace.
     for (const name of ['NotCreatable', 'QuickBody', 'DialogCreated', 'CreatedBody'] as const) {
       const phrase = `"${csSentence(name)}"`;
-      expect(says(javaLine(1883), csSentence(name)), name).toBe(true);
+      expect(says(javaLine(1884), csSentence(name)), name).toBe(true);
       expect(count(phrase, java), `${name} en Java`).toBe(1);
       // En la capa nueva vive una sola vez: la dice la clase de reglas y el cable la pide por su nombre.
       expect(count(phrase, rules), `${name} en las reglas`).toBe(1);
@@ -124,12 +124,12 @@ describe('ronda BQ · crear enlace de invitación también en Windows', () => {
       expect(count(phrase, sheet), `${name} en la ventana`).toBe(0);
     }
     // El botón de cerrar es el de siempre de Android, pero en esta capa no estaba escrito: era «Cancelar».
-    expect(says(javaLine(1883), csSentence('DialogClose'))).toBe(true);
+    expect(says(javaLine(1884), csSentence('DialogClose'))).toBe(true);
     expect(count('public const string DialogClose = "Cerrar";', rules)).toBe(1);
     expect(count('"Cerrar"', cable + sheet)).toBe(0);
     // Y las tres que se reutilizan, no se vuelven a escribir: el cable las pide por su nombre de constante.
     for (const name of ['NoRightCreate', 'DialogCreate', 'DefaultLabel'] as const) {
-      expect(says(javaLine(1883), csSentence(name)), name).toBe(true);
+      expect(says(javaLine(1884), csSentence(name)), name).toBe(true);
       expect(count(`"${csSentence(name)}"`, FORM), `${name} escrito en el cable`).toBe(0);
       expect(FORM, `${name} pedido por alias`).toContain(`DesktopLinkManager.${name}`);
     }
@@ -164,9 +164,9 @@ describe('ronda BQ · crear enlace de invitación también en Windows', () => {
 
   it('los dos diálogos de Android siguen siendo dos diálogos en Windows', () => {
     // `createInviteLink` pregunta con su rótulo; el formulario de la ronda G lo hace con el de `confirmLink`.
-    expect(says(javaLine(1883), csSentence('QuickAccept'))).toBe(true);
+    expect(says(javaLine(1884), csSentence('QuickAccept'))).toBe(true);
     // `confirmLink` ya no es una línea: la CB la partió en cinco, así que el botón se lee en `:3727`.
-    expect(says(javaLine(3731), 'Aplicar en Telegram')).toBe(true);
+    expect(says(javaLine(3742), 'Aplicar en Telegram')).toBe(true);
     // «Crear enlace» es el rótulo que Android pone en este diálogo (y repite en otros dos, el de suscripción y el de
     // carpetas); «Aplicar en Telegram» es el con el que pregunta las escrituras ya elegidas, cinco veces en el puente.
     // Son dos botones distintos y en Windows siguen siéndolo: uno es una constante de esta familia y el otro se pide
@@ -186,7 +186,7 @@ describe('ronda BQ · crear enlace de invitación también en Windows', () => {
 
   it('los siete días son el mismo número y no una cuenta propia', () => {
     expect(rules).toContain('public const long QuickSpan = 7L * 24 * 60 * 60;');
-    expect(javaLine(1883)).toContain('7L*24*60*60');
+    expect(javaLine(1884)).toContain('7L*24*60*60');
     // La caducidad se calcula con la regla de la familia, no con una suma suelta dentro del cable.
     expect(FORM).toContain('DesktopLinkManager.Expires(DateTimeOffset.UtcNow.ToUnixTimeSeconds(), DesktopLinkManager.QuickSpan)');
     expect(preview).toContain('expires: now + 7 * 24 * 60 * 60');
@@ -210,7 +210,7 @@ describe('ronda BQ · crear enlace de invitación también en Windows', () => {
     expect(FORM.lastIndexOf(ACCOUNT)).toBeGreaterThan(FORM.indexOf('Messages_ExportChatInvite('));
     expect(FORM.lastIndexOf(ACCOUNT)).toBeLessThan(FORM.indexOf('Notice('));
     // El mismo orden, leído en la línea de Java: forma, derecho, ventana, escritura, hoja de compartir y caja.
-    ordered(javaLine(1883),
+    ordered(javaLine(1884),
       'answer.fail("Los enlaces de invitación solo se crean para grupos y canales.")',
       'if(!canInviteMembers(actor)){answer.fail("Telegram no concede a esta cuenta permiso para crear enlaces de invitación.")',
       '.setNegativeButton("Cancelar",(d,w)->answer.ok(false)).setPositiveButton("Crear enlace"',
@@ -218,7 +218,7 @@ describe('ronda BQ · crear enlace de invitación también en Windows', () => {
       'Intent share=new Intent(Intent.ACTION_SEND)',
       'setTitle("Enlace creado")');
     // Y el detalle que delata el orden: el derecho se pregunta antes de levantar el cuadro, nunca después.
-    expect(javaLine(1883).indexOf('canInviteMembers(actor)')).toBeLessThan(javaLine(1883).indexOf('setTitle("Crear enlace de invitación")'));
+    expect(javaLine(1884).indexOf('canInviteMembers(actor)')).toBeLessThan(javaLine(1884).indexOf('setTitle("Crear enlace de invitación")'));
   });
 
   it('la ventana es la del host, con su variante de botón único y caja seleccionable', () => {
@@ -267,11 +267,19 @@ describe('ronda BQ · crear enlace de invitación también en Windows', () => {
     // eran 164 vivos y 123 pendientes. La ronda CD partió la fila de Premium: sacó `premium.state` de la pendiente —
     // la cableó en Windows (`TelegramService.cs:399`)— y la declaró sola como la marca de la cuenta. La CH-A estrenó en
     // Android los fondos de la cuenta (`backgrounds.list`, `background.set`) y los dejó pendientes en el andamio: eran
-    // 165 vivos y 124 pendientes. La CH-B escribió sus dos brazos (`TelegramService.cs:500` y `TelegramService.cs:501`)
+    // 165 vivos y 124 pendientes. La CH-B escribió sus dos brazos (`TelegramService.cs:502` y `TelegramService.cs:503`)
     // y pasó su fila de pendientes a afirmada: hoy son 167 vivos y 122 pendientes, contados sobre las dos listas.
+    // La CT añadió la fecha de lectura y los lectores (`message.readDate` y `message.viewers`): son 170 vivos y
+    // 122 pendientes, con las dos claves declaradas también en `BridgePolicy.java`.
     const available = new Set(DESKTOP_AVAILABLE.flatMap(claim => claim.methods));
     const pending = new Set(DESKTOP_PENDING.flatMap(claim => claim.methods));
-    expect(available.size).toBe(168);
+    for (const method of ['message.readDate', 'message.viewers']) {
+      expect(policy).toContain(`"${method}"`);
+      expect(scope).toContain(`'${method}'`);
+      expect(available.has(method)).toBe(true);
+      expect(pending.has(method)).toBe(false);
+    }
+    expect(available.size).toBe(170);
     expect(pending.size).toBe(122);
     expect([...available].filter(method => pending.has(method))).toEqual([]);
     expect(preview).toContain("if (method === 'chat.invite') {");

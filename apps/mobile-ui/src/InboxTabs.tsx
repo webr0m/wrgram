@@ -1,19 +1,28 @@
 import { useState, useSyncExternalStore } from 'react';
 import { Archive, ArrowDown, ArrowUp, Ban, Bell, Bookmark, Bot, Eye, EyeOff, Flame, Globe, Hash, Heart, Image, LockKeyhole, Megaphone, Pencil, Pin, Plus, Send, Star, Trash2, Users, type LucideIcon } from 'lucide-react';
 import { snapshot, subscribe } from './bridge';
-import { arrangeTabs, defaultRules, TAB_EMOJIS, TAB_ICONS, type InboxTab, type TabEmoji, type TabRules } from './chatFilters';
+import { arrangeTabs, defaultRules, TAB_EMOJIS, TAB_ICONS, type InboxTab, type TabDisplay, type TabEmoji, type TabRules } from './chatFilters';
 import type { State } from './contract';
+import { Brand } from './Brand';
 import { CustomEmoji } from './CustomEmoji';
 import { PremiumEmojiPicker } from './EmojiStatusSettings';
 import './inbox-tabs.css';
 
 const TYPES = [['any','Todos'],['private','Personas'],['group','Grupos y foros'],['channel','Canales'],['bot','Bots'],['secret','Chats secretos']] as const;
 
-const TAB_ICON_PARTS:Record<string,LucideIcon>={hash:Hash,bookmark:Bookmark,star:Star,megaphone:Megaphone,users:Users,send:Send,bot:Bot,lock:LockKeyhole,pin:Pin,archive:Archive,image:Image,heart:Heart,globe:Globe,bell:Bell,flame:Flame};
+const TAB_ICON_PARTS:Record<string,LucideIcon>={plus:Plus,hash:Hash,bookmark:Bookmark,star:Star,megaphone:Megaphone,users:Users,send:Send,bot:Bot,lock:LockKeyhole,pin:Pin,archive:Archive,image:Image,heart:Heart,globe:Globe,bell:Bell,flame:Flame};
 
 export function InboxTabIcon({icon,placeholder=false}:{icon?:string;placeholder?:boolean}) {
+  if(icon==='wrgram')return <Brand className="inbox-tab-brand"/>;
   const Icon=icon ? TAB_ICON_PARTS[icon] : undefined;
   return Icon ? <Icon size={15} aria-hidden="true"/> : placeholder ? <Ban size={14} aria-hidden="true"/> : null;
+}
+
+export function InboxTabDisplayPicker({value,change,disabled=false}:{value:TabDisplay;change(value:TabDisplay):void;disabled?:boolean}) {
+  return <div className="tabs-appearance-options tabs-display-options" role="group" aria-label="Presentación del icono">
+    <button type="button" className="secondary" aria-pressed={value==='iconName'} disabled={disabled} onClick={()=>change('iconName')}>Icono y nombre</button>
+    <button type="button" className="secondary" aria-pressed={value==='icon'} disabled={disabled} onClick={()=>change('icon')}>Solo icono</button>
+  </div>;
 }
 
 export function InboxTabEmoji({emoji}:{emoji:TabEmoji}) {
@@ -77,14 +86,15 @@ export function InboxTabs({ initial, folders, save }: {
       <label>Nombre<input value={item.name} maxLength={28} disabled={busy} onChange={event=>update({name:event.target.value})}/></label>
       <fieldset className="tabs-appearance" disabled={busy}>
         <legend>Etiqueta visible</legend>
+        {!item.emoji&&<InboxTabDisplayPicker value={item.display??'iconName'} disabled={busy} change={display=>update({display})}/>}
         <div className="tabs-appearance-options" role="group" aria-label="Formato de la pestaña">
-          <button type="button" className="secondary" aria-pressed={!picker&&!item.emoji} onClick={()=>chooseEmoji()}>Nombre</button>
+          <button type="button" className="secondary" aria-pressed={!picker&&!item.emoji} onClick={()=>chooseEmoji()}>Icono</button>
           <button type="button" className="secondary" aria-expanded={picker==='preset'} onClick={()=>setPicker(picker==='preset'?undefined:'preset')}>Emojis de WRGram</button>
           <button type="button" className="secondary" aria-expanded={picker==='premium'} onClick={()=>setPicker(picker==='premium'?undefined:'premium')}>Emojis Premium</button>
         </div>
         {item.emoji&&<p className="tabs-label-preview"><InboxTabEmoji emoji={item.emoji}/><span>{item.emoji.kind==='premium'?'Emoji de Telegram Premium':'Emoji de WRGram'}</span></p>}
         {picker==='preset'&&<div className="tabs-icon-picker tabs-preset-picker" role="group" aria-label="Emojis de WRGram">
-          {TAB_ICONS.filter(([key])=>key).map(([id,label])=><button key={id} type="button" aria-label={label} title={label}
+          {TAB_ICONS.filter(([key])=>TAB_EMOJIS[key]).map(([id,label])=><button key={id} type="button" aria-label={label} title={label}
             aria-pressed={item.emoji?.kind==='preset'&&item.emoji.id===id} onClick={()=>chooseEmoji({kind:'preset',id})}>
             <span aria-hidden="true">{TAB_EMOJIS[id]}</span>
           </button>)}

@@ -10,7 +10,7 @@ import { desktopGapRefusal } from './desktopGap';
  * del despacho: la mitad escrita y la mitad muda.
  *
  * Lo que vigila esta prueba son las cuatro piezas por las que el flujo puede romperse. Primera la negación: Android
- * lanza `IllegalArgumentException()` sin texto en sus cuatro guardas (`NativeBridge.java:783`) y es el envoltorio
+ * lanza `IllegalArgumentException()` sin texto en sus cuatro guardas (`NativeBridge.java:784`) y es el envoltorio
  * (`:167`) el que pone encima la única frase que la persona oye; en Windows esa frase vive una sola vez en
  * `DesktopBridge.InvalidRequest` y los cuatro rechazos la piden por alias. Segunda la tarjeta: las cuatro claves, los
  * dos recortes —240 y 700— y el sitio sin recortar, medidos sobre la línea que los escribe
@@ -44,6 +44,7 @@ const content = text('./MessageContent.tsx');
 const contract = text('./contract.ts');
 const bridge = text('./bridge.ts');
 const scope = text('./desktopScope.ts');
+const policy = text('../../mobile/android/app/src/main/java/cc/webrom/wrgram/BridgePolicy.java');
 
 const lines = (from: string) => from.split(/\r?\n/);
 const javaLines = lines(java);
@@ -98,7 +99,7 @@ const DTO = slice('public sealed class LinkPreviewDto', '\n}', state);
 
 describe('ronda BR · la tarjeta del enlace y su botón también en Windows', () => {
   it('la orden está en las cuatro capas y su brazo va delante del rechazo', () => {
-    expect(javaLine(783)).toContain('case "message.link":{TdApi.Message message=message(p);');
+    expect(javaLine(784)).toContain('case "message.link":{TdApi.Message message=message(p);');
     expect(service).toContain('"message.link" => await MessageLinkAsync(args),');
     expect(service).not.toContain('"message.link" => throw');
     // Medido por relación, no por número: el número lo ancla la ronda BM, aquí importa el sitio.
@@ -109,7 +110,7 @@ describe('ronda BR · la tarjeta del enlace y su botón también en Windows', ()
     expect(arm).toBeLessThan(generic);
     // Delante de `link.open`, que es el orden del puente: `:779` antes que `:780`.
     expect(arm).toBeLessThan(serviceLines.findIndex(row => row.includes('"link.open" =>')) + 1);
-    expect(javaLine(784)).toContain('case "link.open":');
+    expect(javaLine(785)).toContain('case "link.open":');
     // La pantalla ya tenía el botón y la hoja que lo llama; lo que no tenía era a quién preguntar.
     expect(content).toContain('<button className="text-button" onClick={openLink}>Abrir enlace externo</button>');
     expect(app).toContain('openLink={()=>openMessageLink(message)}');
@@ -121,7 +122,7 @@ describe('ronda BR · la tarjeta del enlace y su botón también en Windows', ()
     expect(phrase).toBe('Solicitud no válida o función no disponible.');
     // En Java la dice el envoltorio, no el brazo: las cuatro guardas de `:779` lanzan la excepción vacía.
     expect(says(javaLine(167), phrase)).toBe(true);
-    expect(count(`"${phrase}"`, javaLine(783))).toBe(0);
+    expect(count(`"${phrase}"`, javaLine(784))).toBe(0);
     expect(count(`"${phrase}"`, java)).toBe(1);
     // En la capa nueva vive una sola vez, y el cable la pide por su nombre.
     expect(count(`"${phrase}"`, envelope)).toBe(1);
@@ -162,7 +163,7 @@ describe('ronda BR · la tarjeta del enlace y su botón también en Windows', ()
 
   it('la dirección vive en la fila y solo la pide el brazo', () => {
     // En Java el brazo la saca de la tarjeta ya cargada (`openLinkOrTelegram(link.url,a)`), nunca del argumento.
-    expect(javaLine(783)).toContain('openLinkOrTelegram(link.url,a)');
+    expect(javaLine(784)).toContain('openLinkOrTelegram(link.url,a)');
     expect(rules).toContain('public static string Url(WebPage page) => page.url ?? "";');
     expect(ARM).toContain('return await LinkFromUrlAsync(DesktopLinkPreview.Url(web), Bool(args, "confirmed"));');
     // El brazo no lee ninguna dirección en la petición: la lee en la fila.
@@ -181,7 +182,7 @@ describe('ronda BR · la tarjeta del enlace y su botón también en Windows', ()
     expect(snapshotLine(227)).toContain('if(!temporary&&message.content instanceof TdApi.MessageText&&(chat==null||!(chat.type instanceof TdApi.ChatTypeSecret)))');
     expect(line(snapshotLines, 166, 'NativeSnapshot.java')).toContain('boolean temporary=MessageExtras.temporary(message);');
     // ...y el brazo lo repite como su segunda guarda.
-    expect(javaLine(783)).toContain('if(message.selfDestructType!=null||message.ephemeralContent!=null||!(message.content instanceof TdApi.MessageText))throw new IllegalArgumentException();');
+    expect(javaLine(784)).toContain('if(message.selfDestructType!=null||message.ephemeralContent!=null||!(message.content instanceof TdApi.MessageText))throw new IllegalArgumentException();');
     // En Windows el espejo lo escribió la ronda BP y las dos mitades lo piden por alias.
     expect(profile).toContain('public static bool IsEphemeral(MessageBase? row) => row switch');
     expect(count('ttl_period > 0', profile)).toBe(2);
@@ -218,7 +219,7 @@ describe('ronda BR · la tarjeta del enlace y su botón también en Windows', ()
 
   it('el orden de guardas es el de Android, medido por posición en los tres cables', () => {
     // Fila del chat abierto → temporizador → contenido de texto → tarjeta → embudo.
-    ordered(javaLine(783), 'message=message(p)', 'message.selfDestructType!=null', '!(message.content instanceof TdApi.MessageText)', ').linkPreview;', 'if(link==null)throw', 'openLinkOrTelegram(link.url,a)');
+    ordered(javaLine(784), 'message=message(p)', 'message.selfDestructType!=null', '!(message.content instanceof TdApi.MessageText)', ').linkPreview;', 'if(link==null)throw', 'openLinkOrTelegram(link.url,a)');
     // La primera guarda de Java es `message(p)` (`:364`): cuenta, fila y conversación activa.
     expect(line(javaLines, 364, 'NativeBridge.java')).toContain('requireAccount();');
     expect(line(javaLines, 364, 'NativeBridge.java')).toContain('message==null||message.chatId!=session.activeChat');
@@ -273,11 +274,18 @@ describe('ronda BR · la tarjeta del enlace y su botón también en Windows', ()
     // disponible y sumó su clave a lo afirmado: eran 164 vivos y 123 pendientes. La ronda CD partió la fila de
     // Premium: sacó `premium.state` de la pendiente —la cableó en Windows (`TelegramService.cs:399`)— y la declaró
     // sola como la marca de la cuenta: eran 165 vivos y 124 pendientes. La CH-B escribió los dos brazos de los fondos
-    // (`TelegramService.cs:500` y `TelegramService.cs:501`) y pasó su fila de pendientes a afirmada: hoy son 167 vivos
-    // y 122 pendientes.
+    // (`TelegramService.cs:502` y `TelegramService.cs:503`) y pasó su fila de pendientes a afirmada: hoy son 167 vivos
+    // y 122 pendientes. La CT añadió la fecha de lectura y los lectores (`message.readDate` y `message.viewers`): son
+    // 170 vivos y 122 pendientes, con las dos claves declaradas también en `BridgePolicy.java`.
     const available = new Set(DESKTOP_AVAILABLE.flatMap(claim => claim.methods));
     const pending = new Set(DESKTOP_PENDING.flatMap(claim => claim.methods));
-    expect(available.size).toBe(168);
+    for (const method of ['message.readDate', 'message.viewers']) {
+      expect(policy).toContain(`"${method}"`);
+      expect(scope).toContain(`'${method}'`);
+      expect(available.has(method)).toBe(true);
+      expect(pending.has(method)).toBe(false);
+    }
+    expect(available.size).toBe(170);
     expect(pending.size).toBe(122);
     expect([...available].filter(method => pending.has(method))).toEqual([]);
   });

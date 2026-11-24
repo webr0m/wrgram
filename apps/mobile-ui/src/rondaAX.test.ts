@@ -95,7 +95,7 @@ function inOrder(body: string, keys: string[]): boolean {
 
 // Medido hoy en `NativeBridge.java`: cada clave es la línea donde Android responde ese `answer.fail` literal.
 const SUPERGROUP_REFUSALS = {
-  Unsupported: '2795', TooLongQuery: '2797', NoRight: '2800', Unreadable: '2807',
+  Unsupported: '2806', TooLongQuery: '2808', NoRight: '2811', Unreadable: '2818',
 } as const;
 
 describe('ronda AX · las listas de miembros, cruzadas con las tres capas', () => {
@@ -107,17 +107,17 @@ describe('ronda AX · las listas de miembros, cruzadas con las tres capas', () =
   });
 
   it('el filtro malo viaja desde el `IllegalArgumentException` de Android, no desde un literal nuevo', () => {
-    // `:2802` mete la construcción del filtro en un `try` y devuelve `invalid.getMessage()`; la frase nace allí,
-    // en `supergroupMembersFilter`/`chatMembersFilter` `:2778-2779`, así que se compara con la litera que
+    // `:2813` mete la construcción del filtro en un `try` y devuelve `invalid.getMessage()`; la frase nace allí,
+    // en `supergroupMembersFilter`/`chatMembersFilter` `:2789-2790`, así que se compara con la litera que
     // Android lanza y no con una inventada para Windows.
     const thrown = /throw new IllegalArgumentException\("Filtro de miembros no válido\."\)/;
-    expect(thrown.test(line(lines, 2778, 'NativeBridge')) || thrown.test(line(lines, 2779, 'NativeBridge'))).toBe(true);
+    expect(thrown.test(line(lines, 2789, 'NativeBridge')) || thrown.test(line(lines, 2790, 'NativeBridge'))).toBe(true);
     expect(csSentence('BadFilter', supergroup)).toBe('Filtro de miembros no válido.');
-    expect(line(lines, 2802, 'NativeBridge')).toContain('answer.fail(invalid.getMessage())');
+    expect(line(lines, 2813, 'NativeBridge')).toContain('answer.fail(invalid.getMessage())');
   });
 
   it('el permiso se comprueba antes que el filtro, en el puente y en su espejo', () => {
-    expect(Number(SUPERGROUP_REFUSALS.NoRight)).toBeLessThan(2802);
+    expect(Number(SUPERGROUP_REFUSALS.NoRight)).toBeLessThan(2813);
     const body = csBody('GroupMembersAsync');
     expect(body.indexOf('DesktopGroupMembers.NoRight')).toBeGreaterThanOrEqual(0);
     expect(body.indexOf('DesktopGroupMembers.NoRight')).toBeLessThan(body.indexOf('DesktopGroupMembers.Request('));
@@ -151,13 +151,13 @@ describe('ronda AX · las listas de miembros, cruzadas con las tres capas', () =
   });
 
   it('la frase del diálogo de expulsión es la línea del `Dialogs` de Android, título y botón incluidos', () => {
-    expect(javaLine(2891)).toContain('.setTitle("Expulsar de "+chat.title)');
-    expect(javaLine(2893)).toContain('setPositiveButton("Expulsar"');
-    expect(javaLine(2894)).toContain('"La conversación cambió. No se expulsó a nadie."');
+    expect(javaLine(2902)).toContain('.setTitle("Expulsar de "+chat.title)');
+    expect(javaLine(2904)).toContain('setPositiveButton("Expulsar"');
+    expect(javaLine(2905)).toContain('"La conversación cambió. No se expulsó a nadie."');
     expect(csSentence('DialogAccept', roster)).toBe('Expulsar');
     // La frase de cuenta cambiada no está en la línea del botón: Android la responde dentro del `setPositiveButton`,
-    // que arranca en la 2893 y la dice en la 2894. Medido sobre el archivo de hoy.
-    expect(csSentence('ChangedAccount', roster)).toBe(failSentence(2894));
+    // que arranca en la 2904 y la dice en la 2905. Medido sobre el archivo de hoy.
+    expect(csSentence('ChangedAccount', roster)).toBe(failSentence(2905));
     expect(roster).toContain('public static string DialogTitle(string chatTitle) => "Expulsar de " + chatTitle;');
     const confirm = /"Se expulsará a " \+ name \+ " del grupo de forma definitiva\. " \+ \(revoke \? RevokeOn : RevokeOff\)/;
     expect(confirm.test(roster)).toBe(true);
@@ -182,13 +182,13 @@ describe('ronda AX · las listas de miembros, cruzadas con las tres capas', () =
     expect(supergroup).toContain('!(searching && (key is "administrators" or "bots"))');
   });
 
-  it('los dos apretones y el tope de búsqueda son los de la línea 2798 y la 2797', () => {
-    expect(javaLine(2798)).toContain('Math.max(0,Math.min(5000,');
-    expect(javaLine(2798)).toContain('Math.max(1,Math.min(50,');
+  it('los dos apretones y el tope de búsqueda son los de la línea 2809 y la 2808', () => {
+    expect(javaLine(2809)).toContain('Math.max(0,Math.min(5000,');
+    expect(javaLine(2809)).toContain('Math.max(1,Math.min(50,');
     expect(supergroup).toContain('public const int MaxOffset = 5000;');
     expect(supergroup).toContain('public const int MaxLimit = 50;');
     expect(supergroup).toContain('public const int MinLimit = 1;');
-    expect(javaLine(2797)).toContain('if(query.length()>80)');
+    expect(javaLine(2808)).toContain('if(query.length()>80)');
     expect(supergroup).toContain('public static bool TooLong(string? query) => (query ?? "").Length > MaxQuery;');
     // El básico recorta antes de medir (`BasicGroupRoster.java:97`): dos caminos, dos reglas.
     expect(rosterLine(97)).toContain('query.trim().length() > MAX_QUERY');
@@ -196,7 +196,7 @@ describe('ronda AX · las listas de miembros, cruzadas con las tres capas', () =
   });
 
   it('las dieciséis claves de una fila de supergrupo son las de `memberDto`, en su orden', () => {
-    const keys = objectKeys(javaLine(2790));
+    const keys = objectKeys(javaLine(2801));
     expect(keys.length).toBeGreaterThanOrEqual(15);
     expect(inOrder(csBody('Row', supergroup), keys)).toBe(true);
     const ui = /export interface GroupMember \{([^}]*)\}/.exec(contract);
@@ -205,18 +205,18 @@ describe('ronda AX · las listas de miembros, cruzadas con las tres capas', () =
   });
 
   it('las once claves del básico son las de `writeRoster` y las del envoltorio las diez de la respuesta', () => {
-    const rowKeys = objectKeys(`${javaLine(2840)} ${javaLine(2841)} ${javaLine(2842)} ${javaLine(2843)} ${javaLine(2844)}`);
+    const rowKeys = objectKeys(`${javaLine(2851)} ${javaLine(2852)} ${javaLine(2853)} ${javaLine(2854)} ${javaLine(2855)}`);
     expect(rowKeys).toEqual(['id', 'name', 'username', 'status', 'inside', 'self', 'bot', 'since', 'invitedBy', 'invitedByName', 'tag']);
     expect(inOrder(csBody('Row', roster), rowKeys)).toBe(true);
-    const answerKeys = objectKeys(`${javaLine(2846)} ${javaLine(2847)} ${javaLine(2848)} ${javaLine(2849)} ${javaLine(2850)}`);
+    const answerKeys = objectKeys(`${javaLine(2857)} ${javaLine(2858)} ${javaLine(2859)} ${javaLine(2860)} ${javaLine(2861)}`);
     expect(answerKeys).toEqual(['members', 'shown', 'listed', 'inside', 'creator', 'note', 'remaining', 'order', 'manage', 'scope']);
     expect(inOrder(csBody('BasicRosterAsync'), answerKeys)).toBe(true);
     expect(answerKeys.length).toBe(10);
   });
 
-  it('el desplazamiento cuenta lo devuelto y se corta al buscar, igual que la línea 2805', () => {
-    expect(javaLine(2805)).toContain('int received=result.members==null?0:result.members.length');
-    expect(javaLine(2805)).toContain('int next=query.trim().isEmpty()?offset+received:0');
+  it('el desplazamiento cuenta lo devuelto y se corta al buscar, igual que la línea 2816', () => {
+    expect(javaLine(2816)).toContain('int received=result.members==null?0:result.members.length');
+    expect(javaLine(2816)).toContain('int next=query.trim().isEmpty()?offset+received:0');
     const page = csBody('Page', supergroup);
     expect(page).toContain('var next = searching ? 0 : offset + received;');
     expect(csBody('GroupMembersAsync')).toContain('var received = answer.participants?.Length ?? 0;');

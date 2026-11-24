@@ -1,12 +1,21 @@
 package cc.webrom.wrgram;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 
 import org.json.JSONObject;
 import org.junit.Test;
 
 public class InboxTabEmojiTest {
+    @Test public void tabDisplayAcceptsBothModesAndPreservesLegacyTabs() throws Exception {
+        assertEquals("icon", NativeBridge.inboxTabDisplay(new JSONObject().put("display", "icon")));
+        assertEquals("iconName", NativeBridge.inboxTabDisplay(new JSONObject().put("display", "iconName")));
+        assertNull(NativeBridge.inboxTabDisplay(new JSONObject()));
+        assertThrows(IllegalArgumentException.class, () -> NativeBridge.inboxTabDisplay(new JSONObject().put("display", "name")));
+        assertThrows(IllegalArgumentException.class, () -> NativeBridge.inboxTabDisplay(new JSONObject().put("display", "")));
+    }
+
     @Test public void presetsAreAvailableWithoutPremium() throws Exception {
         JSONObject valid = new JSONObject().put("kind", "preset").put("id", "star");
         assertEquals("star", NativeBridge.inboxTabEmoji(valid, false, null).getString("id"));

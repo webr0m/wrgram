@@ -122,22 +122,22 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
 
   it('cada frase vive una vez por capa, con la cadena de Java delante', () => {
     // La cuenta de Java es lo que hay en el archivo, medido: `NoRightCreate` y `DialogCreate` las dice también el
-    // viejo `createInviteLink` (:1881), que comparte las dos cadenas con el formulario de la ronda G.
+    // viejo `createInviteLink` (:1882), que comparte las dos cadenas con el formulario de la ronda G.
     const measured: [string, string[], number][] = [
-      ['Unsupported', ['3608', '3644', '3702'], 3],
-      ['NoRightReview', ['3618'], 1],
-      ['NoRightCreate', ['1883', '3662'], 2],
-      ['NoRightEdit', ['3682'], 1],
-      ['NoRightRevoke', ['3714'], 1],
-      ['InvalidLink', ['3649'], 1],
-      ['EmptyRevoke', ['3708'], 1],
-      ['NotRecognised', ['3674', '3711'], 2],
-      ['PaidLinks', ['3676'], 1],
-      ['PrimaryEdit', ['3677'], 1],
-      ['AlreadyRevoked', ['3678'], 1],
-      ['OtherCreatorEdit', ['3683'], 1],
-      ['OtherCreatorRevoke', ['3715'], 1],
-      ['ChangedAccount', ['3732'], 1],
+      ['Unsupported', ['3619', '3655', '3713'], 3],
+      ['NoRightReview', ['3629'], 1],
+      ['NoRightCreate', ['1884', '3673'], 2],
+      ['NoRightEdit', ['3693'], 1],
+      ['NoRightRevoke', ['3725'], 1],
+      ['InvalidLink', ['3660'], 1],
+      ['EmptyRevoke', ['3719'], 1],
+      ['NotRecognised', ['3685', '3722'], 2],
+      ['PaidLinks', ['3687'], 1],
+      ['PrimaryEdit', ['3688'], 1],
+      ['AlreadyRevoked', ['3689'], 1],
+      ['OtherCreatorEdit', ['3694'], 1],
+      ['OtherCreatorRevoke', ['3726'], 1],
+      ['ChangedAccount', ['3743'], 1],
     ];
     for (const [name, places, occurrences] of measured) {
       const phrase = csSentence(name);
@@ -158,7 +158,7 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
       expect(count(csSentence(name), java)).toBe(0);
       expect(count(csSentence(name), cable), name).toBe(0);
     }
-    // La frase en inglés es de Java: `requiredBool` (:2775) la arma con el nombre de la clave y el despacho de `:756`
+    // La frase en inglés es de Java: `requiredBool` (:2788) la arma con el nombre de la clave y el despacho de `:756`
     // reenvía el `getMessage()` tal cual. En Windows no se lanza: el documento la cita y el cable responde en español.
     expect(java).toContain('throw new IllegalArgumentException("Missing permission: "+key)');
     expect(rules).toContain('«Missing');
@@ -167,15 +167,15 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
   });
 
   it('los diálogos dicen las tres palabras de Android y reutilizan la ventana del host', () => {
-    expect(says(bridgeLine(3663), csSentence('DialogCreate'))).toBe(true);
-    expect(says(bridgeLine(3685), csSentence('DialogEdit'))).toBe(true);
-    expect(says(bridgeLine(3717), csSentence('DialogRevoke'))).toBe(true);
-    expect(says(bridgeLine(3660), csSentence('DefaultLabel'))).toBe(true);
-    expect(says(bridgeLine(3684), csSentence('NoLabel'))).toBe(true);
-    expect(says(bridgeLine(3730), 'Cancelar')).toBe(true);
+    expect(says(bridgeLine(3674), csSentence('DialogCreate'))).toBe(true);
+    expect(says(bridgeLine(3696), csSentence('DialogEdit'))).toBe(true);
+    expect(says(bridgeLine(3728), csSentence('DialogRevoke'))).toBe(true);
+    expect(says(bridgeLine(3671), csSentence('DefaultLabel'))).toBe(true);
+    expect(says(bridgeLine(3695), csSentence('NoLabel'))).toBe(true);
+    expect(says(bridgeLine(3741), 'Cancelar')).toBe(true);
     // El botón positivo y el tope de texto ya vivían en la ficha de la comunidad: una sola verdad por cadena.
     expect(community).toContain('public const string DialogAccept = "Aplicar en Telegram";');
-    expect(says(bridgeLine(3731), 'Aplicar en Telegram')).toBe(true);
+    expect(says(bridgeLine(3742), 'Aplicar en Telegram')).toBe(true);
     expect(count('"Aplicar en Telegram"', rules + cable)).toBe(0);
     expect(count('"Ese texto es demasiado largo para enviarlo a Telegram."', rules + cable)).toBe(0);
     expect(cable).toContain('ConfirmPhoto(title, body, DesktopCommunityInfo.DialogAccept, null);');
@@ -185,18 +185,18 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
   });
 
   it('los tres cuerpos del diálogo son los de Android, palabra por palabra', () => {
-    expect(bridgeLine(3698)).toContain('"Enlace «"+name+"» en «"+title+"»: "+validity+" y "+capacity');
-    expect(bridgeLine(3698)).toContain('. Telegram aplica estos ajustes en cuanto lo confirmes; nadie se une por sí solo.');
+    expect(bridgeLine(3709)).toContain('"Enlace «"+name+"» en «"+title+"»: "+validity+" y "+capacity');
+    expect(bridgeLine(3709)).toContain('. Telegram aplica estos ajustes en cuanto lo confirmes; nadie se une por sí solo.');
     expect(rules).toContain('return "Enlace «" + label + "» en «" + title + "»: " + validity + " y " + capacity');
     expect(rules).toContain('". Telegram aplica estos ajustes en cuanto lo confirmes; nadie se une por sí solo.";');
     for (const fragment of ['no caduca', 'caduca el ', 'los nuevos tendrán que aprobarse', 'miembros a la vez', 'sin límite de miembros'])
       expect(rules).toContain(fragment);
-    expect(bridgeLine(3696)).toContain('"los nuevos tendrán que aprobarse":"sin límite de miembros"');
-    expect(bridgeLine(3697)).toContain('capacity="hasta "+memberLimit+" miembros a la vez"');
-    // El cuerpo de revocar, con sus dos sufijos condicionales (:3714-3716).
-    expect(bridgeLine(3717)).toContain('"Dejará de funcionar el enlace «"+name+"» de «"+title+"»"');
-    expect(bridgeLine(3718)).toContain(', que además es el enlace principal: Telegram creará uno nuevo.');
-    expect(bridgeLine(3719)).toContain(' Las "+current.memberCount+" personas que ya entraron seguirán en el chat.');
+    expect(bridgeLine(3707)).toContain('"los nuevos tendrán que aprobarse":"sin límite de miembros"');
+    expect(bridgeLine(3708)).toContain('capacity="hasta "+memberLimit+" miembros a la vez"');
+    // El cuerpo de revocar, con sus dos sufijos condicionales (:3725-3727).
+    expect(bridgeLine(3728)).toContain('"Dejará de funcionar el enlace «"+name+"» de «"+title+"»"');
+    expect(bridgeLine(3729)).toContain(', que además es el enlace principal: Telegram creará uno nuevo.');
+    expect(bridgeLine(3730)).toContain(' Las "+current.memberCount+" personas que ya entraron seguirán en el chat.');
     expect(rules).toContain('"Dejará de funcionar el enlace «" + name + "» de «" + title + "»"');
     expect(rules).toContain('", que además es el enlace principal: Telegram creará uno nuevo." : "."');
     expect(rules).toContain('" personas que ya entraron seguirán en el chat."');
@@ -221,7 +221,7 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
     const sheet = desktopSheet();
     expect(sheet).toContain("{(chat.supergroup===true||chat.type==='group'||chat.type==='channel')&&<MenuItem icon={<KeyRound/>} label=\"Mis enlaces de invitación\" onClick={()=>{setDialog(undefined);setLinks(chat);}}/>}");
     expect(count('label="Mis enlaces de invitación"', app)).toBe(3);
-    // La guarda es la forma de `:3606`, no `community(chat)`: el grupo básico también tiene enlace exportado.
+    // La guarda es la forma de `:3607`, no `community(chat)`: el grupo básico también tiene enlace exportado.
     expect(sheet).not.toMatch(/community\(chat\)&&<MenuItem icon=\{<KeyRound\/>\}/);
     expect(app).toContain('{links&&<InviteLinksPanel chat={links} accountId={state.selfId} close={()=>setLinks(undefined)}/>}');
     expect(panel).toContain("request<InviteLinkPage>('chat.invitelinks', marker ? { id: chat.id, revoked: showing, cursor: marker } : { id: chat.id, revoked: showing })");
@@ -315,12 +315,12 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
       for (const [, at] of file.matchAll(/BridgePolicy\.java:(\d+)/g)) expect(Number(at)).toBeLessThan(policy.split('\n').length);
     }
     expect(rules).toContain('InviteLinks.java:40-56');
-    expect(rules).toContain('NativeBridge.java:1863');
+    expect(rules).toContain('NativeBridge.java:1864');
     expect(cable).toContain('NativeBridge.java:758-761');
     expect(cable).toContain('BridgePolicy.java:49');
     expect(cable).toContain('InviteLinksPanel.tsx:68');
     expect(line(panel.split('\n'), 68, 'InviteLinksPanel.tsx')).toContain("await load('', revoked)");
-    // Toda cita suelta del puente (`:3611`, `:473`) señala una línea que existe: `:58` no entra porque es la clase de
+    // Toda cita suelta del puente (`:3612`, `:473`) señala una línea que existe: `:58` no entra porque es la clase de
     // reglas de este propio host, citada con `<see cref>`, no una línea de Java.
     for (const [, at] of `${rules}\n${cable}`.matchAll(/<c>:(\d{3,4})<\/c>/g)) expect(javaLines.length, `:${at}`).toBeGreaterThan(Number(at));
     for (const [, at] of `${rules}\n${cable}`.matchAll(/<c>:(\d{3,4})-(\d{3,4})<\/c>/g)) expect(javaLines.length, `:${at}`).toBeGreaterThan(Number(at));
@@ -330,43 +330,45 @@ describe('ronda BF · las cuatro capas dicen lo mismo de los enlaces de invitaci
     // La tabla es el cortafuegos del arrastre: cada ronda que mete líneas en el menú de escritorio descoloca
     // las que citan `App.tsx` por número. Aquí se declara una vez lo que tiene que decir cada línea citada.
     const anchors: Record<number, string> = {
-      98: 'function ContactAvatar(',
+      100: 'function ContactAvatar(',
       // Las cuatro de la visera de historias (ronda BZ): el host dice qué botón de los cuatro que se gatingean aquí
       // tiene motivo para existir, así que la línea que los reparte es cita viva.
-      251: 'function showStory(',
-      257: "await run('story.close',{id:story.chatId,storyId:story.id})",
-      268: "await run<OpenStory>('story.open',{id:chat.id,storyId})",
-      294: 'story.canEdit&&<MenuItem',
-      375: "raw.trim().replace(/^@/,'')",
-      402: 'function openSessions()',
-      744: 'const openRelated=',
+      261: 'function showStory(',
+      267: "await run('story.close',{id:story.chatId,storyId:story.id})",
+      278: "await run<OpenStory>('story.open',{id:chat.id,storyId})",
+      304: 'story.canEdit&&<MenuItem',
+      385: "raw.trim().replace(/^@/,'')",
+      412: 'function openSessions()',
+      754: 'const openRelated=',
       // La línea por la que las dos pestañas de la ficha saltan a su perfil (la cita la ronda BW en el host).
-      747: "openPeer={(id,from)=>openRelated('profile.peer',id,from)}",
+      757: "openPeer={(id,from)=>openRelated('profile.peer',id,from)}",
       // Las dos de la puerta de agenda (ronda BL): la pantalla arma la orden según el estado de la persona y, solo
       // para quitarla, confirma antes de mandar nada.
-      750: "run<boolean>(remove?'contacts.remove':'contacts.add'",
-      751: "confirm('Quitar de contactos'",
+      760: "run<boolean>(remove?'contacts.remove':'contacts.add'",
+      761: "confirm('Quitar de contactos'",
       // Las tres de la puerta de bloqueo (ronda BI): la pantalla confirma y solo entonces manda la orden.
-      752: 'changeBlock={(peer,blocked)=>{',
-      754: "confirm(label+' a '+peer.title",
-      755: "run<boolean>('profile.block'",
-      797: 'function chatInfo(chat:Chat)',
+      762: 'changeBlock={(peer,blocked)=>{',
+      764: "confirm(label+' a '+peer.title",
+      765: "run<boolean>('profile.block'",
+      807: 'function chatInfo(chat:Chat)',
       // La puerta de borrado automático de la rama de escritorio (ronda BN): la misma guarda de forma que la de
       // Android, y citada porque el andamio declara con ella que un chat secreto no se alcanza.
-      893: 'label="Borrado automático"',
-      904: 'label="Nombre y descripción"',
-      928: 'label="Añadir personas"',
+      903: 'label="Borrado automático"',
+      914: 'label="Nombre y descripción"',
+      938: 'label="Añadir personas"',
       // Las dos del botón ✨ (ronda CD): la primera pinta o no la puerta del emoji personalizado según la marca de la
       // cuenta, y la segunda es la pregunta que el host contesta ahora también en Windows.
-      1090: '{props.allowCustom&&<button className="reaction-all"',
-      1241: 'className="details-panel"',
-      1271: "request<{premium:boolean}>('premium.state')",
-      1312: 'const MEMBER_FILTERS',
-      1403: 'Sin miembros para este filtro',
-      1446: 'disabled={contact.bot}',
-      1448: 'const GROUP_PERMISSION_FIELDS',
+      1116: '{props.allowCustom&&<button className="reaction-all"',
+      1272: 'className="details-panel"',
+      1302: "request<{premium:boolean}>('premium.state')",
+      1343: 'const MEMBER_FILTERS',
+      1434: 'Sin miembros para este filtro',
+      1477: 'disabled={contact.bot}',
+      1479: 'const GROUP_PERMISSION_FIELDS',
     };
-    for (const [at, needle] of Object.entries(anchors)) expect(appLine(Number(at)), `App.tsx:${at}`).toContain(needle);
+    for (const [at, needle] of Object.entries(anchors)) {
+      expect(appLine(Number(at)), `App.tsx:${at}`).toContain(needle);
+    }
     const cited = new Set<number>();
     const hosts = [
       ...readdirSync(new URL('../../desktop/src/WRGram.Desktop/', import.meta.url))

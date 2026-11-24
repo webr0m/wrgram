@@ -191,7 +191,7 @@ export interface Chat { requests?:number }
 export interface Chat { noPolls?:boolean }
 /**
  * El derecho que Telegram negó para las tarjetas de contacto en esta conversación. TDLib lo llama
- * `canSendOtherMessages` —es el que mira `NativeBridge.java:4722`— y MTProto no tiene ese bit, así que el puente de
+ * `canSendOtherMessages` —es el que mira `NativeBridge.java:4791`— y MTProto no tiene ese bit, así que el puente de
  * Windows usa `send_docs`, que es lo que un contacto es ahí: un documento con atributo de contacto. Como con las
  * encuestas, el andamio solo puede dar la respuesta, y ausente significa «no lo sé»: decide Telegram.
  */

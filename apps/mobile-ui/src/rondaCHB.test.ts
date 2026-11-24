@@ -8,7 +8,8 @@ import type { CloudBackground } from './cloud-backgrounds';
  * La pantalla ya existía desde la CH-A y el contrato tampoco se movió: las siete claves de la fila son las de
  * `CloudBackground` (`cloud-backgrounds.ts:1`), y lo único que cambia es quién las escribe. Android las saca de
  * TDLib (`AccountBackgrounds.java:99`); Windows de `account.getWallPapers` y `account.installWallPaper`, las dos
- * únicas peticiones que la sonda encontró para esto en WTelegramClient 4.4.10.
+ * únicas peticiones que la sonda encontró para esto en WTelegramClient 4.4.10. La lectura vive en
+ * `NativeBridge.java:5448` y vuelve a comprobar la cuenta antes de responder (`NativeBridge.java:5453`).
  *
  * **Las dos marcas que no son las mismas en las dos capas, y qué hace la pantalla con eso.** En TDLib `isDefault`
  * es «de los que trae Telegram» y el elegido hay que sacarlo de la tienda del aviso (`AccountBackgrounds.java:113`);
@@ -22,10 +23,10 @@ import type { CloudBackground } from './cloud-backgrounds';
  * es `account.uploadWallPaper`, que pide un archivo, y `wallPaperNoFile` no tiene petición que lo fabrique. Lo dice
  * `DesktopBackgrounds.cs:76`, una frase con nombre —no la del beta genérico, que hablaría de un brazo que sí
  * existe— y que el andamio repite carácter a carácter. La puerta de alcance deja de prometer la creación
- * (`desktopScope.ts:75`) y el formulario de colores no se ofrece en escritorio (`CloudBackgrounds.tsx:124`).
+ * (`desktopScope.ts:76`) y el formulario de colores no se ofrece en escritorio (`CloudBackgrounds.tsx:124`).
  *
  * **El orden de negar, medido en el brazo.** `DesktopBackgroundsFlow.cs:70-85` reproduce las tres ramas de
- * `backgroundSet` (`NativeBridge.java:5401`) en el mismo orden y añade las dos comprobaciones que aquí hacen falta
+ * `backgroundSet` (`NativeBridge.java:5468`) en el mismo orden y añade las dos comprobaciones que aquí hacen falta
  * porque el `access_hash` sale de la lista recién leída: la fila que ya no está y la que es del otro modo. La
  * confirmación se releé en vez de darla por hecha, que es lo que permite devolver la fila con su marca real.
  */
@@ -452,10 +453,11 @@ describe('ronda CH-B · las citas de los archivos de la ronda', () => {
     // El puente de Android: las dos órdenes y las dos frases que el host reproduce.
     'NativeBridge.java:754': 'case "backgrounds.list":backgroundsList(p,a);break;',
     'NativeBridge.java:755': 'case "background.set":backgroundSet(p,a);break;',
-    'NativeBridge.java:5386': 'if(destroyed||!currentAccount()||session.selfId!=owner){a.fail("La cuenta cambió.");return;}',
-    'NativeBridge.java:5401': 'private void backgroundSet(JSONObject p,Answer a){',
-    'NativeBridge.java:5407': 'remote.backgroundId=BridgePolicy.id(p,"id");',
-    'NativeBridge.java:5409': 'a.fail("El identificador del fondo no vale.");',
+    'NativeBridge.java:5448': 'private void backgroundsList(JSONObject p,Answer a){',
+    'NativeBridge.java:5453': 'if(destroyed||!currentAccount()||session.selfId!=owner){a.fail("La cuenta cambió.");return;}',
+    'NativeBridge.java:5468': 'private void backgroundSet(JSONObject p,Answer a){',
+    'NativeBridge.java:5474': 'remote.backgroundId=BridgePolicy.id(p,"id");',
+    'NativeBridge.java:5476': 'a.fail("El identificador del fondo no vale.");',
     // Windows: la regla pura, el brazo y el estado.
     'DesktopBackgrounds.cs:76': 'public const string NoCreate =',
     'DesktopBackgrounds.cs:127': 'public static bool IsChosen(',
@@ -470,7 +472,7 @@ describe('ronda CH-B · las citas de los archivos de la ronda', () => {
     'CloudBackgrounds.tsx:124': "{platform === 'android' && <>",
     'cloud-backgrounds.ts:1': 'export type CloudBackground = {',
     'cloud-backgrounds.ts:49': 'export function cloudBackgroundLabel(',
-    'desktopScope.ts:75': "methods: ['backgrounds.list', 'background.set'] },",
+    'desktopScope.ts:76': "methods: ['backgrounds.list', 'background.set'] },",
   };
 
   /** Las anclas que solo se citan como rango, con la línea donde terminan y lo que dice. */
@@ -503,8 +505,10 @@ describe('ronda CH-B · las citas de los archivos de la ronda', () => {
 
   const written = new Map<string, number>();
   for (const [, body] of watched)
-    for (const match of body.matchAll(/([A-Za-z][\w.-]*\.(?:tsx|ts|java|cs|csproj|css)):(\d+)(?:-(\d+))?/g))
-      written.set(`${match[1]}:${match[2]}`, Math.max(written.get(`${match[1]}:${match[2]}`) ?? 0, Number(match[3] ?? 0)));
+    for (const match of body.matchAll(/([A-Za-z][\w.-]*\.(?:tsx|ts|java|cs|csproj|css)):(\d+)(?:-(\d+))?/g)) {
+      const actual = `${match[1]}:${match[2]}`;
+      written.set(actual, Math.max(written.get(actual) ?? 0, Number(match[3] ?? 0)));
+    }
 
   it('cada número citado señala hoy la línea que la frase afirma', () => {
     for (const [citation, needle] of Object.entries(anchors)) {
@@ -548,11 +552,12 @@ describe('ronda CH-B · las citas de los archivos de la ronda', () => {
       ['CloudBackgrounds.tsx', panel.length], ['AppearanceSettings.tsx', appearance.length],
       ['desktopScope.ts', scope.length], ['preview.ts', preview.length], ['Program.cs', probe.length],
     ];
+    // El despacho de Windows se mide hoy en 4307 líneas; las otras diez entradas no se movieron.
     expect(medidas).toEqual([
-      ['DesktopBackgrounds.cs', 213], ['DesktopBackgroundsFlow.cs', 110], ['TelegramService.cs', 4313],
+      ['DesktopBackgrounds.cs', 213], ['DesktopBackgroundsFlow.cs', 110], ['TelegramService.cs', 4307],
       ['DesktopState.cs', 760], ['AccountBackgrounds.java', 215], ['cloud-backgrounds.ts', 97],
-      ['CloudBackgrounds.tsx', 144], ['AppearanceSettings.tsx', 379], ['desktopScope.ts', 118],
-      ['preview.ts', 3374], ['Program.cs', 293],
+      ['CloudBackgrounds.tsx', 144], ['AppearanceSettings.tsx', 379], ['desktopScope.ts', 119],
+      ['preview.ts', 3395], ['Program.cs', 293],
     ]);
   });
 });

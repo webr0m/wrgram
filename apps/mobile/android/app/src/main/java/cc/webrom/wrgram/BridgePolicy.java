@@ -51,6 +51,7 @@ final class BridgePolicy {
     static { METHODS.addAll(Arrays.asList("message.retry","message.unsent.delete")); }
     static { METHODS.add("chat.defaultSilent"); }
     static { METHODS.add("message.edit.media"); }
+    static { METHODS.addAll(Arrays.asList("message.readDate","message.viewers")); }
     static { METHODS.add("calls.list"); }
     static { METHODS.addAll(Arrays.asList("backgrounds.list","background.set","bot.commands","bot.menu.open","share.import")); }
     static void envelope(JSONObject value){if(value.length()!=3||!value.optString("id").matches("[0-9]{1,16}")||!METHODS.contains(value.optString("method"))||!(value.opt("params") instanceof JSONObject))throw new IllegalArgumentException("Invalid bridge envelope");}

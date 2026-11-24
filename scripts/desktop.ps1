@@ -79,6 +79,9 @@ if ($Task -eq 'check') {
     $probe = Join-Path $root '.tools\cwb-probe\CwbProbe.csproj'
     & $dotnet run --project $probe -c $Configuration
     if ($LASTEXITCODE -ne 0) { throw 'La sonda de las frases de llamada de escritorio falló.' }
+    $probe = Join-Path $root '.tools\ctprobe\CtProbe.csproj'
+    & $dotnet run --project $probe -c $Configuration
+    if ($LASTEXITCODE -ne 0) { throw 'La sonda CT de escritorio falló.' }
     return
 }
 

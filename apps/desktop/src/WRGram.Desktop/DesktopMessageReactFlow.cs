@@ -10,7 +10,7 @@ using WTelegram;
 /// <summary>
 /// El cable de las reacciones en Windows (ronda BX): <c>message.react</c> y <c>message.react.custom</c>, las dos
 /// escrituras, y la bandeja que alimenta <c>message.properties</c> para que el menú del mensaje tenga qué ofrecer.
-/// En Android se atienden en <c>NativeBridge.java:4334</c> (<c>react</c>) y <c>NativeBridge.java:4339</c>
+/// En Android se atienden en <c>NativeBridge.java:4401</c> (<c>react</c>) y <c>NativeBridge.java:4406</c>
 /// (<c>reactCustom</c>) con <c>AddMessageReaction</c> y <c>RemoveMessageReaction</c>; aquí es una sola petición,
 /// <c>messages.sendReaction</c>, que manda el conjunto completo. Reglas, frases y la forma del conjunto, en
 /// <see cref="DesktopMessageReact"/>; aquí solo el orden de las peticiones y su caché.
@@ -20,8 +20,8 @@ using WTelegram;
 /// la fila esté cargada en la conversación activa antes de ir a la red—, después la forma del argumento, después
 /// la comprobación de Premium, y al final la escritura. La comprobación de la lista ofrecida va en medio, y se
 /// salta en dos casos por los mismos motivos que Android: al quitar una reacción, porque <c>react</c>
-/// (<c>NativeBridge.java:4334</c>) manda la quitada sin preguntar, y cuando la lista no se pudo leer, porque en
-/// <c>reactOffered</c> (<c>NativeBridge.java:5283</c>) la consulta fallida manda la orden igual.
+/// (<c>NativeBridge.java:4401</c>) manda la quitada sin preguntar, y cuando la lista no se pudo leer, porque en
+/// <c>reactOffered</c> (<c>NativeBridge.java:5350</c>) la consulta fallida manda la orden igual.
 /// </para>
 /// <para>
 /// La bandeja se lee de la información completa del chat, que es donde MTProto pone lo que Telegram autoriza en
@@ -52,8 +52,8 @@ public sealed partial class TelegramService
     /// La lista general de emojis de reacción, con su marca de Premium. Una sola vez por sesión.
     private DesktopMessageReact.Offer[]? _reactionDefaults;
 
-    /// <c>message.react</c> y <c>message.react.custom</c> (<c>NativeBridge.java:785</c> y
-    /// <c>NativeBridge.java:787</c>). El parámetro se llama `emoji` en las dos claves, como en Android, y para la
+    /// <c>message.react</c> y <c>message.react.custom</c> (<c>NativeBridge.java:786</c> y
+    /// <c>NativeBridge.java:788</c>). El parámetro se llama `emoji` en las dos claves, como en Android, y para la
     /// personalizada es el identificador del documento.
     private async Task<object?> ReactAsync(JsonElement args, bool custom)
     {

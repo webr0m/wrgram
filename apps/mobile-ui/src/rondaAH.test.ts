@@ -204,7 +204,7 @@ describe('ronda AH · el espejo dice lo mismo que el puente', () => {
     // Desde la ronda BX la banda de reacciones se define y se pinta antes del `if(desktop)`, así que el recorte ya
     // no puede cerrarse en el primer `});return;`: se ancla entre la fila de la banda de Windows y la cabecera de la
     // lista de Android.
-    const desktop = app.slice(app.indexOf('{props.reactions.length>0&&reactionBar(props,act)}'), app.indexOf('const owner=state.selfId,topic='));
+    const desktop = app.slice(app.indexOf('{props.reactions.length>0&&reactionBar(props,act)}'), app.indexOf('const owner=state.selfId,topic=state.topic?.id;'));
     expect(desktop.length).toBeGreaterThan(0);
     expect(desktop).toContain('{editEntries(props)}');
     // Las dos etiquetas viven una sola vez en el menú del mensaje; la segunda «Editar texto» que cuenta el

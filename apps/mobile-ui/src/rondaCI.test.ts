@@ -8,18 +8,18 @@ import { DESKTOP_AVAILABLE, DESKTOP_PENDING } from './desktopScope';
  * La CG midió por reflexión que WTelegramClient 4.4.10 tiene con qué (`Chatlists_GetExportedInvites`,
  * `Chatlists_EditExportedInvite`, `Chatlists_DeleteExportedInvite`), así que estas tres claves no estaban pendientes
  * por falta de biblioteca sino por falta de brazo: `desktopScope.ts:24` las llevaba en «pendiente» junto a las notas,
- * que ésas sí siguen sin con qué (`desktopScope.ts:107`). Android las atiende desde hace rondas —listar en
- * `NativeBridge.java:3955`, editar y borrar en la misma función `NativeBridge.java:3966`— y la pantalla ya tenía su
+ * que ésas sí siguen sin con qué (`desktopScope.ts:108`). Android las atiende desde hace rondas —listar en
+ * `NativeBridge.java:3966`, editar y borrar en la misma función `NativeBridge.java:3977`— y la pantalla ya tenía su
  * panel, que en Windows solo podía leer el vacío porque ningún brazo contestaba.
  *
- * **Los tres brazos van pegados.** `TelegramService.cs:443` lista, `TelegramService.cs:444` renombra y
- * `TelegramService.cs:445` revoca, en ese orden y detrás de `folders.join`, como las tres claves del puente de Android.
+ * **Los tres brazos van pegados.** `TelegramService.cs:445` lista, `TelegramService.cs:446` renombra y
+ * `TelegramService.cs:447` revoca, en ese orden y detrás de `folders.join`, como las tres claves del puente de Android.
  * Detrás hay dos cuerpos: `DesktopParity.cs:712` para la lectura, que arma el DTO que la pantalla consume, y
  * `DesktopParity.cs:728` para las dos escrituras, que comparten cuerpo y se separan por la bandera `delete` —la misma
  * pareja que en Java— porque las dos necesitan la comprobación de carpeta que hace `DesktopParity.cs:703`.
  *
  * **El enlace se nombra de dos formas distintas y ahí está toda la traducción.** TDLib lo nombra por su URL entera
- * (`NativeBridge.java:3969`), MTProto por un `slug` suelto. La regla sale de una sola función,
+ * (`NativeBridge.java:3980`), MTProto por un `slug` suelto. La regla sale de una sola función,
  * `DesktopFolderLinks.cs:95`, y acepta las dos escrituras que `ExportedChatlistInvite.url` puede traer porque ninguna
  * capa ha preguntado nunca a una cuenta real cuál es la suya; lo que sí corta es la mitad con barra, que no es un
  * `slug` sino media URL. Buscar el enlace vivo se hace con esa misma regla (`DesktopFolderLinks.cs:107`), y la guarda
@@ -27,15 +27,15 @@ import { DESKTOP_AVAILABLE, DESKTOP_PENDING } from './desktopScope';
  * (`DesktopParity.cs:671`), que aceptaba esa mitad con barra dentro y la mandaba a la red.
  *
  * **Renombrar no es reenviar los chats.** MTProto trae banderas `has_title` y `has_peers` para decir «ese campo no lo
- * toco»; TDLib no, y por eso su edición reenvía los ids que acaba de leer (`NativeBridge.java:3980`). Aquí se manda
+ * toco»; TDLib no, y por eso su edición reenvía los ids que acaba de leer (`NativeBridge.java:3991`). Aquí se manda
  * solo el título. Y cambiar los chats de un enlace ya creado es en Android un selector nativo
- * (`NativeBridge.java:4005`) que este host no tiene con qué mandar: se niega por su nombre (`DesktopFolderLinks.cs:84`,
+ * (`NativeBridge.java:4016`) que este host no tiene con qué mandar: se niega por su nombre (`DesktopFolderLinks.cs:84`,
  * llamado en `DesktopParity.cs:746`) y la pantalla deja de ofrecer el botón (`FolderLinks.tsx:55`), la misma norma con la
  * que la BY quitó el «Quitar» del estado emoji; la bandera de plataforma la lee el panel en `FolderLinks.tsx:8`.
  *
  * Las frases de la ronda están escritas una sola vez en toda la capa: la del enlace muerto vive en
  * `DesktopFolderLinks.cs:58` y la cota del nombre en `DesktopFolderLinks.cs:116`, que es el mismo 32 con el que Android
- * recorta el suyo (`NativeBridge.java:3970`).
+ * recorta el suyo (`NativeBridge.java:3981`).
  *
  * Como en CF, CM, CN, CB, BM y BY: la última prueba mide las citas. Todo `Archivo:NNN` escrito por la ronda tiene que
  * estar en la tabla y señalar hoy la línea que la frase afirma, incluidas las que la propia clase escribe para
@@ -326,9 +326,9 @@ describe('ronda CI · el aviso y la pantalla', () => {
 describe('ronda CI · las citas de los archivos de la ronda', () => {
   /** Lo que tiene que decir la línea citada, medido hoy una por una. */
   const anchors: Record<string, string> = {
-    'TelegramService.cs:443': '"folders.links.list" => await FolderLinksListAsync(args),',
-    'TelegramService.cs:444': '"folders.links.edit" => await FolderLinkChangeAsync(args, delete: false),',
-    'TelegramService.cs:445': '"folders.links.delete" => await FolderLinkChangeAsync(args, delete: true),',
+    'TelegramService.cs:445': '"folders.links.list" => await FolderLinksListAsync(args),',
+    'TelegramService.cs:446': '"folders.links.edit" => await FolderLinkChangeAsync(args, delete: false),',
+    'TelegramService.cs:447': '"folders.links.delete" => await FolderLinkChangeAsync(args, delete: true),',
     'DesktopParity.cs:671': 'var slug = DesktopFolderLinks.SlugOf(Str(args, "link"))',
     'DesktopParity.cs:703': 'private async Task<TL.DialogFilterChatlist> RequireChatlistAsync(int id)',
     'DesktopParity.cs:712': 'private async Task<object> FolderLinksListAsync(JsonElement args)',
@@ -343,18 +343,18 @@ describe('ronda CI · las citas de los archivos de la ronda', () => {
     'FolderLinks.tsx:8': "const desktop = useSyncExternalStore(subscribe, () => snapshot().platform === 'desktop');",
     'FolderLinks.tsx:55': '{!desktop && <button type="button" className="secondary" disabled={busy} onClick={() => void update(',
     'desktopScope.ts:24': "{ label: 'lista de chats, carpetas con sus enlaces e historial'",
-    'desktopScope.ts:107': "{ label: 'notas privadas por chat', methods: ['notes.write', 'notes.read', 'notes.clear'] },",
-    'NativeBridge.java:3955': 'private void folderLinks(JSONObject params,Answer answer){',
-    'NativeBridge.java:3958': 'perform(new TdApi.GetChatFolderInviteLinks(id),answer,result->{',
-    'NativeBridge.java:3966': 'private void folderLinkChange(JSONObject params,Answer answer,boolean delete){',
-    'NativeBridge.java:3969': 'String url=BridgePolicy.text(params,"link",512).trim();',
-    'NativeBridge.java:3970': 'String name=delete?"":BridgePolicy.text(params,"name",32).trim();',
-    'NativeBridge.java:3974': 'if(delete)perform(new TdApi.DeleteChatFolderInviteLink(id,url),answer,ok->answer.ok(true));',
-    'NativeBridge.java:3979': 'perform(new TdApi.EditChatFolderInviteLink(id,url,name,selected),answer,edited->answer.ok(true))));',
-    'NativeBridge.java:3980': '}else perform(new TdApi.EditChatFolderInviteLink(id,url,name,link.chatIds),answer,edited->answer.ok(true));',
-    'NativeBridge.java:3983': 'answer.fail("Este enlace ya no pertenece a la carpeta.");',
-    'NativeBridge.java:3895': 'private static JSONArray idList(long[] values)',
-    'NativeBridge.java:4005': 'private void chooseFolderChats(String title,String description,String action,long[] ids,long[] included,',
+    'desktopScope.ts:108': "{ label: 'notas privadas por chat', methods: ['notes.write', 'notes.read', 'notes.clear'] },",
+    'NativeBridge.java:3966': 'private void folderLinks(JSONObject params,Answer answer){',
+    'NativeBridge.java:3969': 'perform(new TdApi.GetChatFolderInviteLinks(id),answer,result->{',
+    'NativeBridge.java:3977': 'private void folderLinkChange(JSONObject params,Answer answer,boolean delete){',
+    'NativeBridge.java:3980': 'String url=BridgePolicy.text(params,"link",512).trim();',
+    'NativeBridge.java:3981': 'String name=delete?"":BridgePolicy.text(params,"name",32).trim();',
+    'NativeBridge.java:3985': 'if(delete)perform(new TdApi.DeleteChatFolderInviteLink(id,url),answer,ok->answer.ok(true));',
+    'NativeBridge.java:3990': 'perform(new TdApi.EditChatFolderInviteLink(id,url,name,selected),answer,edited->answer.ok(true))));',
+    'NativeBridge.java:3991': '}else perform(new TdApi.EditChatFolderInviteLink(id,url,name,link.chatIds),answer,edited->answer.ok(true));',
+    'NativeBridge.java:3994': 'answer.fail("Este enlace ya no pertenece a la carpeta.");',
+    'NativeBridge.java:3906': 'private static JSONArray idList(long[] values)',
+    'NativeBridge.java:4016': 'private void chooseFolderChats(String title,String description,String action,long[] ids,long[] included,',
     'EmojiStatusSettings.tsx:156': '{status && !desktop && <button',
   };
 
@@ -364,7 +364,7 @@ describe('ronda CI · las citas de los archivos de la ronda', () => {
     ['DesktopFolderLinks.cs', links.join('\n')],
     ['DesktopParity.cs (comentario CI)', parity.slice(atPar('private async Task<TL.DialogFilterChatlist> RequireChatlistAsync') - 8, atPar('private async Task<TL.DialogFilterChatlist> RequireChatlistAsync') - 1).join('\n')],
     ['DesktopParity.cs (cuerpos)', parity.slice(atPar('private async Task<TL.DialogFilterChatlist> RequireChatlistAsync') - 1, atPar('private async Task<object> FolderTagsAsync')).join('\n')],
-    ['NativeBridge.java (carpetas)', java.slice(3937, 3996).join('\n')],
+    ['NativeBridge.java (carpetas)', java.slice(3939, 3998).join('\n')],
     ['FolderLinks.tsx', panel.join('\n')],
     ['desktopScope.ts (fila de carpetas)', scope[atScope("{ label: 'lista de chats, carpetas") - 1]],
     ['desktopScope.ts (notas)', scope.slice(atScope("{ label: 'notas privadas por chat'") - 3, atScope("{ label: 'notas privadas por chat'")).join('\n')],
@@ -413,12 +413,14 @@ describe('ronda CI · las citas de los archivos de la ronda', () => {
     // por delante de la marca de envío— y no tocó ninguna otra capa de esta hoja; doce líneas más subió después el despacho con los dos ayudantes de la ronda CW-D.
     // Veinticuatro más, repartidas entre los fondos de la CH-A y el aviso `UpdateDefaultBackground` de la CH-A2, que
     // además sumó nueve a la sesión y cuatro a la instantánea. Once más: ocho por las dos ramas del despacho que la
-    // CH-B cableó en Windows y tres por leer los dos huecos del fondo al entrar.
-    expect(service).toHaveLength(4313);
+    // CH-B cableó en Windows y tres por leer los dos huecos del fondo al entrar. La CT y la presentación por
+    // pestañas desplazaron código sin mover las agujas. Medido hoy con `split(/\r?\n/).length`: el puente conserva
+    // la vacía final (5579), el despacho de Windows queda en 4307 y el aviso de alcance en 119.
+    expect(service).toHaveLength(4307);
     expect(parity).toHaveLength(1217);
     expect(links).toHaveLength(118);
-    expect(java).toHaveLength(5512);
+    expect(java).toHaveLength(5579);
     expect(panel).toHaveLength(68);
-    expect(scope).toHaveLength(118);
+    expect(scope).toHaveLength(119);
   });
 });

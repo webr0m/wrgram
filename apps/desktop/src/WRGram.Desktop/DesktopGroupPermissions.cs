@@ -8,7 +8,7 @@ using TL;
 /// <summary>
 /// Los permisos predeterminados de una comunidad en Windows: las dieciséis reglas que Telegram aplica a quien es
 /// miembro normal de un supergrupo o de un canal. En Android son dos métodos —<c>groupPermissions</c>
-/// (<c>NativeBridge.java:1888</c>) lee y <c>setGroupPermissions</c> (<c>:2396</c>) escribe, despachados uno tras otro
+/// (<c>NativeBridge.java:1889</c>) lee y <c>setGroupPermissions</c> (<c>:2397</c>) escribe, despachados uno tras otro
 /// en <c>:589-590</c>— y todo lo que deciden cabe en cinco líneas: la forma del chat, el derecho propio, la
 /// tabla de lo que hay, la ventana de confirmar y la escritura. Aquí eso está escrito una vez, con las frases copiadas
 /// carácter a carácter y el mismo orden, y el cable solo pide.
@@ -48,7 +48,7 @@ using TL;
 /// </para>
 /// <para>
 /// Última diferencia de capas, y es la que fijó la ronda AT. En Android el <c>throw</c> de la forma
-/// (<c>NativeBridge.java:2396</c>) y el de <c>requiredBool</c> (<c>:2777</c>, «Missing permission: X», en inglés) nunca
+/// (<c>NativeBridge.java:2397</c>) y el de <c>requiredBool</c> (<c>:2788</c>, «Missing permission: X», en inglés) nunca
 /// llegan a la pantalla: el <c>catch</c> del despacho genérico (<c>:167</c>) convierte cualquier fallo en «Solicitud no
 /// válida o función no disponible.». Windows
 /// dice la causa en español, que es la norma de la casa para lo que en Java es un fallo de programación y no un aviso.
@@ -59,7 +59,7 @@ public static class DesktopGroupPermissions
 {
     // ---- las frases ----
 
-    /// El <c>answer.fail</c> de <c>groupPermissions</c> (<c>NativeBridge.java:1888</c>) cuando el chat no es un
+    /// El <c>answer.fail</c> de <c>groupPermissions</c> (<c>NativeBridge.java:1889</c>) cuando el chat no es un
     /// supergrupo. Es la única negación que este flujo decide sin preguntarle a Telegram, y dice «supergrupos y
     /// canales» porque en TDLib el canal <i>es</i> un supergrupo con <c>isChannel</c>.
     public const string Unsupported = "La edición de permisos solo está disponible en supergrupos y canales.";
@@ -77,7 +77,7 @@ public static class DesktopGroupPermissions
     /// cargado la tabla. Sin dato no se pinta un panel en blanco que invite a escribir encima.
     public const string Unreadable = "Telegram aún no cargó los permisos predeterminados.";
 
-    /// Lo que <c>requiredBool</c> (<c>:2775</c>) provoca en Android cuando una de las dieciséis claves no llega o no es
+    /// Lo que <c>requiredBool</c> (<c>:2788</c>) provoca en Android cuando una de las dieciséis claves no llega o no es
     /// booleano. Allá es un <c>throw</c> en inglés que el despacho genérico convierte en el aviso genérico; aquí es la
     /// causa concreta, en español y sin número de clave, que es lo único que la persona puede comprobar.
     public const string Incomplete = "Algún permiso no llegó marcado como verdadero o falso. Vuelve a abrir el panel y guárdalos otra vez.";
@@ -99,7 +99,7 @@ public static class DesktopGroupPermissions
 
     /// <summary>
     /// Las dieciséis claves del DTO de Android, en el orden exacto de su <c>object(...)</c>
-    /// (<c>NativeBridge.java:1888</c>) y del constructor de <c>TdApi.ChatPermissions</c> (<c>TdApi.java:17751</c>).
+    /// (<c>NativeBridge.java:1889</c>) y del constructor de <c>TdApi.ChatPermissions</c> (<c>TdApi.java:17751</c>).
     /// <c>Denied</c> son las banderas que este panel escribe; <c>Covers</c> son las que no escribe pero que también
     /// prohíben lo mismo, y por eso entran en la lectura. Cada emparejamiento está sacado de la glosa del campo de
     /// TDLib y del comentario de la bandera en el esquema de la capa 232, que son las dos únicas fuentes que hay en
