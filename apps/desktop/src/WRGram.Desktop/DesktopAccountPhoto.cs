@@ -28,7 +28,7 @@ namespace WRGram.Desktop;
 /// </para>
 /// <para>
 /// La copia del archivo no va a disco. Android escribe un JPEG temporal porque TDLib solo sabe leer una ruta
-/// (<c>InputFileLocal</c>, <c>:1716</c>); MTProto sube un <c>Stream</c>, así que el recuadro se queda en memoria y
+/// (<c>InputFileLocal</c>, <c>:1739</c>); MTProto sube un <c>Stream</c>, así que el recuadro se queda en memoria y
 /// no queda ningún equipaje que borrar —la promesa del diálogo («WRGram no la enviará a sus servidores», y sin
 /// copia local) sale más barata de cumplir que en el móvil.
 /// </para>
@@ -115,7 +115,7 @@ public sealed partial class TelegramService
     /// <para>
     /// Lo que la AT no previó es <see cref="DesktopState.ProfilePhoto"/>: se escribe una sola vez al abrir la
     /// sesión, con la instantánea que <c>RegisterProfile</c> saca del usuario de la librería
-    /// (<c>TelegramService.cs:600</c>), y además va cacheado en disco bajo una clave que no cambia nunca
+    /// (<c>TelegramService.cs:605</c>), y además va cacheado en disco bajo una clave que no cambia nunca
     /// (<c>photo:self:&lt;id&gt;</c> en <c>MediaRegistry.cs:79</c>). Sin
     /// borrar ese archivo, cambiar la foto desde otra parte dejaría en la pantalla la foto vieja para siempre.
     /// </para>
@@ -155,7 +155,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// El <c>preparePhoto</c> de Android (<c>NativeBridge.java:1691-1708</c>) con el descodificador de WPF:
+    /// El <c>preparePhoto</c> de Android (<c>NativeBridge.java:1714-1731</c>) con el descodificador de WPF:
     /// tipo, peso y dimensiones antes de tocar nada; <c>Factor</c> para no meter en memoria un lienzo de 12000
     /// píxeles; el giro y el espejo leídos del EXIF; el recuadro al centro; 640x640; y JPEG a calidad 88.
     /// <para>
@@ -238,7 +238,7 @@ public sealed partial class TelegramService
         return image;
     }
 
-    /// Los dos pasos del giro, en el orden canónico de EXIF y con la tabla de <c>NativeBridge.java:1697</c>.
+    /// Los dos pasos del giro, en el orden canónico de EXIF y con la tabla de <c>NativeBridge.java:1720</c>.
     private static BitmapSource Turn(BitmapSource source, ushort orientation)
     {
         var angle = DesktopProfilePhoto.Turn(orientation);
@@ -260,7 +260,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// El <c>AlertDialog</c> de Android (<c>NativeBridge.java:1710</c> y <c>:1647</c>) hecho ventana de WPF: el
+    /// El <c>AlertDialog</c> de Android (<c>NativeBridge.java:1733</c> y <c>:1647</c>) hecho ventana de WPF: el
     /// mismo texto, los mismos dos botones y la misma regla de que cerrar la ventana por la equis vale por
     /// «Cancelar». Sale del hilo de la interfaz, como los dos selectores que ya había en el host; la diferencia es
     /// que aquí hay dos botones propios en vez de los del sistema, porque la vista previa de 240 píxeles no cabe en
@@ -270,7 +270,7 @@ public sealed partial class TelegramService
         Dialog(title, body, accept, DesktopProfilePhoto.Cancel, preview, null) == true;
 
     /// <summary>
-    /// El <c>AlertDialog</c> de un solo botón con su caja seleccionable (<c>NativeBridge.java:1884</c>). Android lo
+    /// El <c>AlertDialog</c> de un solo botón con su caja seleccionable (<c>NativeBridge.java:1907</c>). Android lo
     /// monta cuando no hay ninguna aplicación a la que pasarle el enlace recién creado; en Windows es el único camino
     /// posible, porque aquí no hay <c>Intent.ACTION_SEND</c>. Se pone el enlace en una caja de lectura, como allá, y
     /// no en el portapapeles: copiar sin que se pida sería escribir en un sitio que la persona no eligió.

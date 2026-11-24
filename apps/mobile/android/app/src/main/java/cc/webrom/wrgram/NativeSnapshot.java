@@ -85,7 +85,7 @@ final class NativeSnapshot {
     boolean granted(String plugin){return session.selfId>0&&prefs.getBoolean("plugin."+session.selfId+"."+plugin,false);}
     // El campo `supported` del DTO dice si el objeto llegó cargado del servidor, no si el tipo de chat se
     // puede editar: por aquí solo pasan chats ya leídos, así que sale siempre `true`. El `false` lo ponen
-    // las tarjetas de la interfaz cuando inventan la ficha de un chat que no está en la lista (`App.tsx:308`).
+    // las tarjetas de la interfaz cuando inventan la ficha de un chat que no está en la lista (`App.tsx:309`).
     JSONObject chat(TdApi.Chat chat)throws Exception{
         boolean pinned=false,archived=false;if(chat.positions!=null)for(TdApi.ChatPosition position:chat.positions){if(TdSession.sameList(position.list,session.selectedList()))pinned=position.isPinned;if(position.list instanceof TdApi.ChatListArchive&&position.order>0)archived=true;}
          JSONObject data=new JSONObject().put("id",String.valueOf(chat.id)).put("title",chat.title).put("preview",caption(chat.lastMessage)).put("date",chat.lastMessage==null?0:chat.lastMessage.date).put("unread",chat.unreadCount).put("marked",chat.isMarkedAsUnread).put("bot",session.bot(chat)).put("type",chat.type instanceof TdApi.ChatTypePrivate?"private":"group").put("pinned",pinned).put("archived",archived).put("readInbox",String.valueOf(chat.lastReadInboxMessageId)).put("muted",chat.notificationSettings!=null&&chat.notificationSettings.muteFor>0).put("supported",true).put("activeStories",session.activeStoryCount(chat.id));

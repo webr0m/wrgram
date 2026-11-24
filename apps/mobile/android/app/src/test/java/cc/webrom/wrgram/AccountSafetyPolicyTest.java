@@ -44,4 +44,13 @@ public class AccountSafetyPolicyTest {
         assertTrue(AccountSafetyPolicy.sponsoredSettings(true,true).getBoolean("enabled"));
         assertTrue(AccountSafetyPolicy.sponsoredSettings(true,false).getBoolean("canDisable"));
     }
+
+    @Test public void thePhoneCodeIsTrimmedAndNeverStoredOrEchoed() throws Exception {
+        assertEquals("123456",AccountSafetyPolicy.phoneCode(new JSONObject().put("code"," 123456 ")));
+        assertEquals("A1B2C",AccountSafetyPolicy.phoneCode(new JSONObject().put("code","A1B2C")));
+        IllegalArgumentException empty=assertThrows(IllegalArgumentException.class,()->AccountSafetyPolicy.phoneCode(new JSONObject().put("code","   ")));
+        assertTrue(empty.getMessage(),empty.getMessage().contains("teléfono"));
+        assertThrows(IllegalArgumentException.class,()->AccountSafetyPolicy.phoneCode(new JSONObject().put("code","1".repeat(33))));
+        assertThrows(IllegalArgumentException.class,()->AccountSafetyPolicy.phoneCode(new JSONObject()));
+    }
 }

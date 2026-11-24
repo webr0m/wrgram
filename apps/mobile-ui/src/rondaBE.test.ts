@@ -75,8 +75,8 @@ function tableRow(key: string): string {
 
 describe('ronda BE · las tres capas dicen las mismas frases de los permisos', () => {
   it('el despacho de las dos órdenes está en las tres capas', () => {
-    expect(javaLine(589)).toContain('case "groups.permissions.get":groupPermissions(p,a);break;');
-    expect(javaLine(590)).toContain('case "groups.permissions.set":setGroupPermissions(p,a);break;');
+    expect(javaLine(592)).toContain('case "groups.permissions.get":groupPermissions(p,a);break;');
+    expect(javaLine(593)).toContain('case "groups.permissions.set":setGroupPermissions(p,a);break;');
     expect(service).toContain('"groups.permissions.get" => await GroupPermissionsAsync(args),');
     expect(service).toContain('"groups.permissions.set" => await SetGroupPermissionsAsync(args),');
     expect(service).not.toContain('groups.permissions.get" => throw');
@@ -88,12 +88,12 @@ describe('ronda BE · las tres capas dicen las mismas frases de los permisos', (
   });
 
   it('las seis negaciones viven una vez por capa, con la cadena de Java delante', () => {
-    expect(says(javaLine(1889), GROUP_PERMISSION_REFUSALS.unsupported)).toBe(true);
-    expect(says(javaLine(1889), GROUP_PERMISSION_REFUSALS.noRight)).toBe(true);
-    expect(says(javaLine(1889), GROUP_PERMISSION_REFUSALS.unreadable)).toBe(true);
-    expect(says(javaLine(2397), GROUP_PERMISSION_REFUSALS.required)).toBe(true);
-    expect(says(javaLine(2397), GROUP_PERMISSION_REFUSALS.noRight)).toBe(true);
-    expect(says(javaLine(2397), GROUP_PERMISSION_REFUSALS.changedAccount)).toBe(true);
+    expect(says(javaLine(1912), GROUP_PERMISSION_REFUSALS.unsupported)).toBe(true);
+    expect(says(javaLine(1912), GROUP_PERMISSION_REFUSALS.noRight)).toBe(true);
+    expect(says(javaLine(1912), GROUP_PERMISSION_REFUSALS.unreadable)).toBe(true);
+    expect(says(javaLine(2420), GROUP_PERMISSION_REFUSALS.required)).toBe(true);
+    expect(says(javaLine(2420), GROUP_PERMISSION_REFUSALS.noRight)).toBe(true);
+    expect(says(javaLine(2420), GROUP_PERMISSION_REFUSALS.changedAccount)).toBe(true);
     expect(csSentence('Unsupported')).toBe(GROUP_PERMISSION_REFUSALS.unsupported);
     expect(csSentence('Required')).toBe(GROUP_PERMISSION_REFUSALS.required);
     expect(csSentence('NoRight')).toBe(GROUP_PERMISSION_REFUSALS.noRight);
@@ -117,9 +117,9 @@ describe('ronda BE · las tres capas dicen las mismas frases de los permisos', (
 
   it('el cuadro de confirmar dice las tres palabras de Android y reutiliza la ventana del host', () => {
     const dialogBody = 'Se aplicarán a los miembros del grupo. No cambian los permisos de administradores ni se enviarán mensajes.';
-    expect(says(javaLine(2397), 'Cambiar permisos predeterminados')).toBe(true);
-    expect(says(javaLine(2397), dialogBody)).toBe(true);
-    expect(says(javaLine(2397), 'Guardar permisos')).toBe(true);
+    expect(says(javaLine(2420), 'Cambiar permisos predeterminados')).toBe(true);
+    expect(says(javaLine(2420), dialogBody)).toBe(true);
+    expect(says(javaLine(2420), 'Guardar permisos')).toBe(true);
     expect(csSentence('DialogTitle')).toBe('Cambiar permisos predeterminados');
     expect(csSentence('DialogBody')).toBe(dialogBody);
     expect(csSentence('DialogAccept')).toBe('Guardar permisos');
@@ -135,16 +135,16 @@ describe('ronda BE · las tres capas dicen las mismas frases de los permisos', (
     const constructor = tdapi.split('\n')[17750];
     expect(GROUP_PERMISSION_KEYS).toHaveLength(16);
     for (const key of GROUP_PERMISSION_KEYS) {
-      expect(javaLine(1889)).toContain(`"${key}",value.${key}`);
-      expect(javaLine(2397)).toContain(`requiredBool(p,"${key}")`);
+      expect(javaLine(1912)).toContain(`"${key}",value.${key}`);
+      expect(javaLine(2420)).toContain(`requiredBool(p,"${key}")`);
       expect(constructor).toContain(`boolean ${key}`);
       expect(tableRow(key)).toContain('ChatBannedRights.Flags.');
       expect(contract).toContain(`${key}:boolean`);
     }
     // El orden del `object(...)` de la lectura es el de la tabla, uno por uno.
-    const dto = [...javaLine(1889).matchAll(/"([A-Za-z]+)",value\./g)].map(found => found[1]);
+    const dto = [...javaLine(1912).matchAll(/"([A-Za-z]+)",value\./g)].map(found => found[1]);
     expect(dto).toEqual(GROUP_PERMISSION_KEYS);
-    const built = [...javaLine(2397).matchAll(/requiredBool\(p,"([A-Za-z]+)"\)/g)].map(found => found[1]);
+    const built = [...javaLine(2420).matchAll(/requiredBool\(p,"([A-Za-z]+)"\)/g)].map(found => found[1]);
     expect(built).toEqual(GROUP_PERMISSION_KEYS);
     const constructed = [...constructor.matchAll(/boolean (can[A-Za-z]+)/g)].map(found => found[1]);
     expect(constructed).toEqual(GROUP_PERMISSION_KEYS);
@@ -152,7 +152,7 @@ describe('ronda BE · las tres capas dicen las mismas frases de los permisos', (
     expect(table).toEqual(GROUP_PERMISSION_KEYS);
     // El `requiredBool` de Android está en inglés y el despacho genérico (`:152`) lo disfraza; aquí la causa se dice
     // en español. La cadena inglesa queda citada en el documento, nunca lanzada.
-    expect(javaLine(2788)).toContain('throw new IllegalArgumentException("Missing permission: "+key)');
+    expect(javaLine(2811)).toContain('throw new IllegalArgumentException("Missing permission: "+key)');
     expect(rules).not.toContain('throw new BridgeException("Missing permission');
     expect(cable).not.toContain('Missing permission');
   });
@@ -255,21 +255,18 @@ describe('ronda BE · las tres capas dicen las mismas frases de los permisos', (
         expect(tdapi.split('\n').length).toBeGreaterThan(Number(start));
       }
     }
-    expect(rules).toContain('NativeBridge.java:1889');
+    expect(rules).toContain('NativeBridge.java:1912');
     expect(rules).toContain('TdApi.java:17751');
-    expect(cable).toContain('NativeBridge.java:589');
+    expect(cable).toContain('NativeBridge.java:592');
     // La orden lleva en la lista del puente desde la ronda A y la pantalla la pide desde la Q: las dos citas que
     // explican por qué en Windows esto era un «falta el cable» y no un «falta la petición».
     expect(cable).toContain('BridgePolicy.java:25');
-    // La cita de la pantalla también está viva. CT y la presentación por pestañas movieron el panel lateral de 1260
-    // a 1272; el cable conserva el número escrito y esta tabla manual lleva esa cita concreta a la línea actual,
-    // sin aplicar un desplazamiento global a las demás citas.
+    // La cita de la pantalla también está viva, y ya no necesita la tabla manual: el cable escribe el número de
+    // hoy y la aguja es que esa línea siga siendo la del botón. A02 movió `App.tsx` una línea y el cable dice 1273.
     const cited = Number(/App\.tsx:(\d+)/.exec(cable)?.[1] ?? -1);
-    const current: Record<number, number> = { 1260: 1272 };
-    const at = current[cited] ?? cited;
     expect(cited).toBeGreaterThan(0);
-    expect(at).toBe(1272);
-    expect(app.split('\n')[at - 1], `App.tsx:${cited}→${at}`).toContain('onClick={()=>openGroupPermissions(active)}');
+    expect(cited).toBe(1273);
+    expect(app.split('\n')[cited - 1], `App.tsx:${cited}`).toContain('onClick={()=>openGroupPermissions(active)}');
   });
 });
 

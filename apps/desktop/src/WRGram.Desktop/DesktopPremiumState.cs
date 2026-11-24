@@ -6,9 +6,9 @@ using TL;
 
 /// <summary>
 /// La marca de Premium en Windows (ronda CD): <c>premium.state</c>, la clave que el selector de emojis personalizados
-/// pregunta antes de dejar elegir (<c>apps/mobile-ui/src/App.tsx:1302</c>) y la que decide si el botón ✨ del menú del mensaje se pinta o
-/// no, porque la pantalla lee <c>props.allowCustom</c> (<c>apps/mobile-ui/src/App.tsx:1116</c>). En Android la contesta
-/// <c>premiumState</c> (<c>NativeBridge.java:4409</c>) con dos peticiones: <c>GetUser(selfId)</c> para la marca y
+/// pregunta antes de dejar elegir (<c>apps/mobile-ui/src/App.tsx:1303</c>) y la que decide si el botón ✨ del menú del mensaje se pinta o
+/// no, porque la pantalla lee <c>props.allowCustom</c> (<c>apps/mobile-ui/src/App.tsx:1117</c>). En Android la contesta
+/// <c>premiumState</c> (<c>NativeBridge.java:4432</c>) con dos peticiones: <c>GetUser(selfId)</c> para la marca y
 /// <c>GetPremiumState</c> para el texto del plan y sus opciones de pago. Aquí la marca sale de la cuenta ya conectada
 /// —<see cref="DesktopEmojiCatalog.IsPremium(User)"/>, la bandera <c>User.Flags.premium</c>— sin ida y vuelta, igual
 /// que hace <see cref="EmojiStatusStateAsync"/> con el estado emoji.

@@ -3,20 +3,33 @@ import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { InboxTabBar } from './InboxTabBar';
-import { InboxTabDisplayPicker, InboxTabIcon } from './InboxTabs';
+import { InboxTabDisplayPicker, InboxTabIcon, InboxTabs } from './InboxTabs';
 import type { InboxTab } from './chatFilters';
 
+vi.mock('react', async importOriginal => ({
+  ...await importOriginal<typeof import('react')>(),
+  useSyncExternalStore: (_subscribe: unknown, getSnapshot: () => unknown) => getSnapshot(),
+}));
 vi.mock('./language', () => ({ useLanguage: () => ({ t: (text: string) => text }) }));
 vi.mock('./bridge', () => ({ native: false, request: vi.fn(), snapshot: () => ({}), subscribe: vi.fn() }));
 
 const renderBar = (tabs: InboxTab[], unread = 0) => renderToStaticMarkup(h(InboxTabBar, {
   tabs, active: tabs[0]?.id ?? '', unread, choose: () => {}, manage: () => {},
 }));
+const renderManager = (tabs: InboxTab[]) => renderToStaticMarkup(h(InboxTabs, {
+  initial: tabs, folders: [], save: async () => true,
+}));
 const buttonBody = (html: string, label: string) => {
   const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const match = html.match(new RegExp(`<button\\b[^>]*aria-label="${escaped}"[^>]*>([\\s\\S]*?)<\\/button>`));
   if (!match) throw new Error('No se encontró el botón accesible ' + label);
   return match[1];
+};
+const managerRow = (html: string, name: string) => {
+  const rows = [...html.matchAll(/<button\b[^>]*class="tabs-select"[^>]*>([\s\S]*?)<\/button>/g)].map(m => m[1]);
+  const row = rows.find(body => body.includes('>' + name + '<'));
+  if (!row) throw new Error('Ninguna fila del gestor se llama ' + name);
+  return row;
 };
 
 describe('presentación de pestañas', () => {
@@ -57,6 +70,49 @@ describe('presentación de pestañas', () => {
     expect(body).toContain('inbox-tab-emoji');
     expect(body).toContain('⭐');
     expect(body).not.toContain('>Favoritos<');
+  });
+
+  it('pinta el emoji y el nombre cuando la pestaña con emoji elige icono y nombre', () => {
+    const html = renderBar([{ id: 'all', name: 'Favoritos', emoji: { kind: 'preset', id: 'star' }, display: 'iconName' }]);
+    expect(html).toContain('inbox-tab-emoji');
+    expect(html).toContain('⭐');
+    expect(html).toContain('>Favoritos<');
+    expect(html).not.toContain('inbox-tab-icon-only');
+    expect(html.indexOf('⭐')).toBeLessThan(html.indexOf('>Favoritos<'));
+  });
+
+  it('también respeta el modo icono en una pestaña con emoji', () => {
+    const html = renderBar([{ id: 'all', name: 'Favoritos', emoji: { kind: 'preset', id: 'star' }, display: 'icon' }]);
+    expect(html).toContain('inbox-tab-icon-only');
+    expect(html).not.toContain('>Favoritos<');
+  });
+
+  it('pinta en el gestor el icono elegido junto al nombre, no un lápiz genérico', () => {
+    const html = renderManager([{ id: 'all', name: 'Trabajo', icon: 'hash', display: 'iconName' }]);
+    const row = managerRow(html, 'Trabajo');
+    expect(row).toContain('lucide-hash');
+    expect(row).not.toContain('lucide-pencil');
+    expect(html).not.toContain('lucide-pencil');
+  });
+
+  it('pinta en el gestor la emoji elegida junto al nombre', () => {
+    const row = managerRow(renderManager([{ id: 'all', name: 'Favoritos', emoji: { kind: 'preset', id: 'star' }, display: 'iconName' }]), 'Favoritos');
+    expect(row).toContain('inbox-tab-emoji');
+    expect(row).toContain('⭐');
+  });
+
+  it('ofrece los dos modos también cuando la pestaña lleva emoji', () => {
+    const html = renderManager([{ id: 'all', name: 'Favoritos', emoji: { kind: 'preset', id: 'star' }, display: 'icon' }]);
+    expect(html).toContain('aria-pressed="false">Icono y nombre</button>');
+    expect(html).toContain('aria-pressed="true">Solo icono</button>');
+  });
+
+  it('marca en el gestor el modo con que la barra pinta una pestaña con emoji sin modo guardado', () => {
+    const tab: InboxTab = { id: 'all', name: 'Favoritos', emoji: { kind: 'preset', id: 'star' } };
+    expect(renderBar([tab])).toContain('inbox-tab-icon-only');
+    const html = renderManager([tab]);
+    expect(html).toContain('aria-pressed="true">Solo icono</button>');
+    expect(html).toContain('aria-pressed="false">Icono y nombre</button>');
   });
 
   it('el selector marca un único modo y conserva el orden icono y nombre', () => {

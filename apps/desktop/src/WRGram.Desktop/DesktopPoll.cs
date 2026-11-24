@@ -154,7 +154,7 @@ public static class DesktopPoll
     public const string Batch = "Escribe entre 2 y 12 opciones.";
 
     /// Literal de <c>sendPoll</c> cuando el vale de una foto ya no es de esta cuenta o de esta conversación —Android
-    /// compara las dos cosas en la misma condición en la que mira si el vale existe (<c>NativeBridge.java:4760</c>),
+    /// compara las dos cosas en la misma condición en la que mira si el vale existe (<c>NativeBridge.java:4783</c>),
     /// así que las tres salen con una sola frase—. Es distinta de la del álbum
     /// (<see cref="DesktopAlbum.ChangedPieces"/>) y del archivo suelto (<see cref="DesktopAttachment.ChangedChat"/>):
     /// las tres nombran lo que se perdió, y aquí se pierden las imágenes de las opciones.
@@ -165,8 +165,8 @@ public static class DesktopPoll
     public const string NotPhoto = "Cada opción admite una foto JPG, PNG o WebP.";
 
     /// Literal de <c>sendPoll</c> cuando las fotos no cubren todas las opciones. Android lo corta con esa guarda
-    /// (<c>NativeBridge.java:4761</c>) porque en el cable cada opción lleva la suya por posición
-    /// (<c>NativeBridge.java:4763</c>) y una lista más corta desalinearía todas las que vienen después.
+    /// (<c>NativeBridge.java:4784</c>) porque en el cable cada opción lleva la suya por posición
+    /// (<c>NativeBridge.java:4786</c>) y una lista más corta desalinearía todas las que vienen después.
     public const string UnevenPhotos = "Una encuesta con imágenes lleva una imagen en cada opción.";
 
     /// El nombre con el que Android registra la foto leída de una opción (<c>NativeSnapshot.java:435</c>); de ahí lo
@@ -319,7 +319,7 @@ public static class DesktopPoll
     /// mirar cualquiera de las dos reglas de arriba.
     public static string[] Photos(string[] raw) => raw.Where(token => token.Length > 0).ToArray();
 
-    /// Cero fotos o exactamente una por opción —<c>NativeBridge.java:4761</c>—.
+    /// Cero fotos o exactamente una por opción —<c>NativeBridge.java:4784</c>—.
     public static bool PhotosMatch(int photos, int options) => photos == 0 || photos == options;
 
     /// La misma doble orilla de <c>sendPoll</c>: <c>correct &lt; 0 || correct &gt;= options.length</c>.

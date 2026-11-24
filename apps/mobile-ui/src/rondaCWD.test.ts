@@ -231,7 +231,7 @@ describe('ronda CW-D · las citas se miden', () => {
     'ServiceMessages.java:160': 'static String[] senderNames(TdSession session,TdApi.MessageSender[] values){',
     'ServiceMessages.java:170': 'static String participantList(String[] names){',
     'TdSession.java:1313': 'if (user == null) requestUser(id);',
-    'TelegramService.cs:3650': 'private string ServiceText(MessageService service, string actor = "") => service.action switch',
+    'TelegramService.cs:3655': 'private string ServiceText(MessageService service, string actor = "") => service.action switch',
     'DesktopServiceCalls.cs:79': 'public static string Invitation(MessageActionInviteToGroupCall call, string actor,',
     'DesktopServiceCalls.cs:92': 'public static string Invitees(long[] ids, Func<long, string> nameOf)',
     'Program.cs:179': 'Caso("el esquema no conoce el motivo «rechazada»",',

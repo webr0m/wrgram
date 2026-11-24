@@ -6,17 +6,17 @@ using TL;
 using WTelegram;
 
 /// <summary>
-/// El cable del nombre público de una comunidad: <c>chatUsername</c> (<c>NativeBridge.java:1891</c>, despachado en
-/// <c>:595</c>) y <c>setChatUsername</c> (<c>:1893</c>, despachado en <c>:596</c>).
+/// El cable del nombre público de una comunidad: <c>chatUsername</c> (<c>NativeBridge.java:1914</c>, despachado en
+/// <c>:595</c>) y <c>setChatUsername</c> (<c>:1916</c>, despachado en <c>:596</c>).
 /// Las reglas y las frases están en <see cref="DesktopChatUsernames"/>; aquí solo está el cable, que era lo que
 /// faltaba: las dos órdenes llevaban desde la ronda A cayendo en el <c>_ =&gt; throw</c> genérico del host
-/// (<c>TelegramService.cs:508</c>, «No disponible en escritorio (beta): chat.username»), mientras las dos peticiones
+/// (<c>TelegramService.cs:513</c>, «No disponible en escritorio (beta): chat.username»), mientras las dos peticiones
 /// de MTProto —<c>channels.getChannels</c> y <c>channels.updateUsername</c>— llevan todo ese tiempo existiendo en la
-/// librería. La pantalla tampoco llegaba: la entrada vive en <c>chatInfo</c> de Android (<c>App.tsx:807</c> y
+/// librería. La pantalla tampoco llegaba: la entrada vive en <c>chatInfo</c> de Android (<c>App.tsx:808</c> y
 /// <c>:1146</c>) y la hoja de opciones de escritorio se corta antes, así que esta ronda añade también el botón, que
 /// es la norma que fijó la ronda AK —ninguna opción que la interfaz ofrece puede caer en el aviso de beta—.
 /// <para>
-/// El orden de la escritura es el de <c>setChatUsername</c> (<c>NativeBridge.java:1893</c>) línea por línea: la forma
+/// El orden de la escritura es el de <c>setChatUsername</c> (<c>NativeBridge.java:1916</c>) línea por línea: la forma
 /// del chat, el tope y la forma del texto, el recorte, la pregunta por el propio participante, el derecho
 /// <c>canChangeInfo</c> y solo entonces la escritura.
 /// No es cosmético: si el derecho se mirara antes que el texto, escribir un nombre de cuarenta caracteres en un chat
@@ -24,7 +24,7 @@ using WTelegram;
 /// dos cosas se arreglan de otra manera.
 /// </para>
 /// <para>
-/// La lectura replica la decisión de caché de <c>chatUsername</c> (<c>NativeBridge.java:1891</c>)
+/// La lectura replica la decisión de caché de <c>chatUsername</c> (<c>NativeBridge.java:1914</c>)
 /// —<c>session.supergroup(id)</c> y, si no sabe nombres, <c>GetSupergroup</c>— con la diferencia de petición, no de
 /// norma: MTProto no tiene una pregunta por un peer suelto, y lo que existe es <c>channels.getChannels</c> con un
 /// vector de un solo elemento, que responde <c>Messages_Chats</c> con el <c>TL.Channel</c> completo. La respuesta se
@@ -46,7 +46,7 @@ using WTelegram;
 public sealed partial class TelegramService
 {
     /// <summary>
-    /// <c>chatUsername</c> (<c>NativeBridge.java:1891-1892</c>): la forma del chat se niega con
+    /// <c>chatUsername</c> (<c>NativeBridge.java:1914-1915</c>): la forma del chat se niega con
     /// <see cref="DesktopChatUsernames.Unsupported"/>, el resto es leer el peer —de la caché si sabe nombres, de
     /// <c>channels.getChannels</c> si no— y pasarlo por <see cref="DesktopChatUsernames.Dto"/>, que arma las dos claves
     /// del DTO de Android en su orden.
@@ -63,7 +63,7 @@ public sealed partial class TelegramService
         if (DesktopChatUsernames.Known(cached)) return DesktopChatUsernames.Dto(cached);
         var answer = await client.Channels_GetChannels(new InputChannelBase[] { ChannelInput(entry) });
         MergePeers(null, answer.chats?.Values);
-        // El `perform` de `NativeBridge.java:1891`: la respuesta es de la sesión que la pidió, y si la sesión ya no es
+        // El `perform` de `NativeBridge.java:1914`: la respuesta es de la sesión que la pidió, y si la sesión ya no es
         // esa, el dato
         // tampoco sirve. Android lo dice con esta misma cadena antes de meter el resultado en el JSON.
         if (client.User?.id != owner) throw new BridgeException(DesktopChatUsernames.ChangedAccount);
@@ -71,7 +71,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>setChatUsername</c> (<c>NativeBridge.java:1893</c>). Los dos guardajes de formato son los mismos que ya
+    /// <c>setChatUsername</c> (<c>NativeBridge.java:1916</c>). Los dos guardajes de formato son los mismos que ya
     /// midieron la ronda AT
     /// con <c>account.username</c> —<see cref="DesktopAccountProfile.UsernameProblem"/> y su
     /// <see cref="DesktopAccountProfile.Username"/>—, porque <c>BridgePolicy.text(p,"username",32)</c> más el
@@ -105,7 +105,7 @@ public sealed partial class TelegramService
             if (refusal == null) throw;
             throw new BridgeException(refusal);
         }
-        // La segunda pasada del `perform` de `NativeBridge.java:1893`, la que envuelve el `SetSupergroupUsername`:
+        // La segunda pasada del `perform` de `NativeBridge.java:1916`, la que envuelve el `SetSupergroupUsername`:
         // Android la aplica
         // antes de hacer el `schedule()` y el `answer.ok(true)`, así que el espejo local tampoco se mueve si la
         // sesión cambió a mitad de la escritura.

@@ -68,8 +68,8 @@ const WRITE = body('private async Task<object?> SetChatUsernameAsync', cable);
 
 describe('ronda BC · las tres capas dicen las mismas frases del nombre público', () => {
   it('el despacho de las dos órdenes está en las tres capas', () => {
-    expect(javaLine(595)).toContain('case "chat.username":chatUsername(p,a);break;');
-    expect(javaLine(596)).toContain('case "chat.username.set":setChatUsername(p,a);break;');
+    expect(javaLine(598)).toContain('case "chat.username":chatUsername(p,a);break;');
+    expect(javaLine(599)).toContain('case "chat.username.set":setChatUsername(p,a);break;');
     expect(service).toContain('"chat.username" => await ChatUsernameAsync(args),');
     expect(service).toContain('"chat.username.set" => await SetChatUsernameAsync(args),');
     expect(service).not.toContain('chat.username" => throw');
@@ -77,8 +77,8 @@ describe('ronda BC · las tres capas dicen las mismas frases del nombre público
   });
 
   it('la negación de forma la dicen los dos métodos de Android y vale una sola constante en C#', () => {
-    expect(says(javaLine(1891), CHAT_USERNAME_REFUSALS.unsupported)).toBe(true);
-    expect(says(javaLine(1893), CHAT_USERNAME_REFUSALS.unsupported)).toBe(true);
+    expect(says(javaLine(1914), CHAT_USERNAME_REFUSALS.unsupported)).toBe(true);
+    expect(says(javaLine(1916), CHAT_USERNAME_REFUSALS.unsupported)).toBe(true);
     expect(csSentence('Unsupported')).toBe(CHAT_USERNAME_REFUSALS.unsupported);
     // Dos sitios en Android, uno por capa en Windows y en el espejo: la norma no se declara tres veces.
     expect(count(CHAT_USERNAME_REFUSALS.unsupported, java)).toBe(2);
@@ -89,7 +89,7 @@ describe('ronda BC · las tres capas dicen las mismas frases del nombre público
   });
 
   it('el derecho es `canChangeInfo`, y su ausencia se dice con la frase de `answer.fail`', () => {
-    expect(says(javaLine(1893), CHAT_USERNAME_REFUSALS.noRight)).toBe(true);
+    expect(says(javaLine(1916), CHAT_USERNAME_REFUSALS.noRight)).toBe(true);
     expect(csSentence('NoRight')).toBe(CHAT_USERNAME_REFUSALS.noRight);
     expect(count(CHAT_USERNAME_REFUSALS.noRight, rules)).toBe(1);
     expect(count(CHAT_USERNAME_REFUSALS.noRight, mirror)).toBe(1);
@@ -110,8 +110,8 @@ describe('ronda BC · las tres capas dicen las mismas frases del nombre público
   it('el tope, el patrón y los rechazos de Telegram son los de `account.username`, reutilizados', () => {
     // `BridgePolicy.text(p,"username",32)` es una sola función para los dos flujos; copiarla aquí sería otra capa.
     expect(policy).toContain('static String text(JSONObject params,String key,int maximum)');
-    expect(javaLine(1893)).toContain('BridgePolicy.text(params,"username",32).trim()');
-    expect(javaLine(1893)).toContain('username.matches("[A-Za-z][A-Za-z0-9_]{4,31}")');
+    expect(javaLine(1916)).toContain('BridgePolicy.text(params,"username",32).trim()');
+    expect(javaLine(1916)).toContain('username.matches("[A-Za-z][A-Za-z0-9_]{4,31}")');
     expect(accountRules).toContain('UsernamePattern = @"\\A[A-Za-z][A-Za-z0-9_]{4,31}\\z"');
     // El espejo de C# de esta ronda no vuelve a declarar el tope ni los cuatro códigos de rechazo de Telegram.
     expect(count('MaxUsername', rules)).toBe(0);
@@ -126,7 +126,7 @@ describe('ronda BC · las tres capas dicen las mismas frases del nombre público
   });
 
   it('el DTO son las dos claves de `sendChatUsername`, en su orden', () => {
-    expect(javaLine(1892)).toContain('answer.ok(object("editable",names==null||names.editableUsername==null?"":names.editableUsername,"active",active))');
+    expect(javaLine(1915)).toContain('answer.ok(object("editable",names==null||names.editableUsername==null?"":names.editableUsername,"active",active))');
     expect(contract).toContain('export interface ChatUsername {editable:string;active:string[]}');
     expect(rules).toContain('editable = Editable(peer),');
     expect(rules).toContain('active = Active(peer)');

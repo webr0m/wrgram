@@ -13,7 +13,7 @@ using System.Text.RegularExpressions;
 /// <para>
 /// Las dos frases que el puente de Android dice en español están copiadas carácter a carácter
 /// (<see cref="NoName"/> y <see cref="BadUsername"/>). Las otras dos condiciones que Android comunica en inglés
-/// —el <c>Invalid text</c> de <c>BridgePolicy.text</c> (<c>BridgePolicy.java:60</c>)— se dicen aquí en español por
+/// —el <c>Invalid text</c> de <c>BridgePolicy.text</c> (<c>BridgePolicy.java:61</c>)— se dicen aquí en español por
 /// la misma razón por la que las dijeron la ronda T con los filtros guardados y la AH con la encuesta: una cadena
 /// técnica en inglés no le dice a nadie qué arreglar. Se desglosa en las dos causas de verdad, que en Android son
 /// una sola palabra: <see cref="Missing"/> cuando la clave no viene o no es una cadena, y el tope de
@@ -53,7 +53,7 @@ public static class DesktopAccountProfile
     /// Literal de <c>account.username</c> (<c>NativeBridge.java:550</c>) para un nombre público que no es válido.
     public const string BadUsername = "El nombre público debe tener de 5 a 32 caracteres y empezar con una letra.";
 
-    /// La otra cara del <c>Invalid text</c> de <c>BridgePolicy.text</c> (<c>BridgePolicy.java:60</c>): la clave que
+    /// La otra cara del <c>Invalid text</c> de <c>BridgePolicy.text</c> (<c>BridgePolicy.java:61</c>): la clave que
     /// no viene o que no es una cadena. En Android las dos causas comparten palabra; aquí se separan porque una
     /// llamada sin el campo no es texto largo, es una pantalla que no mandó nada, y sin esta guarda
     /// <c>account.username</c> sin parámetro borraría el nombre público de la cuenta.
@@ -118,7 +118,7 @@ public static class DesktopAccountProfile
 
     /// <summary>
     /// El nombre público que se enseña: el primero marcado como activo, que es como <c>accountProfile</c> lo arma
-    /// (<c>NativeBridge.java:1643</c>, <c>if(username.isEmpty())username=value</c> sobre <c>activeUsernames</c>).
+    /// (<c>NativeBridge.java:1666</c>, <c>if(username.isEmpty())username=value</c> sobre <c>activeUsernames</c>).
     /// El campo suelto <c>username</c> que MTProto sigue trayendo por compatibilidad no se usa: en Android tampoco,
     /// y puede apuntar a un nombre ya apagado.
     /// </summary>
@@ -140,12 +140,12 @@ public static class DesktopAccountProfile
                 (name.flags & TL.Username.Flags.active) != 0).Select(name => name.username);
 
     /// El <c>photoId</c> del DTO: <c>"0"</c> cuando no hay foto, que es literal de
-    /// <c>user.profilePhoto==null?"0":Long.toString(...)</c> (<c>NativeBridge.java:1644</c>) y lo que la pantalla
+    /// <c>user.profilePhoto==null?"0":Long.toString(...)</c> (<c>NativeBridge.java:1667</c>) y lo que la pantalla
     /// usa para decidir si ofrece borrarla.
     public static string PhotoId(TL.UserProfilePhoto? photo) => photo is null ? "0" : photo.photo_id.ToString();
 
     /// <summary>
-    /// El cumpleaños dicho con las tres claves de Android (<c>NativeBridge.java:1645</c>). Sin <c>birthday</c> en la
+    /// El cumpleaños dicho con las tres claves de Android (<c>NativeBridge.java:1668</c>). Sin <c>birthday</c> en la
     /// respuesta no hay clave, y la pantalla escribe «Sin fecha configurada». El año es el único que en MTProto es
     /// opcional por marca: sin <c>has_year</c> sale cero, que es el valor con el que TDLib avisa de lo mismo y el
     /// que <c>birthdayLabel</c> (<c>UserMenu.tsx:28</c>) ya sabe callar.

@@ -5,13 +5,13 @@ using TL;
 
 /// <summary>
 /// Las reglas de «ver la ficha de quien envió un mensaje», que en Android son <c>senderProfile</c>
-/// (<c>NativeBridge.java:1615-1633</c>) y <c>respondProfilePeer</c> (<c>NativeBridge.java:1634-1637</c>). Aquí vive
+/// (<c>NativeBridge.java:1638-1656</c>) y <c>respondProfilePeer</c> (<c>NativeBridge.java:1657-1660</c>). Aquí vive
 /// lo que se puede afirmar sin conexión; el cable está en <c>DesktopSenderProfileFlow.cs</c>.
 /// <para>
 /// Las dos frases negativas vienen de Java. La del paquete que Android agrupa —no hay fila, la fila es de otro chat,
 /// el chat no está, es secreto, o el mensaje lleva temporizador— es la misma que ya escribía la ronda BA en
-/// <see cref="DesktopPeerProfile.Secret"/> (<c>NativeBridge.java:1622</c>), así que se llama y no se copia. La del
-/// remitente que Telegram no identificó (<c>NativeBridge.java:1632</c>) sí se copia carácter a carácter. La tercera
+/// <see cref="DesktopPeerProfile.Secret"/> (<c>NativeBridge.java:1645</c>), así que se llama y no se copia. La del
+/// remitente que Telegram no identificó (<c>NativeBridge.java:1655</c>) sí se copia carácter a carácter. La tercera
 /// negación que la pantalla puede llegar a leer es la del <c>access_hash</c>
 /// (<see cref="DesktopPeerProfile.NoHash"/>), y es propia de Windows por la misma razón que la escribió la ronda BA:
 /// TDLib guarda los hashes en casa y MTProto los manda en las respuestas.
@@ -27,12 +27,12 @@ using TL;
 /// </summary>
 public static class DesktopSenderProfile
 {
-    /// <c>NativeBridge.java:1622</c>, con el mismo texto para las seis guardas que Android agrupa en un <c>if</c>. La
+    /// <c>NativeBridge.java:1645</c>, con el mismo texto para las seis guardas que Android agrupa en un <c>if</c>. La
     /// literal ya vivía en <see cref="DesktopPeerProfile.Secret"/>, que la tomó de esa misma línea: se llama, no se
     /// vuelve a escribir.
     public const string NoProfile = DesktopPeerProfile.Secret;
 
-    /// <c>NativeBridge.java:1632</c>: la fila no trae <c>from_id</c>, o trae una forma de peer que este host no sabe
+    /// <c>NativeBridge.java:1655</c>: la fila no trae <c>from_id</c>, o trae una forma de peer que este host no sabe
     /// traducir a ficha. En MTProto el emisor anónimo de un canal sí viene identificado (es el propio canal), así que
     /// esta negativa es para una fila a la que Telegram no le puso autor.
     public const string UnknownSender = "Telegram no identificó al remitente.";
@@ -40,7 +40,7 @@ public static class DesktopSenderProfile
     /// El <c>from_id</c> de la fila. MTProto lo declara por separado en <see cref="Message"/> y en
     /// <see cref="MessageService"/> —los dos descienden de <see cref="MessageBase"/>, que no lo tiene—, y la ficha del
     /// remitente tiene que poder leer a una persona que hizo una acción de servicio, que es justo lo que Android hace
-    /// al leer la fila con <c>session.message</c> sin preguntar de qué subtipo es (<c>NativeBridge.java:1618</c>).
+    /// al leer la fila con <c>session.message</c> sin preguntar de qué subtipo es (<c>NativeBridge.java:1641</c>).
     public static TL.Peer? SenderOf(MessageBase? row) => row switch
     {
         Message message => message.from_id,

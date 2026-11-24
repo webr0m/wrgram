@@ -11,11 +11,11 @@ using WTelegram;
 /// El cable de la ficha de perfil: <c>chat.profile</c>, <c>profile.related</c>, <c>profile.peer</c> y
 /// <c>profile.contact</c>. Las reglas y las frases están en <see cref="DesktopPeerProfile"/>; aquí solo se pide, se
 /// funda la caché de personas y se responde con las claves que la pantalla lee
-/// (<c>PeerProfile.tsx:52</c>, <c>:141</c> y <c>App.tsx:754</c>).
+/// (<c>PeerProfile.tsx:52</c>, <c>:141</c> y <c>App.tsx:755</c>).
 /// <para>
 /// Hasta esta ronda las cuatro caían en el <c>_ =&gt; throw</c> genérico del host, y la consecuencia se veía en
 /// pantalla: la ficha de una persona no se abría desde Windows y la pestaña «Miembros»/«En común» —que Android sí
-/// atiende desde <c>NativeBridge.java:1575</c>— se quedaba en el aviso de siempre. La ficha tampoco ofrecía
+/// atiende desde <c>NativeBridge.java:1598</c>— se quedaba en el aviso de siempre. La ficha tampoco ofrecía
 /// «Administrar miembros» en Windows porque <c>canManageMembers</c> nunca llegó a viajar.
 /// </para>
 /// <para>
@@ -30,7 +30,7 @@ using WTelegram;
 public sealed partial class TelegramService
 {
     /// <see cref="DesktopPeerProfile"/>: la ficha pide el chat y Telegram responde según su forma. El orden es el de
-    /// <c>chatProfile</c> (<c>NativeBridge.java:1224-1271</c>) —privado, comunidad, básico, y al final el resto—.
+    /// <c>chatProfile</c> (<c>NativeBridge.java:1227-1274</c>) —privado, comunidad, básico, y al final el resto—.
     private async Task<object?> ChatProfileAsync(JsonElement args)
     {
         var client = CollectionClient();
@@ -146,7 +146,7 @@ public sealed partial class TelegramService
     }
 
     /// <see cref="DesktopPeerProfile"/>: la pestaña «En común» o «Miembros». El orden es el de <c>profileRelated</c>
-    /// (<c>NativeBridge.java:1575-1598</c>): recorte del desplazamiento y, según la forma del chat, una de las tres
+    /// (<c>NativeBridge.java:1598-1621</c>): recorte del desplazamiento y, según la forma del chat, una de las tres
     /// lecturas o la negación.
     private async Task<object?> RelatedAsync(JsonElement args)
     {
@@ -201,7 +201,7 @@ public sealed partial class TelegramService
             case InputPeerChannel:
             {
                 // El supergrupo pregunta a Telegram con el filtro `recent` de la ronda AX y 30 filas; en Android eso
-                // es `GetSupergroupMembers` de `NativeBridge.java:1595`. `hasMore` se decide con lo que la respuesta
+                // es `GetSupergroupMembers` de `NativeBridge.java:1618`. `hasMore` se decide con lo que la respuesta
                 // trajo, no con lo que quedó filtrado: aquí no se filtra nada.
                 var channel = ChannelInput(entry);
                 var (filter, _) = DesktopGroupMembers.Request("recent", "");

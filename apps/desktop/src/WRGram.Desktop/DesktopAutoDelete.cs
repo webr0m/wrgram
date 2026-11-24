@@ -5,9 +5,9 @@ using System.Text.Json;
 using TL;
 
 /// <summary>
-/// Las reglas del borrado automático en Windows, que son las de <c>autoDeleteGet</c> (<c>NativeBridge.java:1358</c>),
-/// <c>autoDeleteSet</c> (<c>:1373</c>), <c>confirmChatAutoDelete</c> (<c>:1399</c>) y <c>confirmAutoDelete</c>
-/// (<c>:1408</c>) más el <c>AccountSafetyPolicy.autoDeleteSeconds</c> (<c>AccountSafetyPolicy.java:13</c>). Aquí vive
+/// Las reglas del borrado automático en Windows, que son las de <c>autoDeleteGet</c> (<c>NativeBridge.java:1381</c>),
+/// <c>autoDeleteSet</c> (<c>:1396</c>), <c>confirmChatAutoDelete</c> (<c>:1422</c>) y <c>confirmAutoDelete</c>
+/// (<c>:1431</c>) más el <c>AccountSafetyPolicy.autoDeleteSeconds</c> (<c>AccountSafetyPolicy.java:13</c>). Aquí vive
 /// todo lo que se puede afirmar sin tener conexión; el hilo está en <c>DesktopAutoDeleteFlow.cs</c>.
 /// <para>
 /// El temporizador se mide en días completos: el panel de la pantalla ofrece 0, 1, 7 y 30 días
@@ -32,7 +32,7 @@ public static class DesktopAutoDelete
     /// El tope de <c>AccountSafetyPolicy.java:17</c>: 365 días, y ni una hora más.
     public const int MaxDays = 365;
 
-    /// <c>userId!=777000</c> de <c>NativeBridge.java:1368</c> y <c>:1371</c>: el chat de avisos de Telegram, que no
+    /// <c>userId!=777000</c> de <c>NativeBridge.java:1391</c> y <c>:1371</c>: el chat de avisos de Telegram, que no
     /// admite temporizador. Es un identificador de servidor, no un número inventado aquí.
     public const long TelegramNotices = 777000;
 
@@ -43,19 +43,19 @@ public static class DesktopAutoDelete
     /// <c>AccountSafetyPolicy.java:17</c> aplicado a un entero que sí era entero.
     public const string OutOfRange = "Elige de 0 a 365 días completos.";
 
-    /// <c>NativeBridge.java:1391</c>, cuando el peer es la propia cuenta o el usuario de avisos.
+    /// <c>NativeBridge.java:1414</c>, cuando el peer es la propia cuenta o el usuario de avisos.
     public const string NotAllowedHere = "Telegram no permite borrado automático en este chat.";
 
-    /// <c>NativeBridge.java:1888</c>: el derecho <c>canChangeInfo</c> se mira antes de preguntar, no después.
+    /// <c>NativeBridge.java:1911</c>: el derecho <c>canChangeInfo</c> se mira antes de preguntar, no después.
     public const string NoRight = "Necesitas permiso para cambiar la información del chat.";
 
-    /// <c>NativeBridge.java:1402</c>: entre la ventana modal y la escritura, otro dispositivo movió el temporizador.
+    /// <c>NativeBridge.java:1425</c>: entre la ventana modal y la escritura, otro dispositivo movió el temporizador.
     public const string Changed = "El temporizador cambió. Actualiza el estado antes de modificarlo.";
 
-    /// <c>NativeBridge.java:1380</c>: la misma guardia, en el ajuste predeterminado.
+    /// <c>NativeBridge.java:1403</c>: la misma guardia, en el ajuste predeterminado.
     public const string DefaultChanged = "El ajuste cambió en otro dispositivo. Actualiza el estado.";
 
-    /// <c>NativeBridge.java:1408</c>, la frase del botón positivo de <c>confirmAutoDelete</c>.
+    /// <c>NativeBridge.java:1431</c>, la frase del botón positivo de <c>confirmAutoDelete</c>.
     public const string ChangedAccount = "La cuenta cambió. No se modificó el temporizador.";
 
     /// La novena negación no es de Android: es la que pronuncia este host cuando una de sus lecturas no devuelve el
@@ -70,7 +70,7 @@ public static class DesktopAutoDelete
     /// escribe <c>:1357</c>.
     public static string DialogTitle(string title) => "Borrado automático · " + DesktopContact.Limit(title, 100);
 
-    /// <c>NativeBridge.java:1408</c>, las dos frases según el valor que se va a escribir. El cero no es «borrar
+    /// <c>NativeBridge.java:1431</c>, las dos frases según el valor que se va a escribir. El cero no es «borrar
     /// ahora»: apaga el temporizador para los mensajes futuros, y el texto lo dice.
     public static string Body(int seconds) => seconds == 0
         ? "Se desactivará el temporizador para los mensajes futuros. Esto no recupera mensajes ya borrados."
@@ -88,7 +88,7 @@ public static class DesktopAutoDelete
     /// subirá a un módulo compartido.
     public const string WrongAccount = "La cuenta cambió. Vuelve a abrir este ajuste.";
 
-    /// El título que <c>NativeBridge.java:1378</c> le pone a la conversación cuando lo que se cambia es el ajuste
+    /// El título que <c>NativeBridge.java:1401</c> le pone a la conversación cuando lo que se cambia es el ajuste
     /// predeterminado: no hay community que nombre, así que Android nombra el grupo de chats al que afecta.
     public const string NewChats = "Chats nuevos";
 

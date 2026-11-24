@@ -7,9 +7,9 @@ using TL;
 /// <summary>
 /// Las reglas de la ficha de perfil en Windows: <c>chat.profile</c> (<c>NativeBridge.java:535</c> →
 /// <c>chatProfile</c>, <c>:1223-1270</c>), <c>profile.related</c> (<c>:538</c> → <c>profileRelated</c>,
-/// <c>:1574-1597</c> y <c>profileMembers</c>, <c>:1598-1613</c>) y las dos filas que esa pestaña abre,
+/// <c>:1597-1620</c> y <c>profileMembers</c>, <c>:1598-1613</c>) y las dos filas que esa pestaña abre,
 /// <c>profile.peer</c> (<c>:539</c>) y <c>profile.contact</c> (<c>:542</c>), todas ellas terminando en
-/// <c>respondProfilePeer</c> (<c>:1633-1636</c>).
+/// <c>respondProfilePeer</c> (<c>:1656-1659</c>).
 /// <para>
 /// La medida, hecha por reflexión sobre WTelegramClient 4.4.10, es la que parte el trabajo en tres y no en dos:
 /// TDLib sirve <c>GetUserFullInfo</c>, <c>GetSupergroupFullInfo</c> y <c>GetBasicGroupFullInfo</c> con los mismos
@@ -32,13 +32,13 @@ using TL;
 /// </summary>
 public static class DesktopPeerProfile
 {
-    /// <c>profileRelated</c> (<c>NativeBridge.java:1575-1597</c>) cierra así el tipo de chat que no tiene lista.
+    /// <c>profileRelated</c> (<c>NativeBridge.java:1598-1620</c>) cierra así el tipo de chat que no tiene lista.
     public const string NoList = "No hay una lista de participantes para este chat.";
 
-    /// <c>senderProfile</c> (<c>NativeBridge.java:1615</c>): un chat secreto no tiene ficha que abrir.
+    /// <c>senderProfile</c> (<c>NativeBridge.java:1638</c>): un chat secreto no tiene ficha que abrir.
     public const string Secret = "Este perfil no está disponible.";
 
-    /// <c>chatProfile</c> (<c>NativeBridge.java:1224-1271</c>) y <c>sendPublicChatProfile</c>
+    /// <c>chatProfile</c> (<c>NativeBridge.java:1227-1274</c>) y <c>sendPublicChatProfile</c>
     /// (<c>:1271-1291</c>) rematan con esta frase cuando armar el objeto de la ficha falla.
     public const string LoadFailed = "No se pudo cargar el perfil público.";
 
@@ -49,21 +49,21 @@ public static class DesktopPeerProfile
     public const string NoHash =
         "Telegram no dio los datos necesarios para abrir esta ficha. Vuelve a abrirla desde la conversación e inténtalo de nuevo.";
 
-    /// Las cinco cadenas de <c>presence</c> (<c>NativeBridge.java:1564-1574</c>), copiadas carácter a carácter.
+    /// Las cinco cadenas de <c>presence</c> (<c>NativeBridge.java:1587-1597</c>), copiadas carácter a carácter.
     public const string Online = "En línea";
     public const string OfflinePrefix = "Última vez ";
     public const string Recently = "Últ. vez recientemente";
     public const string LastWeek = "Últ. vez esta semana";
     public const string LastMonth = "Últ. vez este mes";
 
-    /// <c>profileRelated</c> recorta el desplazamiento a <c>[0, 5000]</c> (<c>NativeBridge.java:1577</c>) y las dos
-    /// listas piden treinta filas: <c>GetGroupsInCommon(…, 30)</c> (<c>:1581</c>) y
+    /// <c>profileRelated</c> recorta el desplazamiento a <c>[0, 5000]</c> (<c>NativeBridge.java:1600</c>) y las dos
+    /// listas piden treinta filas: <c>GetGroupsInCommon(…, 30)</c> (<c>:1604</c>) y
     /// <c>SupergroupMembersFilterRecent</c> con <c>30</c> (<c>:1594</c>).
     public const int MaxOffset = 5000;
     public const int Page = 30;
 
     /// El cursor con el que <c>profileRelated</c> sigue las conversaciones en común: Android manda el identificador
-    /// del último chat devuelto y <c>"0"</c> cuando la página vino corta (<c>NativeBridge.java:1588</c>). Aquí el
+    /// del último chat devuelto y <c>"0"</c> cuando la página vino corta (<c>NativeBridge.java:1611</c>). Aquí el
     /// identificador es el peer de Telegram, que llega recortado (<see cref="NoHash"/>), así que el cursor es numérico
     /// y en cadena.
     public static string Cursor(IEnumerable<ChatBase> chats, int count)
@@ -73,11 +73,11 @@ public static class DesktopPeerProfile
         return count == Page ? last.ToString() : "0";
     }
 
-    /// <c>Math.max(0, Math.min(5000, offset))</c> de <c>NativeBridge.java:1577</c>.
+    /// <c>Math.max(0, Math.min(5000, offset))</c> de <c>NativeBridge.java:1600</c>.
     public static int Offset(long value) => (int)Math.Clamp(value, 0, MaxOffset);
 
     /// Los usuarios públicos activos, que es lo que Android saca de <c>usernames.activeUsernames</c>
-    /// (<c>NativeBridge.java:1232</c> y <c>:1275</c>). En MTProto la misma selección es la bandera <c>active</c> de
+    /// (<c>NativeBridge.java:1235</c> y <c>:1275</c>). En MTProto la misma selección es la bandera <c>active</c> de
     /// cada <c>TL.Username</c>; el primero de la lista es el primario, igual que allá.
     public static List<string> ActiveUsernames(Username[]? values)
     {
@@ -88,7 +88,7 @@ public static class DesktopPeerProfile
         return list;
     }
 
-    /// <c>presence</c> (<c>NativeBridge.java:1564-1574</c>). Android compara segundos de época contra
+    /// <c>presence</c> (<c>NativeBridge.java:1587-1597</c>). Android compara segundos de época contra
     /// <c>System.currentTimeMillis()/1000</c>; MTProto entrega <c>DateTime</c> en las dos marcas, así que el reloj
     /// entra igual de fresco y un <c>UserStatusOnline</c> ya caducado no dice «En línea». La condición de «hay
     /// momento» es la misma de allá (<c>at&gt;0</c>): el reloj de Unix.
@@ -113,7 +113,7 @@ public static class DesktopPeerProfile
     }
 
     /// El puesto que <c>profileMembers</c> publica en la fila: «Creador», «Administrador» o la cadena vacía para
-    /// quien no administra (<c>NativeBridge.java:1608</c>). Los bots se cuelan igual que allá: Android no los mira
+    /// quien no administra (<c>NativeBridge.java:1631</c>). Los bots se cuelan igual que allá: Android no los mira
     /// en esta lista y aquí tampoco se filtran, porque la pestaña es «quién está dentro», no «quién puede administrar».
     public static string Role(ChatParticipantBase? part) => part switch
     {
@@ -131,13 +131,13 @@ public static class DesktopPeerProfile
         _ => ""
     };
 
-    /// La fila de <c>profileMembers</c> (<c>NativeBridge.java:1599</c>): cuatro claves, con el identificador en
+    /// La fila de <c>profileMembers</c> (<c>NativeBridge.java:1622</c>): cuatro claves, con el identificador en
     /// cadena decimal y el puesto tal cual. La miniatura se deja fuera: Android la saca de <c>dto.userPhoto</c> y
     /// el host no registra la foto de cada persona en esta lectura, así que la pantalla pinta las iniciales.
     public static object MemberRow(long id, string name, string role) => new { id = id.ToString(), name, role };
 
     /// La fila de <c>chat</c> que <c>respondProfilePeer</c> devuelve por tres caminos distintos
-    /// (<c>NativeBridge.java:1634-1637</c>, y las dos pestañas saltan aquí desde <c>App.tsx:757</c>). <c>type</c>
+    /// (<c>NativeBridge.java:1657-1660</c>, y las dos pestañas saltan aquí desde <c>App.tsx:758</c>). <c>type</c>
     /// manda en la pantalla: <c>private</c> abre ficha de persona, <c>group</c> y <c>channel</c> abren ficha de
     /// comunidad.
     public static object PeerRow(string id, string title, string type, string username, bool bot) =>

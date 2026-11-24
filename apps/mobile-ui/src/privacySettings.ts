@@ -4,7 +4,7 @@ import type { PrivacySetting } from './contract';
  * El espejo de `PrivacyRules.java` y de `DesktopPrivacy.cs` (ronda BH): las catorce claves de la privacidad de la
  * cuenta, los doce tipos de regla que devuelven TDLib y MTProto —medidos por reflexión sobre `WTelegramClient`
  * 4.4.10—, la proyección que la pantalla pinta y la reconstrucción que se envía. Son las cadenas que el puente
- * devuelve, copiadas carácter a carácter de `NativeBridge.java:3858-3904` y de `PrivacyRules.java`;
+ * devuelve, copiadas carácter a carácter de `NativeBridge.java:3881-3927` y de `PrivacyRules.java`;
  * `rondaBH.test.ts` las compara con el Java, con el C# y con las etiquetas del panel para que la vista de diseño no
  * enseñe nunca una palabra que Android o Windows no dirían.
  *
@@ -13,7 +13,7 @@ import type { PrivacySetting } from './contract';
  * la provoque. Se lista en `PRIVACY_REFUSALS` con esa marca, no para que el andamio la tire.
  */
 
-/** Las catorce de `PRIVACY_KEYS` (`NativeBridge.java:3859`), en el orden del array que la pantalla recorre. */
+/** Las catorce de `PRIVACY_KEYS` (`NativeBridge.java:3882`), en el orden del array que la pantalla recorre. */
 export const PRIVACY_KEYS = [
   'status', 'profilePhoto', 'phone', 'bio', 'birthdate', 'forwards', 'calls', 'voiceMessages', 'invites', 'findPhone',
   'p2p', 'noPaidMessages', 'savedMusic', 'starGiftsAutoSave',
@@ -25,7 +25,7 @@ export const PRIVACY_BASES = ['everyone', 'contacts', 'nobody'] as const;
 /** El `custom` de `PrivacyRules.java:47`: dos bases en la lista de Telegram, o ninguna. */
 export const PRIVACY_CUSTOM = 'custom';
 
-/** `BridgePolicy.text(p,"key",20)` y `("value",12)` (`NativeBridge.java:3906`). */
+/** `BridgePolicy.text(p,"key",20)` y `("value",12)` (`NativeBridge.java:3929`). */
 export const PRIVACY_MAX_KEY = 20;
 export const PRIVACY_MAX_VALUE = 12;
 
@@ -37,11 +37,11 @@ export const PRIVACY_MAX_EXCEPTIONS = 200;
 
 /** Las negaciones, con su fuente al lado. Son las que el puente dice, no las que la pantalla inventa. */
 export const PRIVACY_REFUSALS = {
-  /** El `default` de `privacySetting` (`NativeBridge.java:3872`). */
+  /** El `default` de `privacySetting` (`NativeBridge.java:3895`). */
   unknownSetting: 'Ajuste de privacidad no válido.',
-  /** El `default` de `BridgePolicy.text` sobre la clave o el valor (`BridgePolicy.java:60`). */
+  /** El `default` de `BridgePolicy.text` sobre la clave o el valor (`BridgePolicy.java:61`). */
   badText: 'El ajuste y el valor de privacidad tienen que llegar como texto corto.',
-  /** El `default` de `BridgePolicy.ids` sobre las dos listas (`BridgePolicy.java:59`). */
+  /** El `default` de `BridgePolicy.ids` sobre las dos listas (`BridgePolicy.java:60`). */
   badList: 'La lista de excepciones de privacidad no está bien formada.',
   /** El primer `throw` de `validate` (`PrivacyRules.java:90`). */
   badValue: 'Valor de privacidad no válido.',
@@ -118,12 +118,12 @@ export function projectPrivacy(key: string, rules: PrivacyRule[]): PrivacySettin
   return { key, value: bases.length === 1 ? bases[0] : PRIVACY_CUSTOM, allowUsers: allow, restrictUsers: restrict, preserved };
 }
 
-/** La forma de `BridgePolicy.text` (`BridgePolicy.java:60`): cadena, ni ausente ni de otro tipo, y dentro del tope. */
+/** La forma de `BridgePolicy.text` (`BridgePolicy.java:61`): cadena, ni ausente ni de otro tipo, y dentro del tope. */
 export const shapedText = (raw: unknown, maximum: number): boolean =>
   typeof raw === 'string' && raw.length <= maximum;
 
 /**
- * La forma de `optionalIds` (`NativeBridge.java:3905`) con `BridgePolicy.ids` (`BridgePolicy.java:59`) dentro:
+ * La forma de `optionalIds` (`NativeBridge.java:3928`) con `BridgePolicy.ids` (`BridgePolicy.java:60`) dentro:
  * ausencia o array vacío es la lista vacía; lo demás, como mucho cien elementos y todos con la pinta de un entero
  * firmado. La expresión de Java ancla los dos extremos sola con `matches`; en JS `$` tampoco deja pasar un salto de
  * línea final, así que las dos capas rechazan exactamente lo mismo.

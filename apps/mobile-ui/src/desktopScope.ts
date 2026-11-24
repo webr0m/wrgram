@@ -94,6 +94,10 @@ export const DESKTOP_PENDING: readonly ScopeClaim[] = [
   { label: 'importar la agenda y sincronizarla con la del teléfono', methods: ['contacts.import', 'contacts.sync.set', 'contacts.sync.now'] },
   { label: 'denuncias, avisos de seguridad y controles de los patrocinados', methods: ['chat.report', 'message.report', 'chat.safety', 'chat.safety.dismiss', 'sponsored.report', 'sponsored.open', 'sponsored.view', 'sponsored.settings', 'sponsored.settings.set'] },
   { label: 'contraseña de dos pasos, su correo y la recuperación', methods: ['password.set', 'password.state', 'password.email.set', 'password.email.check', 'password.email.resend', 'password.email.cancel', 'auth.recover.request', 'auth.recover.reset'] },
+  // Cambiar el número con la sesión abierta (ronda A02) solo tiene brazo en Android; las tres se niegan por su nombre
+  // en `TelegramService.cs`. No es un hueco de tiempo: Telegram reserva ese código a las apps oficiales y este host
+  // no tiene orden que lo mande a un teléfono distinto del de la cuenta.
+  { label: 'cambiar el número de teléfono con la sesión abierta', methods: ['account.phone.change', 'account.phone.check', 'account.phone.resend'] },
   { label: 'acceso por QR, reenvío del código y varias cuentas en el equipo', methods: ['authenticate.qr', 'auth.resend', 'accounts.add', 'accounts.switch'] },
   { label: 'notificaciones push, llamadas y WR IA', methods: ['notifications.enable', 'notifications.disable', 'call.open', 'calls.list', 'assistant.send', 'assistant.status', 'native.assistant'] },
   { label: 'Mini Apps, bots y el resto de Telegram Business', methods: ['apps.open', 'apps.list', 'apps.chat', 'bot.father', 'bot.status', 'bot.publish', 'business.hours', 'business.greeting', 'business.away', 'business.location', 'business.links.list', 'business.bot.get', 'business.start'] },

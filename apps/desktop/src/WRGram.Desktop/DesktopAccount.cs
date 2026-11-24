@@ -16,7 +16,7 @@ namespace WRGram.Desktop;
 /// escrituras, y parecía confirmado por haber visto la propiedad pública con setter. Reflexionado
 /// WTelegramClient 4.4.10, ese <c>set_User</c> es **privado** y no existe un <c>GetMe()</c> público: la asignación
 /// no compila. Lo que se hace entonces es lo mismo que hace Android, que tampoco reusa un objeto guardado — su
-/// <c>accountProfile</c> empieza con un <c>GetMe</c> nuevo (<c>NativeBridge.java:1638</c>)—: cada lectura del
+/// <c>accountProfile</c> empieza con un <c>GetMe</c> nuevo (<c>NativeBridge.java:1661</c>)—: cada lectura del
 /// perfil vuelve a preguntar a Telegram.
 /// </para>
 /// </summary>
@@ -24,7 +24,7 @@ public sealed partial class TelegramService
 {
     /// <summary>
     /// <c>account.profile</c>, el DTO que la pantalla de «Mi perfil de Telegram» y el resumen del menú de cuenta
-    /// consumen. Se lee dos veces, como en Android (<c>NativeBridge.java:1640</c>, <c>GetMe</c> y dentro
+    /// consumen. Se lee dos veces, como en Android (<c>NativeBridge.java:1663</c>, <c>GetMe</c> y dentro
     /// <c>GetUserFullInfo</c>): lo que la cuenta es (<c>users.getUsers([self])</c>, de donde salen los nombres, el
     /// móvil, los nombres públicos y la foto) y lo que la cuenta escribe de sí misma
     /// (<c>users.getFullUser(self)</c>, de donde salen la biografía y el cumpleaños).

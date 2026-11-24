@@ -13,7 +13,7 @@ namespace WRGram.Desktop;
 /// </summary>
 internal static class DesktopTextEntities
 {
-    /// <summary>El mismo techo de <c>NativeBridge.java:4583</c> y de <c>MAX_ENTITIES</c> del compositor.</summary>
+    /// <summary>El mismo techo de <c>NativeBridge.java:4606</c> y de <c>MAX_ENTITIES</c> del compositor.</summary>
     public const int MaxEntities = 100;
 
     /// <summary>
@@ -44,7 +44,7 @@ internal static class DesktopTextEntities
         $"La entidad «{type}» no trae su {property}.";
 
     /// <summary>
-    /// Comprobación de rango sobre el texto tal como viaja. El orden es el de <c>NativeBridge.java:4589</c>:
+    /// Comprobación de rango sobre el texto tal como viaja. El orden es el de <c>NativeBridge.java:4612</c>:
     /// primero el principio, luego que la longitud cubra algo, y al final que el final no rebase el texto.
     /// Cada negativa lleva sus números porque sin ellos el aviso no dice qué borrar del borrador.
     /// </summary>
@@ -60,8 +60,8 @@ internal static class DesktopTextEntities
 
     /// <summary>
     /// Devuelve el <c>document_id</c> del emoji personalizado y deja en <paramref name="error"/> la misma
-    /// frase con la que Android niega la entrada (<c>NativeBridge.java:4602</c>). La gramática es la de
-    /// <c>BridgePolicy.java:58</c> —entero opcionalmente negativo, sin espacios ni cifras sobrantes y de
+    /// frase con la que Android niega la entrada (<c>NativeBridge.java:4625</c>). La gramática es la de
+    /// <c>BridgePolicy.java:59</c> —entero opcionalmente negativo, sin espacios ni cifras sobrantes y de
     /// hasta diecinueve dígitos— y como Telegram solo conoce ids positivos, un cero o un negativo tampoco vale.
     /// </summary>
     public static long? CustomEmojiId(JsonElement entity, out string? error)
@@ -90,7 +90,7 @@ internal static class DesktopTextEntities
 
     /// <summary>
     /// Por qué una entidad de enlace no puede salir: porque no lleva dirección o porque Telegram no la
-    /// admitiría. El patrón es el de <c>NativeBridge.java:4606</c>, que es lo que impide que un enlace roto
+    /// admitiría. El patrón es el de <c>NativeBridge.java:4629</c>, que es lo que impide que un enlace roto
     /// se lleve por delante el formato del resto del mensaje.
     /// </summary>
     public static string? UrlProblem(string? url) => IsSendableUrl(url)
@@ -106,7 +106,7 @@ internal static class DesktopTextEntities
         offset < 0 || length < 1 || text.Length < offset + length ? null : text.Substring(offset, length);
 
     /// <summary>
-    /// Lee un id de entidad con la gramática de <c>BridgePolicy.java:58</c>. Acepta el número JSON y la
+    /// Lee un id de entidad con la gramática de <c>BridgePolicy.java:59</c>. Acepta el número JSON y la
     /// cadena —<c>contract.ts</c> guarda el id como texto para no perder cifras delante de JavaScript— y
     /// devuelve <c>null</c> en cuanto algo sobra: un punto, un espacio o una coma de miles.
     /// </summary>

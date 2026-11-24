@@ -54,6 +54,7 @@ final class BridgePolicy {
     static { METHODS.addAll(Arrays.asList("message.readDate","message.viewers")); }
     static { METHODS.add("calls.list"); }
     static { METHODS.addAll(Arrays.asList("backgrounds.list","background.set","bot.commands","bot.menu.open","share.import")); }
+    static { METHODS.addAll(Arrays.asList("account.phone.change","account.phone.check","account.phone.resend")); }
     static void envelope(JSONObject value){if(value.length()!=3||!value.optString("id").matches("[0-9]{1,16}")||!METHODS.contains(value.optString("method"))||!(value.opt("params") instanceof JSONObject))throw new IllegalArgumentException("Invalid bridge envelope");}
     static long id(JSONObject params,String key){Object value=params.opt(key);if(!(value instanceof String)||!((String)value).matches("-?(0|[1-9][0-9]{0,18})"))throw new IllegalArgumentException("Invalid identifier");return Long.parseLong((String)value);}
     static long[] ids(JSONObject params,String key,int maximum){Object value=params.opt(key);if(!(value instanceof JSONArray)||((JSONArray)value).length()<1||((JSONArray)value).length()>maximum)throw new IllegalArgumentException("Invalid identifier list");JSONArray items=(JSONArray)value;long[] result=new long[items.length()];for(int i=0;i<result.length;i++){Object item=items.opt(i);if(!(item instanceof String)||!((String)item).matches("-?(0|[1-9][0-9]{0,18})"))throw new IllegalArgumentException("Invalid identifier list");result[i]=Long.parseLong((String)item);}return result;}

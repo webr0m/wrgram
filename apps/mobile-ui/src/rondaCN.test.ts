@@ -7,15 +7,15 @@ import { readFileSync } from 'node:fs';
  * CF trajo las doce opciones y el cierre; CM trajo la descripción. Lo que seguía faltando era el medio por opción,
  * que las dos librerías sí conocen: TDLib lo pide en `TdApi.InputPollOption.media` y MTProto en
  * `TL.InputPollAnswer.media`. En Android la subida monta `TdApi.InputPollMediaPhoto` sobre el mismo `photoInput` que
- * usa el adjunto suelto (`NativeBridge.java:5043`), así que no hay un camino nuevo que inventar: el token sale del
- * selector de fotos de siempre y entra en el array que se declara en `NativeBridge.java:4762`.
+ * usa el adjunto suelto (`NativeBridge.java:5066`), así que no hay un camino nuevo que inventar: el token sale del
+ * selector de fotos de siempre y entra en el array que se declara en `NativeBridge.java:4785`.
  *
  * Las guardas van en el orden en que Android las escribió: primero el recuento de opciones
- * (`NativeBridge.java:4759`), después la validación del token —cuenta, chat y tipo de archivo— en
- * `NativeBridge.java:4760`, luego la regla de todo o nada en `NativeBridge.java:4761` y solo entonces el montaje opción por opción en `NativeBridge.java:4763`. El
+ * (`NativeBridge.java:4782`), después la validación del token —cuenta, chat y tipo de archivo— en
+ * `NativeBridge.java:4783`, luego la regla de todo o nada en `NativeBridge.java:4784` y solo entonces el montaje opción por opción en `NativeBridge.java:4786`. El
  * todo o nada no es un capricho: Telegram no admite una encuesta con fotos en tres opciones y la cuarta vacía, así
  * que la pantalla dice la misma frase carácter a carácter (`BatchPanels.tsx:92`) antes de mandar nada
- * (`NativeBridge.java:4761`). Y como el token señala un archivo temporal, `NativeBridge.java:4770` lo borra después
+ * (`NativeBridge.java:4784`). Y como el token señala un archivo temporal, `NativeBridge.java:4793` lo borra después
  * del envío, no antes: si el mensaje no salió, la foto sigue sirviendo para reintentar.
  *
  * Al leer, `NativeSnapshot.java:213` serializa `option.media` con el mismo nombre que la pantalla espera, y
@@ -34,14 +34,14 @@ import { readFileSync } from 'node:fs';
  * pintando encuestas sin imágenes.
  *
  * Windows ya puede, desde la ronda CN-B: el brazo de escritorio guarda las respuestas en un `PollAnswerBase[]`
- * (`TelegramService.cs:2533`) y, si hay fotos, sube cada archivo con `messages.uploadMedia`
- * (`TelegramService.cs:2585`) y engancha el `inputPhoto` al `InputPollAnswer` de su opción. Al leer, la fila del DTO
- * lleva el medio que saca `DesktopPoll.PhotoOf` (`TelegramService.cs:2979`), y `DesktopPoll.cs:423` sigue filtrando
+ * (`TelegramService.cs:2538`) y, si hay fotos, sube cada archivo con `messages.uploadMedia`
+ * (`TelegramService.cs:2590`) y engancha el `inputPhoto` al `InputPollAnswer` de su opción. Al leer, la fila del DTO
+ * lleva el medio que saca `DesktopPoll.PhotoOf` (`TelegramService.cs:2984`), y `DesktopPoll.cs:423` sigue filtrando
  * `PollAnswer` porque es el único de los dos constructores que declara campo `option`. El andamio copia esa realidad
- * —la fila espejo de `preview.ts:1142` ya escribe su `media`— y `App.tsx:1177` dejó de apagar el botón en
+ * —la fila espejo de `preview.ts:1142` ya escribe su `media`— y `App.tsx:1178` dejó de apagar el botón en
  * escritorio: lo que sigue fuera es el chat sin abrir y el que no es comunidad. Los tres rechazos nuevos, el orden de
  * las guardas y las dos banderas los mide su propia ronda en `rondaCNB.test.ts`. Tampoco lleva medio la encuesta que
- * se crea desde el teclado de un bot (`NativeBridge.java:1202`), que es el otro brazo que monta opciones.
+ * se crea desde el teclado de un bot (`NativeBridge.java:1205`), que es el otro brazo que monta opciones.
  *
  * Como en CF, CB, CM, BM, BY y BZ: la última prueba mide las citas. Todo `Archivo:NNN` escrito por la ronda tiene que
  * estar en la tabla y señalar hoy la línea que la frase afirma.
@@ -327,14 +327,14 @@ describe('ronda CN · lo que ya llega en las dos orillas y dónde se queda fuera
 describe('ronda CN · las citas de los archivos de la ronda', () => {
   /** Lo que tiene que decir la línea citada, medido hoy una por una. */
   const anchors: Record<string, string> = {
-    'NativeBridge.java:4759': 'JSONArray values=p.getJSONArray("options")',
-    'NativeBridge.java:4760': CAMBIO,
-    'NativeBridge.java:4761': NADIR,
-    'NativeBridge.java:4762': 'TdApi.InputPollOption[] options=new TdApi.InputPollOption[values.length()];',
-    'NativeBridge.java:4763': 'new TdApi.InputPollMediaPhoto(photoInput(attachments.get(images.get(i))))',
-    'NativeBridge.java:4770': 'attachments.remove(token)',
-    'NativeBridge.java:1202': 'private void createPollForBot(',
-    'NativeBridge.java:5043': 'private TdApi.InputPhoto photoInput(Attachment item)',
+    'NativeBridge.java:4782': 'JSONArray values=p.getJSONArray("options")',
+    'NativeBridge.java:4783': CAMBIO,
+    'NativeBridge.java:4784': NADIR,
+    'NativeBridge.java:4785': 'TdApi.InputPollOption[] options=new TdApi.InputPollOption[values.length()];',
+    'NativeBridge.java:4786': 'new TdApi.InputPollMediaPhoto(photoInput(attachments.get(images.get(i))))',
+    'NativeBridge.java:4793': 'attachments.remove(token)',
+    'NativeBridge.java:1205': 'private void createPollForBot(',
+    'NativeBridge.java:5066': 'private TdApi.InputPhoto photoInput(Attachment item)',
     'NativeSnapshot.java:213': 'JSONObject image=pollMedia(option.media)',
     'NativeSnapshot.java:433': 'static TdApi.PhotoSize pollPhotoSize(TdApi.Photo photo)',
     'NativeSnapshot.java:434': 'JSONObject pollMedia(TdApi.PollMedia value)throws Exception{',
@@ -349,10 +349,10 @@ describe('ronda CN · las citas de los archivos de la ronda', () => {
     'BatchPanels.tsx:99': 'Imagen de la opción',
     'contract.ts:119': 'choosing:boolean;media?:Media',
     'batch.css:8': '.poll-option-media{flex:none;width:46px',
-    'App.tsx:1177': 'images={active!==undefined&&community(active)}',
-    'TelegramService.cs:2533': 'var answers = new PollAnswerBase[options.Length];',
-    'TelegramService.cs:2585': 'var stored = await client.Messages_UploadMedia(',
-    'TelegramService.cs:2979': 'Media = DesktopPoll.PhotoOf(answers[position]) is { } picture',
+    'App.tsx:1178': 'images={active!==undefined&&community(active)}',
+    'TelegramService.cs:2538': 'var answers = new PollAnswerBase[options.Length];',
+    'TelegramService.cs:2590': 'var stored = await client.Messages_UploadMedia(',
+    'TelegramService.cs:2984': 'Media = DesktopPoll.PhotoOf(answers[position]) is { } picture',
     'DesktopPoll.cs:423': 'public static PollAnswer[] Options(TL.Poll poll)',
     'preview.ts:1142': 'options: options.map((text, index) => ({ index,',
   };
@@ -451,12 +451,12 @@ describe('ronda CN · las citas de los archivos de la ronda', () => {
     // ronda CH-A puso el bloque de los fondos al final del puente y la CH-A2 le sumó el aviso: veinticuatro entre las
     // dos; cuatro más en la instantánea por el `appearance` que publica los dos huecos. La CT dejó el puente en
     // 5545 líneas y las inserciones posteriores lo llevaron a 5579. `App.tsx` se mide hoy en 1592 líneas.
-    expect(java).toHaveLength(5579);
+    expect(java).toHaveLength(5602);
     expect(snapshot).toHaveLength(554);
     expect(jvm).toHaveLength(58);
     expect(batch).toHaveLength(351);
-    expect(app).toHaveLength(1592);
-    expect(contract).toHaveLength(250);
+    expect(app).toHaveLength(1593);
+    expect(contract).toHaveLength(251);
     expect(css).toHaveLength(125);
   });
 });

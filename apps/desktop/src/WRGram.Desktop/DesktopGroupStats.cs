@@ -8,7 +8,7 @@ using TL;
 /// Las estadísticas de una comunidad convertidas al contrato que comparten Android y Windows (ronda CA). El otro lado
 /// es <c>GroupChatStats.java</c>, que aplana <c>TdApi.ChatStatisticsChannel</c> (<c>GroupChatStats.java:50</c>) y
 /// <c>TdApi.ChatStatisticsSupergroup</c> (<c>GroupChatStats.java:63</c>) desde el brazo <c>groups.stats</c>
-/// (<c>NativeBridge.java:884</c>); aquí se aplanan <c>TL.Stats_BroadcastStats</c> y <c>TL.Stats_MegagroupStats</c>, y
+/// (<c>NativeBridge.java:887</c>); aquí se aplanan <c>TL.Stats_BroadcastStats</c> y <c>TL.Stats_MegagroupStats</c>, y
 /// las dos capas escupen el mismo JSON: <c>kind</c>, el periodo, las fichas <c>{id, value, previous}</c> y, solo en los
 /// grupos, la tabla de los que más escriben. Las etiquetas en español no viven en ninguna de las dos: las pone la
 /// pantalla desde el catálogo <c>STATS_LABELS</c> (<c>groupStats.ts:15-27</c>), indexado por el <c>id</c> que manda
@@ -64,7 +64,7 @@ public static class DesktopGroupStats
     public const string Outside = "Esta cuenta ya no está dentro de la comunidad.";
 
     /// <c>CHANNEL_INVALID</c>, y el mismo texto que el host usa cuando la fila pedida no está en la caché
-    /// (<c>TelegramService.cs:3868</c>).
+    /// (<c>TelegramService.cs:3873</c>).
     public const string Stale = "La conversación no está cargada. Actualiza la lista e inténtalo de nuevo.";
 
     /// <c>BROADCAST_REQUIRED</c> / <c>MEGAGROUP_REQUIRED</c>: Telegram contradice la forma que la caché tenía. No es
@@ -165,7 +165,7 @@ public static class DesktopGroupStats
     /// Los rechazos que estos dos métodos pueden devolver con nombre propio, medidos en las <c>throws</c> de
     /// <c>stats.getBroadcastStats</c> y <c>stats.getMegagroupStats</c> del esquema de la capa 232
     /// (<c>@mtcute/core/tl/raw-errors.json</c>). <c>AUTH_KEY_UNREGISTERED</c> viaja aparte porque el host ya lo
-    /// traduce en <c>Describe</c> (<c>TelegramService.cs:3975</c>) para todas las peticiones, y lo que no está medido
+    /// traduce en <c>Describe</c> (<c>TelegramService.cs:3980</c>) para todas las peticiones, y lo que no está medido
     /// se queda con el código de Telegram: ponerle una causa inventada engaña más que enseñarlo.
     public static string? Refusal(string? error) => error switch
     {

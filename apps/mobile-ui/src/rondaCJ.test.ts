@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
  * Ronda CJ — el silencio que una cuenta aplica por defecto a lo que ella misma envía.
  *
  * Android lo delega entero en TDLib: la clave `chat.defaultSilent` llama a
- * `ToggleChatDefaultDisableNotification` (`NativeBridge.java:732`), la biblioteca contesta `Ok` sin traer nada que
+ * `ToggleChatDefaultDisableNotification` (`NativeBridge.java:735`), la biblioteca contesta `Ok` sin traer nada que
  * copiar, y el valor vuelve a la pantalla por la fila del chat (`NativeSnapshot.java:107-109`), que es la que lee el
  * compositor al arrancar. La clave está declarada en la lista del puente (`BridgePolicy.java:52`) y el aviso de
  * cambio está cableado en la sesión (`TdSession.java:435`), que refresca la lista (`TdSession.java:438`).
@@ -21,11 +21,11 @@ import { readFileSync } from 'node:fs';
  *
  * **El defecto gana al interruptor de la pantalla, en las dos capas.** En Android no lo decide este cliente:
  * `sendOptions` devuelve `null` cuando la pantalla pidió avisar (`NativeBridge.java:174`) y TDLib aplica entonces su
- * defecto. En Windows el brazo (`TelegramService.cs:219`) llama al guardador (`DesktopParity.cs:285-296`), la marca
+ * defecto. En Windows el brazo (`TelegramService.cs:224`) llama al guardador (`DesktopParity.cs:285-296`), la marca
  * sale hacia la interfaz por el DTO de la fila (`DesktopState.cs:128`) y los seis envíos que llevan flag preguntan
  * por el defecto antes de mandar. La regla está dicha una sola vez, en `DesktopDefaultSilent.SilentFor`, y el
- * interruptor se siembra con la marca de la fila (`App.tsx:181`) mientras la orden y sus dos avisos viven en
- * `setDefaultSilent` (`App.tsx:1182`).
+ * interruptor se siembra con la marca de la fila (`App.tsx:182`) mientras la orden y sus dos avisos viven en
+ * `setDefaultSilent` (`App.tsx:1183`).
  *
  * **Dos huecos declarados por su nombre, no un pudridero.** `business.quick.send` no puede heredar el defecto en
  * Windows: el ayuda de la librería se llama `Messages_SendQuickReplyMessages(for_peer, shortcut_id, ids, random_id)`
@@ -275,17 +275,17 @@ describe('ronda CJ · las citas', () => {
   const anchors: Record<string, string> = {
     'BridgePolicy.java:52': 'static { METHODS.add("chat.defaultSilent"); }',
     'NativeBridge.java:174': 'if(!silent&&schedule==0&&!raw.equals("online"))return null;',
-    'NativeBridge.java:732': 'case "chat.defaultSilent":',
+    'NativeBridge.java:735': 'case "chat.defaultSilent":',
     'NativeSnapshot.java:107': '// `defaultSilent` es el aviso que se quita a lo que la propia cuenta envía',
     'TdApi.java:10697': 'Default value of the disableNotification parameter, used when a message is sent to the chat.',
     'TdApi.java:158277': 'Changes the value of the default disableNotification parameter, used when a message is sent to a chat.',
     'TdSession.java:435': '} else if (object instanceof TdApi.UpdateChatDefaultDisableNotification) {',
     'TdSession.java:438': 'chats.get(value.chatId).defaultDisableNotification = value.defaultDisableNotification; emit("chats");',
-    'TelegramService.cs:219': '"chat.defaultSilent" => SetDefaultSilent(args),',
+    'TelegramService.cs:224': '"chat.defaultSilent" => SetDefaultSilent(args),',
     'DesktopParity.cs:285': 'private object SetDefaultSilent(JsonElement args)',
     'DesktopState.cs:128': 'public bool? DefaultSilent { get; set; }',
-    'App.tsx:181': 'useEffect(()=>{setSilent(active?.defaultSilent===true);',
-    'App.tsx:1182': 'function setDefaultSilent(chat:Chat,value:boolean)',
+    'App.tsx:182': 'useEffect(()=>{setSilent(active?.defaultSilent===true);',
+    'App.tsx:1183': 'function setDefaultSilent(chat:Chat,value:boolean)',
   };
 
   /** La última línea de cada rango citado, con lo que dice. */

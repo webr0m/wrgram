@@ -9,9 +9,9 @@ import { desktopGapRefusal } from './desktopGap';
  * prueba vigila es lo que esa conexión promete, en las cuatro piezas que la forman y en los tres estados que puede
  * dar la orden.
  *
- * Primero las frases: `senderProfile` (`NativeBridge.java:1621`, con su `answer.fail` en `:1622`) solo sabe negar de
+ * Primero las frases: `senderProfile` (`NativeBridge.java:1644`, con su `answer.fail` en `:1645`) solo sabe negar de
  * dos maneras —la guarda agrupada, que comparte la literal del chat secreto ya escrita en `DesktopPeerProfile.cs:39`,
- * y la del autor que la fila no trae, en `NativeBridge.java:1632`— y ninguna de las dos se vuelve a escribir en el
+ * y la del autor que la fila no trae, en `NativeBridge.java:1655`— y ninguna de las dos se vuelve a escribir en el
  * cable, en el andamio ni en la pantalla. Segundo el
  * orden: las guardas del cable tienen que caer en las mismas posiciones relativas que las de Java, con la lectura del
  * temporizador por delante de la negación que produce y con el `access_hash` por delante de la fila devuelta, porque
@@ -92,8 +92,8 @@ const CABLE = body('private async Task<object?> SenderProfileAsync', cable);
 
 /** Las dos negaciones de la orden, con la línea de Android que las dice. */
 const REFUSALS: [string, number][] = [
-  [PEER_REFUSALS.secret, 1622],
-  [PEER_REFUSALS.noSender, 1632],
+  [PEER_REFUSALS.secret, 1645],
+  [PEER_REFUSALS.noSender, 1655],
 ];
 
 describe('ronda BP · las tres capas dicen lo mismo del remitente', () => {
@@ -109,20 +109,20 @@ describe('ronda BP · las tres capas dicen lo mismo del remitente', () => {
       '"profile.sender" => await SenderProfileAsync(args)',
       '_ => throw new BridgeException');
     // El número que la ronda BM dejó anclado sigue siendo el del brazo.
-    expect(cable).toContain('TelegramService.cs:254');
-    expect(dispatchTable.split('\n')[253]).toContain('"profile.sender" => await SenderProfileAsync(args),');
+    expect(cable).toContain('TelegramService.cs:259');
+    expect(dispatchTable.split('\n')[258]).toContain('"profile.sender" => await SenderProfileAsync(args),');
   });
 
   it('las dos negaciones son literales de Android y cada una vive una sola vez por capa', () => {
     for (const [phrase, at] of REFUSALS) expect(says(javaLine(at), phrase), `NativeBridge.java:${at}`).toBe(true);
     // La primera no se copia: es la misma frase del chat secreto, así que la constante de aquí es un alias.
-    expect(javaLine(1622)).toContain(`"${PEER_REFUSALS.secret}"`);
+    expect(javaLine(1645)).toContain(`"${PEER_REFUSALS.secret}"`);
     expect(rules).toContain('public const string NoProfile = DesktopPeerProfile.Secret;');
     expect(count(`"${PEER_REFUSALS.secret}"`, rules)).toBe(0);
     // La literal vive una sola vez en la capa, y es la de siempre: la casa que la escribió sigue siendo la dueña.
     expect(count(`"${PEER_REFUSALS.secret}"`, hashes)).toBe(1);
     // La segunda sí es de esta clase, y carácter a carácter.
-    expect(javaLine(1632)).toContain(`"${PEER_REFUSALS.noSender}"`);
+    expect(javaLine(1655)).toContain(`"${PEER_REFUSALS.noSender}"`);
     expect(csSentence('UnknownSender')).toBe(PEER_REFUSALS.noSender);
     expect(mirror).toContain(`noSender: '${PEER_REFUSALS.noSender}',`);
     for (const phrase of REFUSALS.map(([phrase]) => phrase)) {
@@ -137,7 +137,7 @@ describe('ronda BP · las tres capas dicen lo mismo del remitente', () => {
 
   it('la guarda agrupada de `:1621` son seis condiciones y una sola frase', () => {
     // Seis condiciones unidas con cinco `||`, todas contra un solo `answer.fail`.
-    const guard = javaLine(1621);
+    const guard = javaLine(1644);
     expect(count('||', guard)).toBe(5);
     for (const needle of ['message==null', 'message.chatId!=chatId', 'source==null',
       'source.type instanceof TdApi.ChatTypeSecret', 'message.selfDestructType!=null', 'message.ephemeralContent!=null']) {
@@ -145,7 +145,7 @@ describe('ronda BP · las tres capas dicen lo mismo del remitente', () => {
     }
     // Una sola frase para las seis: la negación se escribe detrás del `if`, no dentro de cada rama.
     expect(count('answer.fail', guard)).toBe(0);
-    expect(count('answer.fail', javaLine(1622))).toBe(1);
+    expect(count('answer.fail', javaLine(1645))).toBe(1);
     // En C# las seis se reparten entre dos casas: la del chat y la del temporizador, y todas dicen lo mismo.
     expect(CABLE).toContain('if (entry == null) throw new BridgeException(DesktopSenderProfile.NoProfile);');
     expect(CABLE).toContain('if (row == null) throw new BridgeException(DesktopSenderProfile.NoProfile);');

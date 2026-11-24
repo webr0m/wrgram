@@ -95,7 +95,7 @@ const DOORS: Door[] = [
       // La historia de un enlace t.me ya no se niega en Windows: la BZ cableó las cuatro lectoras, así que la
       // pantalla llama a `showStory` en las dos capas. Lo que sigue siendo hueco —y está anotado para la CG— es que
       // el `telegram.link` de este host solo devuelve `action:"link"`, `invite_preview` o `membership`, de modo que
-      // el `case 'story'` de `App.tsx:419` no se alcanza todavía en Windows: rama muerta, no función tapada.
+      // el `case 'story'` de `App.tsx:420` no se alcanza todavía en Windows: rama muerta, no función tapada.
       'navigate(\'chats\');setMobileChat(true);showStory(owner,result.storyId);return;',
       "{!desktop&&inlineMatch&&<div className=\"inline-hint\">",
     ],

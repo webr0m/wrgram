@@ -273,10 +273,10 @@ describe('ronda CD · el aviso de alcance y el andamio', () => {
 
 describe('ronda CD · las citas escritas', () => {
   const anchors: Record<string, string> = {
-    'App.tsx:1116': '{props.allowCustom&&<button className="reaction-all"',
-    'App.tsx:1302': "request<{premium:boolean}>('premium.state')",
-    'NativeBridge.java:4409': 'private void premiumState(Answer a){',
-    'NativeBridge.java:4396': 'result.put("allowCustom',
+    'App.tsx:1117': '{props.allowCustom&&<button className="reaction-all"',
+    'App.tsx:1303': "request<{premium:boolean}>('premium.state')",
+    'NativeBridge.java:4432': 'private void premiumState(Answer a){',
+    'NativeBridge.java:4419': 'result.put("allowCustom',
     'contract.ts:102': 'export interface PremiumStatus',
     'StarsPolicy.java:14': 'STORE_PURCHASE_UNAVAILABLE',
     'DesktopMessageReactFlow.cs:15': 'messages.sendReaction',

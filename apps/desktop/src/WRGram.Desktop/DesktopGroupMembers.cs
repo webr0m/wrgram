@@ -8,7 +8,7 @@ using TL;
 
 /// <summary>
 /// La lista de miembros de un supergrupo o de un canal en Windows. En Android es un solo método
-/// (<c>NativeBridge.groupMembers</c>, <c>NativeBridge.java:2805-2821</c>) que atiende las dos órdenes —la array
+/// (<c>NativeBridge.groupMembers</c>, <c>NativeBridge.java:2828-2844</c>) que atiende las dos órdenes —la array
 /// simple de <c>groups.members</c> y la página de <c>groups.members.page</c>— y que toma cinco decisiones: a qué
 /// chats deja listar, cuánto puede medir la búsqueda, cómo se aprietan el desplazamiento y el tamaño, qué permiso
 /// propio hace falta y cómo se traduce cada fila. Las cinco están aquí escritas una vez, con las frases copiadas
@@ -43,7 +43,7 @@ using TL;
 /// Dos divergencias, escritas en lugar de imitadas. La primera es el orden del permiso: Android comprueba el
 /// derecho <b>antes</b> de construir la petición, así que un filtro malo con una cuenta sin derechos oye
 /// <see cref="NoRight"/> y no <see cref="BadFilter"/> (<c>:2798-2800</c>); el cable respeta ese orden. La segunda
-/// es de dónde sale el perfil: <c>memberDto</c> (<c>:2792-2802</c>) vuelve a Telegram a por la gente que no tiene
+/// es de dónde sale el perfil: <c>memberDto</c> (<c>:2815-2825</c>) vuelve a Telegram a por la gente que no tiene
 /// en su memoria, que es un LRU de 2000 y de la que un nombre salido no regresa solo; MTProto trae a las personas
 /// dentro de la propia respuesta, así que Windows lee lo que llegó y no abre una petición aparte. La regla del
 /// nombre ya no diverge: las dos capas dicen primero nombre y apellido, luego el <c>@usuario</c> público y solo al
@@ -62,7 +62,7 @@ public static class DesktopGroupMembers
     public const int MaxLimit = 50;
     public const int MinLimit = 1;
 
-    /// El <c>NativeSnapshot.limit(...,90)</c> de <c>PersonName.java:21</c> y <c>PersonName.java:24</c>, invocado en <c>NativeBridge.java:2795</c>.
+    /// El <c>NativeSnapshot.limit(...,90)</c> de <c>PersonName.java:21</c> y <c>PersonName.java:24</c>, invocado en <c>NativeBridge.java:2818</c>.
     public const int NameShown = 90;
 
     /// El respaldo de <c>:2783</c> cuando Telegram no dio nombre y no hay usuario que poner.
@@ -89,7 +89,7 @@ public static class DesktopGroupMembers
     /// debería seguirle; la corrección de aquella fila es una ronda de Android con la pantalla delante.
     public const string StatusLeft = "Salió";
 
-    /// Las seis teclas que la pantalla manda (<c>apps/mobile-ui/src/App.tsx:1343</c>, <c>MEMBER_FILTERS</c>).
+    /// Las seis teclas que la pantalla manda (<c>apps/mobile-ui/src/App.tsx:1344</c>, <c>MEMBER_FILTERS</c>).
     public static readonly string[] FilterKeys =
         { "recent", "administrators", "restricted", "banned", "bots", "contacts" };
 

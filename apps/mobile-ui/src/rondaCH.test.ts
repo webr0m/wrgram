@@ -60,24 +60,24 @@ import {
  * se manda para crear (`cloud-backgrounds.ts:91-96`). Lo que Telegram admite o rechaza lo dice Java, y la pantalla
  * se limita a no enviar lo que ese ya niega.
  *
- * **El orden de los dos cuerpos, medido línea por línea.** `backgroundsList` (`NativeBridge.java:5448-5457`) pide
- * la cuenta (`NativeBridge.java:5449`), apunta al dueño y lee una vez el modo pedido (`NativeBridge.java:5450`),
- * arma la función con ese modo (`NativeBridge.java:5451`), y **solo después** de comprobar que la cuenta sigue
- * siendo la misma (`NativeBridge.java:5453`) arma las filas con el elegido del mismo modo
- * (`NativeBridge.java:5454`). `backgroundSet` (`NativeBridge.java:5468-5490`) decide rama por `id`
- * (`NativeBridge.java:5472`): con `id` viaja `InputBackgroundRemote` (`NativeBridge.java:5474`) y el `type` se
- * queda nulo; con `top` viaja el relleno (`NativeBridge.java:5478`); sin las dos cosas se niega con la palabra de
- * la clase (`NativeBridge.java:5480`). Lo que Telegram devuelve se guarda en el hueco del modo, con el dueño
- * delante (`NativeBridge.java:5484`), y se escribe en las preferencias (`NativeBridge.java:5485`) antes de avisar
- * a la instantánea (`NativeBridge.java:5486`) y antes de responder: ese orden es aguja de batería.
+ * **El orden de los dos cuerpos, medido línea por línea.** `backgroundsList` (`NativeBridge.java:5471-5480`) pide
+ * la cuenta (`NativeBridge.java:5472`), apunta al dueño y lee una vez el modo pedido (`NativeBridge.java:5473`),
+ * arma la función con ese modo (`NativeBridge.java:5474`), y **solo después** de comprobar que la cuenta sigue
+ * siendo la misma (`NativeBridge.java:5476`) arma las filas con el elegido del mismo modo
+ * (`NativeBridge.java:5477`). `backgroundSet` (`NativeBridge.java:5491-5513`) decide rama por `id`
+ * (`NativeBridge.java:5495`): con `id` viaja `InputBackgroundRemote` (`NativeBridge.java:5497`) y el `type` se
+ * queda nulo; con `top` viaja el relleno (`NativeBridge.java:5501`); sin las dos cosas se niega con la palabra de
+ * la clase (`NativeBridge.java:5503`). Lo que Telegram devuelve se guarda en el hueco del modo, con el dueño
+ * delante (`NativeBridge.java:5507`), y se escribe en las preferencias (`NativeBridge.java:5508`) antes de avisar
+ * a la instantánea (`NativeBridge.java:5509`) y antes de responder: ese orden es aguja de batería.
  *
  * **Windows y el andamio, desde la ronda CH-B.** Las dos claves ya no viven en «Pendiente» sino en «Disponible»
  * (`desktopScope.ts:76`), y la puerta de BK (`desktopGap.ts:43`) deja de negarlas porque saca su lista del propio
- * aviso: negarlas sería prometer dos veces un hueco ya cerrado. El host las despacha (`TelegramService.cs:502-503`)
- * y el andamio modela las dos caras (`preview.ts:2491-2496`), con la creación por color negada por el nombre que
+ * aviso: negarlas sería prometer dos veces un hueco ya cerrado. El host las despacha (`TelegramService.cs:507-508`)
+ * y el andamio modela las dos caras (`preview.ts:2533-2538`), con la creación por color negada por el nombre que
  * pronuncia el brazo de Windows —`DesktopBackgrounds.NoCreate`— en vez de caer en el rechazo genérico de la beta.
  * Lo que el escritorio sabe por su cuenta de «wallpaper» sigue siendo otro sitio: el campo local de la apariencia
- * (`DesktopState.cs:511`, leído en `TelegramService.cs:3278`), que no es el fondo de la cuenta. Las reglas de esa
+ * (`DesktopState.cs:511`, leído en `TelegramService.cs:3283`), que no es el fondo de la cuenta. Las reglas de esa
  * capa —los tres nombres de tipo, el giro, la marca que no se puede saber y el orden de las negativas— las mide
  * CH-B y no se duplican aquí.
  *
@@ -592,24 +592,24 @@ describe('ronda CH-A · las citas', () => {
     'AccountBackgrounds.java:198': 'private static final String HEX =',
     'AccountBackgrounds.java:202': 'if (!hex.matches(HEX)) throw new IllegalArgumentException(BAD_COLOR);',
     'AccountBackgrounds.java:207': 'private static int angle(int rotation) {',
-    'NativeBridge.java:753': 'case "calls.list":callLog(p,a);break;',
-    'NativeBridge.java:754': 'case "backgrounds.list":backgroundsList(p,a);break;',
-    'NativeBridge.java:755': 'case "background.set":backgroundSet(p,a);break;',
-    'NativeBridge.java:756': 'case "thread.load":threadLoad(p,a);break;',
-    'NativeBridge.java:5448': 'private void backgroundsList(JSONObject p,Answer a){',
-    'NativeBridge.java:5449': 'requireAccount();',
-    'NativeBridge.java:5450': 'long owner=session.selfId;boolean dark=p.optBoolean("dark");',
-    'NativeBridge.java:5451': 'TdApi.GetInstalledBackgrounds request=new TdApi.GetInstalledBackgrounds();request.forDarkTheme=dark;',
-    'NativeBridge.java:5453': 'if(destroyed||!currentAccount()||session.selfId!=owner){a.fail("La cuenta cambió.");return;}',
-    'NativeBridge.java:5454': 'AccountBackgrounds.rows(result.backgrounds,chosenBackground(dark))',
-    'NativeBridge.java:5468': 'private void backgroundSet(JSONObject p,Answer a){',
-    'NativeBridge.java:5472': 'if(!id.isEmpty()){',
-    'NativeBridge.java:5474': 'TdApi.InputBackgroundRemote remote=new TdApi.InputBackgroundRemote();',
-    'NativeBridge.java:5478': 'set.type=AccountBackgrounds.fillType(',
-    'NativeBridge.java:5480': '}else{a.fail(AccountBackgrounds.NOTHING);return;}',
-    'NativeBridge.java:5484': 'String next=AccountBackgrounds.putSlot(cloudStore(),String.valueOf(session.selfId),set.forDarkTheme,row.toString());',
-    'NativeBridge.java:5485': 'prefs.edit().putString("accountBackgrounds",next).apply();',
-    'NativeBridge.java:5486': 'schedule();',
+    'NativeBridge.java:756': 'case "calls.list":callLog(p,a);break;',
+    'NativeBridge.java:757': 'case "backgrounds.list":backgroundsList(p,a);break;',
+    'NativeBridge.java:758': 'case "background.set":backgroundSet(p,a);break;',
+    'NativeBridge.java:759': 'case "thread.load":threadLoad(p,a);break;',
+    'NativeBridge.java:5471': 'private void backgroundsList(JSONObject p,Answer a){',
+    'NativeBridge.java:5472': 'requireAccount();',
+    'NativeBridge.java:5473': 'long owner=session.selfId;boolean dark=p.optBoolean("dark");',
+    'NativeBridge.java:5474': 'TdApi.GetInstalledBackgrounds request=new TdApi.GetInstalledBackgrounds();request.forDarkTheme=dark;',
+    'NativeBridge.java:5476': 'if(destroyed||!currentAccount()||session.selfId!=owner){a.fail("La cuenta cambió.");return;}',
+    'NativeBridge.java:5477': 'AccountBackgrounds.rows(result.backgrounds,chosenBackground(dark))',
+    'NativeBridge.java:5491': 'private void backgroundSet(JSONObject p,Answer a){',
+    'NativeBridge.java:5495': 'if(!id.isEmpty()){',
+    'NativeBridge.java:5497': 'TdApi.InputBackgroundRemote remote=new TdApi.InputBackgroundRemote();',
+    'NativeBridge.java:5501': 'set.type=AccountBackgrounds.fillType(',
+    'NativeBridge.java:5503': '}else{a.fail(AccountBackgrounds.NOTHING);return;}',
+    'NativeBridge.java:5507': 'String next=AccountBackgrounds.putSlot(cloudStore(),String.valueOf(session.selfId),set.forDarkTheme,row.toString());',
+    'NativeBridge.java:5508': 'prefs.edit().putString("accountBackgrounds",next).apply();',
+    'NativeBridge.java:5509': 'schedule();',
     'BridgePolicy.java:55': 'static { METHODS.add("calls.list"); }',
     'BridgePolicy.java:56': 'static { METHODS.addAll(Arrays.asList("backgrounds.list","background.set","bot.commands","bot.menu.open","share.import")); }',
     'AccountBackgroundsTest.java:48': 'onlyTheFourKnownTypesGetAName',
@@ -648,15 +648,15 @@ describe('ronda CH-A · las citas', () => {
     'CloudBackgrounds.tsx:136': 'Sin degradado se crea un fondo de un solo color',
     'AppearanceSettings.tsx:14': "import { CloudBackgroundSettings } from './CloudBackgrounds'",
     'AppearanceSettings.tsx:117': "{(state.platform === 'android' || state.platform === 'desktop') && <CloudBackgroundSettings",
-    'App.tsx:50': "import { cloudBackgroundCss, cloudBackgroundFor } from './cloud-backgrounds'",
-    'App.tsx:458': 'const cloud=cloudBackgroundCss(cloudBackgroundFor(',
+    'App.tsx:51': "import { cloudBackgroundCss, cloudBackgroundFor } from './cloud-backgrounds'",
+    'App.tsx:459': 'const cloud=cloudBackgroundCss(cloudBackgroundFor(',
     'contract.ts:2': "import type { CloudBackgroundSlots } from './cloud-backgrounds'",
     'contract.ts:210': 'accountBackgrounds?: CloudBackgroundSlots',
     'desktopScope.ts:76': "methods: ['backgrounds.list', 'background.set'] },",
     'desktopGap.ts:43': 'export function desktopGapRefusal(method: string)',
-    'preview.ts:2491': "if (method === 'backgrounds.list') return designBackgrounds(params, state);",
-    'TelegramService.cs:502': '"backgrounds.list" => await BackgroundsListAsync(args),',
-    'TelegramService.cs:3278': 'args.TryGetProperty("wallpaper"',
+    'preview.ts:2533': "if (method === 'backgrounds.list') return designBackgrounds(params, state);",
+    'TelegramService.cs:507': '"backgrounds.list" => await BackgroundsListAsync(args),',
+    'TelegramService.cs:3283': 'args.TryGetProperty("wallpaper"',
     'DesktopState.cs:511': 'public string Wallpaper { get; set; } = "none";',
   };
 
@@ -672,13 +672,13 @@ describe('ronda CH-A · las citas', () => {
     'AccountBackgrounds.java:87': [97, '}'],
     'AccountBackgrounds.java:99': [104, '}'],
     'AccountBackgrounds.java:165': [174, '}'],
-    'NativeBridge.java:5448': [5457, '}'],
-    'NativeBridge.java:5468': [5490, '}'],
+    'NativeBridge.java:5471': [5480, '}'],
+    'NativeBridge.java:5491': [5513, '}'],
     'backgrounds.ts:91': [96, '}'],
     'backgrounds.ts:22': [28, '};'],
     'CloudBackgrounds.tsx:96': [98, 'la marca no se entera hasta el siguiente aviso'],
-    'preview.ts:2491': [2496, 'throw new Error(CLOUD_REFUSALS.noCreate)'],
-    'TelegramService.cs:502': [503, '"background.set" => await BackgroundSetAsync(args),'],
+    'preview.ts:2533': [2538, 'throw new Error(CLOUD_REFUSALS.noCreate)'],
+    'TelegramService.cs:507': [508, '"background.set" => await BackgroundSetAsync(args),'],
   };
 
   const lineOf = (file: string, at: number): string => {

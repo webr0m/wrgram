@@ -9,21 +9,21 @@ import { DESKTOP_NAMED_IN_SCAFFOLD, desktopGenericRefusal } from './desktopGap';
  * El hueco no era de código nuevo sino de techo: las dos capas ya cortaban la lista de opciones en diez, que es un
  * número que nadie publicó nunca. Telegram dice «A poll can have up to 12 options» en su FAQ y la Bot API
  * «a JSON-serialized list of 1-12 answer options», y TDLib deja poner tantas como permita su opción de runtime, así
- * que la ronda subió el listón en `NativeBridge.java:4759` para escribir y en `NativeBridge.java:4774` para votar.
+ * que la ronda subió el listón en `NativeBridge.java:4782` para escribir y en `NativeBridge.java:4797` para votar.
  * Lo mismo en Windows, con las dos cifras de `DesktopPoll.cs:91` y `DesktopPoll.cs:99`.
  *
- * Lo otro que faltaba era el cierre. Android lo pide en segundos y se lo da a TDLib en `NativeBridge.java:4769`,
+ * Lo otro que faltaba era el cierre. Android lo pide en segundos y se lo da a TDLib en `NativeBridge.java:4792`,
  * que es la forma relativa; MTProto pide una fecha absoluta dentro del propio `TL.Poll` y por eso
- * `TelegramService.cs:2552` la calcula contra el reloj de la petición y le pone su bandera en la línea de arriba,
- * en `TelegramService.cs:2551`, dentro del mismo bloque. La franja —de 5 segundos a 2.628.000, con el cero dicho
+ * `TelegramService.cs:2557` la calcula contra el reloj de la petición y le pone su bandera en la línea de arriba,
+ * en `TelegramService.cs:2556`, dentro del mismo bloque. La franja —de 5 segundos a 2.628.000, con el cero dicho
  * aparte porque en la pantalla significa «sin cierre»— es la que publica Telegram y la comprueba la regla de
  * `DesktopPoll.cs:331`; su frase está en la constante de `DesktopPoll.cs:192`. La guarda es la décima negación del
- * envío y va la última en las tres capas porque fue la última que se añadió: `NativeBridge.java:4768`,
- * `TelegramService.cs:2525` y `preview.ts:1120`.
+ * envío y va la última en las tres capas porque fue la última que se añadió: `NativeBridge.java:4791`,
+ * `TelegramService.cs:2530` y `preview.ts:1120`.
  *
  * Hacia arriba viaja una sola clave nueva, `closesAt`, en segundo de época: la escribe Android en
  * `NativeSnapshot.java:203`, la declara el contrato en `contract.ts:124`, la guarda Windows en
- * `DesktopState.cs:265` desde `TelegramService.cs:2966`, la pinta la tarjeta en `BatchPanels.tsx:39` y la calcula
+ * `DesktopState.cs:265` desde `TelegramService.cs:2971`, la pinta la tarjeta en `BatchPanels.tsx:39` y la calcula
  * el espejo en `preview.ts:1141`. El select con las ocho salidas está en `BatchPanels.tsx:108`, y la nota que la
  * ronda dejó en `DesktopPoll.cs:112` sigue apuntando a `BatchPanels.tsx:35`, que es de donde sale el límite de la
  * página de votantes.
@@ -400,15 +400,15 @@ describe('ronda CF · medido con las manos, no con agujas', () => {
 describe('ronda CF · las citas de los archivos de la ronda', () => {
   /** Lo que tiene que decir la línea citada, medido hoy una por una. */
   const anchors: Record<string, string> = {
-    'NativeBridge.java:4759': 'if(values.length()<2||values.length()>12)',
-    'NativeBridge.java:4768': 'period>2628000',
-    'NativeBridge.java:4769': 'poll.openPeriod=period;',
-    'NativeBridge.java:4774': 'values.length()<1||values.length()>12',
+    'NativeBridge.java:4782': 'if(values.length()<2||values.length()>12)',
+    'NativeBridge.java:4791': 'period>2628000',
+    'NativeBridge.java:4792': 'poll.openPeriod=period;',
+    'NativeBridge.java:4797': 'values.length()<1||values.length()>12',
     'NativeSnapshot.java:203': 'value.put("closesAt",poll.closeDate)',
-    'TelegramService.cs:2525': 'DesktopPoll.ClosesInRange(duration)',
-    'TelegramService.cs:2551': 'poll.flags |= TL.Poll.Flags.has_close_date;',
-    'TelegramService.cs:2552': 'poll.close_date = DesktopPoll.CloseDate(Unix(DateTime.UtcNow), duration);',
-    'TelegramService.cs:2966': 'dto.ClosesAt = Unix(poll.close_date)',
+    'TelegramService.cs:2530': 'DesktopPoll.ClosesInRange(duration)',
+    'TelegramService.cs:2556': 'poll.flags |= TL.Poll.Flags.has_close_date;',
+    'TelegramService.cs:2557': 'poll.close_date = DesktopPoll.CloseDate(Unix(DateTime.UtcNow), duration);',
+    'TelegramService.cs:2971': 'dto.ClosesAt = Unix(poll.close_date)',
     'DesktopPoll.cs:91': 'public const int MaxOptions = 12;',
     'DesktopPoll.cs:99': 'public const int MaxVotes = 12;',
     'DesktopPoll.cs:112': 'BatchPanels.tsx:35',
@@ -424,9 +424,9 @@ describe('ronda CF · las citas de los archivos de la ronda', () => {
     'preview.ts:1141': 'closesAt: Math.floor(Date.now() / 1000) + duration',
     // Las seis que entraron en el ámbito con la ronda CN-B: los comentarios de `DesktopPoll` citan el todo o nada y
     // el montaje de Android, y la lectura de la foto queda en el `return null;` del reparto. Medidas hoy, una por una.
-    'NativeBridge.java:4760': 'JSONArray media=p.optJSONArray("media")',
-    'NativeBridge.java:4761': 'images.size()!=values.length()',
-    'NativeBridge.java:4763': 'images.isEmpty()?null:new TdApi.InputPollMediaPhoto',
+    'NativeBridge.java:4783': 'JSONArray media=p.optJSONArray("media")',
+    'NativeBridge.java:4784': 'images.size()!=values.length()',
+    'NativeBridge.java:4786': 'images.isEmpty()?null:new TdApi.InputPollMediaPhoto',
     'NativeSnapshot.java:435': 'if(value instanceof TdApi.PollMediaPhoto)',
     'NativeSnapshot.java:441': 'return null;',
     'BatchPanels.tsx:94': "media:pictures.map(item=>item||'')",
@@ -512,13 +512,13 @@ describe('ronda CF · las citas de los archivos de la ronda', () => {
   it('las agujas de las capas tocadas no se movieron sin que la ronda lo sepa', () => {
     // Las longitudes se miden hoy sobre los archivos en disco, después de CT y de las rondas posteriores. Los
     // incrementos históricos se explican en sus propias pruebas; aquí solo se fija el tamaño actual de cada capa.
-    expect(java).toHaveLength(5579);
+    expect(java).toHaveLength(5602);
     expect(snapshot).toHaveLength(554);
-    expect(service).toHaveLength(4307);
+    expect(service).toHaveLength(4312);
     expect(pollCs).toHaveLength(500);
     expect(stateCs).toHaveLength(760);
-    expect(contract).toHaveLength(250);
+    expect(contract).toHaveLength(251);
     expect(batch).toHaveLength(351);
-    expect(preview).toHaveLength(3395);
+    expect(preview).toHaveLength(3437);
   });
 });

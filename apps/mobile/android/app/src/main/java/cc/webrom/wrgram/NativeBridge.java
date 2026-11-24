@@ -563,6 +563,9 @@ final class NativeBridge implements TdSession.Listener {
             case "chat.autoDelete":autoDeleteGet(p,a,true);break;
             case "privacy.autoDelete.set":autoDeleteSet(p,a,false);break;
             case "chat.autoDelete.set":autoDeleteSet(p,a,true);break;
+            case "account.phone.change":phoneNumberChange(p,a);break;
+            case "account.phone.check":phoneNumberCheck(p,a);break;
+            case "account.phone.resend":phoneNumberResend(p,a);break;
             case "account.session.revoke":{requireAccount();long id=BridgePolicy.id(p,"id");perform(new TdApi.TerminateSession(id),a,result->{a.ok(true);});break;}
             case "security.lock":{boolean enabled=p.getBoolean("enabled");activity.changeAppLock(enabled,granted->{if(granted){schedule();a.ok(true);}else a.fail("No se cambió el bloqueo de la app.");});break;}
             case "security.timeout":{AppLock.setLockAfter(activity,p.optInt("seconds",-1));schedule();a.ok(true);break;}
@@ -1354,6 +1357,26 @@ final class NativeBridge implements TdSession.Listener {
             TdApi.Function<TdApi.PasswordState> request=action.equals("check")?new TdApi.CheckRecoveryEmailAddressCode(code):action.equals("resend")?new TdApi.ResendRecoveryEmailAddressCode():new TdApi.CancelRecoveryEmailAddressVerification();
             perform(request,answer,next->{try{answer.ok(passwordDto(next));}catch(Exception ignored){answer.fail("No se pudo leer el estado del correo.");}});
         });
+    }
+    private void phoneNumberChange(JSONObject params,Answer answer) {
+        requireAccount();
+        AccountSafetyPolicy.owner(params,session.selfId);
+        String phone=PhoneChange.number(BridgePolicy.text(params,"phone",32));
+        if(phone==null){answer.fail("Escribe el número nuevo en formato internacional, con el signo + al principio.");return;}
+        perform(new TdApi.SendPhoneNumberCode(phone,null,new TdApi.PhoneNumberCodeTypeChange()),answer,info->codeInfoAnswer(info,answer));
+    }
+    private void phoneNumberCheck(JSONObject params,Answer answer) {
+        requireAccount();
+        AccountSafetyPolicy.owner(params,session.selfId);
+        perform(new TdApi.CheckPhoneNumberCode(AccountSafetyPolicy.phoneCode(params)),answer,ok->answer.ok(object("verified",true)));
+    }
+    private void phoneNumberResend(JSONObject params,Answer answer) {
+        requireAccount();
+        AccountSafetyPolicy.owner(params,session.selfId);
+        perform(new TdApi.ResendPhoneNumberCode(PhoneChange.resendReason(params.optBoolean("verificationFailed"))),answer,info->codeInfoAnswer(info,answer));
+    }
+    private void codeInfoAnswer(TdApi.AuthenticationCodeInfo info,Answer answer) {
+        try{answer.ok(PhoneChange.project(info));}catch(Exception ignored){answer.fail("No se pudo leer el estado del código.");}
     }
     private void autoDeleteGet(JSONObject params,Answer answer,boolean chatMode) {
         requireAccount();

@@ -1,4 +1,4 @@
-import { EMPTY, type AddResult, type BlockedSender, type Chat, type ChatMembership, type CallLogEntry, type CallLogPage, type CommunityStats, type Contact, type ForumTopicInfo, type GlobalSearch, type GroupAdminRights, type GroupMember, type GroupPermissions, type InviteLink, type JoinRequest, type Media, type Message, type Poll, type ReactionOption, type RosterMember, type SafetyNotice, type SafetySignal, type SavedFilter, type ScopePatch, type ScopeSettings, type State, type StoryAlbum, type TextEntity } from './contract';
+import { EMPTY, type AddResult, type BlockedSender, type Chat, type ChatMembership, type CallLogEntry, type CallLogPage, type CommunityStats, type Contact, type ForumTopicInfo, type GlobalSearch, type GroupAdminRights, type GroupMember, type GroupPermissions, type InviteLink, type JoinRequest, type Media, type Message, type PhoneCodeInfo, type Poll, type ReactionOption, type RosterMember, type SafetyNotice, type SafetySignal, type SavedFilter, type ScopePatch, type ScopeSettings, type State, type StoryAlbum, type TextEntity } from './contract';
 import { acceptState, snapshot } from './bridge'; import { previewDeviceGallery } from './previewDeviceGallery';
 import { normalizeSearch } from './inboxModel';
 import { CHAT_SENDER, REJECTIONS, hasBand, problem } from './messageSearch';
@@ -85,7 +85,7 @@ function communityEntry(id:string,chats:Chat[]):CommunityFixture {
 }
 /**
  * Los nombres públicos sintéticos por comunidad (ronda BC). Son las dos claves de `sendChatUsername`
- * (`NativeBridge.java:1891`) y cada fila enseña un estado distinto del puente: un foro con un solo nombre, un
+ * (`NativeBridge.java:1914`) y cada fila enseña un estado distinto del puente: un foro con un solo nombre, un
  * supergrupo con dos activos donde el editable es uno de ellos —el caso del vector con nombres secundarios—, un
  * canal con su enlace, y en «Colaboración» el chat sin enlace público, que es lo que la pantalla traduce por
  * «Sin nombre público activo» y lo que deja la caja de texto en blanco.
@@ -122,14 +122,14 @@ function applyChatUsername(entry:ChatUsernameFixture, username:string) {
 /**
  * El temporizador que el andamio tiene guardado por conversación (ronda BN): el espejo de los `ttl_period` que el
  * puente de Windows lee de `users.getFullUser`, `messages.getFullChat` y `channels.getFullChannel`, y del
- * `messageAutoDeleteTime` con el que TDLib contesta `NativeBridge.java:1357`. Cada fila enseña un estado distinto del
+ * `messageAutoDeleteTime` con el que TDLib contesta `NativeBridge.java:1360`. Cada fila enseña un estado distinto del
  * ajuste: «Equipo de diseño» con el día, «Comunidad» con la semana, «Ideas & café» con el mes y —porque es la única
  * comunidad administrada por otra persona— el caso por el que se ve trabajar el `noRight`; «María» y el canal de
  * «Novedades» sin temporizador, que es de donde sale el «Borrado automático desactivado.» del panel. Lo que no está
  * en la tabla se arranca en cero, igual que un chat recién creado.
  *
  * Los chats secretos no tienen fila aquí, y no hace falta: la pantalla no abre el ajuste sobre uno en ninguna de las
- * dos capas (`App.tsx:903` y `:988`), así que las dos frases con las que Android los niega (`:1364` y `:1388`) no
+ * dos capas (`App.tsx:904` y `:988`), así que las dos frases con las que Android los niega (`:1364` y `:1388`) no
  * tienen por dónde alcanzarse. Es el mismo motivo por el que la ronda AN dejó fuera del andamio la de las encuestas.
  */
 const autoDeleteFixtures: Record<string, number> = { '12': AUTO_DELETE_DAY, '14': 7 * AUTO_DELETE_DAY, '18': 30 * AUTO_DELETE_DAY };
@@ -208,7 +208,7 @@ function groupPermissionsEntry(id:string):GroupPermissionsFixture {
   return groupPermissionFixtures[id] = { rights:allowedPermissions(), known:true };
 }
 /**
- * El tope con el que `BridgePolicy.text` recibe los dos textos en `setChatInfo` (`NativeBridge.java:1944` y
+ * El tope con el que `BridgePolicy.text` recibe los dos textos en `setChatInfo` (`NativeBridge.java:1967` y
  * `:1946`), que es menor que el límite de Telegram y por eso se comprueba antes: un texto de 2000 caracteres se
  * anuncia como lo que es (demasiado largo para el puente) y no como el cambio que la interfaz creía estar
  * guardando. Las dos negativas de aquí no las produce la pantalla nunca —solo el puente—, así que viven en el
@@ -300,7 +300,7 @@ const INVITE_UNMODELED = 'La vista de diseño no tiene modelo para ese código d
 // de `DesktopBridge.InvalidRequest`, que es donde vive en la capa nueva.
 const INVALID_REQUEST = 'Solicitud no válida o función no disponible.';
 // El embudo que en las dos capas comparten `link.open` y `message.link` —`openLinkOrTelegram` de
-// `NativeBridge.java:889` y `LinkFromUrlAsync` del host—: si la forma es de invitación se pregunta antes de escribir,
+// `NativeBridge.java:892` y `LinkFromUrlAsync` del host—: si la forma es de invitación se pregunta antes de escribir,
 // y si no se va al navegador. Está fuera de las dos ramas de abajo para que las dos lo digan una sola vez.
 function openLinkedUrl(url: string, confirmed: boolean) {
   const link = inviteOf(url);
@@ -318,7 +318,7 @@ function openLinkedUrl(url: string, confirmed: boolean) {
 }
 // Las direcciones de las tarjetas del muestrario, guardadas aparte de la fila publicada y no dentro de ella: en el
 // host tampoco viajan a la pantalla (`NativeSnapshot.java:227` escribe cuatro claves y ninguna es la URL) y el botón
-// las pide por el número del mensaje. `ephemeral` es el temporizador de la segunda guarda de `NativeBridge.java:783`;
+// las pide por el número del mensaje. `ephemeral` es el temporizador de la segunda guarda de `NativeBridge.java:786`;
 // viaja aquí y no en la fila por el mismo motivo que en Windows: el DTO no lo publica, y la fila que lo tiene se queda
 // además sin tarjeta, porque la proyección de Java lo mira antes de escribir las cuatro claves.
 const linkUrls: Record<string, { url: string; ephemeral?: boolean }> = {
@@ -580,7 +580,7 @@ function desktopReact(params: Record<string, unknown>, state: State, custom: boo
     target = { kind: 'custom', customEmojiId: raw, needsPremium: true };
   } else {
     if (raw.length === 0) throw new Error(REACT_REFUSALS.noEmoji);
-    // Al quitar, la lista no se pregunta: es lo que Android hace en `NativeBridge.java:4358` y lo que el host
+    // Al quitar, la lista no se pregunta: es lo que Android hace en `NativeBridge.java:4381` y lo que el host
     // reproduce, porque la ficha que ya está puesta se quitó aunque el chat hubiera dejado de ofrecerla.
     const match = DESIGN_REACTIONS.find(option => option.kind === 'emoji' && option.emoji === raw);
     if (!remove) {
@@ -782,7 +782,7 @@ const ATTACH_REFUSALS = {
 };
 /**
  * Las negaciones del álbum, copiadas carácter a carácter de `DesktopAlbum.cs`. Once son literales de Android —de
- * `pickedAlbum` (`NativeBridge.java:5098-5116`), de `sendAlbum` (`:5052-5055`) y de `album` (`:4043-4048`)— y
+ * `pickedAlbum` (`NativeBridge.java:5121-5139`), de `sendAlbum` (`:5075-5078`) y de `album` (`:4066-4071`)— y
  * `notPhoto` la añade este puente, porque el selector de Windows admite «Todos los archivos» y el de Android no
  * puede devolver otra cosa que `image/*`. No hay `changed` aquí aunque en Android sí exista una frase de cuenta
  * cambiada en la elección: el puente de Windows sella cada vale con la conversación en la que se abrió el selector,
@@ -1308,7 +1308,7 @@ function desktopOpenContact(params: Record<string, unknown>, state: State): Prom
   return designRequest('chat.open', { id: chat });
 }
 /**
- * Las dos negaciones de `contactAction` (`NativeBridge.java:1860`), carácter a carácter. Son también las dos que
+ * Las dos negaciones de `contactAction` (`NativeBridge.java:1883`), carácter a carácter. Son también las dos que
  * pronuncia `DesktopContactWrite` en Windows, y las únicas que este andamio puede reproducir: las otras dos salidas
  * de ese método no son frases, son un `false`.
  */
@@ -1321,7 +1321,7 @@ const CONTACT_WRITE_REFUSALS = {
  * son: tres guardas y un cambio de marca. El orden es el del brazo de Windows, que a su vez es el de Java —la
  * conversación cargada, la forma del chat, la persona con su bot y su cuenta propia— y detrás los dos «no hace nada»
  * que la pantalla ya sabe leer: quitar a quien no está y añadir a quien ya está devuelven `false` sin tocar el
- * estado, y `App.tsx:760` no repinta la ficha con un `false`. El cuadro de confirmar no está aquí porque el andamio
+ * estado, y `App.tsx:761` no repinta la ficha con un `false`. El cuadro de confirmar no está aquí porque el andamio
  * no abre ventanas, igual que `designUnblockSender` declaró lo mismo para el desbloqueo: cancelar responde `false`,
  * así que la vista queda idéntica al camino corto.
  */
@@ -1411,7 +1411,7 @@ const HISTORY_DATE_REFUSALS = {
 const HISTORY_DATE_MAX = 2147483647;
 /**
  * `history.byDate`, con las dos negaciones del brazo en su orden —primero la conversación, luego la hora—. La
- * tercera frase de Android (`NativeBridge.java:3409`) no se espeja a propósito: nace de un callback que llega
+ * tercera frase de Android (`NativeBridge.java:3432`) no se espeja a propósito: nace de un callback que llega
  * tarde, y aquí —como en el puente de C#— la respuesta sale del mismo hilo que leyó el estado, así que ninguna
  * pantalla la pronuncia.
  *
@@ -1520,7 +1520,7 @@ const PROFILE_PHOTO = {
   /** `NotFound`: la foto que la cuenta dice tener no aparecía en `photos.getUserPhotos`. */
   notFound: 'Telegram no devolvió tu foto actual; vuelve a abrir el perfil e inténtalo otra vez.',
 };
-/** Los dos topes de `DesktopProfilePhoto.Problem`, que son los de `NativeBridge.java:1694-1695`. */
+/** Los dos topes de `DesktopProfilePhoto.Problem`, que son los de `NativeBridge.java:1717-1718`. */
 const PROFILE_PHOTO_MAX = { bytes: 20 * 1024 * 1024, pixels: 12000 };
 /** `IsImage`: el selector de Windows no da el tipo de contenido, así que el MIME se decide por extensión. */
 function profilePhotoIsImage(name: string): boolean {
@@ -1568,7 +1568,7 @@ function designAccountPhotoPick(params: Record<string, unknown>): boolean {
 }
 /**
  * `account.photo.delete` (ronda AU). Sin foto no hay diálogo ni error: Android responde `false` cuando `GetMe` no
- * trae perfil (`NativeBridge.java:1666`) y la pantalla ya sabe que `false` es «no cambió nada».
+ * trae perfil (`NativeBridge.java:1689`) y la pantalla ya sabe que `false` es «no cambió nada».
  */
 function designAccountPhotoDelete(): boolean {
   if (previewAccount.photoId === '0') return false;
@@ -1590,7 +1590,7 @@ function designAccountPhotoDelete(): boolean {
  * ventana modal, así que no hay ningún hueco donde la cuenta pueda cambiar a mitad de la petición.
  */
 const CHAT_PHOTO = {
-  /** `CHAT_PHOTO_UNSUPPORTED` (`NativeBridge.java:1723`), el noun cambiado de la frase de la ronda M. */
+  /** `CHAT_PHOTO_UNSUPPORTED` (`NativeBridge.java:1746`), el noun cambiado de la frase de la ronda M. */
   unsupported: 'La foto solo se edita en grupos, supergrupos y canales.',
   /** La negativa que solo existe en Windows: la librería no genera el vacío con el que se borra la foto. */
   noDelete: 'Windows no puede quitar la foto de la comunidad: la librería no trae el vacío con el que Telegram borra la imagen. Hazlo desde Telegram.',
@@ -1645,7 +1645,7 @@ function chatPhotoMedia(name: string): Media {
  * lista justo después de cerrar una sesión, y un espejo que responde `true` y sigue enseñando la fila cerrada
  * enseña una pantalla falsa. Las tres filas no son tres dispositivos al azar: cada una ejerce una de las tres
  * traducciones de `DesktopSessions` —la actual, con todo relleno; una remota sin `device_model`, que es la que
- * tiene que leerse como el respaldo «Dispositivo» de `NativeBridge.java:1786`, y una sin `app_version` ni
+ * tiene que leerse como el respaldo «Dispositivo» de `NativeBridge.java:1809`, y una sin `app_version` ni
  * procedencia, que es la que en TDLib dejaría una coma suelta y en Windows no—.
  */
 let previewSessions: { id: string; current: boolean; device: string; platform: string; version: string; location: string; ip: string; lastActive: number }[] = [
@@ -1674,7 +1674,7 @@ function designSessions(platform?: string): typeof previewSessions {
  */
 const SESSION_REFUSALS = { badId: 'El identificador de la sesión no es un identificador válido.' };
 /**
- * `DesktopSessions.ValidId`, que es el `-?(0|[1-9][0-9]{0,18})` de `BridgePolicy.id` (`BridgePolicy.java:58`). El
+ * `DesktopSessions.ValidId`, que es el `-?(0|[1-9][0-9]{0,18})` de `BridgePolicy.id` (`BridgePolicy.java:59`). El
  * ancla de Java y la de JavaScript caen solas; en C# son `\A` y `\z` por el salto de línea que `$` deja pasar.
  */
 const SESSION_ID = /^-?(0|[1-9][0-9]{0,18})$/;
@@ -1693,6 +1693,42 @@ function designSessionRevoke(params: Record<string, unknown>, platform?: string)
   previewSessions = previewSessions.filter(session => session.id !== id);
   return true;
 }
+/**
+ * El asistente de cambio de número (ronda A02) en el andamio. `previewPhoneCode` es lo que Telegram contestó:
+ * las seis claves que `PhoneChange.project` (`PhoneChange.java:74-84`) manda al puente, con el medio por donde
+ * llegó y el siguiente que ofrece. En la vista de diseño nadie envía un código de verdad, así que `check` solo
+ * comprueba la forma que exige el nativo y da el número por confirmado, igual que `AccountSafetyPolicy.phoneCode`
+ * (`AccountSafetyPolicy.java:35-39`) antes de mandarlo.
+ */
+let previewPhoneCode: PhoneCodeInfo | undefined;
+const PHONE_INTERNATIONAL = /^\+[1-9][0-9]{6,14}$/;
+function designPhoneCodeInfo(phone: string, failed: boolean): PhoneCodeInfo {
+  return failed
+    ? { phone, sent: 'una llamada que tienes que descolgar', next: 'un SMS', length: 5, hint: '', timeout: 0 }
+    : { phone, sent: 'un SMS', next: 'una llamada que tienes que descolgar', length: 5, hint: '', timeout: 60 };
+}
+/** `PhoneChange.number` (`PhoneChange.java:22-26`): espacios, guiones y paréntesis fuera, y el patrón internacional. */
+function designPhoneNumber(raw: unknown): string | undefined {
+  const value = String(raw ?? '').replaceAll(/[\s()-]/g, '');
+  return PHONE_INTERNATIONAL.test(value) ? value : undefined;
+}
+function designPhoneChange(params: Record<string, unknown>): PhoneCodeInfo {
+  const phone = designPhoneNumber(params.phone);
+  if (!phone) throw new Error('Escribe el número nuevo en formato internacional, con el signo + al principio.');
+  previewPhoneCode = designPhoneCodeInfo(phone, false);
+  return previewPhoneCode;
+}
+function designPhoneCheck(params: Record<string, unknown>): { verified: boolean } {
+  const code = String(params.code ?? '').trim();
+  if (!code) throw new Error('Escribe el código que llegó a tu teléfono.');
+  if (previewPhoneCode) previewAccount = { ...previewAccount, phoneNumber: previewPhoneCode.phone };
+  previewPhoneCode = undefined;
+  return { verified: true };
+}
+function designPhoneResend(params: Record<string, unknown>): PhoneCodeInfo {
+  previewPhoneCode = designPhoneCodeInfo(previewPhoneCode?.phone ?? previewAccount.phoneNumber, params.verificationFailed === true);
+  return previewPhoneCode;
+}
 /** Uno o muchos ids, con las mismas cuatro negaciones del host antes de tocar nada. */
 function desktopDelete(raw: unknown[], revoke: boolean, state: State) {
   const ids = raw.map(String);
@@ -1710,9 +1746,9 @@ function desktopDelete(raw: unknown[], revoke: boolean, state: State) {
 }
 /**
  * Las seis negaciones de la cola, copiadas carácter a carácter de `DesktopJoinRequests.cs`. Cuatro son las que
- * Android ya pronunciaba en español (`NativeBridge.java:3539`, `:3514`, `:3567` y `JoinRequests.java:51`); las dos
- * de la forma estricta del `userId` y de la decisión salen en inglés por allá (`BridgePolicy.java:58`,
- * `NativeBridge.java:2787`) y Windows las dice en español, que es la norma fijada por la ronda AT.
+ * Android ya pronunciaba en español (`NativeBridge.java:3562`, `:3514`, `:3567` y `JoinRequests.java:51`); las dos
+ * de la forma estricta del `userId` y de la decisión salen en inglés por allá (`BridgePolicy.java:59`,
+ * `NativeBridge.java:2810`) y Windows las dice en español, que es la norma fijada por la ronda AT.
  */
 const JOIN_REFUSALS = {
   unsupported: 'Las solicitudes de ingreso solo existen en grupos y canales.',
@@ -1773,11 +1809,17 @@ export async function designRequest(method: string, params: Record<string, unkno
   // que hace Telegram y luego repite la pantalla al reabrir el diálogo.
   if (method === 'account.sessions') return designSessions(state.platform);
   if (method === 'account.session.revoke') return designSessionRevoke(params, state.platform);
+  // Las tres del asistente de número (ronda A02). En escritorio la puerta de arriba las niega antes de llegar aquí:
+  // el puente de C# no tiene brazo para `SendPhoneNumberCode` con `PhoneNumberCodeTypeChange`, y el andamio no modela
+  // lo que el host no puede contestar.
+  if (method === 'account.phone.change') return designPhoneChange(params);
+  if (method === 'account.phone.check') return designPhoneCheck(params);
+  if (method === 'account.phone.resend') return designPhoneResend(params);
   if (method === 'chat.profile') {
     const id = String(params.id);
     if (id === '11') return { id:'501', title:'María Fernández', username:'maria_fdz', usernames:activeUsernames([{ username:'maria_fdz', active:true }]), bio:mariaBio, bioEntities:entitiesOf(mariaBio,[['link','https://maria.design'],['mention','@maria_fdz']]), bot:false, groupCount:2, phone:'+34 600 111 222', premium:false, verified:false, blocked:designIsBlocked(id), presence:peerPresence({ kind:'online', expires:Math.floor(Date.now()/1000)+600 }, Math.floor(Date.now()/1000)) };
     // `canViewMembers` y `canManageMembers` son las dos banderas que Android saca del participante propio
-    // (`NativeBridge.java:1279-1285`). Sin ellas, la ficha de la comunidad no ofrecería nunca «Administrar
+    // (`NativeBridge.java:1282-1288`). Sin ellas, la ficha de la comunidad no ofrecería nunca «Administrar
     // miembros» en la vista de diseño y el panel se quedaría sin puerta que enseñar.
     if (id === '14') return { id:'-1001', title:'WRGram · Comunidad', username:'wrgram_community', usernames:['wrgram_community'], bio:communityBio, bioEntities:entitiesOf(communityBio,[['link','https://wrgram.app']]), bot:false, memberCount:groupMembers.length, administratorCount:1, canViewMembers:true, canManageMembers:true };
     // Los demás chats, con las mismas claves que el host de Windows responde desde la ronda BA: una comunidad
@@ -1908,7 +1950,7 @@ export async function designRequest(method: string, params: Record<string, unkno
     return true;
   }
   if (method === 'chat.invite') {
-    // `createInviteLink` (`NativeBridge.java:1884`) hecho andamio: sin formulario, con el nombre fijo, siete días y
+    // `createInviteLink` (`NativeBridge.java:1907`) hecho andamio: sin formulario, con el nombre fijo, siete días y
     // sin límite, y la respuesta `true` de siempre —el enlace no viaja a la pantalla, que en Windows lo ve en la caja
     // de la ventana del host y en Android en su hoja de compartir. La negativa de forma es la frase de Java, dicha
     // aquí aunque la puerta del menú ya la filtre: es lo único que se puede afirmar sin red. Del derecho no hay fila
@@ -2220,7 +2262,7 @@ export async function designRequest(method: string, params: Record<string, unkno
   }
   if (method === 'groups.add.info') return addPermission(String(params.id), state);
   if (method === 'groups.member.add') {
-    // El orden de cortafuegos de `addMembers` (`NativeBridge.java:2176-2192`): el identificador inválido se descarta
+    // El orden de cortafuegos de `addMembers` (`NativeBridge.java:2199-2215`): el identificador inválido se descarta
     // antes de contar el lote, y el margen se valida escrito o numérico. Al revés, veinticinco personas con un
     // identificador mal escrito oirían «selecciona hasta 20» cuando lo que está mal es un identificador.
     const raw = Array.isArray(params.userIds) ? params.userIds.map(String) : null;
@@ -2289,7 +2331,7 @@ export async function designRequest(method: string, params: Record<string, unkno
     if (!isSupergroupOrChannel(chat)) throw new Error(CHAT_USERNAME_REFUSALS.unsupported);
     const malformed = profileUsernameProblem(params.username);
     if (malformed) throw new Error(malformed);
-    // Solo el `trim()` del puente: la `@` la quita la pantalla antes de llamar (`App.tsx:385`), así que un
+    // Solo el `trim()` del puente: la `@` la quita la pantalla antes de llamar (`App.tsx:386`), así que un
     // «@nombre» que llega hasta aquí —una llamada hecha a mano, otra pantalla— es el nombre malo, igual que en
     // Windows. Aflojarlo en el andamio sería entrenar una vista de diseño que el host real rechaza.
     const username = String(params.username).trim();
@@ -2302,7 +2344,7 @@ export async function designRequest(method: string, params: Record<string, unkno
   }
   if (method === 'groups.stats') {
     const chat = state.chats.find(item => item.id === String(params.id));
-    // El orden es el de `groups.stats` (`NativeBridge.java:884`) y el de `DesktopGroupStatsFlow.GroupStatsAsync`:
+    // El orden es el de `groups.stats` (`NativeBridge.java:887`) y el de `DesktopGroupStatsFlow.GroupStatsAsync`:
     // primero la fila, luego la forma, y solo entonces la lectura. Lo que se devuelve es el muestrario con los mismos
     // `id` que las dos bibliotecas contestan; la pantalla no sabe de qué capa viene.
     if (!chat) throw new Error(FOLDER_REFUSALS.loaded);
@@ -2312,7 +2354,7 @@ export async function designRequest(method: string, params: Record<string, unkno
   if (method === 'groups.permissions.get') {
     const id = String(params.id);
     const chat = state.chats.find(item => item.id === id);
-    // El orden es el de `groupPermissions` (`NativeBridge.java:1889`) y el de `DesktopGroupPermissionsFlow.GroupPermissionsAsync`:
+    // El orden es el de `groupPermissions` (`NativeBridge.java:1912`) y el de `DesktopGroupPermissionsFlow.GroupPermissionsAsync`:
     // la fila, la forma, el derecho propio y la tabla. Cada paso tiene su frase, y adelantar el derecho haría que un
     // grupo básico oyera «no tienes permiso» cuando lo que no tiene es permisos que editar.
     if (!chat) throw new Error(FOLDER_REFUSALS.loaded);
@@ -2391,7 +2433,7 @@ export async function designRequest(method: string, params: Record<string, unkno
   }
   if (method === 'message.link') {
     const id = String(params.id);
-    // Las tres guardas, en el orden medido de `NativeBridge.java:783`: la fila del chat abierto, el temporizador y la
+    // Las tres guardas, en el orden medido de `NativeBridge.java:786`: la fila del chat abierto, el temporizador y la
     // tarjeta. En Java son cuatro porque el tipo de contenido y la vista previa se comprueban aparte; aquí es la misma
     // mirada a la clase del adjunto, que es lo que hace `DesktopLinkPreview.PageOf`.
     const row = poolOf(state.active).find(item => item.id === id);
@@ -2590,15 +2632,15 @@ function liveShareOf(state: State) {
 }
 
 /**
- * Lo que `startLiveLocation` contesta desde `livePermissionResult` (`NativeBridge.java:4844`): la fila escrita con su
+ * Lo que `startLiveLocation` contesta desde `livePermissionResult` (`NativeBridge.java:4867`): la fila escrita con su
  * `id`, su `chatId` y el instante en que deja de renovarse, en segundos de epoch como `LiveLocationPolicy.expiresAt` (`LiveLocationPolicy.java:87-90`). El andamio
  * no simula el sensor ni el diálogo nativo de confirmación; pinta la tarjeta que queda después de aceptar, que es lo
  * que la pantalla necesita para enseñar el botón «Dejar de compartir».
  */
 function designLiveLocationStart(params: Record<string, unknown>, state: State): LiveStart {
   const period = Number(params.period);
-  // El orden es el del puente, no el de la conveniencia: `NativeBridge.java:4806` niega la compartida que ya está
-  // abierta antes de que `NativeBridge.java:4808` mire el periodo, así que con las dos cosas malas a la vez la
+  // El orden es el del puente, no el de la conveniencia: `NativeBridge.java:4829` niega la compartida que ya está
+  // abierta antes de que `NativeBridge.java:4831` mire el periodo, así que con las dos cosas malas a la vez la
   // pantalla tiene que oír «Ya estás compartiendo…» y no la cota de duración.
   if (liveShareOf(state)) throw new Error(LIVE_REFUSALS.already);
   if (!LIVE_DURATIONS.some(item => item.period === period)) throw new Error(LIVE_REFUSALS.badPeriod);
@@ -2617,7 +2659,7 @@ function designLiveLocationStart(params: Record<string, unknown>, state: State):
 }
 
 /**
- * El `EditMessageLiveLocation` sin punto (`stopLiveLocation`, `NativeBridge.java:4899`, y en Windows el bit `stopped` de
+ * El `EditMessageLiveLocation` sin punto (`stopLiveLocation`, `NativeBridge.java:4922`, y en Windows el bit `stopped` de
  * `DesktopLiveLocation.Stopped`): la tarjeta sigue ahí, pero la cuenta atrás se apaga y el botón desaparece. El orden
  * de las dos negativas es el del puente, no un capricho: primero si la fila es una compartida propia y abierta en el
  * chat leído, y solo después si todavía le quedaba tiempo.
@@ -2666,7 +2708,7 @@ const banished = new Set<string>();
  * usa para repartir sitio; si cada flujo contase aparte, dirían dos números distintos en la misma pantalla.
  */
 /**
- * `profileRelated` (`NativeBridge.java:1574-1613`). Los tres caminos, con las mismas dos cifras que allá: la
+ * `profileRelated` (`NativeBridge.java:1597-1636`). Los tres caminos, con las mismas dos cifras que allá: la
  * ventana de desplazamiento y las treinta filas. Un privado da comunidades en común; un básico se corta en casa
  * porque su tabla llega entera; una comunidad se paga de treinta en treinta.
  */
@@ -2966,7 +3008,7 @@ let previewPrivacyRules: Record<string, PrivacyRule[]> = {
   findPhone: [{ kind: 'allowContacts' }], p2p: [{ kind: 'allowContacts' }, { kind: 'disallowBots' }], noPaidMessages: [{ kind: 'allowAll' }], savedMusic: [{ kind: 'allowAll' }], starGiftsAutoSave: [{ kind: 'allowAll' }],
 };
 
-/** `privacyGet` (`NativeBridge.java:3877-3888`): las catorce claves proyectadas, en el orden de `PRIVACY_KEYS`. */
+/** `privacyGet` (`NativeBridge.java:3900-3911`): las catorce claves proyectadas, en el orden de `PRIVACY_KEYS`. */
 function designPrivacyGet() {
   return PRIVACY_KEYS.map(key => projectPrivacy(key, previewPrivacyRules[key] ?? []));
 }
@@ -2994,7 +3036,7 @@ function designPrivacySet(params: Record<string, unknown>): boolean {
  * que `profile.block` escribe y de la que `chat.profile` saca su `blocked`. Dos fuentes enseñarían dos verdades
  * distintas en la misma pantalla. Las filas llevan `kind` e `id` tal y como los devuelve el puente —el id del
  * remitente, no el del chat—, y la ficha de una persona va por chats, así que hace falta un puente para las dos
- * personas del muestrario que son ficha y fila a la vez. No es una regla de ninguna capa: `NativeBridge.java:1304`
+ * personas del muestrario que son ficha y fila a la vez. No es una regla de ninguna capa: `NativeBridge.java:1307`
  * también saca el id de usuario del `ChatTypePrivate` antes de bloquear a nadie.
  */
 const designSenderIds: Record<string, string> = { '11': '501' };
@@ -3013,7 +3055,7 @@ const designBlockedRows: BlockedSender[] = [
   { kind: 'chat', id: '-1003', name: blockedLimit('Chat de la escalera') },
 ];
 
-/** `blockedSenders` (`NativeBridge.java:1527-1550`): el marcador se niega y la página se arma con la fórmula medida. */
+/** `blockedSenders` (`NativeBridge.java:1550-1573`): el marcador se niega y la página se arma con la fórmula medida. */
 function designBlockedPage(params: Record<string, unknown>) {
   const refusal = blockedOffsetProblem(params.offset);
   if (refusal) throw new Error(refusal);
@@ -3037,9 +3079,9 @@ function designUnblockSender(params: Record<string, unknown>, state: State): boo
 }
 
 /**
- * `profileBlock` (`NativeBridge.java:1300-1307`), que es la otra mitad del mismo hueco: la ficha ya publicaba `blocked`
+ * `profileBlock` (`NativeBridge.java:1303-1310`), que es la otra mitad del mismo hueco: la ficha ya publicaba `blocked`
  * desde la ronda BA y su botón seguía sin puente. Aquí están las tres guardas de Java en su orden —forma del chat,
- * cuenta propia, valor— y ninguna ventana de confirmar, porque la abre la pantalla (`App.tsx:760-763`) y no el puente.
+ * cuenta propia, valor— y ninguna ventana de confirmar, porque la abre la pantalla (`App.tsx:761-764`) y no el puente.
  */
 function designProfileBlock(params: Record<string, unknown>, state: State): boolean {
   const id = String(params.id ?? '');
@@ -3335,12 +3377,12 @@ const designCallRows: Array<{ chat: string; reason: CallReason; video: boolean; 
   { chat: '15', reason: 'ended', video: false, group: false, missed: false, seconds: 600 },
   { chat: '24', reason: 'missed', video: false, group: true, missed: true, seconds: 0 },
 ];
-// El puente recuerda el cursor que repartió (`NativeBridge.java:5331`); aquí lo recuerda esta variable, y con ella la
+// El puente recuerda el cursor que repartió (`NativeBridge.java:5354`); aquí lo recuerda esta variable, y con ella la
 // pantalla puede comprobar de verdad que un cursor viejo se niega en vez de devolver otra página.
 let designCalls: { owner: string; onlyMissed: boolean; cursor: string } | null = null;
 
 /**
- * `callLog` (`NativeBridge.java:5383-5412`): primero el cursor, luego la guarda de que siga el recorrido de esta
+ * `callLog` (`NativeBridge.java:5406-5435`): primero el cursor, luego la guarda de que siga el recorrido de esta
  * pantalla, y solo después el recorte por nombre —que es local, porque `SearchCallMessages` no tiene `query`—. El
  * título lo pone la lista de chats real, así que una fila no puede prometer un nombre que la bandeja no muestre.
  */

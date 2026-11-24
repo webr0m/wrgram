@@ -9,9 +9,9 @@ namespace WRGram.Desktop;
 /// El cable de <c>chat.photo.pick</c> en Windows: selector, recorte, ventana de confirmar y escritura por MTProto.
 /// Las reglas y las frases están en <see cref="DesktopChatPhoto"/>; aquí no se vuelve a escribir ninguna.
 /// <para>
-/// El orden es el de <c>chatPhotoPick</c> (<c>NativeBridge.java:1737-1745</c>) y su continuación
-/// <c>pickedChatPhoto</c> (<c>:1745-1753</c>): forma, derecho, selector, preparación, mirada de cuenta, confirmar,
-/// mirada de cuenta otra vez y escritura. Las dos son las de <c>currentAccount</c> en <c>:1751</c> y <c>:1760</c>, y
+/// El orden es el de <c>chatPhotoPick</c> (<c>NativeBridge.java:1760-1768</c>) y su continuación
+/// <c>pickedChatPhoto</c> (<c>:1768-1776</c>): forma, derecho, selector, preparación, mirada de cuenta, confirmar,
+/// mirada de cuenta otra vez y escritura. Las dos son las de <c>currentAccount</c> en <c>:1774</c> y <c>:1760</c>, y
 /// hacen el mismo trabajo que en Android: entre elegir el archivo y pulsar «Establecer foto» puede haber cambiado la
 /// sesión, y la foto no debe escribirse nunca en una comunidad que la persona no tenía delante.
 /// </para>

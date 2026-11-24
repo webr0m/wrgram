@@ -27,7 +27,7 @@ using TL;
 /// </para>
 /// <para>
 /// Lo que Android mide y este host no puede medir se queda dicho, no imitado: <c>supportsStreaming</c> se escribe en
-/// <c>NativeBridge.java:4687</c> a partir de <c>streams</c> (<c>MessageMediaEdit.java:131</c>), que mira el tipo MIME
+/// <c>NativeBridge.java:4710</c> a partir de <c>streams</c> (<c>MessageMediaEdit.java:131</c>), que mira el tipo MIME
 /// y no el contenedor; en Windows el archivo se manda con las mismas dos cosas con las que lo manda
 /// <c>send.attachment</c> —su nombre y, si es GIF, su marca de animación—. El servidor rellena lo demás.
 /// </para>
@@ -116,7 +116,7 @@ public static class DesktopMessageEditMedia
         (fresh.flags & Message.Flags.out_) != 0 || channelAllowed;
 
     /// La bandera que la pantalla pregunta antes de ofrecer la entrada del menú, espejo de la línea de Android
-    /// (`NativeBridge.java:4393`): derecho y un medio de los cinco. Sin la segunda mitad la entrada aparecería
+    /// (`NativeBridge.java:4416`): derecho y un medio de los cinco. Sin la segunda mitad la entrada aparecería
     /// sobre un sticker o una nota de voz, que son justo los dos casos en los que la petición de abajo va a
     /// negarse; con la primera mitad fuera, Windows ofrecería cambiar el archivo de un mensaje ajeno.
     public static bool Offered(bool outgoing, bool channelAllowed, string current) =>

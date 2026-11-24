@@ -9,7 +9,7 @@ using WTelegram;
 
 /// <summary>
 /// El cable de la familia del emoji en Windows (ronda BY): las once claves que Android atiende en
-/// <c>NativeBridge.java:307-362</c> (estado), <c>:4407-4408</c> (emoji personalizado) y <c>:4967-5042</c> (packs y
+/// <c>NativeBridge.java:307-362</c> (estado), <c>:4430-4431</c> (emoji personalizado) y <c>:4990-5065</c> (packs y
 /// stickers). Frases, guardas, topes y la forma de cada fila están en <see cref="DesktopEmojiCatalog"/>; aquí solo
 /// el orden de las peticiones y las dos cachés que la librería obliga a tener.
 /// <para>
@@ -50,10 +50,10 @@ using WTelegram;
 /// existe es el aviso de que hay que reproducirlo. Queda dicho en la hoja de validación y en el mapa de flujos.
 /// </para>
 /// <para>
-/// Dos diferencias de forma, medidas: donde Android <b>omite</b> una clave si no hay dato (<c>:4967</c> y
-/// <c>:5032</c>), aquí se escribe <c>null</c>, que la pantalla trata igual porque solo mira si el valor es verdad
+/// Dos diferencias de forma, medidas: donde Android <b>omite</b> una clave si no hay dato (<c>:4990</c> y
+/// <c>:5055</c>), aquí se escribe <c>null</c>, que la pantalla trata igual porque solo mira si el valor es verdad
 /// (<c>BatchPanels.tsx:198</c> y <c>EmojiStatusSettings.tsx:180</c>); y donde <c>GetTrendingStickerSets</c>
-/// (<c>NativeBridge.java:5009</c>) pide una ventana de veinticuatro con desplazamiento,
+/// (<c>NativeBridge.java:5032</c>) pide una ventana de veinticuatro con desplazamiento,
 /// <c>messages.getFeaturedStickers</c> no tiene parámetro de desplazamiento —medido, su firma es
 /// <c>(Client client, Int64 hash)</c>—, así que la ventana se recorta a <c>PackLimit</c> y <c>nextOffset</c> sale
 /// siempre cero: la pantalla no ofrece más abajo.
@@ -183,7 +183,7 @@ public sealed partial class TelegramService
         return true;
     }
 
-    /// `customEmoji.get` (`:4407`): un número, su documento y el caracter que lleva como alternativa.
+    /// `customEmoji.get` (`:4430`): un número, su documento y el caracter que lleva como alternativa.
     private async Task<object?> CustomEmojiAsync(JsonElement args)
     {
         var client = Connected().Client;
@@ -196,7 +196,7 @@ public sealed partial class TelegramService
         return new { id = id.ToString(), media, emoji = DesktopEmojiCatalog.EmojiOf(document) ?? "" };
     }
 
-    /// `customEmoji.search` (`:4408`). Donde TDLib buscaba texto libre, MTProto pregunta por un emoji suelto
+    /// `customEmoji.search` (`:4431`). Donde TDLib buscaba texto libre, MTProto pregunta por un emoji suelto
     /// (<c>messages.searchCustomEmoji</c>, con <c>emoticon</c>): el buscador del selector de reacción solo encuentra
     /// lo que Telegram indexa bajo el caracter escrito. Es la diferencia de la petición, no de la pantalla, y se dice.
     private async Task<object?> CustomEmojiSearchAsync(JsonElement args)
@@ -214,7 +214,7 @@ public sealed partial class TelegramService
         }).ToList();
     }
 
-    /// `emojiPacks.list` (`:4989-5019`): sección, forma y red, con la frase de fallo propia de cada sección.
+    /// `emojiPacks.list` (`:5012-5042`): sección, forma y red, con la frase de fallo propia de cada sección.
     private async Task<object?> EmojiPacksListAsync(JsonElement args)
     {
         var client = Connected().Client;
@@ -245,7 +245,7 @@ public sealed partial class TelegramService
         return new { items = rows.Select(PackDto).ToList(), nextOffset = 0L };
     }
 
-    /// `emojiPacks.get` (`:5020-5038`): abre el pack, comprueba que es de emojis personalizados y saca la lista con
+    /// `emojiPacks.get` (`:5043-5061`): abre el pack, comprueba que es de emojis personalizados y saca la lista con
     /// su medio. La comprobación del tipo va antes del montaje de las filas, igual que en Android.
     private async Task<object?> EmojiPackAsync(JsonElement args)
     {
@@ -264,7 +264,7 @@ public sealed partial class TelegramService
         return dto;
     }
 
-    /// `stickers.installed` (`:5039`): la lista plana de packs guardados que no son de emojis ni de máscaras, porque
+    /// `stickers.installed` (`:5062`): la lista plana de packs guardados que no son de emojis ni de máscaras, porque
     /// TDLib los separa por tipo y <c>messages.getAllStickers</c> los trae juntas.
     private async Task<object?> InstalledStickersAsync()
     {
@@ -275,7 +275,7 @@ public sealed partial class TelegramService
         return rows.Select(PackDto).ToList();
     }
 
-    /// `stickers.search` (`:5040`): nombre corto y apertura directa por <c>InputStickerSetShortName</c>, que no
+    /// `stickers.search` (`:5063`): nombre corto y apertura directa por <c>InputStickerSetShortName</c>, que no
     /// necesita firma de acceso; es la única de las tres puertas que puede abrir un pack nunca leído.
     private async Task<object?> SearchStickersAsync(JsonElement args)
     {
@@ -288,7 +288,7 @@ public sealed partial class TelegramService
         return OpenedDto(set, answer.documents);
     }
 
-    /// `stickers.get` (`:5041`): la fila del pack más hasta veinticuatro stickers ya registrados.
+    /// `stickers.get` (`:5064`): la fila del pack más hasta veinticuatro stickers ya registrados.
     private async Task<object?> StickerSetAsync(JsonElement args)
     {
         var client = Connected().Client;
@@ -303,7 +303,7 @@ public sealed partial class TelegramService
         return dto;
     }
 
-    /// `stickers.install` (`:5042`): guarda o quita según la bandera que manda la pantalla. Es la única escritura de
+    /// `stickers.install` (`:5065`): guarda o quita según la bandera que manda la pantalla. Es la única escritura de
     /// la familia que cambia el estado de la cuenta, así que la bandera no se puede suponer y el fallo se devuelve
     /// con la causa de Telegram detrás, como en <c>DesktopMessageReactFlow.cs:104</c>.
     private async Task<object?> ChangeStickerSetAsync(JsonElement args)
@@ -328,8 +328,8 @@ public sealed partial class TelegramService
 
     // ----- Las piezas que comparten las ramas -----
 
-    /// La fila de <c>stickerInfo</c> (`:4967`) con su portada: la que traía la lista, o la que saca del primer
-    /// <c>covers</c> cuando no vino (`:4977-4982`).
+    /// La fila de <c>stickerInfo</c> (`:4990`) con su portada: la que traía la lista, o la que saca del primer
+    /// <c>covers</c> cuando no vino (`:5000-5005`).
     private StickerPackDto PackDto(DesktopEmojiCatalog.Row row)
     {
         var dto = DesktopEmojiCatalog.Dto(row);
@@ -376,7 +376,7 @@ public sealed partial class TelegramService
         foreach (var row in rows) _packKeys[row.Id] = row.AccessHash;
     }
 
-    /// <c>NativeBridge.java:5042</c> usa <c>getBoolean</c>, que lanza si la clave no viene. Aquí se distingue «viene a
+    /// <c>NativeBridge.java:5065</c> usa <c>getBoolean</c>, que lanza si la clave no viene. Aquí se distingue «viene a
     /// false» de «no viene», porque la segunda no se puede adivinar: es una orden sobre la cuenta del usuario.
     private static bool HasDecision(JsonElement args, out bool installed)
     {

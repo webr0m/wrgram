@@ -134,12 +134,12 @@ describe('ronda BY · el cable de la familia del emoji en Windows', () => {
   it('las frases del host son las de Android, carácter a carácter', () => {
     const table: [string, number, 'fail' | 'throw'][] = [
       ['StatusUnread', 315, 'fail'], ['StatusesUnprepared', 335, 'fail'], ['BadStatusId', 350, 'throw'],
-      ['BadExpiry', 354, 'throw'], ['StatusNeedsPremium', 359, 'fail'], ['BadCustomEmoji', 4406, 'throw'],
-      ['CustomEmojiMissing', 4407, 'fail'], ['CustomEmojiUnloaded', 4407, 'fail'],
-      ['CustomEmojiUnsearched', 4408, 'fail'], ['SavedUnread', 4996, 'fail'], ['NeedPackName', 5001, 'fail'],
-      ['ResultsUnread', 5003, 'fail'], ['BadPage', 5008, 'throw'], ['FeaturedUnread', 5014, 'fail'],
-      ['NotEmojiPack', 5024, 'fail'], ['PackUnopened', 5036, 'fail'], ['PacksUnprepared', 5039, 'fail'],
-      ['NeedShortName', 5040, 'throw'], ['PackUnprepared', 5040, 'fail'], ['PackUnloaded', 5041, 'fail'],
+      ['BadExpiry', 354, 'throw'], ['StatusNeedsPremium', 359, 'fail'], ['BadCustomEmoji', 4429, 'throw'],
+      ['CustomEmojiMissing', 4430, 'fail'], ['CustomEmojiUnloaded', 4430, 'fail'],
+      ['CustomEmojiUnsearched', 4431, 'fail'], ['SavedUnread', 5019, 'fail'], ['NeedPackName', 5024, 'fail'],
+      ['ResultsUnread', 5026, 'fail'], ['BadPage', 5031, 'throw'], ['FeaturedUnread', 5037, 'fail'],
+      ['NotEmojiPack', 5047, 'fail'], ['PackUnopened', 5059, 'fail'], ['PacksUnprepared', 5062, 'fail'],
+      ['NeedShortName', 5063, 'throw'], ['PackUnprepared', 5063, 'fail'], ['PackUnloaded', 5064, 'fail'],
     ];
     for (const [name, at, kind] of table) {
       const source = kind === 'fail' ? failsOf(at) : throwsOf(at);
@@ -149,8 +149,8 @@ describe('ronda BY · el cable de la familia del emoji en Windows', () => {
     // Las dos salidas del mismo intento de `:335` y `:336` son la misma frase.
     expect(csLiteral('StatusesUnprepared')).toBe(failsOf(336)[0]);
     // `Emoji personalizado no válido.` nace en `reactCustom` (hoy :4406); :4396 se reserva para `allowCustom`.
-    expect(jrow(4396)).toContain('result.put("allowCustom",value.allowCustomEmoji)');
-    expect(csLiteral('BadCustomEmoji')).toBe(throwsOf(4406)[0]);
+    expect(jrow(4419)).toContain('result.put("allowCustom",value.allowCustomEmoji)');
+    expect(csLiteral('BadCustomEmoji')).toBe(throwsOf(4429)[0]);
   });
 
   it('los tres huecos propios se niegan con nombre y causa, y ninguna frase es de Android', () => {
@@ -175,13 +175,13 @@ describe('ronda BY · el cable de la familia del emoji en Windows', () => {
   it('los ocho topes están medidos en el puente, no copiados de memoria', () => {
     expect(csNumber('StatusCap')).toBe(numberFrom(329, /ids\.size\(\)<(\d+)/));
     expect(csNumber('StatusCap')).toBe(numberFrom(333, /Math\.min\(ids\.size\(\),(\d+)\)/));
-    expect(csNumber('PackLimit')).toBe(numberFrom(5009, /GetTrendingStickerSets\(type,offset,(\d+)\)/));
-    expect(csNumber('MaxOffset')).toBe(numberFrom(5008, /offset>(\d+)/));
-    expect(csNumber('StickersShown')).toBe(numberFrom(5041, /i<(\d+)/));
-    expect(csNumber('TitleCap')).toBe(numberFrom(4967, /limit\(set\.title,(\d+)/));
-    expect(csNumber('QueryCap')).toBe(numberFrom(5000, /text\(p,"query",(\d+)/));
-    expect(csNumber('ShortNameCap')).toBe(numberFrom(5040, /text\(p,"name",(\d+)/));
-    expect(csNumber('SearchCap')).toBe(numberFrom(4408, /new String\[0\],0,(\d+)\)/));
+    expect(csNumber('PackLimit')).toBe(numberFrom(5032, /GetTrendingStickerSets\(type,offset,(\d+)\)/));
+    expect(csNumber('MaxOffset')).toBe(numberFrom(5031, /offset>(\d+)/));
+    expect(csNumber('StickersShown')).toBe(numberFrom(5064, /i<(\d+)/));
+    expect(csNumber('TitleCap')).toBe(numberFrom(4990, /limit\(set\.title,(\d+)/));
+    expect(csNumber('QueryCap')).toBe(numberFrom(5023, /text\(p,"query",(\d+)/));
+    expect(csNumber('ShortNameCap')).toBe(numberFrom(5063, /text\(p,"name",(\d+)/));
+    expect(csNumber('SearchCap')).toBe(numberFrom(4431, /new String\[0\],0,(\d+)\)/));
   });
 
   it('las cuatro guardas de forma dicen lo mismo en las dos orillas', () => {
@@ -190,7 +190,7 @@ describe('ronda BY · el cable de la familia del emoji en Windows', () => {
     const matches = (at: number) => jrow(at).match(/matches\("([^"]+)"\)/)?.[1] ?? '';
     // La de Android va entre paréntesis: sin ellos el `\A` solo anclaría la primera alternativa.
     expect(anchored('StatusPattern')).toBe(`(${matches(350)})`);
-    expect(anchored('ShortNamePattern')).toBe(matches(5040));
+    expect(anchored('ShortNamePattern')).toBe(matches(5063));
     // `PositiveId` es la lectura positiva del `BridgePolicy.id`, que en Android admite signo y cero.
     expect(anchored('PositivePattern')).toBe('[1-9][0-9]{0,18}');
     expect(policy).toMatch(/matches\("-\?\(0\|\[1-9\]\[0-9\]\{0,18\}\)"\)/);
@@ -201,13 +201,13 @@ describe('ronda BY · el cable de la familia del emoji en Windows', () => {
   it('los dos intervalos y las tres secciones son los de Android', () => {
     expect(jrow(354)).toContain('expiration<now+60||expiration>now+367L*86400L');
     expect(rules).toContain('expiration >= now + 60 && expiration <= now + 367L * 86400L');
-    expect(jrow(5008)).toContain('offset<0||offset>10000');
+    expect(jrow(5031)).toContain('offset<0||offset>10000');
     expect(rules).toContain('offset >= 0 && offset <= MaxOffset');
-    const sections = [...java.slice(4988, 5019).join('\n').matchAll(/case "([a-z]+)"/g)].map(m => m[1]);
+    const sections = [...java.slice(5011, 5042).join('\n').matchAll(/case "([a-z]+)"/g)].map(m => m[1]);
     expect(sections).toEqual(['installed', 'search', 'featured']);
     expect(rules).toContain('kind is "installed" or "search" or "featured"');
     // El recorte del nombre corto: hasta el último `/`, igual que hoy :5040. Vive en la regla pura y el brazo la llama.
-    expect(jrow(5040)).toContain('name.substring(name.lastIndexOf(\'/\')+1)');
+    expect(jrow(5063)).toContain('name.substring(name.lastIndexOf(\'/\')+1)');
     expect(rules).toContain("var cut = value.LastIndexOf('/')");
     expect(flow).toContain('DesktopEmojiCatalog.ShortNameOf(');
   });
@@ -317,23 +317,23 @@ describe('ronda BY · las citas de los dos archivos nuevos y del despacho', () =
     'NativeBridge.java:354': 'IllegalArgumentException("La caducidad debe estar entre un minuto y 367 días.")',
     'NativeBridge.java:359': 'a.fail("Necesitas Telegram Premium para cambiar el estado emoji.")',
     'NativeBridge.java:360': 'new TdApi.SetEmojiStatus(selected),a,ignored->{schedule();a.ok(true);}',
-    'NativeBridge.java:4406': 'private void reactCustom(JSONObject p,Answer a)',
-    'NativeBridge.java:4407': 'a.fail("Ese emoji personalizado no está disponible.")',
-    'NativeBridge.java:4408': 'a.fail("No se pudieron cargar emojis personalizados.")',
-    'NativeBridge.java:4996': 'a.fail("No se pudieron leer los packs guardados.")',
-    'NativeBridge.java:5001': 'a.fail("Escribe el nombre de un pack.")',
-    'NativeBridge.java:5008': 'IllegalArgumentException("Página no válida.")',
-    'NativeBridge.java:5009': 'new TdApi.GetTrendingStickerSets(type,offset,24)',
-    'NativeBridge.java:5017': 'IllegalArgumentException("Sección de emojis no válida.")',
-    'NativeBridge.java:5024': 'a.fail("Este pack no contiene emojis personalizados.")',
-    'NativeBridge.java:5036': 'a.fail("No se pudo abrir el pack de emojis.")',
-    'NativeBridge.java:5039': 'a.fail("No se pudieron preparar los packs de stickers.")',
-    'NativeBridge.java:5040': 'private void searchStickers(JSONObject p,Answer a)',
-    'NativeBridge.java:5041': 'a.fail("No se pudo cargar el pack de stickers.")',
-    'NativeBridge.java:5042': 'boolean installed=p.getBoolean("installed")',
+    'NativeBridge.java:4429': 'private void reactCustom(JSONObject p,Answer a)',
+    'NativeBridge.java:4430': 'a.fail("Ese emoji personalizado no está disponible.")',
+    'NativeBridge.java:4431': 'a.fail("No se pudieron cargar emojis personalizados.")',
+    'NativeBridge.java:5019': 'a.fail("No se pudieron leer los packs guardados.")',
+    'NativeBridge.java:5024': 'a.fail("Escribe el nombre de un pack.")',
+    'NativeBridge.java:5031': 'IllegalArgumentException("Página no válida.")',
+    'NativeBridge.java:5032': 'new TdApi.GetTrendingStickerSets(type,offset,24)',
+    'NativeBridge.java:5040': 'IllegalArgumentException("Sección de emojis no válida.")',
+    'NativeBridge.java:5047': 'a.fail("Este pack no contiene emojis personalizados.")',
+    'NativeBridge.java:5059': 'a.fail("No se pudo abrir el pack de emojis.")',
+    'NativeBridge.java:5062': 'a.fail("No se pudieron preparar los packs de stickers.")',
+    'NativeBridge.java:5063': 'private void searchStickers(JSONObject p,Answer a)',
+    'NativeBridge.java:5064': 'a.fail("No se pudo cargar el pack de stickers.")',
+    'NativeBridge.java:5065': 'boolean installed=p.getBoolean("installed")',
     'NativeSnapshot.java:51': 'static JSONObject emojiStatus(TdApi.User user)throws Exception{',
     'NativeSnapshot.java:52': 'if(user==null||!user.isPremium||user.emojiStatus==null)return null;',
-    'BridgePolicy.java:58': 'static long id(JSONObject params,String key)',
+    'BridgePolicy.java:59': 'static long id(JSONObject params,String key)',
     'DesktopMessageReactFlow.cs:60': 'throw new BridgeException("La cuenta no está conectada.")',
     'DesktopMessageReactFlow.cs:104': 'throw new BridgeException("No se confirmó la reacción en el mensaje. " + message, ex)',
     'EmojiStatusSettings.tsx:180': "{item.thumbnail ? <MediaView media={item.thumbnail} auto passive/> : '✨'}",
@@ -408,11 +408,11 @@ describe('ronda BY · las citas de los dos archivos nuevos y del despacho', () =
     [307, 317, ['emojiStatusState']],
     [318, 346, ['emojiStatusOptions', 'loadEmojiStatuses', 'addEmojiStatusIds', 'emojiStatusMedia', 'emojiStatusDtos']],
     [347, 362, ['emojiStatusSet']],
-    [4407, 4408, ['customEmoji', 'customEmojiSearch']],
-    [4967, 4988, ['stickerInfo', 'emojiPackList']],
-    [4989, 5019, ['emojiPacks']],
-    [5020, 5038, ['emojiPack']],
-    [5039, 5042, ['installedStickers', 'searchStickers', 'stickerSet', 'changeStickerSet']],
+    [4430, 4431, ['customEmoji', 'customEmojiSearch']],
+    [4990, 5011, ['stickerInfo', 'emojiPackList']],
+    [5012, 5042, ['emojiPacks']],
+    [5043, 5061, ['emojiPack']],
+    [5062, 5065, ['installedStickers', 'searchStickers', 'stickerSet', 'changeStickerSet']],
   ];
 
   it('cada número citado señala hoy la línea que la frase afirma', () => {

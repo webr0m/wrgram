@@ -67,7 +67,7 @@ public static class DesktopAttachment
     /// de «informe-2025.pdf»); y si queda vacío o empieza por punto se llama «archivo». El punto inicial no es
     /// capricho: un nombre que empieza por punto queda oculto en la carpeta de salida y ya no se puede volver
     /// a encontrar para enviarlo. El respaldo cambia según quién pregunte, y lo decide el propio Android:
-    /// <c>picked</c> llama «archivo» al archivo suelto e <c>importPhoto</c> (<c>NativeBridge.java:5117-5125</c>)
+    /// <c>picked</c> llama «archivo» al archivo suelto e <c>importPhoto</c> (<c>NativeBridge.java:5140-5148</c>)
     /// llama «foto» a la pieza de un álbum. La misma clase de caracteres y el mismo recorte; cambia la palabra.
     /// </summary>
     public static string NameOf(string raw, string fallback = "archivo")

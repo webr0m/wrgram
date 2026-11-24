@@ -96,18 +96,18 @@ describe('ronda AZ · las cinco escrituras de una fila, cruzadas con las tres ca
   });
 
   it('cada negación es la palabra de Android en la línea que la dice', () => {
-    // `:2910` (banear y restringir), `:2877` (levantar), `:2882` (promover), `:2883` (despromover) y `:2880` (el reparto).
+    // `:2933` (banear y restringir), `:2900` (levantar), `:2905` (promover), `:2906` (despromover) y `:2903` (el reparto).
     const plain: [number, keyof typeof SANCTION_REFUSALS][] = [
-      [2910, 'requiresSupergroup'], [2910, 'selfMenu'], [2910, 'badDuration'], [2910, 'channelNoRestrict'],
-      [2910, 'noRestrictRight'], [2910, 'noDeleteRight'], [2910, 'notSanctionable'], [2910, 'revokeFailed'],
-      [2877, 'selfList'], [2877, 'noLiftRight'], [2877, 'notLiftable'],
-      [2882, 'selfRole'], [2882, 'noPromoteRight'], [2882, 'notPromotable'],
-      [2883, 'selfDemote'], [2883, 'noDemoteRight'], [2883, 'notEditableAdmin'],
-      [2880, 'noDelegation'], [2880, 'incompatibleRight'], [2880, 'noRightSelected'],
+      [2933, 'requiresSupergroup'], [2933, 'selfMenu'], [2933, 'badDuration'], [2933, 'channelNoRestrict'],
+      [2933, 'noRestrictRight'], [2933, 'noDeleteRight'], [2933, 'notSanctionable'], [2933, 'revokeFailed'],
+      [2900, 'selfList'], [2900, 'noLiftRight'], [2900, 'notLiftable'],
+      [2905, 'selfRole'], [2905, 'noPromoteRight'], [2905, 'notPromotable'],
+      [2906, 'selfDemote'], [2906, 'noDemoteRight'], [2906, 'notEditableAdmin'],
+      [2903, 'noDelegation'], [2903, 'incompatibleRight'], [2903, 'noRightSelected'],
     ];
     for (const [number, key] of plain) expect(says(number, SANCTION_REFUSALS[key])).toBe(true);
     // Las cuatro líneas repiten la guarda de forma con la misma cadena, y `NeedsHash` es la única que no existe allá.
-    for (const number of [2877, 2882, 2883]) expect(says(number, SANCTION_REFUSALS.requiresSupergroup)).toBe(true);
+    for (const number of [2900, 2905, 2906]) expect(says(number, SANCTION_REFUSALS.requiresSupergroup)).toBe(true);
     expect(SANCTION_REFUSALS.needsHash).toBe(csSentence('NeedsHash'));
     // Y el `NoHash` del básico sigue con su palabra de expulsar: esta ronda no lo reescribió.
     expect(csSentence('NoHash', roster)).toBe('Telegram no dio los datos necesarios para expulsar a esta persona. Vuelve a abrir la lista e inténtalo de nuevo.');
@@ -127,7 +127,7 @@ describe('ronda AZ · las cinco escrituras de una fila, cruzadas con las tres ca
     for (const label of ['Restringir', 'Banear', 'Quitar baneo', 'Quitar restricción', 'Promover', 'Guardar permisos',
       'Promover a administrador', 'Editar permisos de administrador', 'Quitar administración', 'Quitar rol']) {
       const quoted = `"${label}"`;
-      const times = [2910, 2877, 2882, 2883].reduce((total, number) => total + line(number).split(quoted).length - 1, 0);
+      const times = [2933, 2900, 2905, 2906].reduce((total, number) => total + line(number).split(quoted).length - 1, 0);
       expect(times).toBeGreaterThan(0);
     }
   });
@@ -139,8 +139,8 @@ describe('ronda AZ · las cinco escrituras de una fila, cruzadas con las tres ca
     expect(rules).toContain('public const long DefaultDuration = 3600;');
     expect(rules).toContain('public const long MinDuration = 60;');
     expect(rules).toContain('public const long MaxDuration = 366L * 86400;');
-    expect(line(2910)).toContain('params.optLong("duration",3600)');
-    expect(line(2910)).toContain('duration<60||duration>366L*86400');
+    expect(line(2933)).toContain('params.optLong("duration",3600)');
+    expect(line(2933)).toContain('duration<60||duration>366L*86400');
   });
 
   it('las cuatro frases del cuadro están en las tres capas, partidas o enteras', () => {
@@ -148,8 +148,8 @@ describe('ronda AZ · las cinco escrituras de una fila, cruzadas con las tres ca
     expect(sanctionTitle(true, 'Sofía López')).toBe('Restringir a Sofía López');
     expect(sanctionAction(true)).toBe(SANCTION_LABELS.restrict);
     expect(rules).toContain('public static string BanTitle(bool restrict, string name) => BanAction(restrict) + " a " + name;');
-    saysInParts(2910, ' a ', '. ', 'Telegram validará el cambio en la cuenta.');
-    expect(line(2910)).toContain('.setTitle(action+" a "+name)');
+    saysInParts(2933, ' a ', '. ', 'Telegram validará el cambio en la cuenta.');
+    expect(line(2933)).toContain('.setTitle(action+" a "+name)');
     expect(sanctionBody(true, 'María', 3600, false))
       .toBe('Se quitarán los permisos de envío a María durante 1 hora(s). No se borrarán mensajes. Telegram validará el cambio en la cuenta.');
     expect(sanctionBody(false, 'María', 0, true))
@@ -157,14 +157,14 @@ describe('ronda AZ · las cinco escrituras de una fila, cruzadas con las tres ca
     expect(liftTitle(true)).toBe('Quitar baneo');
     expect(liftTitle(false)).toBe('Quitar restricción');
     expect(liftBody('María')).toBe('Se restaurará el acceso completo de María a este grupo o canal. No se enviará una invitación.');
-    saysInParts(2877, 'Se restaurará el acceso completo de ', ' a este grupo o canal. No se enviará una invitación.');
+    saysInParts(2900, 'Se restaurará el acceso completo de ', ' a este grupo o canal. No se enviará una invitación.');
     expect(promoteTitle(true)).toBe('Editar permisos de administrador');
     expect(promoteTitle(false)).toBe('Promover a administrador');
     expect(promoteBody(false, 'María', { canChangeInfo: true, canInviteUsers: true }))
       .toBe('Se otorgarán a María: editar información, invitar miembros. Telegram volverá a validar tu autoridad.');
-    saysInParts(2882, 'Se actualizarán los permisos de ', 'Se otorgarán a ', '. Telegram volverá a validar tu autoridad.');
+    saysInParts(2905, 'Se actualizarán los permisos de ', 'Se otorgarán a ', '. Telegram volverá a validar tu autoridad.');
     expect(demoteBody('Álex')).toBe('Álex dejará de ser administrador y conservará su membresía normal.');
-    saysInParts(2883, ' dejará de ser administrador y conservará su membresía normal.');
+    saysInParts(2906, ' dejará de ser administrador y conservará su membresía normal.');
   });
 
   it('el plazo del cuadro se lee como lo lee Android: cero, días, horas, minutos', () => {
@@ -172,14 +172,14 @@ describe('ronda AZ · las cinco escrituras de una fila, cruzadas con las tres ca
     expect(sanctionDurationLabel(86400 * 3)).toBe('durante 3 día(s)');
     expect(sanctionDurationLabel(3600 * 5)).toBe('durante 5 hora(s)');
     expect(sanctionDurationLabel(120)).toBe('durante 2 minuto(s)');
-    expect(line(2884)).toContain('if(seconds==0)return "de forma permanente"');
-    expect(line(2884)).toContain('"durante "+(seconds/86400)+" día(s)"');
-    expect(line(2884)).toContain('"durante "+(seconds/3600)+" hora(s)"');
-    expect(line(2884)).toContain('"durante "+(seconds/60)+" minuto(s)"');
+    expect(line(2907)).toContain('if(seconds==0)return "de forma permanente"');
+    expect(line(2907)).toContain('"durante "+(seconds/86400)+" día(s)"');
+    expect(line(2907)).toContain('"durante "+(seconds/3600)+" hora(s)"');
+    expect(line(2907)).toContain('"durante "+(seconds/60)+" minuto(s)"');
   });
 
   it('las dieciséis etiquetas del resumen son las de `adminRightsSummary`, en su orden', () => {
-    const labels = [...line(2881).matchAll(/labels\.add\("([^"]+)"\)/g)].map(match => match[1]);
+    const labels = [...line(2904).matchAll(/labels\.add\("([^"]+)"\)/g)].map(match => match[1]);
     expect(labels.length).toBe(16);
     expect(ADMIN_RIGHT_RULES.map(entry => ADMIN_RIGHT_SUMMARY[entry.key])).toEqual(labels);
     expect(adminRightsSummary({ canRestrictMembers: true, canManageTopics: true })).toBe('restringir miembros, gestionar temas');
@@ -197,9 +197,9 @@ describe('ronda AZ · las cinco escrituras de una fila, cruzadas con las tres ca
   });
 
   it('la puerta de cada permiso es la fórmula de índices de Android', () => {
-    const fields = /String\[\] fields=\{([^}]*)\}/.exec(line(2880))![1].split(',').map(name => name.replace(/"/g, ''));
+    const fields = /String\[\] fields=\{([^}]*)\}/.exec(line(2903))![1].split(',').map(name => name.replace(/"/g, ''));
     expect(fields).toEqual(ADMIN_RIGHT_RULES.map(entry => entry.key));
-    const formula = /if\(channel&&\(([^)]+)\)\|\|!channel&&\(([^)]+)\)\|\|!forum&&([^)]+)\)/.exec(line(2880));
+    const formula = /if\(channel&&\(([^)]+)\)\|\|!channel&&\(([^)]+)\)\|\|!forum&&([^)]+)\)/.exec(line(2903));
     if (!formula) throw new Error('La guarda de permisos de Android ya no tiene la forma de índices');
     const indexes = (group: string) => [...group.matchAll(/values\[(\d+)\]/g)].map(match => Number(match[1]));
     const [noChannel, noCommunity, noForum] = [formula[1], formula[2], formula[3]].map(indexes);

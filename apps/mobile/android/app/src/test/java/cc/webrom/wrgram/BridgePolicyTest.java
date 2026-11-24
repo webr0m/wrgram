@@ -17,4 +17,12 @@ public class BridgePolicyTest {
     @Test(expected=IllegalArgumentException.class)public void boundsNotesAndMessagePayloads()throws Exception{BridgePolicy.text(new JSONObject().put("text","12345"),"text",4);}
     @Test public void allowsScrollingIntoNewerHistory()throws Exception{assertTrue(BridgePolicy.METHODS.contains("history.newer"));BridgePolicy.envelope(new JSONObject().put("id","7").put("method","history.newer").put("params",new JSONObject()));}
     @Test public void allowsNativePlaybackOfDownloadedVideos()throws Exception{assertTrue(BridgePolicy.METHODS.contains("media.play"));BridgePolicy.envelope(new JSONObject().put("id","8").put("method","media.play").put("params",new JSONObject()));}
+    @Test public void allowsOnlyTheThreeArmsOfThePhoneNumberAssistant()throws Exception{
+        for(String method:new String[]{"account.phone.change","account.phone.check","account.phone.resend"}){
+            assertTrue(method,BridgePolicy.METHODS.contains(method));
+            BridgePolicy.envelope(new JSONObject().put("id","9").put("method",method).put("params",new JSONObject()));
+        }
+        for(String method:new String[]{"account.phone.raw","account.phone.send","phone.number.set","account.phone.state"})
+            assertFalse(method,BridgePolicy.METHODS.contains(method));
+    }
 }

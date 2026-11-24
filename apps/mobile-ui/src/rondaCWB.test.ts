@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 
 /**
  * La ronda CW-B lleva a Windows los mensajes de servicio de llamada que la ronda CW midió y dejó sin escribir.
- * El despacho de `TelegramService.cs:3650` caía con los cuatro tipos de llamada bajo el paraguas
- * (`TelegramService.cs:3665`) —hoy tiene sus cinco brazos en `TelegramService.cs:3660-3664`—, así que una llamada
+ * El despacho de `TelegramService.cs:3655` caía con los cuatro tipos de llamada bajo el paraguas
+ * (`TelegramService.cs:3670`) —hoy tiene sus cinco brazos en `TelegramService.cs:3665-3669`—, así que una llamada
  * quedaba como «Mensaje de servicio de Telegram» en el historial de escritorio mientras la misma conversación la
  * nombraba en Android. La corrección no copia la frase de Android: `ServiceMessages.java:125` y
  * `ServiceMessages.java:126` sacan el sustantivo de `isVideo`, y en MTProto ese bit solo lo traen
@@ -234,9 +234,9 @@ describe('ronda CW-B · la sonda ejecuta la clase real', () => {
 describe('ronda CW-B · las citas se miden', () => {
   /** Cada número citado en este archivo, con la frase que afirma. */
   const anchors: Record<string, string> = {
-    'TelegramService.cs:3650': 'private string ServiceText(MessageService service, string actor = "") => service.action switch',
-    'TelegramService.cs:3660': 'MessageActionPhoneCall call => DesktopServiceCalls.PhoneCall(call),',
-    'TelegramService.cs:3665': '_ => "Mensaje de servicio de Telegram"',
+    'TelegramService.cs:3655': 'private string ServiceText(MessageService service, string actor = "") => service.action switch',
+    'TelegramService.cs:3665': 'MessageActionPhoneCall call => DesktopServiceCalls.PhoneCall(call),',
+    'TelegramService.cs:3670': '_ => "Mensaje de servicio de Telegram"',
     'DesktopServiceCalls.cs:19': 'video ? "Videollamada" : "Llamada";',
     'DesktopServiceCalls.cs:22': 'video ? "Videollamada" : "Llamada de voz";',
     'DesktopServiceCalls.cs:25': 'public const string GroupNoun = "Llamada de grupo";',
@@ -253,7 +253,7 @@ describe('ronda CW-B · las citas se miden', () => {
 
   /** El final de cada rango escrito, con lo que esa línea tiene que decir. */
   const ends: Record<string, [number, string]> = {
-    'TelegramService.cs:3660': [3664, 'MessageActionInviteToGroupCall call => DesktopServiceCalls.Invitation(call, actor, UserName,'],
+    'TelegramService.cs:3665': [3669, 'MessageActionInviteToGroupCall call => DesktopServiceCalls.Invitation(call, actor, UserName,'],
   };
 
   const lineOf = (file: string, at: number): string => {

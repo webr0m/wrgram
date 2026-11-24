@@ -43,8 +43,8 @@ describe('ronda CS · la cita de texto en las tres capas', () => {
   });
 
   it('Android valida la cita contra el original antes de tocar la red y nombra la negativa', () => {
-    expect(line(bridge, 748)).toContain('ReplyQuote.of');
-    expect(line(bridge, 748)).toContain('a.fail(invalid.getMessage())');
+    expect(line(bridge, 751)).toContain('ReplyQuote.of');
+    expect(line(bridge, 751)).toContain('a.fail(invalid.getMessage())');
     expect(rules).toContain('original.substring(position, position + quote.length()).equals(quote)');
     expect(rules).toContain('NativeSnapshot.formatted');
   });
@@ -79,16 +79,16 @@ describe('ronda CS · la cita de texto en las tres capas', () => {
   });
 
   it('la vuelta de Windows proyecta la cita hacia el DTO', () => {
-    expect(line(service, 3431)).toContain('DesktopReplyQuote.Receive');
+    expect(line(service, 3436)).toContain('DesktopReplyQuote.Receive');
     expect(stateCs).toContain('public ReplyQuoteDto? ReplyQuote { get; set; }');
     expect(desktop).toContain('quote_text');
   });
 
   it('el contrato y la pantalla llevan la cita de ida y de vuelta', () => {
     expect(line(contract, 159)).toContain('replyQuote');
-    expect(line(app, 821)).toContain('quote:replyQuote');
-    expect(line(app, 1150)).toContain('selectionQuote');
-    expect(line(app, 1263)).toContain('quote={message.replyQuote}');
+    expect(line(app, 822)).toContain('quote:replyQuote');
+    expect(line(app, 1151)).toContain('selectionQuote');
+    expect(line(app, 1264)).toContain('quote={message.replyQuote}');
     expect(quoteUi).toContain('FormattedText');
   });
 
@@ -100,10 +100,10 @@ describe('ronda CS · la cita de texto en las tres capas', () => {
   it('las longitudes de las capas tocadas no se movieron sin que la ronda lo sepa', () => {
     expect(lines(engine).length).toBe(1430);
     expect(lines(snapshot).length).toBe(554);
-    expect(lines(bridge).length).toBe(5579);
-    expect(lines(service).length).toBe(4307);
-    expect(lines(app).length).toBe(1592);
-    expect(lines(contract).length).toBe(250);
+    expect(lines(bridge).length).toBe(5602);
+    expect(lines(service).length).toBe(4312);
+    expect(lines(app).length).toBe(1593);
+    expect(lines(contract).length).toBe(251);
     expect(lines(stateCs).length).toBe(760);
   });
 });

@@ -45,23 +45,23 @@ describe('ronda CA · las estadísticas de una comunidad las dice una sola vez e
 
   it('las tres capas se reparten el cable: orden en la lista, brazo en cada host, entrada en la pantalla', () => {
     expect(policy).toContain('"groups.stats"');
-    expect(line(bridge, 884)).toContain('case "groups.stats":');
-    expect(line(bridge, 884)).toContain('new TdApi.GetChatStatistics(statsChat.id,false)');
-    expect(line(bridge, 884)).toContain('GroupChatStats.dto(stats,');
+    expect(line(bridge, 887)).toContain('case "groups.stats":');
+    expect(line(bridge, 887)).toContain('new TdApi.GetChatStatistics(statsChat.id,false)');
+    expect(line(bridge, 887)).toContain('GroupChatStats.dto(stats,');
     expect(read('./desktopScope.ts')).toContain("'groups.stats'");
     expect(cs('TelegramService')).toContain('"groups.stats" => await GroupStatsAsync(args)');
     // La entrada que la pide, sin guarda de plataforma: las dos capas contestan.
     const app = read('./App.tsx');
-    expect(line(app, 944)).toContain("chat.supergroup===true||chat.type==='channel'");
-    expect(line(app, 944)).toContain('label="Estadísticas"');
-    expect(line(app, 944)).toContain('setStatsChat(chat)');
-    expect(line(app, 1276)).toContain('<GroupStatsPanel chat={statsChat}');
+    expect(line(app, 945)).toContain("chat.supergroup===true||chat.type==='channel'");
+    expect(line(app, 945)).toContain('label="Estadísticas"');
+    expect(line(app, 945)).toContain('setStatsChat(chat)');
+    expect(line(app, 1277)).toContain('<GroupStatsPanel chat={statsChat}');
     // Y ningún archivo se movió de su aguja sin que la ronda lo sepa. Las longitudes se miden hoy sobre el texto
     // en disco, incluidos los desplazamientos que acumularon CH-A, CH-A2 y CT.
-    expect(bridge.split('\n').length - 1).toBe(5578);
-    expect(policy.split('\n').length - 1).toBe(61);
-    expect(app.split('\n').length - 1).toBe(1591);
-    expect(read('./contract.ts').split('\n').length - 1).toBe(249);
+    expect(bridge.split('\n').length - 1).toBe(5601);
+    expect(policy.split('\n').length - 1).toBe(62);
+    expect(app.split('\n').length - 1).toBe(1592);
+    expect(read('./contract.ts').split('\n').length - 1).toBe(250);
   });
 
   it('las fichas de cada forma son las del catálogo, en su orden y en las dos bibliotecas', () => {
@@ -125,12 +125,12 @@ describe('ronda CA · las estadísticas de una comunidad las dice una sola vez e
   });
 
   it('los nombres salen por la regla de la casa y el derecho lo decide Telegram en las dos capas', () => {
-    expect(line(bridge, 884)).toContain('String statsName=PersonName.of(statsUser)');
-    expect(line(bridge, 884)).toContain('return statsName==null?"Usuario de Telegram":statsName;');
-    expect(line(bridge, 884)).toContain('session.requestUser(id)');
+    expect(line(bridge, 887)).toContain('String statsName=PersonName.of(statsUser)');
+    expect(line(bridge, 887)).toContain('return statsName==null?"Usuario de Telegram":statsName;');
+    expect(line(bridge, 887)).toContain('session.requestUser(id)');
     expect(flow).toContain('user => DesktopGroupRoster.Name(user as User)');
     // Ninguna de las dos capas pregunta el derecho antes de ir a la red: el rechazo lo da Telegram, en el mismo viaje.
-    expect(line(bridge, 882)).not.toContain('GetChatMember');
+    expect(line(bridge, 885)).not.toContain('GetChatMember');
     expect(flow).not.toContain('SelfParticipantAsync');
     expect(body(shared, 'public static String explain')).toContain('if (error.contains("(403)")) return NO_RIGHT;');
     expect(stats).toContain('_ when Starts(error, "CHAT_ADMIN_REQUIRED") => NoRight');

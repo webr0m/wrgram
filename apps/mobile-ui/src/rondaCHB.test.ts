@@ -9,7 +9,7 @@ import type { CloudBackground } from './cloud-backgrounds';
  * `CloudBackground` (`cloud-backgrounds.ts:1`), y lo único que cambia es quién las escribe. Android las saca de
  * TDLib (`AccountBackgrounds.java:99`); Windows de `account.getWallPapers` y `account.installWallPaper`, las dos
  * únicas peticiones que la sonda encontró para esto en WTelegramClient 4.4.10. La lectura vive en
- * `NativeBridge.java:5448` y vuelve a comprobar la cuenta antes de responder (`NativeBridge.java:5453`).
+ * `NativeBridge.java:5471` y vuelve a comprobar la cuenta antes de responder (`NativeBridge.java:5476`).
  *
  * **Las dos marcas que no son las mismas en las dos capas, y qué hace la pantalla con eso.** En TDLib `isDefault`
  * es «de los que trae Telegram» y el elegido hay que sacarlo de la tienda del aviso (`AccountBackgrounds.java:113`);
@@ -26,7 +26,7 @@ import type { CloudBackground } from './cloud-backgrounds';
  * (`desktopScope.ts:76`) y el formulario de colores no se ofrece en escritorio (`CloudBackgrounds.tsx:124`).
  *
  * **El orden de negar, medido en el brazo.** `DesktopBackgroundsFlow.cs:70-85` reproduce las tres ramas de
- * `backgroundSet` (`NativeBridge.java:5468`) en el mismo orden y añade las dos comprobaciones que aquí hacen falta
+ * `backgroundSet` (`NativeBridge.java:5491`) en el mismo orden y añade las dos comprobaciones que aquí hacen falta
  * porque el `access_hash` sale de la lista recién leída: la fila que ya no está y la que es del otro modo. La
  * confirmación se releé en vez de darla por hecha, que es lo que permite devolver la fila con su marca real.
  */
@@ -451,13 +451,13 @@ describe('ronda CH-B · las citas de los archivos de la ronda', () => {
     // La marca que TDLib sí trae y MTProto no, en la clase del documento de la librería.
     'TdApi.java:4982': 'public static class Background extends Object {',
     // El puente de Android: las dos órdenes y las dos frases que el host reproduce.
-    'NativeBridge.java:754': 'case "backgrounds.list":backgroundsList(p,a);break;',
-    'NativeBridge.java:755': 'case "background.set":backgroundSet(p,a);break;',
-    'NativeBridge.java:5448': 'private void backgroundsList(JSONObject p,Answer a){',
-    'NativeBridge.java:5453': 'if(destroyed||!currentAccount()||session.selfId!=owner){a.fail("La cuenta cambió.");return;}',
-    'NativeBridge.java:5468': 'private void backgroundSet(JSONObject p,Answer a){',
-    'NativeBridge.java:5474': 'remote.backgroundId=BridgePolicy.id(p,"id");',
-    'NativeBridge.java:5476': 'a.fail("El identificador del fondo no vale.");',
+    'NativeBridge.java:757': 'case "backgrounds.list":backgroundsList(p,a);break;',
+    'NativeBridge.java:758': 'case "background.set":backgroundSet(p,a);break;',
+    'NativeBridge.java:5471': 'private void backgroundsList(JSONObject p,Answer a){',
+    'NativeBridge.java:5476': 'if(destroyed||!currentAccount()||session.selfId!=owner){a.fail("La cuenta cambió.");return;}',
+    'NativeBridge.java:5491': 'private void backgroundSet(JSONObject p,Answer a){',
+    'NativeBridge.java:5497': 'remote.backgroundId=BridgePolicy.id(p,"id");',
+    'NativeBridge.java:5499': 'a.fail("El identificador del fondo no vale.");',
     // Windows: la regla pura, el brazo y el estado.
     'DesktopBackgrounds.cs:76': 'public const string NoCreate =',
     'DesktopBackgrounds.cs:127': 'public static bool IsChosen(',
@@ -552,12 +552,13 @@ describe('ronda CH-B · las citas de los archivos de la ronda', () => {
       ['CloudBackgrounds.tsx', panel.length], ['AppearanceSettings.tsx', appearance.length],
       ['desktopScope.ts', scope.length], ['preview.ts', preview.length], ['Program.cs', probe.length],
     ];
-    // El despacho de Windows se mide hoy en 4307 líneas; las otras diez entradas no se movieron.
+    // El despacho de Windows se mide hoy en 4312 líneas, y el alcance y el andamio subieron con A02 a 123 y
+    // 3437; las otras ocho entradas no se movieron.
     expect(medidas).toEqual([
-      ['DesktopBackgrounds.cs', 213], ['DesktopBackgroundsFlow.cs', 110], ['TelegramService.cs', 4307],
+      ['DesktopBackgrounds.cs', 213], ['DesktopBackgroundsFlow.cs', 110], ['TelegramService.cs', 4312],
       ['DesktopState.cs', 760], ['AccountBackgrounds.java', 215], ['cloud-backgrounds.ts', 97],
-      ['CloudBackgrounds.tsx', 144], ['AppearanceSettings.tsx', 379], ['desktopScope.ts', 119],
-      ['preview.ts', 3395], ['Program.cs', 293],
+      ['CloudBackgrounds.tsx', 144], ['AppearanceSettings.tsx', 379], ['desktopScope.ts', 123],
+      ['preview.ts', 3437], ['Program.cs', 293],
     ]);
   });
 });

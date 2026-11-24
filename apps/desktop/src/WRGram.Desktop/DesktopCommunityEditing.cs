@@ -9,10 +9,10 @@ namespace WRGram.Desktop;
 /// Las dos órdenes de la ficha de una comunidad en Windows: leer su nombre y su descripción, y escribir una de las
 /// dos. Las reglas y las frases están en <see cref="DesktopCommunityInfo"/>; aquí está el cable, que es lo que
 /// faltaba —ninguna de las dos tenía brazo, así que el botón «Nombre y descripción» del menú de escritorio
-/// (<c>App.tsx:914</c>, sin guarda de plataforma) caía en el <c>_ =&gt; throw</c> genérico dando a entender que
+/// (<c>App.tsx:915</c>, sin guarda de plataforma) caía en el <c>_ =&gt; throw</c> genérico dando a entender que
 /// faltaba una petición cuando las cuatro existen en la librería—.
 /// <para>
-/// El orden es el de <c>setChatInfo</c> (<c>NativeBridge.java:1940-1964</c>) palabra por palabra: forma
+/// El orden es el de <c>setChatInfo</c> (<c>NativeBridge.java:1963-1987</c>) palabra por palabra: forma
 /// del chat, tope del texto nuevo, tope del texto que se creía que había, validación del campo, permiso, comparación
 /// con lo que Telegram guarda y, solo al final, la ventana de confirmar. Cambiar ese orden cambia lo que la persona
 /// lee: si primero se comparara y después se validara, un título de 300 caracteres se anunciaría como «cambió en
@@ -31,8 +31,8 @@ namespace WRGram.Desktop;
 public sealed partial class TelegramService
 {
     /// <summary>
-    /// <c>chat.info</c> (<c>NativeBridge.java:597</c> → <c>chatInfo</c>, <c>:1905-1913</c>). Las seis claves del DTO
-    /// son las seis de Android y en el mismo orden que <c>sendCommunity</c> (<c>:1926-1933</c>): <c>title</c>,
+    /// <c>chat.info</c> (<c>NativeBridge.java:600</c> → <c>chatInfo</c>, <c>:1928-1936</c>). Las seis claves del DTO
+    /// son las seis de Android y en el mismo orden que <c>sendCommunity</c> (<c>:1949-1956</c>): <c>title</c>,
     /// <c>description</c>, <c>descriptionKnown</c>, <c>canChange</c>, <c>maxTitle</c>, <c>maxDescription</c>.
     /// </summary>
     private async Task<object?> CommunityInfoAsync(JsonElement args)
@@ -54,20 +54,20 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>chat.info.set</c> (<c>NativeBridge.java:598</c> → <c>setChatInfo</c>, <c>:1940-1964</c>). Los dos guardajes
+    /// <c>chat.info.set</c> (<c>NativeBridge.java:601</c> → <c>setChatInfo</c>, <c>:1940-1964</c>). Los dos guardajes
     /// de <c>BridgePolicy.text</c> se copian con sus dos frases distintas, que es lo que Android hace: el texto nuevo
     /// desborda → <see cref="DesktopCommunityInfo.TooLong"/> (<c>:1944-1945</c>); lo que se creía que había no cabe o
     /// no viene → <see cref="DesktopCommunityInfo.Changed"/> (<c>:1946-1947</c>), porque sin esa comparación no se
     /// puede afirmar nada sobre el estado de Telegram.
     /// <para>
     /// El permiso se lee del peer que Telegram mandó con la lista de conversaciones. Android lo pregunta vivo con
-    /// <c>GetChatMember</c> (<c>:1952</c>); MTProto no tiene esa pregunta para el propio usuario y la diferencia es
+    /// <c>GetChatMember</c> (<c>:1975</c>); MTProto no tiene esa pregunta para el propio usuario y la diferencia es
     /// de frescura, no de norma: si la bandera estuviera vieja, la escritura la cobra Telegram con su rechazo, no
     /// este puente con un falso <see cref="DesktopCommunityInfo.NoRight"/>.
     /// </para>
     /// <para>
     /// <c>false</c> es el «Cancelar» de la ventana nativa, igual que en Android el <c>a.ok(false)</c> de
-    /// <c>confirmCommunity</c> (<c>:1996</c> y <c>:2000</c>), y la
+    /// <c>confirmCommunity</c> (<c>:2019</c> y <c>:2000</c>), y la
     /// pantalla ya sabe traducirlo por «en Telegram no ha cambiado nada».
     /// </para>
     /// </summary>
@@ -119,7 +119,7 @@ public sealed partial class TelegramService
     /// La lectura del <c>full info</c>, que es la única petición compartida por los dos flujos. Se traga el error y
     /// devuelve <c>null</c> porque los dos lados lo traducen distinto: la lectura degrada a
     /// <c>descriptionKnown=false</c> y la escritura niega el guardado con <see cref="DesktopCommunityInfo.Unreadable"/>
-    /// (<c>NativeBridge.java:1968</c> y <c>:1955</c>). Ninguno de los dos caminos deja pasar el texto de Telegram,
+    /// (<c>NativeBridge.java:1991</c> y <c>:1955</c>). Ninguno de los dos caminos deja pasar el texto de Telegram,
     /// que es lo que Android tampoco hace en este punto.
     /// </summary>
     private static async Task<Messages_ChatFull?> ReadFullAsync(Client client, ChatEntry entry, DesktopMembership.Kind kind)
@@ -144,7 +144,7 @@ public sealed partial class TelegramService
         page?.chats.GetValueOrDefault(Number(entry));
 
     /// <c>channels.editTitle</c> y <c>messages.editChatTitle</c>: los dos caminos de MTProto para lo que en TDLib es
-    /// un único <c>SetChatTitle</c> (<c>NativeBridge.java:1957</c>). La forma del peer decide el camino, y una forma
+    /// un único <c>SetChatTitle</c> (<c>NativeBridge.java:1980</c>). La forma del peer decide el camino, y una forma
     /// que no cuadra con la clave de la fila se dice con la frase que ya usa el host para esa contradicción.
     private static async Task WriteTitleAsync(Client client, ChatEntry entry, DesktopMembership.Kind kind, string title)
     {
@@ -158,7 +158,7 @@ public sealed partial class TelegramService
         await client.Channels_EditTitle(new InputChannel(peer.channel_id, peer.access_hash), title);
     }
 
-    /// El <c>AlertDialog</c> de <c>confirmCommunity</c> (<c>NativeBridge.java:1989-1995</c>) hecho con la ventana que
+    /// El <c>AlertDialog</c> de <c>confirmCommunity</c> (<c>NativeBridge.java:2012-2018</c>) hecho con la ventana que
     /// el host ya tenía: la misma que levanta el cambio de foto de perfil, con sus dos botones propios y su cierre
     /// por la equis valiendo por «Cancelar». No se escribe una segunda ventana porque no hay nada que cambiarle
     /// salvo el texto y los dos rótulos.

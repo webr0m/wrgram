@@ -269,13 +269,13 @@ describe('ronda CE · la vuelta', () => {
 
 describe('ronda CE · las citas escritas', () => {
   const anchors: Record<string, string> = {
-    'NativeBridge.java:4583': 'if(values.length()>100)',
-    'NativeBridge.java:4589': 'if(offset<0||offset>length||size<1||size>length-offset)',
-    'NativeBridge.java:4602': 'Emoji personalizado no válido.',
-    'NativeBridge.java:4606': 'case "link":',
+    'NativeBridge.java:4606': 'if(values.length()>100)',
+    'NativeBridge.java:4612': 'if(offset<0||offset>length||size<1||size>length-offset)',
+    'NativeBridge.java:4625': 'Emoji personalizado no válido.',
+    'NativeBridge.java:4629': 'case "link":',
     'NativeSnapshot.java:523': 'kind instanceof TdApi.TextEntityTypeUrl&&formatted.text',
     'NativeSnapshot.java:525': 'item.put("customEmojiId",String.valueOf',
-    'BridgePolicy.java:58': 'static long id(JSONObject params,String key)',
+    'BridgePolicy.java:59': 'static long id(JSONObject params,String key)',
   };
 
   const lineOf = (file: string, n: number) => {
@@ -314,12 +314,12 @@ describe('ronda CE · las agujas de las capas tocadas', () => {
     // Las longitudes se miden hoy sobre los archivos en disco, después de CT y de las rondas posteriores. Los
     // incrementos históricos se explican en sus propias pruebas; aquí solo se fija el tamaño actual de cada capa.
     expect(rules).toHaveLength(134);
-    expect(service).toHaveLength(4307);
+    expect(service).toHaveLength(4312);
     expect(stateCs.split(/\r?\n/)).toHaveLength(760);
-    expect(java).toHaveLength(5579);
+    expect(java).toHaveLength(5602);
     expect(snapshot).toHaveLength(554);
-    expect(policy.split(/\r?\n/)).toHaveLength(62);
+    expect(policy.split(/\r?\n/)).toHaveLength(63);
     expect(model.split(/\r?\n/)).toHaveLength(202);
-    expect(contract.split(/\r?\n/)).toHaveLength(250);
+    expect(contract.split(/\r?\n/)).toHaveLength(251);
   });
 });

@@ -147,6 +147,11 @@ public sealed partial class TelegramService : IAsyncDisposable
                 // en <see cref="DesktopSessions"/>; el cable, en <see cref="SessionsAsync"/>.
                 "account.sessions" => await SessionsAsync(),
                 "account.session.revoke" => await RevokeSessionAsync(args),
+                // Las tres del asistente de cambio de número (ronda A02). Android las atiende con
+                // <c>SendPhoneNumberCode</c> y <c>PhoneNumberCodeTypeChange</c>, un tipo de código que Telegram
+                // reserva a las apps oficiales de Android e iOS; en este host no hay brazo, así que se niegan por su
+                // nombre —que es lo que <c>desktopScope.ts</c> apunta— en vez de caer en el rechazo genérico.
+                "account.phone.change" or "account.phone.check" or "account.phone.resend" => throw new BridgeException("Cambiar el número de teléfono no está disponible en esta beta de escritorio."),
                 // Las dos de la privacidad de la cuenta, conectadas en la ronda BH. Llevan en la lista del puente
                 // Android desde la ronda B (<c>BridgePolicy.java:23</c>) y la pantalla las pide desde entonces, pero
                 // en Windows caían en el genérico: en los ajustes el <c>Promise.all</c> de <c>SettingsPage.tsx:109</c>
@@ -204,7 +209,7 @@ public sealed partial class TelegramService : IAsyncDisposable
                 // Reglas y frases, en <see cref="DesktopChatPhoto"/>; el cable, en <see cref="ChatPhotoPickAsync"/>.
                 "chat.photo.pick" => await ChatPhotoPickAsync(args),
                 // Y la negativa, escrita con su causa en lugar de caer en el genérico de abajo. Android la atiende
-                // con el mismo <c>SetChatPhoto</c> al que le manda el foto vacío (<c>NativeBridge.java:1781</c>);
+                // con el mismo <c>SetChatPhoto</c> al que le manda el foto vacío (<c>NativeBridge.java:1804</c>);
                 // WTelegramClient 4.4.10 no genera <c>inputChatPhotoEmpty</c> —medido: <c>TL.InputChatPhotoBase</c>
                 // tiene dos derivados y ninguno es el vacío—, así que aquí no hay petición que construir. La
                 // pantalla de escritorio no ofrece la entrada; esta rama es para quien la pregunte de todos modos.
@@ -231,7 +236,7 @@ public sealed partial class TelegramService : IAsyncDisposable
                 // Las cinco escrituras sobre una fila están conectadas desde la ronda AZ, cada una con su brazo y su
                 // orden de guardas. La expulsión es la única que tiene dos caminos: en un básico va por
                 // <c>messages.deleteChatUser</c> y en un canal o supergrupo por <c>channels.editBanned</c>, que es
-                // justo la bifurcación con la que abre <c>banGroupMember</c> (<c>NativeBridge.java:2910</c>). En las
+                // justo la bifurcación con la que abre <c>banGroupMember</c> (<c>NativeBridge.java:2933</c>). En las
                 // otras cuatro, un básico no es un camino posible: es la negación de Telegram, y la frase la da
                 // <c>DesktopGroupRoster.WriteProblem</c> mirando la forma de la fila.
                 "groups.member.ban" => await BanMemberAsync(args),
@@ -254,18 +259,18 @@ public sealed partial class TelegramService : IAsyncDisposable
                 "profile.sender" => await SenderProfileAsync(args),
                 // La quinta puerta del mismo hueco, cableada en la ronda BI junto a las dos de la lista. La ficha ya
                 // publicaba <c>blocked</c> desde la ronda BA, así que en Windows el botón de «Bloquear» se veía y al
-                // pulsar caía en el genérico. Acá no hay cuadro nativo: lo abre la pantalla (<c>App.tsx:762</c>).
+                // pulsar caía en el genérico. Acá no hay cuadro nativo: lo abre la pantalla (<c>App.tsx:763</c>).
                 // Reglas y frases, en <see cref="DesktopBlocked"/>; el cable, en <see cref="SetBlockProfileAsync"/>.
                 "profile.block" => await SetBlockProfileAsync(args),
                 // La firma de invitación, conectada en la ronda BB. El menú «Añadir personas» de la pantalla
-                // (<c>App.tsx:938</c>) nunca llevó guarda de plataforma, así que en Windows el panel se abría y su
+                // (<c>App.tsx:939</c>) nunca llevó guarda de plataforma, así que en Windows el panel se abría y su
                 // primera pregunta caía en el `_ => throw` genérico. Reglas y frases, en
                 // <see cref="DesktopMemberAdditions"/>; el cable, en <see cref="AddInfoAsync"/>.
                 "groups.add.info" => await AddInfoAsync(args),
                 "groups.member.add" => await AddMembersAsync(args),
                 // Los permisos predeterminados de la comunidad, conectados en la ronda BE. Las dos órdenes estaban en
                 // la lista del puente desde la ronda A y la pantalla las pide desde la Q por la entrada «Permisos
-                // predeterminados» del panel lateral (<c>App.tsx:1272</c>, sin guarda de plataforma), pero en Windows
+                // predeterminados» del panel lateral (<c>App.tsx:1273</c>, sin guarda de plataforma), pero en Windows
                 // caían en el genérico. Reglas, tabla de banderas y frases, en <see cref="DesktopGroupPermissions"/>;
                 // el cable, en <see cref="GroupPermissionsAsync"/>.
                 "groups.permissions.get" => await GroupPermissionsAsync(args),
@@ -375,8 +380,8 @@ public sealed partial class TelegramService : IAsyncDisposable
                 "message.react.paid" => throw new BridgeException(DesktopMessageReact.PaidRefused),
                 // Las once de emojis y stickers, conectadas en la ronda BY. Van en el mismo orden en que las nombra
                 // el puente de Android: primero el estado (`NativeBridge.java:307`, con sus brazos en `:315`, `:335`
-                // y `:350`), luego los documentos sueltos (`:4407`, `:4408`) y al final los packs y los stickers
-                // (`:4989`, `:5020`, `:5039`, `:5040`, `:5041`, `:5042`). Cada brazo está en
+                // y `:350`), luego los documentos sueltos (`:4430`, `:4431`) y al final los packs y los stickers
+                // (`:5012`, `:5043`, `:5062`, `:5063`, `:5064`, `:5065`). Cada brazo está en
                 // <see cref="DesktopEmojiCatalogFlow"/> y las reglas puras, con las frases copiadas carácter a
                 // carácter y los topes medidos, en <c>DesktopEmojiCatalog</c>. Dos cosas se niegan por biblioteca y
                 // no por decisión: quitar el estado puesto (no hay <c>account.clearEmojiStatus</c>) y las miniaturas
@@ -403,8 +408,8 @@ public sealed partial class TelegramService : IAsyncDisposable
                 "error.clear" => ClearError(),
                 "app.background" => true,
                 "native.settings" => OpenDataFolder(),
-                // Las tres del enlace, en el orden del puente de Android: `message.link` (`NativeBridge.java:784`)
-                // antes que `link.open` (`:785`). Las dos primeras acaban en el mismo embudo; la diferencia es de
+                // Las tres del enlace, en el orden del puente de Android: `message.link` (`NativeBridge.java:787`)
+                // antes que `link.open` (`:788`). Las dos primeras acaban en el mismo embudo; la diferencia es de
                 // dónde sale la dirección, y por eso una la trae la pantalla en el argumento y la otra la vuelve a
                 // leer en la fila. Reglas de la tarjeta, en <see cref="DesktopLinkPreview"/>.
                 "message.link" => await MessageLinkAsync(args),
@@ -494,7 +499,7 @@ public sealed partial class TelegramService : IAsyncDisposable
                 "location.live.start" => throw new BridgeException(DesktopLiveLocation.NoSensor),
                 "location.live.stop" => await StopLiveLocationAsync(args),
                 // Los fondos de la cuenta, los dos brazos que en Android son <c>backgroundsList</c>
-                // (<c>NativeBridge.java:754</c>) y <c>backgroundSet</c> (<c>NativeBridge.java:755</c>). Aquí la
+                // (<c>NativeBridge.java:757</c>) y <c>backgroundSet</c> (<c>NativeBridge.java:758</c>). Aquí la
                 // pantalla es la misma y el dibujo también: <see cref="DesktopBackgrounds"/> pinta el relleno con la
                 // misma fórmula que el método <c>css</c> de <c>AccountBackgrounds.java:51</c>. Lo único
                 // que no llega es crear un fondo de color —no hay imagen que subir—, y eso lo dice por su nombre
@@ -981,7 +986,7 @@ public sealed partial class TelegramService : IAsyncDisposable
     /// <summary>
     /// Abrir la conversación privada con una persona por su número de usuario, que es lo que trae la tarjeta de
     /// contacto (<c>MessageMediaContact.user_id</c>) y lo que publican las filas de la agenda. Android lo hace con
-    /// <c>TdApi.CreatePrivateChat(userId)</c> y <c>session.open(chat.id)</c> (<c>NativeBridge.java:577</c>): TDLib
+    /// <c>TdApi.CreatePrivateChat(userId)</c> y <c>session.open(chat.id)</c> (<c>NativeBridge.java:580</c>): TDLib
     /// inventa el chat vacío si no existe, porque el <c>access_hash</c> lo guarda él. Aquí no hay nada que crear —
     /// la conversación es el propio par— y el camino ya está escrito: la clave <c>u</c> + número es la forma que
     /// <see cref="FindEntry"/> sabe leer y <see cref="OpenChatAsync"/> es la que monta la fila, la pone activa y
@@ -1100,7 +1105,7 @@ public sealed partial class TelegramService : IAsyncDisposable
 
     /// <summary>
     /// El brazo de la tarjeta de enlace. Android lo tiene desde siempre (<c>message.link</c>,
-    /// <c>NativeBridge.java:784</c>) y la pantalla lo llama con solo el número del mensaje; en Windows caía en el
+    /// <c>NativeBridge.java:787</c>) y la pantalla lo llama con solo el número del mensaje; en Windows caía en el
     /// rechazo genérico del despacho porque la fila no llegaba a tener dónde mirar: el DTO no publicaba
     /// <c>preview</c>, así que el botón «Abrir enlace externo» no se pintaba nunca. Desde esta ronda el DTO lo
     /// publica <see cref="ConvertMessage"/> y aquí se lee la fila otra vez para sacarle la dirección.
@@ -1109,10 +1114,10 @@ public sealed partial class TelegramService : IAsyncDisposable
     /// en <c>DesktopSenderProfileFlow.cs</c>: este host no conserva las filas crudas, conserva los DTO que pintó, y en
     /// el DTO no está la dirección —ni puede estar, que es la regla de <see cref="DesktopLinkPreview"/>. La otra
     /// mitad del motivo es el orden: la guarda de la fila tiene que decirse antes que las demás, igual que en Java,
-    /// donde <c>message(p)</c> (<c>NativeBridge.java:783</c>) abre el brazo.
+    /// donde <c>message(p)</c> (<c>NativeBridge.java:786</c>) abre el brazo.
     /// </para>
     /// <para>
-    /// Tres guardas, en el orden medido en <c>NativeBridge.java:783</c> y todas con la única frase que Android deja
+    /// Tres guardas, en el orden medido en <c>NativeBridge.java:786</c> y todas con la única frase que Android deja
     /// oír cuando un brazo se niega así (<c>DesktopBridge.InvalidRequest</c>, el envoltorio de <c>NativeBridge.java:167</c>):
     /// sin fila en la conversación abierta, con temporizador, y sin tarjeta. La cuarta y la quinta guardas de Java
     /// —«el contenido es texto» y «el texto trae vista previa»— son aquí una sola porque en MTProto el tipo de
@@ -1125,7 +1130,7 @@ public sealed partial class TelegramService : IAsyncDisposable
     private async Task<object?> MessageLinkAsync(JsonElement args)
     {
         var client = CollectionClient();
-        // `message(p)` de `NativeBridge.java:783`, que dentro es `session.message(id)` con la fila atada al chat
+        // `message(p)` de `NativeBridge.java:786`, que dentro es `session.message(id)` con la fila atada al chat
         // activo (`:364`): sin fila no hay dirección que abrir, y Android lo dice con la frase del envoltorio, no con
         // la de «conversación no cargada». Aquí la comparación se cumple por construcción, porque la petición va
         // dirigida al peer activo.
@@ -1230,7 +1235,7 @@ public sealed partial class TelegramService : IAsyncDisposable
     /// la página: lo que se promete es «el más reciente sin pasarse de la frontera», y eso lo decide esta casa.
     /// </para>
     /// <para>
-    /// El orden de las negativas es el de <c>messageByDate</c> (<c>NativeBridge.java:3398-3412</c>): primero la
+    /// El orden de las negativas es el de <c>messageByDate</c> (<c>NativeBridge.java:3421-3435</c>): primero la
     /// conversación y solo entonces la hora. Dos causas de su primera frase no son traducibles y se dicen en lugar
     /// de fingirse —los chats secretos no existen en este host y no hay temas de foro, así que
     /// <c>session.activeTopic != 0</c> no tiene con qué—; <see cref="DesktopHistoryDate.Changed"/> tampoco es
@@ -2405,7 +2410,7 @@ public sealed partial class TelegramService : IAsyncDisposable
 
     /// <summary>
     /// Los textos de las piezas de un álbum, la lectura que necesita «Editar textos del álbum». En Android es
-    /// <c>album</c> (<c>NativeBridge.java:4043-4048</c>); aquí <see cref="DesktopAlbum"/> pone la ventana y las
+    /// <c>album</c> (<c>NativeBridge.java:4066-4071</c>); aquí <see cref="DesktopAlbum"/> pone la ventana y las
     /// tres negativas.
     /// <para>
     /// Android hace dos lecturas de diez mensajes ancladas en el mensaje tocado —<c>GetChatHistory(chat,id,-9,10)</c>
@@ -2768,7 +2773,7 @@ public sealed partial class TelegramService : IAsyncDisposable
     /// recorta, así que 100 espacios se niegan por largos y no por vacíos.
     /// <para>
     /// <c>bots: true</c> no es un descuido: la pantalla filtra con la marca que el DTO lleva
-    /// (<c>BatchPanels.tsx:147</c>, <c>App.tsx:1477</c>), y con los bots excluidos en el puente las dos capas
+    /// (<c>BatchPanels.tsx:147</c>, <c>App.tsx:1478</c>), y con los bots excluidos en el puente las dos capas
     /// responderían listas distintas a la misma palabra. <c>my_results</c> va delante de <c>results</c> porque lo
     /// propio pesa más, y la deduplicación es de <see cref="DesktopContact.UserIds"/>: la pantalla usa el id como
     /// clave de React y un id repetido sería un aviso encima de un resultado correcto.
@@ -2796,7 +2801,7 @@ public sealed partial class TelegramService : IAsyncDisposable
 
     /// Las cuatro columnas del DTO, sin petición extra. El retrato de Android no viaja en esta ronda —la lista de
     /// hasta 50 personas costaría una descarga por fila— y la pantalla lo sustituye con iniciales
-    /// (<c>ContactAvatar</c>, <c>apps/mobile-ui/src/App.tsx:100</c>), así que lo que falta es un dibujo y no un dato.
+    /// (<c>ContactAvatar</c>, <c>apps/mobile-ui/src/App.tsx:101</c>), así que lo que falta es un dibujo y no un dato.
     private static ContactDto ContactRow(User person) => new()
     {
         Id = person.id.ToString(),
@@ -3206,7 +3211,7 @@ public sealed partial class TelegramService : IAsyncDisposable
         // porque la escritura no estaba conectada.
         var band = entry == null || _client is not Client client ? new List<object>() : await ReactionBandAsync(entry, client, message);
         // La marca que decide el botón ✨ es la bandera de la sesión, sin petición: lo que TDLib contesta en Android por
-        // `allowCustomEmoji` (`NativeBridge.java:4396`) y lo que aquí comprueba la escritura antes de mandar la ficha
+        // `allowCustomEmoji` (`NativeBridge.java:4419`) y lo que aquí comprueba la escritura antes de mandar la ficha
         // personalizada, la guarda `NotPremiumAccount`. Hasta la ronda CD esta línea era un `false` a secas.
         var customReaction = _client is Client session && session.User is { } self && DesktopEmojiCatalog.IsPremium(self);
         return new

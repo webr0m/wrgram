@@ -8,7 +8,7 @@ using TL;
 /// Las historias convertidas al contrato que ya usa Android (ronda BZ). El otro lado es
 /// <c>NativeBridge.chatStories</c> (<c>NativeBridge.java:366-372</c>), <c>NativeBridge.openStory</c>
 /// (<c>NativeBridge.java:428-429</c>) y <c>NativeBridge.openSharedStory</c> (<c>NativeBridge.java:382-393</c>); la
-/// pantalla es la misma en las dos capas (<c>App.tsx:261-307</c>), así que las claves que salen de aquí son exactamente
+/// pantalla es la misma en las dos capas (<c>App.tsx:262-308</c>), así que las claves que salen de aquí son exactamente
 /// las de <c>ActiveStory</c> y <c>OpenStory</c> en <c>contract.ts:58-59</c>, sin añadir ninguna y sin quitar ninguna.
 /// <para>
 /// El emparejamiento está medido sobre WTelegramClient 4.4.10 por reflexión. TDLib da por cada historia activa un
@@ -26,7 +26,7 @@ using TL;
 /// los brazos que las obedecen (<c>story.edit.caption</c>, <c>story.delete</c>, <c>story.profile.toggle</c>,
 /// <c>story.albums.add</c>) siguen sin cable en este host, y un <c>true</c> aquí pintaría en la pantalla un botón que
 /// se estrellaría contra el rechazo genérico. La pantalla los gatingea uno a uno
-/// (<c>App.tsx:304</c>, <c>{story.canEdit&&…}</c>), así que el falso es la respuesta honesta: enseña solo lo que de
+/// (<c>App.tsx:305</c>, <c>{story.canEdit&&…}</c>), así que el falso es la respuesta honesta: enseña solo lo que de
 /// verdad funciona. Las otras seis sí viajan medidas: <c>id</c>, <c>chatId</c>, <c>posterChatId</c>, <c>caption</c>,
 /// <c>media</c> e <c>isPostedToChatPage</c>, esta última sacada de la bandera <c>pinned</c> del propio
 /// <c>StoryItem</c> —que en el esquema de MTProto es «fijada a la página del perfil», el mismo hecho que TDLib llama
@@ -34,8 +34,8 @@ using TL;
 /// </para>
 /// <para>
 /// Los ids de chat no son la misma cadena en las dos capas y no hace falta que lo sean: Android escribe ids numéricos
-/// de TDLib, este host escribe los suyos con prefijo: <c>id</c> (<c>TelegramService.cs:3793</c>) con «u», <c>id</c>
-/// (<c>TelegramService.cs:3810</c>) con «g» e <c>id</c> (<c>TelegramService.cs:3823</c>) con «c», porque esa cadena
+/// de TDLib, este host escribe los suyos con prefijo: <c>id</c> (<c>TelegramService.cs:3798</c>) con «u», <c>id</c>
+/// (<c>TelegramService.cs:3815</c>) con «g» e <c>id</c> (<c>TelegramService.cs:3828</c>) con «c», porque esa cadena
 /// es la clave con la que <c>RequireEntry</c> los vuelve a encontrar. Por eso
 /// <c>chatId</c> lleva el id de la fila tal como lo conoce este puente, y <c>posterChatId</c> el número suelto del
 /// peer, que es lo que la pantalla compara con <c>selfId</c> para decidir si la historia es de quien escribe.
@@ -122,7 +122,7 @@ public static class DesktopStories
     };
 
     /// El número suelto del peer, sin el prefijo con el que este puente nombra sus chats: es la forma con la que la
-    /// pantalla puede comparar con <c>selfId</c>, que también va sin prefijo (<c>TelegramService.cs:598</c>).
+    /// pantalla puede comparar con <c>selfId</c>, que también va sin prefijo (<c>TelegramService.cs:603</c>).
     public static string IdOf(Peer? peer) => peer switch
     {
         PeerUser user => user.user_id.ToString(),

@@ -8,14 +8,14 @@ using WTelegram;
 
 /// <summary>
 /// El cable de los permisos predeterminados de una comunidad: <c>groups.permissions.get</c>
-/// (<c>NativeBridge.java:589</c> → <c>groupPermissions</c>, <c>:1889</c>) y <c>groups.permissions.set</c>
-/// (<c>:590</c> → <c>setGroupPermissions</c>, <c>:2397</c>). Las reglas, la tabla de banderas y las frases están en
+/// (<c>NativeBridge.java:592</c> → <c>groupPermissions</c>, <c>:1912</c>) y <c>groups.permissions.set</c>
+/// (<c>:593</c> → <c>setGroupPermissions</c>, <c>:2420</c>). Las reglas, la tabla de banderas y las frases están en
 /// <see cref="DesktopGroupPermissions"/>; aquí está el cable, que era lo que faltaba: las dos órdenes llevan desde la
 /// ronda A en la lista del puente (<c>BridgePolicy.java:25</c>) y la pantalla las pide desde la ronda Q —la entrada
-/// «Permisos predeterminados» del panel lateral (<c>App.tsx:1272</c>, sin guarda de plataforma)—, pero en Windows
+/// «Permisos predeterminados» del panel lateral (<c>App.tsx:1273</c>, sin guarda de plataforma)—, pero en Windows
 /// caían en el <c>_ =&gt; throw</c> genérico dando a entender que faltaba una petición cuando las dos existen.
 /// <para>
-/// El orden de la escritura es el de <c>setGroupPermissions</c> (<c>NativeBridge.java:2397</c>) línea por línea: la
+/// El orden de la escritura es el de <c>setGroupPermissions</c> (<c>NativeBridge.java:2420</c>) línea por línea: la
 /// forma, las dieciséis casillas, la pregunta por el propio participante, el derecho, la ventana de confirmar, la
 /// mirada de cuenta y solo entonces la tabla nueva.
 /// No es cosmético: si el derecho se mirara antes que el mensaje, un panel mal formado en un chat que no se
@@ -24,7 +24,7 @@ using WTelegram;
 /// <para>
 /// La lectura sí necesita una ida a la red que Android no hace, y es la única diferencia de verdad entre las dos
 /// capas. Allá la tabla vive en el <c>TdApi.Chat</c> que TDLib ya tiene, y el único viaje es el
-/// <c>GetChatMember</c> de la guarda (<c>NativeBridge.java:1889</c>). Aquí la tabla viene con el <c>TL.Channel</c>, y
+/// <c>GetChatMember</c> de la guarda (<c>NativeBridge.java:1912</c>). Aquí la tabla viene con el <c>TL.Channel</c>, y
 /// la lista de conversaciones no siempre lo trae con <c>has_default_banned_rights</c>: si la caché no la trae, se pide
 /// el <c>full info</c> una vez, se fusiona el peer y se vuelve a mirar. Fallar con la frase de Android —«Telegram aún
 /// no cargó los permisos predeterminados.»— sigue siendo la última palabra, igual que allá, pero después de
@@ -41,7 +41,7 @@ using WTelegram;
 public sealed partial class TelegramService
 {
     /// <summary>
-    /// <c>groupPermissions</c> (<c>NativeBridge.java:1889</c>). La forma se niega con
+    /// <c>groupPermissions</c> (<c>NativeBridge.java:1912</c>). La forma se niega con
     /// <see cref="DesktopGroupPermissions.Unsupported"/>, el derecho se pregunta vivo como allá y la tabla se lee del
     /// peer, de la caché si viene y del <c>full info</c> si no. El <c>catch</c> de Android (<c>:1888</c>, «No se
     /// pudieron cargar los permisos actuales.») cubre un fallo armando el JSON, y aquí el JSON se arma desde un
@@ -55,7 +55,7 @@ public sealed partial class TelegramService
         var kind = DesktopMembership.Of(entry.Id);
         if (!DesktopGroupPermissions.Supported(kind)) throw new BridgeException(DesktopGroupPermissions.Unsupported);
         var actor = DesktopGroupMembers.Actor.From(await SelfParticipantAsync(client, ChannelInput(entry)));
-        // La pasada del `perform` de `NativeBridge.java:1889` sobre el `GetChatMember`: la respuesta es de la sesión
+        // La pasada del `perform` de `NativeBridge.java:1912` sobre el `GetChatMember`: la respuesta es de la sesión
         // que la pidió, y si la sesión ya no es esa el dato tampoco sirve.
         if (client.User?.id != owner) throw new BridgeException(DesktopGroupPermissions.ChangedAccount);
         if (!actor.CanRestrict) throw new BridgeException(DesktopGroupPermissions.NoRight);
@@ -73,7 +73,7 @@ public sealed partial class TelegramService
     }
 
     /// <summary>
-    /// <c>setGroupPermissions</c> (<c>NativeBridge.java:2397</c>). <c>false</c> es el <c>answer.ok(false)</c> del botón
+    /// <c>setGroupPermissions</c> (<c>NativeBridge.java:2420</c>). <c>false</c> es el <c>answer.ok(false)</c> del botón
     /// <c>Cancelar</c> y del <c>setOnCancelListener</c> de Android: la pantalla ya sabe traducirlo por «en Telegram no
     /// ha cambiado nada», así que cancelar no es un error aquí tampoco.
     /// </summary>
@@ -90,7 +90,7 @@ public sealed partial class TelegramService
         if (client.User?.id != owner) throw new BridgeException(DesktopGroupPermissions.ChangedAccount);
         if (!actor.CanRestrict) throw new BridgeException(DesktopGroupPermissions.NoRight);
         if (!ConfirmPermissions()) return false;
-        // La guarda que el propio handler del botón positivo escribe en `NativeBridge.java:2397` antes de tocar
+        // La guarda que el propio handler del botón positivo escribe en `NativeBridge.java:2420` antes de tocar
         // TDLib: entre la ventana y la escritura la persona pudo cambiar de cuenta, y escribir los permisos de la
         // cuenta anterior desde la sesión nueva es justo lo que esa frase promete impedir.
         if (client.User?.id != owner) throw new BridgeException(DesktopGroupPermissions.ChangedAccount);
@@ -113,7 +113,7 @@ public sealed partial class TelegramService
         return true;
     }
 
-    /// Los dieciséis <c>requiredBool</c> de <c>NativeBridge.java:2397</c> sobre el objeto <c>permissions</c>. Una
+    /// Los dieciséis <c>requiredBool</c> de <c>NativeBridge.java:2420</c> sobre el objeto <c>permissions</c>. Una
     /// clave que no viene, o que viene con otro tipo, no se convierte en <c>false</c>: se queda fuera del diccionario
     /// y la <see cref="DesktopGroupPermissions.Complete"/> lo nota. Es lo que Android hace cuando el <c>opt</c> no
     /// devuelve un <c>Boolean</c>; lo que cambia es que aquí el hueco se dice en español y no por el despacho genérico.
@@ -132,7 +132,7 @@ public sealed partial class TelegramService
         return values;
     }
 
-    /// El <c>Dialogs.builder</c> de <c>NativeBridge.java:2397</c>, hecho con la ventana que el host ya levanta para los
+    /// El <c>Dialogs.builder</c> de <c>NativeBridge.java:2420</c>, hecho con la ventana que el host ya levanta para los
     /// otros dos guardados: el preview nulo porque aquí no hay imagen que mostrar, el rótulo de «Cancelar» es el de la
     /// ventana compartida y el cierre por la equis vale lo mismo que el <c>setOnCancelListener</c> de Android. No se
     /// escribe una segunda ventana porque no hay nada que cambiarle salvo el texto y el botón positivo.

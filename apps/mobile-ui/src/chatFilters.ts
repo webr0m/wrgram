@@ -25,8 +25,12 @@ export function arrangeTabs(folders:State['folders'], saved:InboxTab[]):InboxTab
   return [...included,...defaults.filter(tab=>!present.has(tab.id))];
 }
 
+export function tabDisplay(tab:InboxTab):TabDisplay {
+  return tab.display??(tab.emoji?'icon':'iconName');
+}
+
 export function tabShowsName(tab:InboxTab):boolean {
-  return !tab.emoji&&tab.display!=='icon';
+  return tabDisplay(tab)!=='icon';
 }
 
 export function visibleTabId(id:string,tabs:readonly InboxTab[]):string {

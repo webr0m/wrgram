@@ -39,12 +39,12 @@ function csSentence(name: string, from: string): string {
 // La fila del básico se escribe en cinco líneas (2850-2854) y el `answer.ok` empieza en la 2857: la ronda AY
 // metió su clave dentro de la 2852 a propósito, porque abrir una línea nueva correría todas las agujas que
 // otras rondas tienen puestas por número.
-const rowLines = `${line(lines, 2851, 'NativeBridge')} ${line(lines, 2852, 'NativeBridge')} ` +
-  `${line(lines, 2853, 'NativeBridge')} ${line(lines, 2854, 'NativeBridge')} ${line(lines, 2855, 'NativeBridge')}`;
+const rowLines = `${line(lines, 2874, 'NativeBridge')} ${line(lines, 2875, 'NativeBridge')} ` +
+  `${line(lines, 2876, 'NativeBridge')} ${line(lines, 2877, 'NativeBridge')} ${line(lines, 2878, 'NativeBridge')}`;
 
 describe('ronda AY · la firma de la invitación', () => {
   it('Android resuelve al invitador con su regla pura y no con el número que trae TDLib', () => {
-    expect(line(lines, 2854, 'NativeBridge')).toContain(
+    expect(line(lines, 2877, 'NativeBridge')).toContain(
       '"invitedByName",BasicGroupRoster.invitedName(member.inviterUserId,rosterName(session.user(member.inviterUserId)))');
     expect(basicJava).toContain('static String invitedName(long inviterUserId, String name) {');
     expect(line(rosterLines, rosterLines.findIndex(one => one.includes('return inviterUserId == 0')) + 1, 'BasicGroupRoster'))

@@ -12,7 +12,7 @@ using WTelegram;
 /// tercera cosa que la librería no tiene y por eso se niega por su nombre. Las dos claves vivían en «Pendiente» del
 /// aviso de alcance desde la ronda CH; desde aquí están cableadas y el aviso las afirma.
 /// <para>
-/// El orden del brazo que lee es el de <c>backgroundsList</c> (<c>NativeBridge.java:754</c>): pide la cuenta, lee la
+/// El orden del brazo que lee es el de <c>backgroundsList</c> (<c>NativeBridge.java:757</c>): pide la cuenta, lee la
 /// lista y la recorta al modo pedido. La cuenta la pide <c>CollectionClient</c>; el recorte lo hace el filtro por el
 /// bit <c>dark</c> de cada fila, porque <c>account.getWallPapers</c> no tiene parámetro de modo —a diferencia del
 /// <c>forDarkTheme</c> de <c>GetInstalledBackgrounds</c>— y devolver las dos listas juntas obligaría a la pantalla a
@@ -21,7 +21,7 @@ using WTelegram;
 /// puesto, y aquí los dice la propia respuesta.
 /// </para>
 /// <para>
-/// El brazo que pone reproduce las tres ramas de <c>backgroundSet</c> (<c>NativeBridge.java:755</c>) en el mismo
+/// El brazo que pone reproduce las tres ramas de <c>backgroundSet</c> (<c>NativeBridge.java:758</c>) en el mismo
 /// orden —identificador, colores, nada— y solo puede recorrer dos de ellas. Con identificador: releer la lista para
 /// sacar el <c>access_hash</c> que la fila trajo, instalar con <c>account.installWallPaper</c> y volver a leer para
 /// devolver la fila con su marca real, porque la petición contesta un booleano y no un fondo. Con colores:
@@ -50,7 +50,7 @@ public sealed partial class TelegramService
         return answer.wallpapers.Where(item => item != null).ToArray();
     }
 
-    /// <c>backgrounds.list</c> (<c>NativeBridge.java:754</c>): la lista del modo pedido y, de paso, los dos huecos
+    /// <c>backgrounds.list</c> (<c>NativeBridge.java:757</c>): la lista del modo pedido y, de paso, los dos huecos
     /// puestos en el estado para que la raíz los pinte aunque nadie abra el panel.
     private async Task<object?> BackgroundsListAsync(JsonElement args)
     {
@@ -60,7 +60,7 @@ public sealed partial class TelegramService
         return new { rows = rows.FindAll(row => row.Dark == dark) };
     }
 
-    /// <c>background.set</c> (<c>NativeBridge.java:755</c>) en su única forma posible por MTProto con esta
+    /// <c>background.set</c> (<c>NativeBridge.java:758</c>) en su única forma posible por MTProto con esta
     /// librería: elegir un fondo instalado. El <c>random_id</c> que TDLib pide para toda escritura no existe aquí,
     /// y el fondo creado con colores tampoco, que es lo que dice <see cref="DesktopBackgrounds.NoCreate"/>.
     private async Task<object?> BackgroundSetAsync(JsonElement args)

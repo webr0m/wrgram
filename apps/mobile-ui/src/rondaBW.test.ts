@@ -87,24 +87,24 @@ describe('ronda BW · una persona sin nombre deja de ser un relleno para siempre
     expect(member).toContain('String name=PersonName.of(user);');
     expect(member).toContain('if(name==null){name="Usuario de Telegram";session.requestUser(userId);}');
     expect(member).not.toContain('editableUsername');
-    expect(line(bridge, 2795)).toContain('PersonName.of(user)');
-    expect(line(bridge, 2796)).toContain('session.requestUser(userId)');
+    expect(line(bridge, 2818)).toContain('PersonName.of(user)');
+    expect(line(bridge, 2819)).toContain('session.requestUser(userId)');
     // El cuerpo de memberDto no se desplaza: sus agujas siguen apuntando a su sitio.
-    expect(line(bridge, 2792)).toContain('private JSONObject memberDto');
-    expect(line(bridge, 2802)).toBe('    }');
+    expect(line(bridge, 2815)).toContain('private JSONObject memberDto');
+    expect(line(bridge, 2825)).toBe('    }');
   });
 
   it('la lista de un grupo básico también despierta la recuperación', () => {
-    expect(line(bridge, 2848)).toContain('TdApi.User user=session.user(userId);if(PersonName.of(user)==null)session.requestUser(userId);');
+    expect(line(bridge, 2871)).toContain('TdApi.User user=session.user(userId);if(PersonName.of(user)==null)session.requestUser(userId);');
     // `rosterName` ya hacía la regla bien, pero la hacía en su casa: ahora la pide y se queda con su relleno.
     const roster = body(bridge, 'private static String rosterName(TdApi.User user)');
     expect(roster).toContain('if(user==null)return "Usuario de Telegram";');
     expect(roster).toContain('String name=PersonName.of(user);');
     expect(roster).not.toContain('user.firstName');
     expect(roster).not.toContain('NativeSnapshot.limit');
-    expect(line(bridge, 2870)).toBe('    }');
-    expect(line(bridge, 2871)).toContain('private static String rosterUsername(TdApi.User user){');
-    expect(line(bridge, 2875)).toBe('    }');
+    expect(line(bridge, 2893)).toBe('    }');
+    expect(line(bridge, 2894)).toContain('private static String rosterUsername(TdApi.User user){');
+    expect(line(bridge, 2898)).toBe('    }');
   });
 
   it('ninguna superficie repite ya la regla y los archivos no se movieron de su aguja', () => {
@@ -113,12 +113,12 @@ describe('ronda BW · una persona sin nombre deja de ser un relleno para siempre
     // Medido hoy con `wc -l`: la ronda CH-A puso el bloque de los fondos al final del puente y la CH-A2 sumó
     // nueve líneas a la sesión; la CQ añadió al final los dos brazos de notificación. CT volvió a medir ambos
     // archivos después de insertar sus métodos de lectura: 5578 líneas el puente y 1429 la sesión.
-    expect(bridge.split('\n').length - 1).toBe(5578);
+    expect(bridge.split('\n').length - 1).toBe(5601);
     expect(session.split('\n').length - 1).toBe(1429);
     expect(calls.split('\n').length - 1).toBe(289);
     // Las cuatro superficies que pintan un nombre llaman a la misma función.
-    expect(line(bridge, 2795)).toContain('PersonName.of(user)');
-    expect(line(bridge, 2848)).toContain('PersonName.of(user)');
+    expect(line(bridge, 2818)).toContain('PersonName.of(user)');
+    expect(line(bridge, 2871)).toContain('PersonName.of(user)');
     expect(line(session, 1313)).toContain('PersonName.of(user)');
     expect(line(calls, 65)).toContain('String name = PersonName.of(user); return name == null ? "Telegram" : name;');
     // Y ninguna de las cuatro vuelve a concatenar los dos nombres por su cuenta.
@@ -130,10 +130,10 @@ describe('ronda BW · una persona sin nombre deja de ser un relleno para siempre
 
   it('Windows cita las líneas que de verdad describen la regla', () => {
     const roster = cs('DesktopGroupRoster');
-    expect(roster).toContain('<c>NativeBridge.java:2864-2870</c>');
+    expect(roster).toContain('<c>NativeBridge.java:2887-2893</c>');
     expect(roster).toContain('<c>:2856-2860</c>');
     expect(roster).not.toContain(':2754-2758');
-    expect(line(bridge, 2875)).toBe('    }');
+    expect(line(bridge, 2898)).toBe('    }');
     // Windows dice el arroba con su propia lectura de MTProto, en el mismo orden que Android.
     const join = cs('DesktopJoinRequestsFlow');
     const person = body(join, 'private string PersonName(long userId');
@@ -142,7 +142,7 @@ describe('ronda BW · una persona sin nombre deja de ser un relleno para siempre
     expect(person).toContain('return handle.Length == 0 ? DesktopGroupMembers.UnknownPerson : "@" + handle;');
     // Y el párrafo que contaba el arroba como divergencia apunta ahora a las líneas que describen la regla.
     const members = cs('DesktopGroupMembers');
-    expect(members).toContain('(<c>:2792-2802</c>)');
+    expect(members).toContain('(<c>:2815-2825</c>)');
     expect(members).toContain('<c>:2798-2800</c>');
     // Ninguna cita de esta banda puede quedarse en el antes de la ronda BV: los números van con el archivo.
     expect(members).not.toMatch(/<c>:2[0-6][0-9][0-9]<\/c>/);

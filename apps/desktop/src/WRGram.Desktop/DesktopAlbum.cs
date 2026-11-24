@@ -6,12 +6,12 @@ using TL;
 /// Reglas del álbum de fotos en Windows, la segunda mitad del adjunto: elegir el lote, mandarlo en una sola
 /// petición y leer las piezas que lo forman para poder escribirles un texto. Viven fuera del puente por lo mismo que
 /// las de <see cref="DesktopAttachment"/>: casi todas son literales que el espejo del andamio copia carácter a
-/// carácter de <c>NativeBridge</c> —de <c>pickedAlbum</c> (<c>NativeBridge.java:5098-5116</c>), de
-/// <c>sendAlbum</c> (<c>:5052-5055</c>) y de <c>album</c> (<c>:4043-4048</c>)— y hace falta leerlas sin abrir un
+/// carácter de <c>NativeBridge</c> —de <c>pickedAlbum</c> (<c>NativeBridge.java:5121-5139</c>), de
+/// <c>sendAlbum</c> (<c>:5075-5078</c>) y de <c>album</c> (<c>:4066-4071</c>)— y hace falta leerlas sin abrir un
 /// selector ni conectar una cuenta.
 /// <para>
 /// Este host no tiene la frase «Ya hay un selector de álbum abierto.», que en Android sí existe
-/// (<c>NativeBridge.java:849</c>): allá el selector es asíncrono y puede quedar una solicitud colgando mientras
+/// (<c>NativeBridge.java:852</c>): allá el selector es asíncrono y puede quedar una solicitud colgando mientras
 /// llega otra. Aquí el diálogo de Windows es modal y sincrónico sobre el hilo de la interfaz, así que dos
 /// selectores abiertos a la vez no son un estado alcanzable. Se cuenta aquí para que no se lea como un olvido.
 /// </para>
@@ -77,7 +77,7 @@ public static class DesktopAlbum
     /// descubrir el tipo en el servidor: TDLib decide sola qué es cada archivo, MTProto no.
     public const string NotPhoto = "Un álbum de Telegram admite fotos: JPG, PNG o WEBP.";
 
-    /// Las tres frases con las que <c>NativeBridge.album</c> (<c>NativeBridge.java:4043-4048</c>) corta el
+    /// Las tres frases con las que <c>NativeBridge.album</c> (<c>NativeBridge.java:4066-4071</c>) corta el
     /// navegador de textos antes de devolver nada. No hay cuarta: la que Android reserva para el fallo al montar
     /// el JSON («No se pudo consultar el álbum.») no tiene equivalente aquí, porque este puente no serializa a
     /// mano —devuelve un <c>AlbumCaptionDto[]</c> y la conversión ya está fuera del camino—.

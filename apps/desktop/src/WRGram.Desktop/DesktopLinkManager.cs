@@ -11,9 +11,9 @@ using TL;
 /// La gestión de los enlaces de invitación de una comunidad en Windows. En Android son dos archivos:
 /// <c>InviteLinks.java</c> pone los cinco techos, valida el marcador, proyecta la fila y decide qué se puede
 /// cambiar; <c>NativeBridge.java</c> reparte el orden de los guardajes en cuatro métodos —<c>inviteLinks</c>
-/// (<c>:3617</c>), <c>inviteLinkForm</c> (<c>:3653</c>) para crear y editar, y <c>revokeInviteLink</c>
-/// (<c>:3711</c>), despachados en <c>:758-761</c>— más un quinto anterior, <c>createInviteLink</c>
-/// (<c>:1884</c>, despachado en <c>:694</c>), que crea un enlace sin preguntar nombre, caducidad ni límite. Aquí
+/// (<c>:3640</c>), <c>inviteLinkForm</c> (<c>:3676</c>) para crear y editar, y <c>revokeInviteLink</c>
+/// (<c>:3734</c>), despachados en <c>:758-761</c>— más un quinto anterior, <c>createInviteLink</c>
+/// (<c>:1907</c>, despachado en <c>:694</c>), que crea un enlace sin preguntar nombre, caducidad ni límite. Aquí
 /// esas piezas están escritas una vez, con las frases copiadas carácter a carácter y el mismo orden, y el cable solo
 /// pide.
 /// <para>
@@ -73,7 +73,7 @@ public static class DesktopLinkManager
     public const long MaxSpan = 31_536_000;
 
     /// El <c>NativeSnapshot.limit(chat.title,80)</c> que Android aplica al título de la comunidad en los tres
-    /// cuerpos de diálogo (<c>NativeBridge.java:3669</c> y <c>:3708</c>).
+    /// cuerpos de diálogo (<c>NativeBridge.java:3692</c> y <c>:3708</c>).
     public const int ChatShown = 80;
 
     // ---- las frases ----
@@ -92,7 +92,7 @@ public static class DesktopLinkManager
     public const string NoRightEdit = "Telegram no concede a esta cuenta permiso para editar sus enlaces de invitación.";
     public const string NoRightRevoke = "Telegram no concede a esta cuenta permiso para revocar sus enlaces de invitación.";
 
-    /// <c>NativeBridge.java:3660</c>, cuando el enlace llega pero no tiene ninguna de las formas que Telegram produce.
+    /// <c>NativeBridge.java:3683</c>, cuando el enlace llega pero no tiene ninguna de las formas que Telegram produce.
     public const string InvalidLink = "El enlace no es válido.";
 
     /// <c>Indica qué enlace quieres revocar.</c> de <c>:3706</c>.
@@ -139,7 +139,7 @@ public static class DesktopLinkManager
 
     // ---- el enlace suelto, sin formulario (`chat.invite`) ----
 
-    /// La forma que acepta <c>createInviteLink</c> (<c>NativeBridge.java:1884</c>) es la misma pareja de
+    /// La forma que acepta <c>createInviteLink</c> (<c>NativeBridge.java:1907</c>) es la misma pareja de
     /// <see cref="Supported"/>, pero su negativa es otra letra: allá «solo se crean», aquí «solo existen». Las dos se
     /// copian cada una desde su línea; igualarlas sería borrar una de las dos frases de Android. El canal entra en la
     /// pareja aunque Java no lo nombre: en TDLib un canal es un <c>ChatTypeSupergroup</c> con <c>is_channel</c>, así
@@ -299,8 +299,8 @@ public static class DesktopLinkManager
     private static bool On(ChatInviteExported.Flags flags, ChatInviteExported.Flags flag) => (flags & flag) != 0;
 
     /// La bandera <c>revoked</c> leída una sola vez. Android la trae como campo (<c>isRevoked</c>) y la usa en los tres
-    /// sitios: la fila (<c>InviteLinks.java:54</c>), la negación de editar (<c>NativeBridge.java:3687</c>) y el
-    /// <c>false</c> de revocar dos veces (<c>NativeBridge.java:3723</c>). Aquí es la misma lectura, escrita una vez.
+    /// sitios: la fila (<c>InviteLinks.java:54</c>), la negación de editar (<c>NativeBridge.java:3710</c>) y el
+    /// <c>false</c> de revocar dos veces (<c>NativeBridge.java:3746</c>). Aquí es la misma lectura, escrita una vez.
     public static bool Revoked(ChatInviteExported link) => On(link.flags, ChatInviteExported.Flags.revoked);
 
     /// <c>InviteLinks.page</c> (<c>InviteLinks.java:58-69</c>): <c>total</c>, las filas, la pestaña, si hay más y el
@@ -342,16 +342,16 @@ public static class DesktopLinkManager
     /// puede ocurrir.
     public static long? Expires(long now, long expiresIn) => expiresIn <= 0 ? null : now + expiresIn;
 
-    /// El <c>name.isEmpty()?"WRGram":name</c> del crear (<c>NativeBridge.java:3671</c>). Es lo que se escribe en
+    /// El <c>name.isEmpty()?"WRGram":name</c> del crear (<c>NativeBridge.java:3694</c>). Es lo que se escribe en
     /// Telegram y lo que se lee en el diálogo.
     public static string CreateLabel(string name) => name.Length == 0 ? DefaultLabel : name;
 
-    /// El <c>name.isEmpty()?"sin nombre":name</c> del editar (<c>NativeBridge.java:3695</c>): el diálogo nombra la
+    /// El <c>name.isEmpty()?"sin nombre":name</c> del editar (<c>NativeBridge.java:3718</c>): el diálogo nombra la
     /// ausencia, pero a Telegram no llega «sin nombre» sino el vacío, que es como MTProto borra un título.
     public static string EditLabel(string name) => name.Length == 0 ? NoLabel : name;
 
     /// <c>InviteLinks.editable</c> (<c>InviteLinks.java:98-100</c>) y las tres negaciones de
-    /// <c>NativeBridge.java:3687-3689</c> en su orden: pago, primacía y revocación. Devuelve la frase o <c>null</c>
+    /// <c>NativeBridge.java:3710-3712</c> en su orden: pago, primacía y revocación. Devuelve la frase o <c>null</c>
     /// cuando el enlace sí se puede cambiar.
     public static string? NotEditable(ChatInviteExported link, bool primary)
     {
@@ -378,7 +378,7 @@ public static class DesktopLinkManager
         _ => ""
     };
 
-    /// <c>InviteLinks.canInviteMembers</c> (<c>NativeBridge.java:1864</c>) leído en la tabla de un grupo básico:
+    /// <c>InviteLinks.canInviteMembers</c> (<c>NativeBridge.java:1887</c>) leído en la tabla de un grupo básico:
     /// creador o administrador. <c>chatParticipantAdmin</c> de MTProto no trae tabla de derechos, y TDLib tampoco
     /// consulta uno por uno en un básico: el estado es el testigo. No es
     /// <see cref="DesktopMemberAdditions.MayInvite(ChatParticipantBase?)"/>, que vale para «añadir» personas —donde

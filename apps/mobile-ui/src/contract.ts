@@ -191,7 +191,7 @@ export interface Chat { requests?:number }
 export interface Chat { noPolls?:boolean }
 /**
  * El derecho que Telegram negó para las tarjetas de contacto en esta conversación. TDLib lo llama
- * `canSendOtherMessages` —es el que mira `NativeBridge.java:4791`— y MTProto no tiene ese bit, así que el puente de
+ * `canSendOtherMessages` —es el que mira `NativeBridge.java:4814`— y MTProto no tiene ese bit, así que el puente de
  * Windows usa `send_docs`, que es lo que un contacto es ahí: un documento con atributo de contacto. Como con las
  * encuestas, el andamio solo puede dar la respuesta, y ausente significa «no lo sé»: decide Telegram.
  */
@@ -212,6 +212,7 @@ export interface CatalogItem { key: string; label: string; media?: Media; previe
 export interface Catalog { items: CatalogItem[]; sets?: { id: string; title: string; thumbnail?:Media; emoji?:string }[] }
 export interface Properties { reply: boolean; copy: boolean; copyContent: boolean; edit: boolean; editChecklist: boolean; deleteSelf: boolean; deleteAll: boolean; forward: boolean; pin: boolean; editCaption: boolean; editMedia?: boolean; caption: string; reactions: ReactionOption[]; paid?: boolean; allowCustom?: boolean; transcribe?: boolean; canBePaid?: boolean }
 export interface PasswordState { hasPassword: boolean; hint: string; hasRecoveryEmail: boolean; hasPassport: boolean; pendingReset: number; recoveryEmailPattern?:string; recoveryCodeLength?:number }
+export interface PhoneCodeInfo { phone: string; sent: string; next: string; length: number; hint: string; timeout: number }
 export interface AutoDeleteSettings { seconds:number; canChange:boolean }
 export interface PrivacySetting { key: string; value: string; allowUsers: string[]; restrictUsers: string[]; preserved?: string[] }
 export interface BlockedSender { kind:'user'|'chat'; id:string; name:string; photo?:Media }

@@ -27,4 +27,9 @@ final class AccountSafetyPolicy {
         if(code.isEmpty())throw new IllegalArgumentException("Escribe el código recibido por correo.");
         return code;
     }
+    static String phoneCode(JSONObject params) {
+        String code=BridgePolicy.text(params,"code",32).trim();
+        if(code.isEmpty())throw new IllegalArgumentException("Escribe el código que llegó a tu teléfono.");
+        return code;
+    }
 }

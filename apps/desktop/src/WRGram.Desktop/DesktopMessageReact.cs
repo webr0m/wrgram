@@ -29,8 +29,8 @@ using TL;
 /// </para>
 /// <para>
 /// Las dos comprobaciones antes de escribir son las de Android, copiadas carácter a carácter de
-/// <c>NativeBridge.java:4401</c> (<c>react</c>), <c>NativeBridge.java:4406</c> (<c>reactCustom</c>) y
-/// <c>NativeBridge.java:5350</c> (<c>reactOffered</c>): un emoji vacío no es una orden, una reacción que el
+/// <c>NativeBridge.java:4424</c> (<c>react</c>), <c>NativeBridge.java:4429</c> (<c>reactCustom</c>) y
+/// <c>NativeBridge.java:5373</c> (<c>reactOffered</c>): un emoji vacío no es una orden, una reacción que el
 /// chat no ofrece se rechaza con la misma frase, y un emoji personalizado sin Premium se rechaza con la suya.
 /// Donde Android pregunta <c>GetUser(selfId).isPremium</c>, el escritorio lee la bandera
 /// <c>User.Flags.premium</c> de la cuenta ya conectada —<c>268435456</c>, medida en el ensamblado—, que es el
@@ -55,21 +55,21 @@ using TL;
 /// </summary>
 public static class DesktopMessageReact
 {
-    /// Copiada de <c>NativeBridge.java:4363</c>: el puente Android la lanza cuando el parámetro `emoji` llega
+    /// Copiada de <c>NativeBridge.java:4386</c>: el puente Android la lanza cuando el parámetro `emoji` llega
     /// vacío, antes de preguntar nada.
     public const string NoEmoji = "Elige un emoji para reaccionar.";
 
-    /// Copiada de <c>NativeBridge.java:5316</c>: el emoji no está entre los que el chat ofrece.
+    /// Copiada de <c>NativeBridge.java:5339</c>: el emoji no está entre los que el chat ofrece.
     public const string NotOffered = "Telegram no ofrece esa reacción en este chat.";
 
-    /// Copiada de <c>NativeBridge.java:5318</c>: la reacción está marcada como propia de Premium y la cuenta no
+    /// Copiada de <c>NativeBridge.java:5341</c>: la reacción está marcada como propia de Premium y la cuenta no
     /// lo es.
     public const string NeedsPremium = "Esa reacción necesita Telegram Premium.";
 
-    /// Copiada de <c>NativeBridge.java:4368</c>: el identificador del emoji personalizado no es un número.
+    /// Copiada de <c>NativeBridge.java:4391</c>: el identificador del emoji personalizado no es un número.
     public const string NoCustomEmoji = "Emoji personalizado no válido.";
 
-    /// Copiada de <c>NativeBridge.java:4368</c>: la cuenta no tiene Premium y se pide un emoji personalizado.
+    /// Copiada de <c>NativeBridge.java:4391</c>: la cuenta no tiene Premium y se pide un emoji personalizado.
     public const string NotPremiumAccount = "Necesitas Telegram Premium para reaccionar con emojis personalizados.";
 
     /// Lo que responde <c>message.react.paid</c>. Ya no niega la petición —existe—, sino el gasto: sin saldo a

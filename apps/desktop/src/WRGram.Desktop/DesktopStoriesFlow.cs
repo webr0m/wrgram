@@ -11,8 +11,8 @@ using WTelegram;
 /// El cable de las historias en Windows (ronda BZ): <c>chat.stories</c> y <c>story.open</c> para leer,
 /// <c>message.story.open</c> para la que llega compartida en un mensaje y <c>story.close</c> para cerrar el visor.
 /// Las cuatro llevaban en el puente de Android desde <c>BridgePolicy.java</c> y se atienden en
-/// <c>NativeBridge.java:693</c>, <c>NativeBridge.java:696</c>, <c>NativeBridge.java:697</c> y
-/// <c>NativeBridge.java:700</c>; en este host las cuatro caían en el
+/// <c>NativeBridge.java:696</c>, <c>NativeBridge.java:699</c>, <c>NativeBridge.java:700</c> y
+/// <c>NativeBridge.java:703</c>; en este host las cuatro caían en el
 /// <c>_ =&gt; throw</c> genérico del despacho, que dice «no disponible en escritorio (beta)» de algo que la librería
 /// tiene resuelto: la bandeja es <c>stories.getPeerStories</c> (o <c>stories.getPinnedStories</c> cuando la pantalla
 /// pide las del perfil), abrir es <c>stories.getStoriesByID</c> con <c>stories.incrementStoryViews</c>, y cerrar es
@@ -32,8 +32,8 @@ using WTelegram;
 /// negativa no tiene dónde caer —aquí un secreto no existe ni en la lista de chats—. La segunda es el
 /// <c>openStoryViews</c> de <c>NativeBridge.java:430</c>, el cuaderno local con el que Android devuelve
 /// <c>false</c> si se cierra una historia que no se había abierto: la pantalla solo llama
-/// a <c>story.close</c> (<c>apps/mobile-ui/src/App.tsx:267</c>) con la respuesta que le dio <c>story.open</c>
-/// (<c>apps/mobile-ui/src/App.tsx:278</c>), así que el cuaderno aquí no guarda nada y la orden se contesta con lo que diga Telegram. La
+/// a <c>story.close</c> (<c>apps/mobile-ui/src/App.tsx:268</c>) con la respuesta que le dio <c>story.open</c>
+/// (<c>apps/mobile-ui/src/App.tsx:279</c>), así que el cuaderno aquí no guarda nada y la orden se contesta con lo que diga Telegram. La
 /// tercera es la marca de <b>directa</b>: en
 /// <c>StoryItem</c> no hay bandera que la diga y <c>live</c> sale en falso, que es la limitación escrita en
 /// <see cref="DesktopStories"/> y en el registro, no un estado inventado para que la pantalla pinte su adorno.
@@ -132,7 +132,7 @@ public sealed partial class TelegramService
     /// Las cuatro marcas de escritura que Android saca de <c>TdApi.Story</c> (<c>canBeEdited</c>, <c>canBeDeleted</c>,
     /// <c>canToggleIsPostedToChatPage</c>, <c>canBeAddedToAlbum</c>) salen en falso: sus brazos
     /// (<c>story.edit.caption</c>, <c>story.delete</c>, <c>story.profile.toggle</c>, <c>story.albums.add</c>) siguen sin
-    /// cable aquí y la pantalla gatingea cada botón por una de ellas (<c>App.tsx:304</c>). La que sí está medida es la
+    /// cable aquí y la pantalla gatingea cada botón por una de ellas (<c>App.tsx:305</c>). La que sí está medida es la
     /// publicada en el perfil, bandera <c>pinned</c> del propio <c>StoryItem</c>.
     /// </para>
     /// </summary>

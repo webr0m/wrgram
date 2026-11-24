@@ -5,11 +5,11 @@ using TL;
 
 /// <summary>
 /// Reglas de «compartir un contacto» en Windows. Android arma un <c>TdApi.Contact</c> y lo mete en
-/// <c>InputMessageContact</c> (<c>NativeBridge.java:4792</c>); en MTProto el contacto viaja como adjunto —
+/// <c>InputMessageContact</c> (<c>NativeBridge.java:4815</c>); en MTProto el contacto viaja como adjunto —
 /// <c>InputMediaContact</c> dentro de la misma <c>messages.sendMedia</c> que ya usa el archivo suelto—, así que el
 /// puente no necesita el <c>access_hash</c> de la persona compartida: solo su número y sus dos nombres. Las cuatro
 /// frases que se ven cuando algo falla son literales copiados carácter a carácter de <c>shareContact</c> y de
-/// <c>contacts</c> (<c>NativeBridge.java:1788</c>), y una prueba las cruza capa por capa.
+/// <c>contacts</c> (<c>NativeBridge.java:1811</c>), y una prueba las cruza capa por capa.
 /// <para>
 /// Lo que MTProto **no** da es el identificador de la persona dentro del contacto: <c>InputMediaContact</c> en
 /// WTelegramClient 4.4.10 tiene <c>phone_number</c>, <c>first_name</c>, <c>last_name</c> y <c>vcard</c>, y el
@@ -26,21 +26,21 @@ using TL;
 /// </summary>
 public static class DesktopContact
 {
-    /// Literal de <c>session.canSend()</c> en <c>shareContact</c> (<c>NativeBridge.java:4788-4793</c>). Es la misma frase
+    /// Literal de <c>session.canSend()</c> en <c>shareContact</c> (<c>NativeBridge.java:4811-4816</c>). Es la misma frase
     /// que la encuesta ya decía para el mismo comprobante de Android, así que se referencia y no se copia: si
     /// cambia, cambia en las dos capas a la vez.
     public const string CannotSend = DesktopPoll.Sending;
 
-    /// Literal de <c>chat.permissions.canSendOtherMessages</c> (<c>NativeBridge.java:4791</c>).
+    /// Literal de <c>chat.permissions.canSendOtherMessages</c> (<c>NativeBridge.java:4814</c>).
     public const string NotAllowed = "Este chat no permite compartir contactos.";
 
     /// Literal del <c>a.fail</c> cuando <c>user.phoneNumber</c> sale vacío
-    /// (<c>NativeBridge.java:4792</c>). Es la única de las cuatro que no es un permiso: es la privacidad de Telegram
+    /// (<c>NativeBridge.java:4815</c>). Es la única de las cuatro que no es un permiso: es la privacidad de Telegram
     /// diciendo que el número no está expuesto, y no hay forma de rodearla.
     public const string NoPhone =
         "Telegram no comparte el número de teléfono de este usuario. Solo puedes compartir contactos cuyo número ya está visible.";
 
-    /// Literal del <c>answer.fail</c> de <c>contacts</c> (<c>NativeBridge.java:1788</c>), la lista y la búsqueda.
+    /// Literal del <c>answer.fail</c> de <c>contacts</c> (<c>NativeBridge.java:1811</c>), la lista y la búsqueda.
     public const string Prepare = "No se pudieron preparar los contactos.";
 
     /// Lo que <c>BridgePolicy.text(params,"query",80)</c> lanza cuando el texto no cabe: «Invalid text» en inglés.

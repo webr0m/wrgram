@@ -9,10 +9,10 @@ using WTelegram;
 
 /// <summary>
 /// El cable de las cinco escrituras sobre una fila de supergrupo o canal: <c>groups.member.ban</c>
-/// (<c>NativeBridge.java:584</c>) y <c>groups.member.restrict</c> (<c>:585</c> → <c>banGroupMember</c>, <c>:2910</c>),
-/// <c>groups.member.unban</c> (<c>:586</c> → <c>unbanGroupMember</c>, <c>:2877</c>), <c>groups.member.promote</c>
-/// (<c>:587</c> → <c>promoteGroupMember</c>, <c>:2882</c>) y <c>groups.member.demote</c> (<c>:588</c> →
-/// <c>demoteGroupMember</c>, <c>:2883</c>). Las reglas, las frases y el orden de las guardas están en
+/// (<c>NativeBridge.java:587</c>) y <c>groups.member.restrict</c> (<c>:588</c> → <c>banGroupMember</c>, <c>:2933</c>),
+/// <c>groups.member.unban</c> (<c>:589</c> → <c>unbanGroupMember</c>, <c>:2900</c>), <c>groups.member.promote</c>
+/// (<c>:590</c> → <c>promoteGroupMember</c>, <c>:2905</c>) y <c>groups.member.demote</c> (<c>:591</c> →
+/// <c>demoteGroupMember</c>, <c>:2906</c>). Las reglas, las frases y el orden de las guardas están en
 /// <see cref="DesktopMemberSanctions"/> y en <see cref="DesktopGroupMembers"/>; aquí solo se lee, se pregunta y se
 /// escribe, en las tres fases que marca Android.
 /// <para>
@@ -29,7 +29,7 @@ using WTelegram;
 /// banderas, y promover y despromover son la otra (<c>channels.editAdmin</c>) —la despromoción es esa petición con
 /// los derechos vacíos, no un método aparte—. La tercera: borrar el historial de una persona no es un argumento de
 /// la sanción sino una petición posterior (<c>channels.deleteParticipantHistory</c>), que es exactamente la
-/// situación del <c>DeleteChatMessagesBySender</c> de <c>NativeBridge.java:2910</c> y el motivo de que allí la
+/// situación del <c>DeleteChatMessagesBySender</c> de <c>NativeBridge.java:2933</c> y el motivo de que allí la
 /// sanción pueda quedar aplicada con el borrado fallido.
 /// </para>
 /// <para>

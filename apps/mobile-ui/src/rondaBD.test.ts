@@ -143,9 +143,9 @@ function bareCitations(from: string): number[] {
 describe('ronda BD · la foto de la comunidad, cruzada con las tres capas', () => {
   it('las ocho frases que Android dice están letra por letra en la línea que cita la regla pura', () => {
     for (const [name, javaName, line] of [
-      ['Unsupported', 'CHAT_PHOTO_UNSUPPORTED', 1723], ['ChangedAccount', 'CHAT_PHOTO_CHANGED', 1724],
-      ['PickTitle', 'CHAT_PHOTO_PICK_TITLE', 1725], ['PickBody', 'CHAT_PHOTO_PICK_BODY', 1726],
-      ['DeleteTitle', 'CHAT_PHOTO_DELETE_TITLE', 1727], ['DeleteBody', 'CHAT_PHOTO_DELETE_BODY', 1728],
+      ['Unsupported', 'CHAT_PHOTO_UNSUPPORTED', 1746], ['ChangedAccount', 'CHAT_PHOTO_CHANGED', 1747],
+      ['PickTitle', 'CHAT_PHOTO_PICK_TITLE', 1748], ['PickBody', 'CHAT_PHOTO_PICK_BODY', 1749],
+      ['DeleteTitle', 'CHAT_PHOTO_DELETE_TITLE', 1750], ['DeleteBody', 'CHAT_PHOTO_DELETE_BODY', 1751],
     ] as const) {
       expect(javaConst(line, javaName)).toBe(csSentence(name));
       // La cita es lo que hace revisable la frase: sin número, la siguiente ronda no sabe dónde mirar.
@@ -153,22 +153,22 @@ describe('ronda BD · la foto de la comunidad, cruzada con las tres capas', () =
       expect(cited(name)).toBe(line);
     }
     // Los dos botones afirmativos no son constantes en Android: se leen donde el `AlertDialog` los escribe.
-    expect(javaDialog(1757, 'setPositiveButton')).toBe(csSentence('PickAccept'));
-    expect(javaDialog(1781, 'setPositiveButton')).toBe(csSentence('DeleteAccept'));
-    expect(cited('PickAccept')).toBe(1757);
-    expect(cited('DeleteAccept')).toBe(1781);
+    expect(javaDialog(1780, 'setPositiveButton')).toBe(csSentence('PickAccept'));
+    expect(javaDialog(1804, 'setPositiveButton')).toBe(csSentence('DeleteAccept'));
+    expect(cited('PickAccept')).toBe(1780);
+    expect(cited('DeleteAccept')).toBe(1804);
   });
 
   it('las dos normas que ya existían no se vuelven a declarar', () => {
     // El permiso y el descarte de la imagen son las mismas dos cadenas con las que la ronda AW cambia el nombre y
     // la AU sube el avatar; Android también las comparte (`ChatEditing`, `preparePhoto`) y aquí pasa igual.
-    expect(csSentence('NoRight', communityRules)).toBe(javaConst(1895, 'COMMUNITY_NO_RIGHT'));
+    expect(csSentence('NoRight', communityRules)).toBe(javaConst(1918, 'COMMUNITY_NO_RIGHT'));
     expect(javaBody('chatPhotoPick')).toContain('answer.fail(COMMUNITY_NO_RIGHT)');
     expect(javaBody('deleteChatPhoto')).toContain('answer.fail(COMMUNITY_NO_RIGHT)');
     expect(count(csSentence('NoRight', communityRules), rules)).toBe(0);
     expect(count(csSentence('NoImage', accountRules), rules)).toBe(0);
     // Y el «Cancelar» del cuadro de confirmar es el de la foto de perfil, no una segunda copia.
-    expect(javaDialog(1757, 'setNegativeButton')).toBe(csSentence('Cancel', accountRules));
+    expect(javaDialog(1780, 'setNegativeButton')).toBe(csSentence('Cancel', accountRules));
     expect(rules).not.toContain('public const string Cancel');
     // Las negativas de forma y de derecho se dicen con las mismas reglas puras que miden el nombre y la descripción.
     expect(cable).toContain('DesktopCommunityInfo.Supported(kind)');
@@ -230,7 +230,7 @@ describe('ronda BD · la foto de la comunidad, cruzada con las tres capas', () =
     expect(at('answer.owner!=session.selfId', body)).toBeLessThan(at('new TdApi.SetChatPhoto(chat.id,null)', body));
     // Los tres «Cancelar» de Android: el botón, el gesto de salir y el chat que ya estaba sin imagen.
     expect(count('answer.ok(false)', body)).toBe(3);
-    expect(javaLine(1783)).toContain('TdApi.SetChatPhoto(chat.id,null)');
+    expect(javaLine(1806)).toContain('TdApi.SetChatPhoto(chat.id,null)');
     // La medida, dicha en la regla: la librería no genera el vacío, así que no hay a dónde llegar. La frase cae hoy
     // partida por el salto de línea del comentario, así que se exige con su continuación `///` por medio.
     expect(rules).toMatch(/medido por reflexión sobre\s*\/\/\/\s*WTelegramClient 4\.4\.10/);

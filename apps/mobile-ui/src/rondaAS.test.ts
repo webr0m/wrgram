@@ -234,7 +234,7 @@ describe('ronda AS · las reglas, cruzadas con las tres capas', () => {
   });
 
   it('la regla pura se lee sola: la franja y el techo traen su motivo', () => {
-    expect(rules).toContain('NativeBridge.java:3399-3413');
+    expect(rules).toContain('NativeBridge.java:3422-3436');
     expect(rules).toContain('tdlib/vendor/java/org/drinkless/tdlib/TdApi.java:124830');
     expect(javaRules).toContain('inboxModel.ts');
   });

@@ -37,7 +37,9 @@ describe('personalización de la bandeja',()=>{
     expect(tabShowsName({id:'all',name:'Todos',icon:'plus',display:'icon'})).toBe(false);
     expect(tabShowsName({id:'all',name:'Todos',icon:'plus',display:'iconName'})).toBe(true);
     expect(tabShowsName({id:'all',name:'Todos',icon:'plus'})).toBe(true);
-    expect(tabShowsName({id:'all',name:'Todos',emoji:{kind:'preset',id:'star'},display:'iconName'})).toBe(false);
+    expect(tabShowsName({id:'all',name:'Todos',emoji:{kind:'preset',id:'star'},display:'iconName'})).toBe(true);
+    expect(tabShowsName({id:'all',name:'Todos',emoji:{kind:'preset',id:'star'},display:'icon'})).toBe(false);
+    expect(tabShowsName({id:'all',name:'Todos',emoji:{kind:'preset',id:'star'}})).toBe(false);
   });
   it('conserva las preferencias y muestra las carpetas nuevas sin resucitar carpetas eliminadas',()=>{
     const rules={...defaultRules,source:'folder:11'};

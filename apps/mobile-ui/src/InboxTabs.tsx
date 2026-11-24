@@ -1,7 +1,7 @@
 import { useState, useSyncExternalStore } from 'react';
-import { Archive, ArrowDown, ArrowUp, Ban, Bell, Bookmark, Bot, Eye, EyeOff, Flame, Globe, Hash, Heart, Image, LockKeyhole, Megaphone, Pencil, Pin, Plus, Send, Star, Trash2, Users, type LucideIcon } from 'lucide-react';
+import { Archive, ArrowDown, ArrowUp, Ban, Bell, Bookmark, Bot, Eye, EyeOff, Flame, Globe, Hash, Heart, Image, LockKeyhole, Megaphone, Pin, Plus, Send, Star, Trash2, Users, type LucideIcon } from 'lucide-react';
 import { snapshot, subscribe } from './bridge';
-import { arrangeTabs, defaultRules, TAB_EMOJIS, TAB_ICONS, type InboxTab, type TabDisplay, type TabEmoji, type TabRules } from './chatFilters';
+import { arrangeTabs, defaultRules, TAB_EMOJIS, TAB_ICONS, tabDisplay, type InboxTab, type TabDisplay, type TabEmoji, type TabRules } from './chatFilters';
 import type { State } from './contract';
 import { Brand } from './Brand';
 import { CustomEmoji } from './CustomEmoji';
@@ -77,7 +77,7 @@ export function InboxTabs({ initial, folders, save }: {
     <p className="settings-note tabs-manager-note">Los cambios se guardan en WRGram para esta cuenta.</p>
     <div className="tabs-manager-list">
       {draft.map((tab,index)=><div className="tabs-manager-row" key={tab.id}>
-        <button type="button" className="tabs-select" aria-pressed={selected===tab.id} disabled={busy} onClick={()=>chooseTab(tab.id)}>{tab.emoji?<InboxTabEmoji emoji={tab.emoji}/>:<Pencil size={15}/>}<span className="tabs-select-name">{tab.name||'Sin nombre'}</span>{tab.hidden&&<EyeOff size={15}/>}</button>
+        <button type="button" className="tabs-select" aria-pressed={selected===tab.id} disabled={busy} onClick={()=>chooseTab(tab.id)}>{tab.emoji?<InboxTabEmoji emoji={tab.emoji}/>:tab.icon?<InboxTabIcon icon={tab.icon}/>:null}<span className="tabs-select-name">{tab.name||'Sin nombre'}</span>{tab.hidden&&<EyeOff size={15}/>}</button>
         <button type="button" aria-label={'Subir '+tab.name} disabled={busy||index===0} onClick={()=>move(index,-1)}><ArrowUp size={17}/></button>
         <button type="button" aria-label={'Bajar '+tab.name} disabled={busy||index===draft.length-1} onClick={()=>move(index,1)}><ArrowDown size={17}/></button>
       </div>)}
@@ -86,7 +86,7 @@ export function InboxTabs({ initial, folders, save }: {
       <label>Nombre<input value={item.name} maxLength={28} disabled={busy} onChange={event=>update({name:event.target.value})}/></label>
       <fieldset className="tabs-appearance" disabled={busy}>
         <legend>Etiqueta visible</legend>
-        {!item.emoji&&<InboxTabDisplayPicker value={item.display??'iconName'} disabled={busy} change={display=>update({display})}/>}
+        <InboxTabDisplayPicker value={tabDisplay(item)} disabled={busy} change={display=>update({display})}/>
         <div className="tabs-appearance-options" role="group" aria-label="Formato de la pestaña">
           <button type="button" className="secondary" aria-pressed={!picker&&!item.emoji} onClick={()=>chooseEmoji()}>Icono</button>
           <button type="button" className="secondary" aria-expanded={picker==='preset'} onClick={()=>setPicker(picker==='preset'?undefined:'preset')}>Emojis de WRGram</button>
