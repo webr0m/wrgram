@@ -2,7 +2,7 @@
 
 Edición de escritorio experimental para Windows 10/11. Reutiliza la interfaz React de `apps/mobile-ui` dentro de WebView2 y conecta a Telegram con WTelegramClient (MTProto puro en .NET, sin procesos auxiliares).
 
-Estado: **beta de escritorio** · versión `0.1.0-desktop2` · no publicada.
+Estado: **beta de escritorio** · versión `0.1.0-desktop3` ([DesktopState.cs:651](../apps/desktop/src/WRGram.Desktop/DesktopState.cs#L651)) · no publicada. Última publicación medida el 24/11/2026 a las 15:06: `artifacts/desktop/win-x64/WRGram.Desktop.exe`, **74.437.910 bytes**, SHA-256 `c5262366071cdda1…cbf3210`, con la interfaz de `apps/mobile-ui/dist` reconstruida en ese mismo minuto (los chunks `ExpressionPicker-BG35XcSW.js`, `Panels-BAEWPkEH.js` y `PdfPreview-DODC_aMN.js` fechados 15:06).
 
 ## Requisitos
 
